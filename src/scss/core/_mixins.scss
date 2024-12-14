@@ -1,0 +1,25 @@
+@mixin scrollbar() {
+    /* width */
+    &::-webkit-scrollbar {
+        @apply w-2 h-1.5;
+    }
+
+    /* Track */
+    &::-webkit-scrollbar-track {
+        @apply bg-gray2 dark:bg-[hsla(207,5%,52%,.26)]; //bg #f1f1f1 ;
+    }
+
+    /* Handle */
+    &::-webkit-scrollbar-thumb {
+        @apply bg-gray2 rounded-lg border border-solid border-[#afaeaecf] dark:border-[hsla(207,7%,48%,0)] dark:bg-[hsla(208,34%,84%,0.26)];
+    }
+
+    /* Handle on hover */
+    &::-webkit-scrollbar-thumb:hover {
+        @apply bg-gray3 cursor-grabbing bg-opacity-90 dark:bg-[hsla(207,5%,52%,.26)] dark:bg-opacity-90; // bg #c8c8c8;
+    }
+}
+
+.scrollbar {
+    @include scrollbar;
+}

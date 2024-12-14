@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "angular-pwa-schema.json",
+  "title": "Angular PWA Configuration",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of your Progressive Web App"
+    },
+    "short_name": {
+      "type": "string",
+      "description": "Short name for your PWA, used on the user's home screen"
+    },
+    "theme_color": {
+      "type": "string",
+      "description": "Theme color for the PWA"
+    },
+    "background_color": {
+      "type": "string",
+      "description": "Background color for the splash screen"
+    },
+    "display": {
+      "type": "string",
+      "enum": ["standalone", "fullscreen", "minimal-ui", "browser"],
+      "description": "Display mode for the PWA"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Set of URLs that the browser considers within your app"
+    },
+    "start_url": {
+      "type": "string",
+      "description": "The URL that loads when the user launches the PWA"
+    }
+  },
+  "required": ["name", "short_name", "start_url"]
+}
