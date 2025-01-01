@@ -1,0 +1,52 @@
+<div class="mb-10 flex-1 w-[50rem] mx-auto block max-w-2xl">
+  <app-consent-modal
+    (consentAccepted)="onConsentAccepted($event)"
+    [isExtensionInstalled]="isExtensionInstalled"
+    *ngIf="!closeModal"
+  ></app-consent-modal>
+
+  <!-- <div
+    *ngIf="cookies.length"
+    class="bg-white p-4 dark:bg-gray6 rounded shadow-md mb-4"
+  >
+    <h3 class="text-lg font-bold mb-2 dark:text-gray-100">Fetched Cookies:</h3>
+    <ul>
+      <li
+        *ngFor="let cookie of cookies"
+        class="flex flex-wrap sm:flex-nowrap justify-between py-2 border-b border-gray-200"
+      >
+        <span
+          class="text-gray-700 dark:text-gray-100 w-full max-w-40 whitespace-wrap overflow-hidden break-words"
+          >{{ cookie.name }}</span
+        >
+        <span
+          class="text-gray-700 dark:text-gray-100 whitespace-wrap overflow-hidden break-words"
+          >{{ cookie.value }}</span
+        >
+      </li>
+    </ul>
+  </div>
+ -->
+  <!-- <div class="flex flex-row h-10 gap-2">
+    <input
+      type="text"
+      [formControl]="inputUrl"
+      class="w-full p-2 pl-10 transition-borders ease-linear duration-150 text-sm text-gray-700 dark:text-gray-100 border dark:bg-gray6 border-gray-200 dark:border-gray6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+      placeholder="Enter URL (e.g. instagram.com, facebook.com)"
+    />
+    <button
+      type="button"
+      title="fetchCookies"
+      class="bg-blue-500 text-sm hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg w-40"
+      (click)="
+        fetchCookiesFromExtension(inputUrl.valid ? inputUrl.value : null)
+      "
+    >
+      Show Cookies
+    </button>
+  </div> -->
+
+  <div *ngIf="error">
+    <p>{{ error }}</p>
+  </div>
+</div>

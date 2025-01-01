@@ -1,0 +1,29 @@
+<div class="modal-overlay" *ngIf="!isConsent || !isExtensionInstalled">
+  <div class="modal-content">
+    @if(!isConsent) {
+    <div>
+      <h2>Privacy Consent</h2>
+      <p>
+        ⚠️ By proceeding, you are giving us permission to fetch cookies and
+        other data from your browser to improve your experience.
+        <br />
+        We take your privacy seriously and will only use the data for this
+        purpose. We do not save your privacy information on cloud
+      </p>
+    </div>
+    } @if(!isExtensionInstalled) {
+    <div>
+      <h2>Download The Extension</h2>
+      <p>you will redirect to chrome web store</p>
+    </div>
+    }
+
+    <div class="buttons">
+      <button *ngIf="!isConsent" (click)="acceptConsent()">Accept</button>
+      <button *ngIf="!isConsent" (click)="declineConsent()">Decline</button>
+      <button *ngIf="!isExtensionInstalled" (click)="downloadExtension()">
+        Download Extension
+      </button>
+    </div>
+  </div>
+</div>

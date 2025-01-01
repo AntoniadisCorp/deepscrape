@@ -3,25 +3,28 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
-    "build:angular": "node cp-angular",
+    "build:angular": "node cp-angular.js",
     "build": "npm run build:angular && tsc",
-    "build:watch": "npm run build:angular && tsc tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only functions",
+    "build:watch": "npm run build:angular && tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only \"functions,hosting\"",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
+    "deploy": "firebase deploy --only \"functions,hosting\"",
     "logs": "firebase functions:log"
   },
   "engines": {
     "node": "20",
     "type": "module"
   },
-  "main": "lib/index.js",
+  "main": "lib/functions/src/index.js",
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1"
   },
   "devDependencies": {
+    "@types/stripe": "^8.0.417",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",

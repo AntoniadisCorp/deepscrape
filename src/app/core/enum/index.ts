@@ -1,0 +1,1 @@
+export * from './glonal.enum'

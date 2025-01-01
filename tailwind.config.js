@@ -4,7 +4,7 @@ import colors from '@material-tailwind/html/theme/base/colors';
 
 import withMT from "@material-tailwind/html/utils/withMT"
 /** @type {import('tailwindcss').Config} */
-// const tailwindcolors = require('tailwindcss/colors')
+const tailwindcolors = require('tailwindcss/colors')
 module.exports = withMT({
 
   enabled: true,
@@ -88,6 +88,13 @@ module.exports = withMT({
       'blue-gray': colors['blue-gray'],
       'light-blue': colors['light-blue'],
       'light-green': colors['light-green'],
+      'amber': colors['amber'],
+      'fuchsia': tailwindcolors['fuchsia'],
+      'violet': tailwindcolors['violet'],
+      'rose': tailwindcolors['rose'],
+      'emerald': tailwindcolors['emerald'],
+      'stone': tailwindcolors['stone'],
+      'zinc': tailwindcolors['zinc'],
 
 
     },

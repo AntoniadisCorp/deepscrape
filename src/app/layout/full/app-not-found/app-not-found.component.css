@@ -1,0 +1,12 @@
+@tailwind components;
+@layer components {
+  .error-404-img {
+    @apply sm:mt-0 sm:mr-auto sm:mb-28 sm:ml-auto;
+  }
+  .content {
+    @apply max-w-screen-3xl overflow-hidden m-auto w-[calc(100%_-_32px)] md:w-[calc(100%_-_48px)] lg:w-[calc(100%_-_64px)] 3xl:w-[calc(100%_-_128px)];
+  }
+  .hound {
+    @apply sm:min-h-[600px] min-h-[328px] bg-contain bg-no-repeat bg-center;
+  }
+}/*# sourceMappingURL=app-not-found.component.css.map */

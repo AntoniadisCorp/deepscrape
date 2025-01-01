@@ -1,0 +1,52 @@
+<div [ngClass]="{ 'relative z-40': isOpen }" class="w-[14rem]">
+  <div class="relative">
+    <label
+      (click)="onToggle()"
+      [ngClass]="isFocus ? 'text-blue-700' : 'text-gray4/80'"
+      class="absolute start-4 transition-colors duration-100 ease-in rounded-md top-[0.8rem] z-10 origin-[10px] -translate-y-5 scale-100 transform cursor-pointer bg-white px-1 font-sans text-xs font-medium dark:bg-gray6 dark:text-gray-400 peer-focus:dark:text-gray-100"
+      >{{ dropDownName }} <span class="text-red-400">*</span></label
+    >
+  </div>
+
+  <button
+    #dropDown
+    type="button"
+    [ngClass]="padding ? padding : 'py-3 pl-3 pr-4'"
+    class="flex w-full max-w-sm flex-row items-center justify-between rounded-lg border border-transparent bg-white text-gray-900 transition-[colors,border] duration-100 ease-in hover:text-gray-900 focus:border focus:border-blue-900 focus:outline-none active:border-blue-900 dark:border-transparent dark:bg-gray6 dark:text-gray-500 dark:hover:border-gray-100 dark:hover:text-gray-100 dark:focus:border-blue-gray-100 dark:active:border-blue-gray-100"
+    (click)="onToggle()"
+    (focus)="doFocus()"
+    (blur)="doBlur()"
+  >
+    <span class="ml-[6px] w-full truncate" (click)="searchInput = ''">{{
+      controlValue!.name
+    }}</span>
+    <mat-icon
+      [ngClass]="isFocus ? 'text-blue-700 dark:text-gray-100' : ''"
+      class="text-3xl leading-6"
+      >arrow_drop_{{ isOpen ? "up" : "down" }}</mat-icon
+    >
+  </button>
+  <div
+    appOutsideClick
+    (outsideClick)="closeDropDown()"
+    [ngClass]="position == 'bottom' ? 'top-12' : 'bottom-12'"
+    class="absolute left-0 right-5 z-[40] w-full min-w-fit max-w-sm rounded bg-white text-base shadow-md focus:bg-gray2 dark:bg-gray6 dark:focus:bg-gray6"
+  >
+    <div
+      class="max-h-[500px] w-full overflow-y-auto scrollbar p-4"
+      *ngIf="isOpen"
+      #menu
+    >
+      <button
+        type="button"
+        class="peer w-full rounded px-4 py-3 text-left text-base hover:bg-gray-100 dark:text-gray-100 focus:bg-gray6 focus:text-blue-900 focus:outline-none dark:hover:bg-blue-200 dark:hover:text-gray6"
+        id="country{{ index }}"
+        *ngFor="let option of options; let index = index"
+        (click)="onOptionSelected(option)"
+        [class.active]="option === control.value"
+      >
+        {{ option.name }}
+      </button>
+    </div>
+  </div>
+</div>

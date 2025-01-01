@@ -1,0 +1,119 @@
+<div
+  class="max-w-screen-md mx-auto bg-white dark:bg-gray6 rounded-lg shadow-lg p-10"
+>
+  <div class="flex justify-between items-center mb-4">
+    <h2
+      class="text-lg font-bold from-pink-400 to-deep-purple-600 bg-gradient-to-r dark:from-pink-400 dark:to-deep-purple-400 bg-clip-text text-transparent"
+    >
+      Payment Card
+    </h2>
+  </div>
+  <form [formGroup]="checkoutForm">
+    <div class="flex flex-wrap -mx-3 mb-6">
+      <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+        <label
+          class="block uppercase tracking-wide text-gray-700 dark:text-gray-100 text-xs font-bold mb-2"
+          for="name"
+        >
+          Name
+        </label>
+        <input
+          class="appearance-none block w-full bg-gray-200 text-gray-700 dark:bg-gray6 dark:text-gray-100 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none dark:focus:bg-gray5 focus:bg-white"
+          type="text"
+          formControlName="name"
+          placeholder="Name"
+        />
+      </div>
+      <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+        <label
+          class="block uppercase tracking-wide text-gray-700 dark:text-gray-100 text-xs font-bold mb-2"
+          for="email"
+        >
+          Email
+        </label>
+        <input
+          class="appearance-none block w-full bg-gray-200 text-gray-700 dark:bg-gray6 dark:text-gray-100 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none dark:focus:bg-gray5 focus:bg-white"
+          type="email"
+          formControlName="email"
+          placeholder="Email"
+        />
+      </div>
+    </div>
+    <div class="flex flex-wrap -mx-3 mb-6">
+      <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+        <label
+          class="block uppercase tracking-wide text-gray-700 dark:text-gray-100 text-xs font-bold mb-2"
+          for="address"
+        >
+          Address
+        </label>
+        <input
+          class="appearance-none block w-full bg-gray-200 text-gray-700 dark:bg-gray6 dark:text-gray-100 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none dark:focus:bg-gray5 focus:bg-white"
+          type="text"
+          formControlName="address"
+          placeholder="Address"
+        />
+      </div>
+    </div>
+    <div class="flex flex-wrap -mx-3 mb-6">
+      <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+        <label
+          class="block uppercase tracking-wide text-gray-700 dark:text-gray-100 text-xs font-bold mb-2"
+          for="zipcode"
+        >
+          ZIP Code
+        </label>
+        <input
+          class="appearance-none block w-full bg-gray-200 text-gray-700 dark:bg-gray6 dark:text-gray-100 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none dark:focus:bg-gray5 focus:bg-white"
+          type="text"
+          formControlName="zipcode"
+          placeholder="Zip Code"
+        />
+      </div>
+      <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+        <label
+          class="block uppercase tracking-wide text-gray-700 dark:text-gray-100 text-xs font-bold mb-2"
+          for="city"
+        >
+          City
+        </label>
+        <input
+          class="appearance-none block w-full bg-gray-200 text-gray-700 dark:bg-gray6 dark:text-gray-100 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none dark:focus:bg-gray5 focus:bg-white"
+          type="text"
+          formControlName="city"
+          placeholder="city"
+        />
+      </div>
+    </div>
+    <div class="mb-2"></div>
+    @if (elementsOptions.clientSecret) {
+    <ngx-stripe-elements [stripe]="stripe" [elementsOptions]="elementsOptions">
+      <ngx-stripe-payment [options]="paymentElementOptions" />
+    </ngx-stripe-elements>
+    }
+    <div class="mb-5"></div>
+    <hr class="my-10" />
+    <div class="flex justify-end gap-2">
+      <button
+        type="reset"
+        class="bg-gray-500 hover:bg-gray-700 dark:bg-gray6 dark:hover:bg-gray5 text-white font-bold py-2 px-4 rounded"
+        [disabled]="paying"
+        (click)="clear()"
+      >
+        CLEAR
+      </button>
+      <button
+        type="submit"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        [disabled]="paying()"
+        (click)="collectPayment()"
+      >
+        <span *ngIf="paying()">PROCESSING...</span>
+        <span *ngIf="!paying()"
+          >PAY
+          <span *ngIf="amount">{{ amount | currency }}</span>
+        </span>
+      </button>
+    </div>
+  </form>
+</div>

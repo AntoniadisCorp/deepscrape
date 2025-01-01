@@ -1,0 +1,35 @@
+/* Home Component Styles */
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Smooth transitions for interactive elements */
+a,
+button {
+  transition: all 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .flex-wrap {
+    flex-direction: column;
+    align-items: center;
+  }
+  .trusted-logos img {
+    margin: 0.5rem;
+  }
+}
+/* Subtle hover effects */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+}/*# sourceMappingURL=home.component.css.map */

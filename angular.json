@@ -17,7 +17,16 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "allowedCommonJsDependencies": ["undici"],
+            "allowedCommonJsDependencies": [
+              "undici",
+              "@grpc/proto-loader",
+              "@grpc/grpc-js",
+              "whatwg-url",
+              "encoding",
+              "http-proxy-middleware",
+              "prismjs",
+              "prismjs/components/prism-typescript.min.js"
+            ],
             "outputPath": "dist/deepscrape",
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -29,13 +38,13 @@
                 "glob": "**/*",
                 "input": "public"
               },
-              {
-                "glob": "**/*",
-                "input": "src/assets"
-              }
+              "src/assets"
             ],
             "styles": ["src/styles.scss"],
-            "scripts": [],
+            "scripts": [
+              "node_modules/emoji-toolkit/lib/js/joypixels.min.js",
+              "node_modules/clipboard/dist/clipboard.min.js"
+            ],
             "server": "src/main.server.ts",
             "prerender": true,
             "ssr": {
@@ -51,7 +60,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumError": "2MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -60,7 +69,13 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,
@@ -72,6 +87,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "src/proxy.conf.json"
+          },
           "configurations": {
             "production": {
               "buildTarget": "deepscrape:build:production"

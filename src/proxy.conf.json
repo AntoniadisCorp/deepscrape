@@ -1,0 +1,66 @@
+{
+  "/anthropic": {
+    "target": "https://api.anthropic.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/anthropic": "/v1"
+    }
+  },
+  "/geo": {
+    "target": "https://nominatim.openstreetmap.org",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/geo": ""
+    }
+  },
+  "/openai": {
+    "target": "https://api.openai.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/openai": "/v1"
+    }
+  },
+  "/groq": {
+    "target": "https://api.groq.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/groq": "/openai/v1"
+    }
+  },
+  "/jina": {
+    "target": "https://r.jina.ai",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/jina": ""
+    }
+  },
+  "/recaptcha": {
+    "target": "https://google.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/recaptcha": "/api"
+    }
+  },
+  "/crawlerai/*": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/crawlerai": ""
+    }
+  },
+  "/apa/*": {
+    "target": "http://localhost:3400",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/apa": ""
+    }
+  }
+}

@@ -1,0 +1,51 @@
+<div class="relative mb-2 w-full">
+  <input
+    type="text"
+    id="floating_filled"
+    appForbiddenName="^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$"
+    [formControl]="control"
+    [ngClass]="
+      (control!.valid
+        ? 'border-green-600 focus:border-green-600 dark:border-green-500 dark:focus:border-green-500'
+        : control!.invalid && (control!.dirty || control!.touched)
+        ? 'border-red-600 focus:border-red-600 dark:border-red-500 dark:focus:border-red-500'
+        : 'focus:border-blue-600 dark:focus:border-blue-500') +
+      ' ' +
+      bgColor
+    "
+    class="peer block w-full appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-10 pt-5 text-sm text-gray-900 transition-[border] duration-150 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white"
+    [placeholder]="URLPlaceholder"
+    (focus)="doFocus()"
+    (blur)="doBlur()"
+    (input)="doValidation()"
+    (keyup)="doValidation()"
+    (click)="doValidation()"
+  />
+  <label
+    [ngClass]="
+      control!.valid
+        ? 'text-green-600 dark:text-green-500'
+        : control!.invalid && (control!.dirty || control!.touched)
+        ? 'text-red-600 dark:text-red-500'
+        : 'peer-focus:text-blue-600 peer-focus:dark:text-blue-500'
+    "
+    for="floating_filled"
+    class="absolute start-2 top-4 z-10 origin-[0] -translate-y-4 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-4 peer-focus:scale-75 dark:text-gray-400 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
+    >URL</label
+  >
+</div>
+<p
+  *ngIf="control!.invalid && (control!.dirty || control!.touched)"
+  id="filled_success_help"
+  class="mt-2 text-xs text-red-600 dark:text-red-400"
+>
+  <span class="font-medium" *ngIf="control!.errors?.['required']"
+    >Url is required.</span
+  >
+  <span class="font-medium" *ngIf="control!.errors?.['minlength']">
+    Url must be at least 4 characters long.
+  </span>
+  <span class="font-medium" *ngIf="control!.errors?.['forbiddenName']">
+    The text input has same format as any url.
+  </span>
+</p>

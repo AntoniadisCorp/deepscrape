@@ -22,8 +22,33 @@
       "updateMode": "prefetch",
       "resources": {
         "files": [
-          "/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
+          "/assets/**",
+          "/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
         ]
+      }
+    },
+    {
+      "name": "images",
+      "resources": {
+        "files": ["/assets/img/**", "/assets/menu/**"]
+      },
+      "cachePolicy": {
+        "strategy": "StaleWhileRevalidate"
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "api",
+      "urls": [
+        "/anthropic/messages",
+        "/groq/chat/completions",
+        "/openai/chat/completions"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 0,
+        "timeout": "0s"
       }
     }
   ]

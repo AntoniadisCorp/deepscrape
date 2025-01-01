@@ -1,0 +1,33 @@
+/* Signup Component Styles */
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Form validation styles */
+.ng-invalid.ng-touched {
+  border-color: #dc3545;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+/* Additional form styling */
+input.ng-invalid.ng-touched {
+  border: 2px solid #dc3545;
+}
+
+input.ng-valid.ng-touched {
+  border: 2px solid #28a745;
+}/*# sourceMappingURL=signup.component.css.map */

@@ -1,0 +1,64 @@
+<div class="flex flex-col w-full">
+  <textarea
+    id="prompt"
+    [formControl]="userPrompt"
+    (input)="characterCount = userPrompt.value.length"
+    (keyup.enter)="submitPrompt()"
+    class="mt-2 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
+    placeholder="Type your prompt here..."
+  ></textarea>
+  <div class="flex justify-between h-16 mt-2">
+    <p class="text-xs text-gray-400">Characters: {{ characterCount }}/4000</p>
+    <div class="flex items-center justify-end">
+      <button
+        type="button"
+        aria-label="clear"
+        [disabled]="userPrompt.value.length === 0"
+        (click)="clearPrompt()"
+        class="flex flex-row flex-nowrap px-[14px] gap-1 items-center h-12 disabled:bg-transparent bg-dark-400/20 dark:bg-gray-100/[0.08] rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60 font-roboto py-2 mr-2"
+      >
+        <mat-icon
+          svgIcon="clear"
+          faria-hidden="false"
+          aria-label="clear"
+          class="!w-5 !h-5 text-lg"
+        ></mat-icon>
+      </button>
+      <div class="relative">
+        <div
+          *ngIf="submitControl.value"
+          class="absolute right-[1.8rem] top-[.6rem] z-10 h-5 w-5"
+        >
+          <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
+        </div>
+        <button
+          [disabled]="
+            this.characterCount >= this.maxCharacters ||
+            this.userPrompt.value.length === 0 ||
+            submitControl.value
+          "
+          (click)="submitPrompt()"
+          class="flex flex-row flex-nowrap gap-1 disabled:bg-blue-700/[0.08] bg-blue-400/[0.8] font-normal hover:bg-blue-500/[0.8] focus:bg-blue-300/[0.9] disabled:text-blue-100 text-white dark:text-gray-50 font-roboto py-2 px-4 rounded-md transition duration-300"
+        >
+          <span [ngClass]="{ 'text-transparent': submitControl.value }"
+            >Submit</span
+          >
+        </button>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="errors.length > 0" class="mt-2">
+    <p class="text-red-500 font-bold">Errors:</p>
+    <ul>
+      <li *ngFor="let error of errors" class="text-red-500">{{ error }}</li>
+    </ul>
+  </div>
+  <div *ngIf="submissionStatus === 'success'" class="mt-2">
+    <p class="text-green-500 font-bold">Prompt submitted successfully!</p>
+  </div>
+  <div *ngIf="submissionStatus === 'error'" class="mt-2">
+    <p class="text-red-500 font-bold">
+      Failed to submit prompt. Please try again.
+    </p>
+  </div>
+</div>

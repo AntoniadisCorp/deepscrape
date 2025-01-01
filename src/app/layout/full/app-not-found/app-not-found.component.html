@@ -1,0 +1,31 @@
+<!-- Toolbar -->
+<!-- <app-header></app-header> -->
+
+<div class="mx-auto max-w-screen-3xl bg-white dark:bg-gray-900">
+  <div class="mt-32 flex flex-col">
+    <div class="mx-6 mb-6 mt-4 flex flex-col justify-center text-center">
+      <h1>
+        <strong class="text-2l font-bold sm:text-4xl">Χμμμ!</strong>
+        <p class="sm:mt-4 sm:text-lg">
+          Το λαγωνικό μας δεν μπορεί να βρει την σελίδα που ψάχνεις.
+        </p>
+      </h1>
+      <span class="sm:mt-4 sm:text-lg"
+        >Μπορεί όμως να σε οδηγήσει στην αρχική!</span
+      >
+      <a
+        [routerLink]="['/']"
+        class="mt-4 block text-base font-bold text-blue-700"
+        >Επιστροφή στην αρχική σελίδα</a
+      >
+    </div>
+
+    <div class="error-404-img content">
+      <div
+        class="hound bg-[url('https://a.scdn.gr/assets/schwartz/404_hound_large-21f5dfa5b13e0392a3887d016464beca.png')]"
+      ></div>
+    </div>
+  </div>
+  <!-- Links -->
+  <app-footer></app-footer>
+</div>

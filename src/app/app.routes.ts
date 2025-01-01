@@ -1,8 +1,13 @@
 import { Routes } from '@angular/router';
+import { MainRoutes, ServiceRoutes, UserRoutes } from './routes';
 
 export const routes: Routes = [
 
-    { path: '', loadComponent: () => import('./pages/main/main.component').then(m => m.MainComponent) },
-    { path: 'home', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
-    { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
-];
+    ...MainRoutes,
+
+    ...UserRoutes,
+
+    ...ServiceRoutes,
+
+    { path: '**', loadComponent: () => import('./layout/full').then(m => m.NotFoundComponent) },
+]

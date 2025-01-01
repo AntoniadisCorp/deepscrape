@@ -1,0 +1,148 @@
+<main class="relative inset-0 min-h-full bg-gray-200 dark:bg-gray-900">
+  <section class="absolute inset-0 h-full w-full">
+    <div class="relative top-48 w-full bg-cover bg-no-repeat">
+      <div class="container mx-auto h-full px-4">
+        <div class="flex h-full content-center items-center justify-center">
+          <div class="w-full px-4 lg:w-4/12">
+            <form
+              class="group relative mt-10 mb-6 flex w-full min-w-0 flex-col break-words rounded-lg border-0 bg-neutral-300 bg-opacity-60 shadow-lg dark:bg-gray6"
+              [formGroup]="signupForm"
+              (ngSubmit)="signup()"
+            >
+              <div class="mb-0 rounded-t px-6 py-6">
+                <div class="mb-3 text-center">
+                  <h6 class="text-sm font-bold text-gray-600">
+                    Sign up with Credentials
+                  </h6>
+                </div>
+
+                @if (errorMessage) {
+                <div
+                  class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
+                  role="alert"
+                >
+                  <span class="block sm:inline">{{ errorMessage }}</span>
+                </div>
+                }
+
+                <div class="flex-auto px-4 py-10 pt-0 lg:px-10">
+                  <div class="relative mb-3 w-full">
+                    <label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
+                      >Full Name</label
+                    >
+                    <input
+                      type="text"
+                      formControlName="name"
+                      required
+                      placeholder="Enter your Full Name"
+                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                    />
+                    @if (signupForm.get('name')?.invalid &&
+                    (signupForm.get('name')?.dirty ||
+                    signupForm.get('name')?.touched)) {
+                    <small class="text-red-500">
+                      @if (signupForm.get('name')?.errors?.['required']) { Name
+                      is required } @if
+                      (signupForm.get('name')?.errors?.['minlength']) { Name
+                      must be at least 2 characters }
+                    </small>
+                    }
+                  </div>
+                  <div class="relative mb-3 w-full">
+                    <label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
+                      >Email or mobile</label
+                    >
+                    <input
+                      type="text"
+                      formControlName="email"
+                      required
+                      placeholder="Enter your Email or Mobile"
+                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                    />
+                    @if (signupForm.get('email')?.invalid &&
+                    (signupForm.get('email')?.dirty ||
+                    signupForm.get('email')?.touched)) {
+                    <small class="text-red-500">
+                      @if (signupForm.get('email')?.errors?.['required']) {
+                      Email is required } @if
+                      (signupForm.get('email')?.errors?.['email']) { Invalid
+                      email format }
+                    </small>
+                    }
+                  </div>
+                  <div class="relative mb-3 w-full">
+                    <label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
+                      >Password</label
+                    >
+                    <input
+                      type="password"
+                      formControlName="password"
+                      required
+                      placeholder="Enter your Password"
+                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                    />
+                    @if (signupForm.get('password')?.invalid &&
+                    (signupForm.get('password')?.dirty ||
+                    signupForm.get('password')?.touched)) {
+                    <small class="text-red-500">
+                      @if (signupForm.get('password')?.errors?.['required']) {
+                      Password is required } @if
+                      (signupForm.get('password')?.errors?.['minlength']) {
+                      Password must be at least 6 characters }
+                    </small>
+                    }
+                  </div>
+                  <div class="relative mb-3 w-full">
+                    <label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
+                      >Confirm Password</label
+                    >
+                    <input
+                      type="password"
+                      formControlName="confirmPassword"
+                      required
+                      placeholder="Confirm your Password"
+                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                    />
+                    @if (signupForm.get('confirmPassword')?.invalid &&
+                    (signupForm.get('confirmPassword')?.dirty ||
+                    signupForm.get('confirmPassword')?.touched)) {
+                    <small class="text-red-500">
+                      @if
+                      (signupForm.get('confirmPassword')?.errors?.['passwordMismatch'])
+                      { Passwords do not match }
+                    </small>
+                    }
+                  </div>
+                  <div class="mt-6 flex flex-wrap">
+                    <div class="w-full text-center">
+                      <a
+                        [routerLink]="['/service/login']"
+                        routerLinkActive="router-link-active"
+                        class="text-black-50 dark:text-gray-50"
+                        ><small>Already have an account? Sign in</small></a
+                      >
+                    </div>
+                  </div>
+                  <div class="mt-6 text-center">
+                    <button
+                      type="submit"
+                      title="signup"
+                      [disabled]="!signupForm.valid"
+                      class="mb-1 mr-1 w-full cursor-pointer dark:bg-blue-600/[0.4] dark:hover:bg-blue-600/[0.7] disabled:bg-gray-900 dark:disabled:bg-gray-900 rounded px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-700"
+                    >
+                      SIGN UP
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

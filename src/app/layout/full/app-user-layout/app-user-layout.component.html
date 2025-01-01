@@ -1,0 +1,188 @@
+<header
+  class="fixed w-full bg-gray-50 dark:bg-gray-900 border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]"
+>
+  <div
+    class="flex h-20 items-center justify-between px-4 md:px-8 lg:px-32 py-2"
+  >
+    <a
+      [routerLink]="['/']"
+      routerLinkActive="active"
+      class="flex items-center justify-between space-x-2"
+    >
+      <h1
+        class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit"
+      >
+        <img
+          src=""
+          alt=""
+          srcset="assets/logo-512x512.png 2x"
+          class="mt-4 h-24 border-none"
+        />
+      </h1>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-300">
+        DeepScrape
+      </h1>
+    </a>
+    <div class="flex items-center gap-4">
+      <!-- Theme Mode Switch -->
+      <app-theme-toggle></app-theme-toggle>
+      @if (user$ | async; as user) {
+      <!-- Profile Image Menu Button -->
+      <button
+        type="button"
+        (click)="openProfileMenu()"
+        class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
+        aria-expanded="false"
+      >
+        <span class="sr-only">Open user menu</span>
+        <img
+          class="rounded-full object-contain"
+          priority=""
+          loading="eager"
+          ng-img="true"
+          decoding="sync"
+          [srcset]="user | provider : user.providerId : 'photoURL'"
+          alt="user photo"
+        />
+      </button>
+      <!-- DropDown Profile Menu -->
+      <div
+        *ngIf="showProfileMenu"
+        class="fixed right-[1.1rem] top-[4.5rem] z-[90] list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6 md:right-[2.1rem] lg:right-[8.2rem]"
+      >
+        <div class="px-4 py-3" role="none">
+          <p class="text-sm text-gray-900 dark:text-white" role="none">
+            <!--  {{
+              this.userData?.profile?.first_name +
+                ' ' +
+                this.userData?.profile?.last_name
+            }} -->
+          </p>
+          <div
+            class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
+            role="none"
+          >
+            <div *ngIf="userLoading">
+              <div
+                class="relative h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-400"
+              ></div>
+            </div>
+            <div>
+              <p>{{ user | provider : user.providerId : "displayName" }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 py-3" role="none">
+          <p class="text-sm text-gray-900 dark:text-white" role="none">
+            <!--  {{
+              this.userData?.profile?.first_name +
+                ' ' +
+                this.userData?.profile?.last_name
+            }} -->
+          </p>
+          <div
+            class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
+            role="none"
+          >
+            <div *ngIf="userLoading">
+              <div
+                class="relative h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-400"
+              ></div>
+            </div>
+            <div>
+              <p>{{ user | provider : user.providerId : "email" }}</p>
+            </div>
+          </div>
+        </div>
+        <ul class="py-1" role="none">
+          <li>
+            <a
+              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="dashboard"
+              alt="dashboard"
+              (click)="closeProfileMenu($event, user.uid)"
+              >Dashboard</a
+            >
+          </li>
+          <li>
+            <a
+              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="billing"
+              alt="billing"
+              (click)="closeProfileMenu($event, user.uid)"
+              >Billing</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="chatai"
+              alt="chatai"
+              (click)="closeProfileMenu($event, user.uid)"
+              >Chatai</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="settings"
+              alt="settings"
+              (click)="closeProfileMenu($event, user.uid)"
+              >Settings</a
+            >
+          </li>
+          <li>
+            <a
+              (click)="logout()"
+              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="logout"
+              alt="logout"
+            >
+              <span class="flex w-fit items-start justify-start gap-3">
+                Sign out @if (loading) {
+                <!-- Loading spinner -->
+
+                <mat-spinner
+                  [diameter]="20"
+                  class="stroke-gray-200"
+                ></mat-spinner>
+                }
+              </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      } @else {
+      <!-- <a
+        [routerLink]="loginPath"
+        alt="signin"
+        class="mt-2 h-8 border-none dark:text-gray-100"
+      >
+        <mat-icon class="h-8 border-none">login</mat-icon>
+      </a> -->
+      <button
+        type="button"
+        class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
+        aria-expanded="false"
+      >
+        <span class="sr-only">Open user menu</span>
+        <img
+          class="rounded-full object-contain"
+          [srcset]="
+            'https://eu.ui-avatars.com/api/?name=Prok+Ant' + '&size=250'
+          "
+          alt="user photo"
+        />
+      </button>
+
+      }
+    </div>
+  </div>
+</header>
+
+<!-- Inner Section  -->
+<div [@routeAnimation]="getAnimationData(outlet)" class="block h-full">
+  <router-outlet #outlet="outlet"></router-outlet>
+</div>

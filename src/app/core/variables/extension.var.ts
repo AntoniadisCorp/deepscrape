@@ -1,0 +1,1 @@
+export const EXTENSION_ID = 'ckapckfebggjbmdhojfioebfgcfidnfo' // check web store

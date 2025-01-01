@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "ES2022",
+    "module": "CommonJS",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
@@ -19,12 +19,17 @@
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "types": [
-      "node"
+      "node",
+      "chrome"
     ],
   },
   "compileOnSave": true,
   "include": [
     "src",
     "cp-angular.js"
+  ],
+  "exclude": [
+    "lib",
+    "node_modules"
   ]
 }

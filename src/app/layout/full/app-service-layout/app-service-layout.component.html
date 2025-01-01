@@ -1,0 +1,36 @@
+<header
+  class="fixed w-full bg-gray-50 dark:bg-gray-900 border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]"
+>
+  <div
+    class="flex h-20 items-center justify-between px-4 md:px-8 lg:px-32 py-2"
+  >
+    <a
+      [routerLink]="['/']"
+      routerLinkActive="active"
+      class="flex items-center justify-between space-x-2"
+    >
+      <h1
+        class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit"
+      >
+        <img
+          src=""
+          alt=""
+          srcset="assets/logo-512x512.png 2x"
+          class="mt-4 h-24 border-none"
+        />
+      </h1>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-300">
+        DeepScrape
+      </h1>
+    </a>
+    <!-- Theme Mode Switch -->
+    <!-- <ai-theme-toggle class="mr-[30px] mt-5 h-8 border-none"></ai-theme-toggle> -->
+    <!-- Theme Mode Switch -->
+    <app-theme-toggle></app-theme-toggle>
+  </div>
+</header>
+
+<!-- Inner Section  -->
+<div [@routeAnimation]="getAnimationData(outlet)" class="block h-full">
+  <router-outlet #outlet="outlet"></router-outlet>
+</div>

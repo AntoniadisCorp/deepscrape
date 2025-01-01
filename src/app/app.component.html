@@ -5,5 +5,30 @@
 <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * End of Placeholder  * * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+<!-- loading bar for router -->
+<ngx-loading-bar
+  ref="router"
+  [includeSpinner]="false"
+  [height]="'4px'"
+  [color]="'rgb(190 18 60)'"
+  class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
+></ngx-loading-bar>
 
-<router-outlet />
+<div class="bg-gray-100 dark:bg-gray-900 min-h-screen overflow-hidden">
+  @if(isLoading) {
+
+  <span class="flex h-screen w-full items-center justify-center"
+    ><mat-spinner [diameter]="40" class="stroke-blue-700"></mat-spinner>
+  </span>
+  }
+  <router-outlet></router-outlet>
+</div>
+
+<app-snackbar
+  #snackbar
+  [message]="snackbarMessage"
+  [action]="snackbarAction"
+  [duration]="snackbarDuration"
+  [type]="snackbarType"
+  (actionClick)="onSnackbarAction()"
+></app-snackbar>

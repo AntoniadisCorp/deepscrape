@@ -1,0 +1,26 @@
+<div class="flex items-center justify-start">
+  <div>
+    <label
+      for="email_notification-switch"
+      class="w-fit max-w-[100px] cursor-pointer items-center"
+    >
+      <input
+        title="toggle button"
+        type="checkbox"
+        id="email_notification-switch"
+        name="email_notification"
+        class="peer sr-only"
+        [formControl]="control"
+      />
+      <div
+        class="peer relative h-4 w-10 rounded-md bg-cyan-200 after:absolute after:-top-[2px] after:left-[0px] after:h-5 after:w-5 after:rounded-md after:border-0 after:bg-gray-400 after:transition-all after:content-[''] after:hover:bg-gray-100 peer-checked:bg-cyan-400/[0.1] peer-checked:after:translate-x-full peer-checked:after:bg-cyan-500 peer-checked:after:hover:shadow-lg peer-checked:after:hover:shadow-cyan-400 peer-focus:outline-none peer-focus:ring-0 dark:bg-gray-600/[0.8]"
+      ></div>
+    </label>
+  </div>
+  <div>
+    <span
+      class="ml-3 justify-start text-sm font-semibold text-gray-900 dark:text-gray-400 peer-checked:dark:text-gray-100"
+      >{{ setTitle() + "" }}</span
+    >
+  </div>
+</div>
