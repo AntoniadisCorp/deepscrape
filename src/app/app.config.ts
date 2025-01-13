@@ -2,7 +2,7 @@ import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvide
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { provideClientHydration } from '@angular/platform-browser';
+import { DomSanitizer, provideClientHydration } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -16,7 +16,7 @@ import { getAuth, provideAuth } from '@angular/fire/auth';
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { browserProvider, BrowserToken, PLUTO_ID, STORAGE_PROVIDERS, windowProvider, WindowToken } from './core/services';
-import { HttpClient, provideHttpClient, withFetch, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { provideImgixLoader } from '@angular/common';
 import { environment } from '../environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
@@ -27,12 +27,26 @@ import 'prismjs/plugins/line-numbers/prism-line-numbers.js';
 import 'prismjs/plugins/line-highlight/prism-line-highlight.js';
 import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
+import { NAVIGATOR_PROVIDER } from './core/providers';
+import { TokenInterceptor } from './core/guards';
+import { MatIconRegistry } from '@angular/material/icon';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    NAVIGATOR_PROVIDER,
     STORAGE_PROVIDERS,
     { provide: WindowToken, useFactory: windowProvider },
     { provide: BrowserToken, useFactory: browserProvider },
+
+    /* {
+      provide: MatIconRegistry,
+      useFactory: (registry: MatIconRegistry, sanitizer: DomSanitizer) => {
+        registry.registerFontClassAlias('custom-font', 'custom-font');
+        return registry;
+      },
+      deps: [MatIconRegistry, DomSanitizer],
+    }, */
+
     importProvidersFrom(LoadingBarHttpClientModule),
     provideMarkdown({
       loader: HttpClient,
@@ -43,8 +57,8 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
 
       /* withInterceptors([
-          new TokenInterceptor().intercept,
-          new CsrfInterceptor().intercept
+        new TokenInterceptor().intercept,
+        // new CsrfInterceptor().intercept
       ]), */
     ),
 

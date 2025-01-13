@@ -5,12 +5,14 @@ import { LoadingBarRouterModule } from '@ngx-loading-bar/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { SnackbarService, SvgIconService } from './core/services';
 import { ThemeToggleComponent } from './shared';
-import { SnackbarComponent, SnackBarType } from './core/components';
+import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, LoadingBarRouterModule, MatProgressSpinner, SnackbarComponent],
+  imports: [RouterOutlet, LoadingBarRouterModule, MatProgressSpinner, SnackbarComponent,
+    SizeDetectorComponent,
+  ],
   providers: [ThemeToggleComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

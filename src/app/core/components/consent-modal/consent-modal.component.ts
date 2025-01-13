@@ -1,13 +1,15 @@
 import { NgIf } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { LocalStorage, WindowToken } from '../../services';
+import { MatIcon } from '@angular/material/icon';
+import { RippleDirective } from '../../directives';
 
 
 
 @Component({
   selector: 'app-consent-modal',
   standalone: true,
-  imports: [NgIf],
+  imports: [NgIf, MatIcon, RippleDirective],
   templateUrl: './consent-modal.component.html',
   styleUrl: './consent-modal.component.scss'
 })
@@ -17,7 +19,10 @@ export class ConsentModalComponent {
   private localStorage = inject(LocalStorage);
   @Input() isExtensionInstalled: boolean = true;  // Track if extension is already installed
 
+  @Input() forwardCookiesBtnEnabled: boolean = true
   @Output() consentAccepted = new EventEmitter<boolean>();
+
+  @Output() onExtensionDecline = new EventEmitter<boolean>()
 
   constructor(private cdr: ChangeDetectorRef) { }
   ngOnInit(): void {
@@ -34,6 +39,11 @@ export class ConsentModalComponent {
   declineConsent() {
     this.isConsent = true;
     this.consentAccepted.emit(false);
+    this.declineExtension()
+  }
+
+  declineExtension() {
+    this.onExtensionDecline.emit(false)
   }
   // Redirect to browser extension store for download
   downloadExtension() {

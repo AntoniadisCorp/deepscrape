@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs/internal/Observable';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
@@ -9,7 +9,7 @@ import { Subscription } from 'rxjs/internal/Subscription';
 import { arrayBufferToString, calculateOpenAICost, chatInBatchesAI, constructCookiesforJina, extractDomain, formatBytes, sanitizeJSON } from 'src/app/core/functions';
 import { aichunk, AIModel, Cookies, OpenAITokenDetails } from '../../types';
 import { GinputComponent } from '../ginput/ginput.component';
-import { AiAPIService, SnackbarService } from '../../services';
+import { AiAPIService, LocalStorage, SnackbarService } from '../../services';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { NgIf } from '@angular/common';
@@ -21,6 +21,7 @@ import { FormControlPipe } from "../../pipes";
 import { BrowserCookiesComponent } from '../cookies/cookies.component';
 import { SnackBarType } from '../snackbar/snackbar.component';
 import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
+import { tap } from 'rxjs/internal/operators/tap';
 
 @Component({
   selector: 'app-scrape',
@@ -35,6 +36,7 @@ import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
 })
 export class AppScrapeComponent {
   readonly clipboardButton = ClipboardbuttonComponent;
+  private localStorage: Storage
   @ViewChild(BrowserCookiesComponent) browserCookies: BrowserCookiesComponent;
   url: FormControl<string>
 
@@ -61,8 +63,14 @@ export class AppScrapeComponent {
 
   options: FormGroup
 
-  constructor(private aiapi: AiAPIService, private snackbarService: SnackbarService, private fb: FormBuilder) {
+  constructor(
+    private aiapi: AiAPIService,
+    private snackbarService: SnackbarService,
+    private fb: FormBuilder,
+
+  ) {
     this.setAIModel()
+    this.localStorage = inject(LocalStorage)
   }
 
   ngOnInit(): void {
@@ -99,8 +107,9 @@ export class AppScrapeComponent {
     })
 
     this.options = this.fb.group({
-      forwardCookies: new FormControl<boolean>(true, {
+      forwardCookies: new FormControl<boolean>(this.localStorage.getItem("forwardCookies") === "true", {
         // updateOn: 'change', //default will be change
+        nonNullable: true,
         validators: [
           Validators.required,
           // Strong Password Validation
@@ -119,6 +128,10 @@ export class AppScrapeComponent {
       })
     })
 
+    this.forwardCookies?.valueChanges.forEach((value: boolean) => {
+      this.localStorage.setItem("forwardCookies", String(value))
+      // this.browserCookies.closeModal = !value
+    })
   }
 
   protected get forwardCookies() {
@@ -162,7 +175,8 @@ export class AppScrapeComponent {
     if (!this.url.valid || !this.userprompt.valid)
       return
 
-    this.isProcessing = true
+    this.closeResults()
+
     this.url.disable()
     this.userprompt.disable()
     this.submitButton.setValue(true)
@@ -187,7 +201,7 @@ export class AppScrapeComponent {
     const tasks = urls.map((url, index) => {
       return of(null).pipe(
         delay(index * 200), // Increasing delay for each request
-        mergeMap(() => this.fetchCookiesFromExtension(url)),
+        mergeMap(() => (this.forwardCookies?.value ? this.fetchCookiesFromExtension(url) : of(undefined))),
         mergeMap((cookies) =>
           this.aiapi.sendToJinaAI(url, { iframe: "true", forwardCookies: this.forwardCookies?.value },
             Array.isArray(cookies) ? constructCookiesforJina(cookies)
@@ -334,8 +348,6 @@ export class AppScrapeComponent {
     this.isComplete = false
     this.isGetRecipe = true
     let usage = 0
-
-
     // Add any necessary headers for Claude AI API
     this.aiResultsSub = subsequentPosts[0]
       .subscribe(
@@ -377,7 +389,10 @@ export class AppScrapeComponent {
   protected closeResults() {
 
     this.isGetRecipe = !this.isGetRecipe
+    this.jsonChunk['usage'] = null
     this.jsonChunk['content'] = ''
+    this.aiResultsSub?.unsubscribe()
+    this.forkJoinSubscription?.unsubscribe()
   }
 
   // Example function to handle cookies data
@@ -401,6 +416,11 @@ export class AppScrapeComponent {
 
   private fetchCookiesFromExtension(url: string) {
     return this.browserCookies.fetchCookiesFromExtension(url)
+  }
+
+
+  onClearText() {
+    this.url.setValue('')
   }
 
   ngOnDestroy(): void {

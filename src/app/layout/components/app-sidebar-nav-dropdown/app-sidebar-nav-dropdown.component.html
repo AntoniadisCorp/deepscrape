@@ -1,0 +1,12 @@
+<ng-container *ngIf="link.children">
+  <ul
+    class="w-56 space-y-4 py-2 pl-2 font-medium"
+    [ngClass]="link.dropdown ? 'show' : 'hidden'"
+    [@openClose]="link.dropdown ? 'open' : 'closed'"
+  >
+    <ng-container
+      [ngTemplateOutlet]="sidebarNavTemp"
+      [ngTemplateOutletContext]="{ $implicit: link.children }"
+    ></ng-container>
+  </ul>
+</ng-container>

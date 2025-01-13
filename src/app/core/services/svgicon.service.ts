@@ -27,10 +27,12 @@ export class SvgIconService {
 
   addSvgIconResolver() {
     const resolver: IconResolver = (name) => {
-
       return this.domSanitizer.bypassSecurityTrustResourceUrl(`/assets/svg/${name}.svg`)
     }
     this.matIconRegistry.addSvgIconResolver(resolver)
+
+    // Custom font set registration
+    // this.matIconRegistry.registerFontClassAlias('fas', 'custom-font');
   }
 
   getSvgFromUrl(svgIurl: string) {

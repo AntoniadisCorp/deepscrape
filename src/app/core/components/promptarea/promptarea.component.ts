@@ -12,10 +12,15 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
   styleUrl: './promptarea.component.scss'
 })
 export class PromptareaComponent {
+
+  @Input() enableClearBtn?: boolean = false
   @Input() userPrompt: FormControl<string>
 
   @Input() submitControl: FormControl<boolean>
   @Output() submited: EventEmitter<string> = new EventEmitter<string>()
+
+  @Output() clear: EventEmitter<void> = new EventEmitter<void>()
+
   characterCount: number = 0;
   maxCharacters: number = 4000;
   errors: string[] = [];
@@ -75,5 +80,6 @@ export class PromptareaComponent {
 
   protected clearPrompt(): void {
     this.userPrompt.setValue('')
+    this.clear.emit()
   }
 }

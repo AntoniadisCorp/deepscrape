@@ -1,0 +1,506 @@
+<div class="container mx-auto px-4 py-8">
+  <!-- Plan Period Selector -->
+  <div
+    class="flex text-lg justify-center mb-8 bg-gray-300/[0.4] dark:bg-gray-800 rounded-full p-1 shadow-md gap-2"
+  >
+    <button
+      title="{{
+        period.value === currentPrice.value
+          ? 'Current Plan ' + period.label
+          : period.label
+      }}"
+      *ngFor="let period of planPeriods"
+      class="relative px-6 py-2 rounded-full transition-all duration-300 ease-in-out"
+      [class.bg-gray6]="planView.value === period.value"
+      [class.dark:bg-gray-100]="planView.value === period.value"
+      [class.text-white]="
+        planView.value === period.value || period.value === currentPrice.value
+      "
+      [class.text-gray-600]="
+        planView.value !== period.value &&
+        !(period.value === currentPrice.value)
+      "
+      [class.dark:text-gray-100]="planView.value !== period.value"
+      [class.dark:text-gray6]="
+        planView.value === period.value &&
+        !(period.value === currentPrice.value)
+      "
+      [class.bg-violet-500]="period.value === currentPrice.value"
+      [class.dark:bg-violet-500]="period.value === currentPrice.value"
+      (click)="switchPlanView(period)"
+    >
+      @if(period.value === currentPrice.value) {
+      <mat-icon
+        fontSet="material-icons-outlined"
+        class="absolute -top-1 left-0 text-xl text-green-300 -rotate-[60deg]"
+        >energy_savings_leaf</mat-icon
+      >
+      }
+
+      {{ period.label }}
+    </button>
+  </div>
+
+  <!-- Plans Grid -->
+  <div
+    class="grid grid-cols-1 justify-items-center md:grid-cols-2 lg:grid-cols-2 gap-6"
+  >
+    <!-- Basic Plan -->
+    <div
+      class="bg-gray-100 cursor-pointer flex flex-col items-center justify-center border-y-8 border-orange-500 w-full m-2 max-w-md dark:bg-gray6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 p-6"
+    >
+      <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+          {{ planView.label }}
+        </h1>
+        <h2
+          class="text-2xl font-semibold text-gray-800 dark:text-gray-300/80 mb-2"
+        >
+          Basic Plan
+        </h2>
+        <p class="text-gray-500 dark:text-gray-500">
+          For individuals and small teams
+        </p>
+        <p class="text-gray-500 dark:text-gray-300">
+          Limited usage and quota of paid services
+        </p>
+      </div>
+
+      <div class="mb-6 flex-1">
+        <div class="text-center mb-4 dark:text-gray-100">
+          <span
+            class="text-3xl font-bold from-orange-400 to-deep-orange-400 bg-gradient-to-r dark:from-orange-400 dark:to-deep-orange-400 bg-clip-text text-transparent"
+          >
+            <ng-container *ngIf="planView.value === 'monthly'">{{
+              "9.99" | currency : currencyValue
+            }}</ng-container>
+            <ng-container *ngIf="planView.value === 'quarterly'">{{
+              "29.99" | currency : currencyValue
+            }}</ng-container>
+            <ng-container *ngIf="planView.value === 'annually'">{{
+              "99.99" | currency : currencyValue
+            }}</ng-container>
+            <ng-container *ngIf="planView.value === 'payAsYouGo'">{{
+              "0.99" | currency : currencyValue
+            }}</ng-container>
+          </span>
+          <span class="text-gray-500 dark:text-gray-300">
+            <ng-container *ngIf="planView.value === 'monthly'"
+              >/month</ng-container
+            >
+            <ng-container *ngIf="planView.value === 'quarterly'"
+              >/quarter</ng-container
+            >
+            <ng-container *ngIf="planView.value === 'annually'"
+              >/year</ng-container
+            >
+            <ng-container *ngIf="planView.value === 'payAsYouGo'"
+              >/usage</ng-container
+            >
+          </span>
+        </div>
+
+        <ul class="space-y-3 text-gray-600 dark:text-gray-300">
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Basic AI Scraping
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Limited Queries
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Basic Support
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <button
+          appRipple
+          rippleColor="dark"
+          [class.bg-transparent]="
+            currentPlan === 'basic_plan' &&
+            currentPrice.value === planView.value
+          "
+          [class.dark:bg-transparent]="
+            currentPlan === 'basic_plan' &&
+            currentPrice.value === planView.value
+          "
+          class="w-full flex flex-row flex-nowrap text-lg gap-1 hover:bg-orange-900/[0.5] focus:bg-orange-900/[0.8] bg-orange-600/[.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+        >
+          @if(currentPlan === 'basic_plan' && currentPrice.value ===
+          planView.value) {
+          <span class="text-gray-400 dark:text-gray-400/80">Current Plan</span>
+          } @else { Select Basic Plan }
+        </button>
+      </div>
+    </div>
+
+    <!-- Blaze Plan -->
+    <div
+      class="bg-gray-100 cursor-pointer flex flex-col items-center justify-center border-y-8 border-x-transparent border-y-violet-500 w-full m-2 max-w-md dark:bg-gray6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 p-6"
+    >
+      <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+          {{ planView.label }}
+        </h1>
+        <h2
+          class="text-2xl font-semibold text-gray-800 dark:text-gray-300/80 mb-2"
+        >
+          Blaze Plan
+        </h2>
+        <p class="text-gray-500 dark:text-gray-300">For growing businesses</p>
+        <p class="text-gray-500 dark:text-gray-300">
+          Extended usage and quota of paid services
+        </p>
+      </div>
+
+      <div class="mb-6 flex-1">
+        <div class="text-center mb-4">
+          <span
+            class="text-3xl font-bold from-violet-400 to-deep-purple-400 bg-gradient-to-r dark:from-violet-400 dark:to-deep-purple-400 bg-clip-text text-transparent"
+          >
+            <ng-container *ngIf="planView.value === 'monthly'">{{
+              "19.99" | currency : currencyValue
+            }}</ng-container>
+            <ng-container *ngIf="planView.value === 'quarterly'">{{
+              "59.99" | currency : currencyValue
+            }}</ng-container>
+            <ng-container *ngIf="planView.value === 'annually'">{{
+              "199.99" | currency : currencyValue
+            }}</ng-container>
+            <ng-container *ngIf="planView.value === 'payAsYouGo'">{{
+              "1.99" | currency : currencyValue
+            }}</ng-container>
+          </span>
+          <span class="text-gray-500 dark:text-gray-300">
+            <ng-container *ngIf="planView.value === 'monthly'"
+              >/month</ng-container
+            >
+            <ng-container *ngIf="planView.value === 'quarterly'"
+              >/quarter</ng-container
+            >
+            <ng-container *ngIf="planView.value === 'annually'"
+              >/year</ng-container
+            >
+            <ng-container *ngIf="planView.value === 'payAsYouGo'"
+              >/usage</ng-container
+            >
+          </span>
+        </div>
+
+        <ul class="space-y-3 text-gray-600 dark:text-gray-300">
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Advanced AI Scraping
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            More Queries
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Priority Support
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Advanced Features
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <button
+          appRipple
+          rippleColor="dark"
+          type="button"
+          title="button Select Blaze Plan"
+          [class.bg-transparent]="
+            currentPlan === 'blaze_plan' &&
+            currentPrice.value === planView.value
+          "
+          [class.dark:bg-transparent]="
+            currentPlan === 'blaze_plan' &&
+            currentPrice.value === planView.value
+          "
+          class="w-full flex flex-row flex-nowrap text-lg gap-1 hover:bg-violet-900/[0.5] focus:bg-violet-900/[0.8] bg-violet-600/[.8] text-gray1/[.9] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+        >
+          @if(currentPlan === 'blaze_plan' && currentPrice.value ===
+          planView.value) {
+          <span class="text-gray-400 dark:text-gray-400/80">Current Plan</span>
+          } @else { Select Blaze Plan }
+        </button>
+      </div>
+    </div>
+
+    <!-- Pro Plan -->
+    <!-- <div
+      class="bg-white dark:bg-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 p-6"
+    >
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          Pro Plan
+        </h2>
+        <p class="text-gray-500 dark:text-gray-300">For professional teams</p>
+      </div>
+
+      <div class="mb-6">
+        <div class="text-center mb-4">
+          <span class="text-3xl font-bold text-primary">
+            <ng-container *ngIf="planView === 'monthly'">$29.99</ng-container>
+            <ng-container *ngIf="planView === 'quarterly'">$89.99</ng-container>
+            <ng-container *ngIf="planView === 'annually'">$299.99</ng-container>
+            <ng-container *ngIf="planView === 'payAsYouGo'">$2.99</ng-container>
+          </span>
+          <span class="text-gray-500 dark:text-gray-300">
+            <ng-container *ngIf="planView === 'monthly'">/month</ng-container>
+            <ng-container *ngIf="planView === 'quarterly'"
+              >/quarter</ng-container
+            >
+            <ng-container *ngIf="planView === 'annually'">/year</ng-container>
+            <ng-container *ngIf="planView === 'payAsYouGo'"
+              >/usage</ng-container
+            >
+          </span>
+        </div>
+
+        <ul class="space-y-3 text-gray-600 dark:text-gray-300">
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Enterprise AI Scraping
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Unlimited Queries
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Dedicated Support
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Custom Integrations
+          </li>
+        </ul>
+      </div>
+
+      <button
+        class="w-full bg-primary text-white py-3 rounded-full hover:bg-primary-dark transition-colors"
+      >
+        Select Pro Plan
+      </button>
+    </div> -->
+
+    <!-- Enterprise Plan -->
+    <!-- <div
+      class="bg-white dark:bg-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 p-6"
+    >
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          Enterprise Plan
+        </h2>
+        <p class="text-gray-500 dark:text-gray-300">For large organizations</p>
+      </div>
+
+      <div class="mb-6">
+        <div class="text-center mb-4">
+          <span class="text-3xl font-bold text-primary">
+            <ng-container *ngIf="planView === 'monthly'">$49.99</ng-container>
+            <ng-container *ngIf="planView === 'quarterly'"
+              >$149.99</ng-container
+            >
+            <ng-container *ngIf="planView === 'annually'">$499.99</ng-container>
+            <ng-container *ngIf="planView === 'payAsYouGo'">$4.99</ng-container>
+          </span>
+          <span class="text-gray-500 dark:text-gray-300">
+            <ng-container *ngIf="planView === 'monthly'">/month</ng-container>
+            <ng-container *ngIf="planView === 'quarterly'"
+              >/quarter</ng-container
+            >
+            <ng-container *ngIf="planView === 'annually'">/year</ng-container>
+            <ng-container *ngIf="planView === 'payAsYouGo'"
+              >/usage</ng-container
+            >
+          </span>
+        </div>
+
+        <ul class="space-y-3 text-gray-600 dark:text-gray-300">
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Full AI Scraping Suite
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Unlimited Enterprise Queries
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            24/7 Dedicated Support
+          </li>
+          <li class="flex items-center">
+            <svg
+              class="w-5 h-5 text-green-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Advanced Customizations
+          </li>
+        </ul>
+      </div>
+
+      <button
+        class="w-full bg-primary text-white py-3 rounded-full hover:bg-primary-dark transition-colors"
+      >
+        Contact Sales
+      </button>
+    </div> -->
+  </div>
+</div>

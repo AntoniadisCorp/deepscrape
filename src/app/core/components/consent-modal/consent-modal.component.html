@@ -1,6 +1,12 @@
-<div class="modal-overlay" *ngIf="!isConsent || !isExtensionInstalled">
-  <div class="modal-content">
-    @if(!isConsent) {
+<div
+  class="modal-overlay bg-gray-900/[.5]"
+  *ngIf="(!isConsent || !isExtensionInstalled) && forwardCookiesBtnEnabled"
+>
+  <div
+    class="modal-content relative bg-gray-100 dark:bg-gray6 dark:text-gray-100 text-gray5"
+  >
+    @if(!isConsent && forwardCookiesBtnEnabled) {
+
     <div>
       <h2>Privacy Consent</h2>
       <p>
@@ -11,17 +17,47 @@
         purpose. We do not save your privacy information on cloud
       </p>
     </div>
-    } @if(!isExtensionInstalled) {
+    } @if(!isExtensionInstalled && forwardCookiesBtnEnabled) {
     <div>
       <h2>Download The Extension</h2>
       <p>you will redirect to chrome web store</p>
     </div>
     }
-
+    <button
+      title="close"
+      appRipple
+      ripplColor="dark"
+      class="!absolute top-2 right-2 flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 p-1 rounded-full transition-[colors,border]"
+      (click)="declineExtension()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
     <div class="buttons">
-      <button *ngIf="!isConsent" (click)="acceptConsent()">Accept</button>
-      <button *ngIf="!isConsent" (click)="declineConsent()">Decline</button>
-      <button *ngIf="!isExtensionInstalled" (click)="downloadExtension()">
+      <button
+        appRipple
+        ripplColor="dark"
+        *ngIf="!isConsent"
+        (click)="acceptConsent()"
+        class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
+      >
+        Accept
+      </button>
+      <button
+        appRipple
+        ripplColor="dark"
+        *ngIf="!isConsent"
+        (click)="declineConsent()"
+        class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
+      >
+        Decline
+      </button>
+      <button
+        appRipple
+        ripplColor="dark"
+        class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
+        *ngIf="!isExtensionInstalled && forwardCookiesBtnEnabled"
+        (click)="downloadExtension()"
+      >
         Download Extension
       </button>
     </div>

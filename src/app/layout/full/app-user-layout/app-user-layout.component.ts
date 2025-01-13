@@ -1,5 +1,5 @@
-import { AsyncPipe, isPlatformBrowser, NgIf, NgOptimizedImage } from '@angular/common'
-import { Component, Inject, PLATFORM_ID } from '@angular/core'
+import { AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage } from '@angular/common'
+import { Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
 import { Auth, signOut, User } from '@angular/fire/auth'
 import { Firestore } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
@@ -9,29 +9,42 @@ import { catchError, delay, finalize, from, map, switchMap, timer } from 'rxjs'
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
 import { take } from 'rxjs/internal/operators/take'
-import { tap } from 'rxjs/internal/operators/tap'
 import { Subscription } from 'rxjs/internal/Subscription'
-import { fadeInOutSlideAnimation } from 'src/app/animations'
-import { ImageSrcsetDirective } from 'src/app/core/directives'
+import { asideBarAnimation, fadeInOutSlideAnimation, PopupAnimation } from 'src/app/animations'
+import { ImageSrcsetDirective, Outsideclick } from 'src/app/core/directives'
 import { getUserData } from 'src/app/core/functions'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { FirestoreService } from 'src/app/core/services'
+import { FirestoreService, ScreenResizeService, WindowToken } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
 import { ThemeToggleComponent } from 'src/app/shared'
+import { AppSidebarComponent } from '../../components'
+import { AppFooterComponent } from '../../footer'
+import { SCREEN_SIZE } from 'src/app/core/enum'
 
 @Component({
   selector: 'app-user-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, NgIf, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe],
-  animations: [fadeInOutSlideAnimation],
+  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
+    MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
+    AppFooterComponent],
+  animations: [fadeInOutSlideAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
 })
 export class AppUserLayoutComponent {
+
+  @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900'
+
+  size!: SCREEN_SIZE;
+
+  sizeSub: Subscription;
+
   user$: Observable<Users | null>
 
   // Toggle Button To Open and Close Profile Dropdown Menu
   showProfileMenu: boolean
+
+  closeAsideBar!: boolean
 
   protected loginPath: string
 
@@ -41,10 +54,14 @@ export class AppUserLayoutComponent {
   logoutSubscription: Subscription
   userSubscription: Subscription
 
+  /* animations */
+  viewSmallDevices: boolean
+
   constructor(
 
     @Inject(PLATFORM_ID) private platformId: object,
     private contexts: ChildrenOutletContexts,
+    private resizeSvc: ScreenResizeService,
     private router: Router,
     private auth: Auth,
 
@@ -53,6 +70,9 @@ export class AppUserLayoutComponent {
     private firestoreService: FirestoreService,
   ) {
 
+    this.closeAsideBar = false
+    this.viewSmallDevices = false
+
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
     // Set the initial values
     this.authorized = this.loading = false
@@ -60,6 +80,8 @@ export class AppUserLayoutComponent {
     this.showProfileMenu = false
 
     this.user$ = of(null)
+
+
   }
 
   ngOnInit(): void {
@@ -67,7 +89,32 @@ export class AppUserLayoutComponent {
     //Add 'implements OnInit' to the class.
     if (isPlatformBrowser(this.platformId))
       this.GetUserProfile()
+
+
+    const { screenWidth } = this.resizeSvc.updateScreenSize()
+
+    this.viewSmallDevices = this.closeAsideBar = screenWidth < 992
+
+    this.sizeSub = this.resizeSvc.onResize$.subscribe(x => {
+
+      this.size = x
+      if (this.closeAsideBar != undefined)
+        this.closeAsideBar = this.viewSmallDevices = this.size < 3
+
+    })
   }
+  addAsideBar(value: boolean) {
+
+    if (value === this.closeAsideBar) // The value was same as this component
+      this.closeAsideBar = !value
+
+    else this.closeAsideBar = value
+  }
+
+  onCloseAsideBar() {
+
+  }
+
 
   private GetUserProfile(username?: string) {
 
@@ -100,7 +147,7 @@ export class AppUserLayoutComponent {
 
 
   openProfileMenu(event?: any): void {
-
+    console.log('asdasdasdasddsa')
     // if user push profile button
     if (event && (event.target.alt === "user photo"))
       this.showProfileMenu = true
@@ -167,5 +214,6 @@ export class AppUserLayoutComponent {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.logoutSubscription?.unsubscribe()
+    this.sizeSub?.unsubscribe()
   }
 }

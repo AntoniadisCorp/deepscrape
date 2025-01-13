@@ -1,4 +1,7 @@
-<div [ngClass]="{ 'relative z-40': isOpen }" class="w-[14rem]">
+<div
+  [ngClass]="{ 'relative z-40': isOpen }"
+  class="xs:min-w-[8.4rem] sm:min-w-[6rem] max-w-full"
+>
   <div class="relative">
     <label
       (click)="onToggle()"
@@ -17,9 +20,12 @@
     (focus)="doFocus()"
     (blur)="doBlur()"
   >
-    <span class="ml-[6px] w-full truncate" (click)="searchInput = ''">{{
-      controlValue!.name
-    }}</span>
+    <div class="flex w-full max-w-sm xs:max-w-full">
+      <span class="ml-[6px] truncate" (click)="searchInput = ''">{{
+        controlValue!.name
+      }}</span>
+    </div>
+
     <mat-icon
       [ngClass]="isFocus ? 'text-blue-700 dark:text-gray-100' : ''"
       class="text-3xl leading-6"

@@ -1,7 +1,9 @@
 <div class="mb-10 flex-1 w-[50rem] mx-auto block max-w-2xl">
   <app-consent-modal
     (consentAccepted)="onConsentAccepted($event)"
+    (onExtensionDecline)="onExtensionDecline($event)"
     [isExtensionInstalled]="isExtensionInstalled"
+    [forwardCookiesBtnEnabled]="forwardCookiesBtnEnabled"
     *ngIf="!closeModal"
   ></app-consent-modal>
 

@@ -8,7 +8,7 @@
       Payment Card
     </h2>
   </div>
-  <form [formGroup]="checkoutForm">
+  <form [formGroup]="checkoutForm" (submit)="collectPayment($event)">
     <div class="flex flex-wrap -mx-3 mb-6">
       <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
         <label
@@ -86,11 +86,17 @@
       </div>
     </div>
     <div class="mb-2"></div>
-    @if (elementsOptions.clientSecret) {
-    <ngx-stripe-elements [stripe]="stripe" [elementsOptions]="elementsOptions">
-      <ngx-stripe-payment [options]="paymentElementOptions" />
-    </ngx-stripe-elements>
-    }
+    <div #cardForm>
+      @if (elementsOptions.clientSecret) {
+      <ngx-stripe-elements
+        [stripe]="stripe"
+        [elementsOptions]="elementsOptions"
+      >
+        <ngx-stripe-payment [options]="paymentElementOptions" />
+      </ngx-stripe-elements>
+      }
+    </div>
+
     <div class="mb-5"></div>
     <hr class="my-10" />
     <div class="flex justify-end gap-2">
@@ -106,7 +112,6 @@
         type="submit"
         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         [disabled]="paying()"
-        (click)="collectPayment()"
       >
         <span *ngIf="paying()">PROCESSING...</span>
         <span *ngIf="!paying()"

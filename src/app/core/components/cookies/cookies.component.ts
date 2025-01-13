@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { ConsentModalComponent } from '../consent-modal/consent-modal.component';
 import { NgFor, NgIf } from '@angular/common';
 import { BrowserToken, ExtensionService, LocalStorage } from '../../services';
@@ -24,6 +24,11 @@ export class BrowserCookiesComponent {
   closeModal: boolean = true;
 
   isExtensionInstalled: boolean = true;
+
+  @Input() forwardCookiesBtnEnabled: boolean = true
+
+  @Output() cookiesDisabled = new EventEmitter<boolean>()
+
   private browser = inject(BrowserToken)
   private localStorage: Storage
 
@@ -37,22 +42,31 @@ export class BrowserCookiesComponent {
   }
 
   ngOnInit(): void {
-
+    // this.forwardCookiesBtnEnabled = new FormControl(false, { nonNullable: true });
   }
+
   onConsentAccepted(consent: boolean) {
     this.closeModal = true;
     if (consent) {
       this.isConsentGiven = true;
       this.closeModal = this.isExtensionInstalled
-      this.localStorage.setItem('privacyConsent', 'true');
+      this.localStorage.setItem('privacyConsent', 'true')
+      this.localStorage.setItem('forwardCookies', 'true')
     }
 
+    if (!consent)
+      this.localStorage.setItem('privacyConsent', 'false')
+
+  }
+
+  onExtensionDecline(extDownloadDecline: boolean) {
+    this.cookiesDisabled.emit(extDownloadDecline)
+    this.localStorage.setItem("forwardCookies", String(extDownloadDecline))
   }
 
   onExtensionInstalled(installed: boolean) {
     this.isExtensionInstalled = installed;
-    this.closeModal = this.isExtensionInstalled && this.isConsentGiven;
-
+    this.closeModal = this.isExtensionInstalled && this.isConsentGiven
   }
 
   // Function to fetch cookies if consent is given

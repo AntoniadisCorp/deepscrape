@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
-import { PaymentComponent } from 'src/app/core/components';
+import { Component, HostBinding } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-billing',
   standalone: true,
-  imports: [PaymentComponent],
+  imports: [RouterOutlet],
   templateUrl: './billing.component.html',
-  styleUrl: './billing.component.scss'
+  styleUrl: './billing.component.scss',
+  // host: { class: 'grow' }
+
 })
 export class BillingComponent {
-
+  @HostBinding('class') classes = 'grow';
 }

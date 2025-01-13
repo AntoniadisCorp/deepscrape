@@ -13,7 +13,7 @@
       <button
         type="button"
         aria-label="clear"
-        [disabled]="userPrompt.value.length === 0"
+        [disabled]="userPrompt.value.length === 0 && !enableClearBtn"
         (click)="clearPrompt()"
         class="flex flex-row flex-nowrap px-[14px] gap-1 items-center h-12 disabled:bg-transparent bg-dark-400/20 dark:bg-gray-100/[0.08] rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60 font-roboto py-2 mr-2"
       >

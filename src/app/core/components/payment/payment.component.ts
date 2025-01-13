@@ -1,27 +1,35 @@
 import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core'
-import { FirestoreService, PlutoService, STRIPE_PUBLIC_KEY } from '../../services'
+import { FirestoreService, PlutoService, SessionStorage, SnackbarService, STRIPE_PUBLIC_KEY } from '../../services'
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Firestore } from '@angular/fire/firestore'
 import { Functions, getFunctions, httpsCallable } from '@angular/fire/functions'
 import { CurrencyPipe, JsonPipe, NgIf } from '@angular/common'
-import { StripeElementsOptions, StripePaymentElementOptions } from '@stripe/stripe-js'
+import { StripeCardCvcElement, StripeCardElement, StripeElement, StripeElementsOptions, StripePaymentElement, StripePaymentElementOptions } from '@stripe/stripe-js'
 import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe'
+import { from, fromEvent, Subscription } from 'rxjs'
+import { Auth } from '@angular/fire/auth'
+import { SnackBarType } from '../snackbar/snackbar.component'
 
 
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIf, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent, JsonPipe],
+  imports: [ReactiveFormsModule, NgIf, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
   templateUrl: './payment.component.html',
   styleUrl: './payment.component.scss'
 })
 export class PaymentComponent {
 
   @ViewChild(StripePaymentElementComponent) paymentElement!: StripePaymentElementComponent
-
+  // DOM Element
+  @ViewChild('cardForm') cardForm: ElementRef;
   private readonly fb = inject(FormBuilder)
   private readonly plutoService = inject(PlutoService)
   readonly stripe = injectStripe(STRIPE_PUBLIC_KEY)
+
+
+  private sessionStorage: Storage = inject(SessionStorage)
+
   checkoutForm: FormGroup
 
   elementsOptions: StripeElementsOptions
@@ -36,16 +44,23 @@ export class PaymentComponent {
       spacedAccordionItems: false
     }
   };
+  card: StripeCardElement
 
-  // DOM Element
-  @ViewChild('cardForm') cardForm: ElementRef
+  private tokenSub: Subscription
+  private paymentIntentSub: Subscription
 
-  constructor(private firestoreService: FirestoreService, private firestore: Firestore, private functions: Functions) {
+  private cartId: string | null = null
+
+  constructor(private firestoreService: FirestoreService,
+    private firestore: Firestore,
+    private functions: Functions,
+
+    private auth: Auth,
+
+    private snackbarService: SnackbarService
+  ) {
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
     this.functions = getFunctions(this.firestore.app)
-
-    const id = 'acct_1OELbJFBBAUAyJFB' // acct_1Qazv0FVw33POJJ3
-    const secret = '51OELbJFBBAUAyJFBC1X2QGDb8dWapELx1ElhfXV0VW6PbEGsgJBqxGjvcOjwvFqFGW2bZoWdyLc6dE2PEe79LFPw00TYL32CW2'
 
     this.checkoutForm = this.fb.group({
       name: ['Ricardo', [Validators.required]],
@@ -56,6 +71,9 @@ export class PaymentComponent {
       amount: [2500, [Validators.required, Validators.pattern(/\d+/)]],
     })
 
+
+
+
     this.elementsOptions = {
       locale: 'en',
       appearance: {
@@ -64,26 +82,53 @@ export class PaymentComponent {
         variables: {
           colorPrimary: '#673ab7',
         },
-      },
-      clientSecret: ''// `${id}_secret_${secret}`
+      }
     }
-  }
-
-  ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
     const amount = this.checkoutForm.get('amount')?.value
 
+    // get cartId from Session Storage
+    this.cartId = this.sessionStorage.getItem("cart")// get cartId
+
+    this.paymentIntentSub = from(httpsCallable(this.functions, 'createPaymentIntent')
+      ({ uid: this.auth.currentUser?.uid, amount, currency: "eur", cardId: this.cartId }))
+      .subscribe(
+        {
+          next: (fun) => {
+            console.log("fire function createPaymentIntent success", fun.data)
+            const { error, clientSecret, cartId } = fun.data as any
+
+            if (error) {
+              // create an error popup menu
+              return
+            }
+
+            this.cartId = cartId
+            console.log("cartId", cartId)
+            // set to the cart the current cartId to the Storage
+            this.sessionStorage.setItem("cart", this.cartId || "") // clear cart
+
+            this.elementsOptions.clientSecret = clientSecret as string
+          },
+          error: (error) => {
+            console.log("fire function createPaymentIntent error", error)
+          }
+        }
+      )
+  }
+  ngOnInit() {
+    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
+    //Add 'implements OnInit' to the class.
 
 
-    this.plutoService
+
+    /* this.plutoService
       .createPaymentIntent({
         amount,
         currency: 'eur',
       })
       .subscribe((pi) => {
         this.elementsOptions.clientSecret = pi.client_secret as string
-      })
+      }) */
   }
   get amount() {
     const amountValue = this.checkoutForm.get('amount')?.value
@@ -102,9 +147,12 @@ export class PaymentComponent {
     })
   }
 
-  collectPayment() {
+  collectPayment(event: Event) {
     if (this.paying() || this.checkoutForm.invalid) return
     this.paying.set(true)
+
+    // this.card = this.paymentElement.elements.create('card')
+    // this.card.mount(this.cardForm.nativeElement)
 
     const { name, email, address, zipcode, city } =
       this.checkoutForm.getRawValue()
@@ -131,29 +179,18 @@ export class PaymentComponent {
         next: (result) => {
           this.paying.set(false)
           if (result.error) {
-            /* this.dialog.open(NgxStripeDialogComponent, {
-              data: {
-                type: 'error',
-                message: result.error.message,
-              },
-            }) */
+
+            this.showSnackbar(result.error.message || "Payment Error", SnackBarType.error, '', 5000)
           } else if (result.paymentIntent.status === 'succeeded') {
-            /* this.dialog.open(NgxStripeDialogComponent, {
-              data: {
-                type: 'success',
-                message: 'Payment processed successfully',
-              },
-            }) */
+            // handle subscribption with firebase functions calls
+            this.handleForm(event)
+
+            this.showSnackbar('Payment processed successfully', SnackBarType.success, '', 5000)
           }
         },
         error: (err) => {
           this.paying.set(false)
-          /* this.dialog.open(NgxStripeDialogComponent, {
-            data: {
-              type: 'error',
-              message: err.message || 'Unknown Error',
-            },
-          }) */
+          this.showSnackbar(err.message || 'Unknown Error', SnackBarType.error, '', 5000)
         },
       })
   }
@@ -165,14 +202,45 @@ export class PaymentComponent {
   // Form submission Event Handler
   async handleForm(e: any) {
     e.preventDefault()
-    // const { token, error } = await this.stripe.createToken(card)
-    /* 
-    if (error) {
-      console.log('Something is wrong:', error)
-    } else {
-      const res = await httpsCallable(this.functions, 'startSubscription')({ source: token.id })
-      console.log(res)
-    } */
+    const card = this.paymentElement.element
+    if (!card)
+      return
+    // card?.mount(this.cardForm.nativeElement)
+
+    // get the stripeId here
+    this.tokenSub = this.stripe.createSource(card, {})
+      .pipe()
+      .subscribe((stripeSource) => {
+        const { source, error } = stripeSource
+
+        if (error) {
+          this.showSnackbar(error.message || 'Unknown Error', SnackBarType.error, '', 5000)
+        } else {
+          const res = httpsCallable(this.functions, 'startSubscription')({ source: source.id, currency: "eur", price: "price_1Qb0bpFBBAUAyJFBL9NXsbp6" })
+          console.log(res)
+        }
+      }
+      )
   }
 
+
+  onSnackbarAction() {
+    this.snackbarService.hideSnackBar()
+  }
+  // 'info' | 'success' | 'warning' | 'error'
+  showSnackbar(
+    message: string,
+    type: SnackBarType = SnackBarType.info,
+    action: string | '' = '',
+    duration: number = 3000) {
+
+    this.snackbarService.showSnackbar(message, type, action, duration)
+  }
+
+  ngOnDestroy(): void {
+    //Called once, before the instance is destroyed.
+    //Add 'implements OnDestroy' to the class.
+    this.paymentIntentSub?.unsubscribe()
+    this.tokenSub?.unsubscribe()
+  }
 }

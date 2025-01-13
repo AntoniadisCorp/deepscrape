@@ -1,9 +1,12 @@
 # Compiled JavaScript files
-lib/**/*.js
-lib/**/*.js.map
+lib/**/*.*
+# Remove lib js files
 
 # TypeScript v1 declaration files
 typings/
+
+# remove credentials
+credentials.json
 
 # Node.js dependency directory
 node_modules/

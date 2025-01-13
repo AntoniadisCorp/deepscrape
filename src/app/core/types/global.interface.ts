@@ -13,3 +13,9 @@ export type Size = {
 
 export type AIModel = Size
 export type Unit = Size
+
+
+export type PlanPeriod = {
+    value: string
+    label: string
+}

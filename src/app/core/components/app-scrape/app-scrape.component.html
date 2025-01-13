@@ -1,9 +1,12 @@
-<app-cookies></app-cookies>
-<div class="block w-[50rem] max-w-2xl">
+<app-cookies
+  [forwardCookiesBtnEnabled]="forwardCookies?.value"
+  (cookiesDisabled)="forwardCookies?.setValue($event)"
+></app-cookies>
+<div class="flex flex-col w-full gap-3">
   <div class="text-left text-gray-500 dark:text-gray-100">
     <span>Forward Cookies</span>
   </div>
-  <div class="flex flex-row items-center justify-between mb-2">
+  <div class="flex flex-row flex-wrap items-center justify-between gap-4 mb-2">
     <!-- Set a radio button On/Off MFA-->
     <app-radiotoggle [control]="forwardCookies | formControl"></app-radiotoggle>
 
@@ -37,12 +40,14 @@
     <app-promptarea
       [submitControl]="submitButton | formControl"
       [userPrompt]="userprompt"
+      [enableClearBtn]="!!url.value"
       (submited)="onPromptSubmited($event)"
+      (clear)="onClearText()"
     ></app-promptarea>
   </div>
   @if (isGetRecipe) {
   <div
-    class="relative mt-4 flex w-full items-center justify-start gap-4 rounded-md bg-gray-100 p-4 pt-10 shadow-md dark:bg-gray6"
+    class="relative mt-4 flex w-full items-center justify-start gap-4 rounded-md bg-gray-100 p-4 pt-10 pb-10 shadow-md dark:bg-gray6"
   >
     <button
       type="button"
@@ -54,12 +59,29 @@
         close
       </mat-icon>
     </button>
-    <div *ngIf="!jsonChunk['content']" class="w-full text-center">
+    @if(isProcessing && !jsonChunk['content']) {
+    <div class="w-full flex justify-center text-gray4 dark:text-gray-100">
+      <div class="flex flex-col items-center gap-6">
+        waiting for results..
+        <mat-spinner
+          *ngIf="isProcessing"
+          [diameter]="40"
+          class="stroke-gray-200 dark:stroke-violet-400"
+        ></mat-spinner>
+      </div>
+    </div>
+    } @else {
+    <div
+      *ngIf="!jsonChunk['content']"
+      class="w-full text-center text-gray4 dark:text-gray-100"
+    >
       no results
     </div>
+    }
+
     <div
       *ngIf="jsonChunk['content']?.length > 0"
-      class="block w-full max-w-full rounded-lg bg-gray-100 px-4 py-2 text-lg text-gray-900 dark:bg-gray-800 dark:text-gray1"
+      class="block prose prose-img:rounded-xl prose-headings:underline prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 px-4 py-2 text-lg text-gray-900 dark:bg-gray-800 dark:text-gray1"
     >
       <markdown
         class="text-base"

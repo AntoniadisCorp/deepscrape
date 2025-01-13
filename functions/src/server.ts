@@ -8,9 +8,11 @@ import { SyncAIapis } from "../../api"
 import express from "express"
 import cors from "cors"
 import { join, resolve } from "node:path"
+// see here: https://reddit.com/r/reactjs/comments/fsw405/firebase_cloud_functions_cors_policy_error/?rdt=47413
+// and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
-    origin: ["https://deepscrape.web.app", "http://127.0.0.1:5001", "http://localhost", "http://127.0.0.1"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"], // Specify allowed methods
+    origin: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"], // Specify allowed methods "OPTIONS"
     allowedHeaders: ["content-type", "Authorization", "Accept", "anthropic-version", "x-with-iframe",
         "x-return-format", "x-target-selector", "x-with-generated-alt", "x-set-cookie"], // Specify allowed headers
     maxAge: 1,
@@ -69,6 +71,13 @@ function serveapp(): express.Application {
         res.status(404).sendFile(resolve(serverDistFolder, "404.html"))
     });
 
+    /* const s = server.listen(3000, () => {
+        console.log("Server is running on port 3000")}
+    );
+
+    // This is the important stuff
+    s.keepAliveTimeout = (60 * 1000) + 1000;
+    s.headersTimeout = (60 * 1000) + 2000; */
     return server;
 }
 

@@ -3,12 +3,11 @@ import { Inject, Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { PaymentIntent } from '@stripe/stripe-js';
+import { environment } from 'src/environments/environment';
 
 export const PLUTO_ID = new InjectionToken<string>('[PLUTO] ClientID');
 
-export const STRIPE_PUBLIC_KEY =
-  'pk_test_51Ii5RpH2XTJohkGafOSn3aoFFDjfCE4G9jmW48Byd8OS0u2707YHusT5PojHOwWAys9HbvNylw7qDk0KkMZomdG600TJYNYj20';
-// pk_test_51OELbJFBBAUAyJFBp3qyNV35TE56uUP9g1IkZ0KOuWnrNLC2ijFoIIkG71xqISwnFwiibjCOumO8itPsLLIyA1py00ABQ2TJ4H
+export const STRIPE_PUBLIC_KEY = environment.STRIPE_PUBLIC_KEY
 
 @Injectable({ providedIn: 'root' })
 export class PlutoService {

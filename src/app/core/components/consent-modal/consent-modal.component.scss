@@ -16,7 +16,6 @@ $button-hover-bg: #f0f0f0;
 }
 
 .modal-content {
-    background: $modal-content-bg;
     padding: 20px;
     border-radius: 5px;
     width: 300px;
@@ -32,9 +31,5 @@ $button-hover-bg: #f0f0f0;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-
-        &:hover {
-            background-color: $button-hover-bg;
-        }
     }
 }

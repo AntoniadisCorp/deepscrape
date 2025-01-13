@@ -1,0 +1,76 @@
+<a
+  appRipple
+  rippleColor="{{
+    themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
+  }}"
+  [ngClass]="
+    (link.dropdown
+      ? 'bg-gray-300/70 transition dark:bg-gray5/40' +
+        ' ' +
+        (link.variant || '')
+      : ' ') + (link.active ? 'active' : '')
+  "
+  routerLinkActive="active"
+  [routerLink]="link.url ? [link.url] : null"
+  class="group flex h-14 w-full cursor-pointer flex-row items-center justify-between rounded-lg p-2 text-base text-gray-900 hover:bg-gray-300/50 dark:text-white dark:hover:bg-gray5/30"
+>
+  <!-- *ngIf="!isServicealLink(); else serviceal" -->
+  <div class="flex items-center justify-start">
+    <mat-icon
+      *ngIf="isIcon()"
+      fontSet="{{
+        link.icon.fontSet ? link.icon.fontSet : 'material-icons-outlined'
+      }}"
+      [svgIcon]="shouldDisplaySvgIcon(link.icon)"
+      fontIcon="{{ link.icon.fontIcon ? link.icon.fontIcon : '' }}"
+      faria-hidden="false"
+      aria-label="face SVG icon"
+      appRemoveClass="{{ link.icon.fontIcon ? 'mat-icon' : '' }}"
+      class="inline-flex !h-8 !max-w-8 flex-shrink-0 justify-center self-center text-2xl bg-gradient-to-r bg-clip-text text-transparent from-orange-900 via-purple-900 to-gray4 dark:from-orange-200 dark:via-blue-400 dark:to-red-200 dark:group-hover:text-blue-600 text-clip transition-colors ease-out duration-150 group-hover:text-blue-900"
+      >{{ link.icon.matIcon ? link.icon.matIcon : "" }}</mat-icon
+    >
+
+    <span class="ml-3 flex-1 whitespace-nowrap text-left">{{ link.name }}</span>
+  </div>
+  <div *ngIf="isBadge()" class="flex h-fit w-fit text-base">
+    <span [ngClass]="' ' + link.badge.variant" class="badge">{{
+      link.badge.text
+    }}</span>
+  </div>
+  <mat-icon
+    *ngIf="hasChildren()"
+    fontSet="fas"
+    svgIcon="arrow"
+    fontIcon="fa-"
+    faria-hidden="false"
+    aria-label="face SVG icon"
+    [ngClass]="
+      link.dropdown
+        ? 'rotate-90 transform-gpu transition delay-75 ease-in'
+        : 'rotate-0 transform-gpu transition delay-150 ease-in-out'
+    "
+    class="dr max-h-7 max-w-7 flex-shrink-0 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:stroke-white dark:group-hover:text-white"
+  ></mat-icon>
+</a>
+<!-- <ng-template #serviceal>
+  <a
+    class="flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+    [ngClass]="hasVariant() ? 'nav-link nav-link-' + link.variant : 'nav-link'"
+    href="{{ link.url }}"
+  >
+    <mat-icon
+      *ngIf="isIcon()"
+      fontSet="fas"
+      svgIcon="{{ link.icon }}"
+      fontIcon="fa-"
+      faria-hidden="false"
+      aria-label="Example face SVG icon"
+      class="h-6 w-6 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+    ></mat-icon>
+    <span class="ml-3">{{ link.name }}</span>
+    <div *ngIf="isBadge()" class="flex h-fit w-fit text-base">
+      <span [ngClass]="' ' + link.badge.variant" class="badge">{{ link.badge.text }}</span>
+    </div>
+  </a>
+</ng-template>
+ -->

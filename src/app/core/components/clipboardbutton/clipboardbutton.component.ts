@@ -1,16 +1,20 @@
-import { Component } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { Component, Input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-clipboard-button',
   standalone: true,
-  imports: [MatIcon],
+  imports: [MatIcon, NgClass],
   templateUrl: './clipboardbutton.component.html',
   styleUrl: './clipboardbutton.component.scss'
 })
 export class ClipboardbuttonComponent {
 
   protected title = 'copy code'
+
+  @Input() inline?: boolean = true;
+
   onClick() {
     this.title = 'copied!';
     setTimeout(() => {

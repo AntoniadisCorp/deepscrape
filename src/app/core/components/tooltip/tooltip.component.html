@@ -1,0 +1,9 @@
+<div
+  class="tooltip dark:border-4 dark:border-solid dark:border-gray5 dark:bg-gray6 dark:text-gray-100"
+  [ngClass]="['tooltip--' + position]"
+  [style.left]="left + 'px'"
+  [style.top]="top + 'px'"
+  [class.tooltip--visible]="visible"
+>
+  {{ tooltip }}
+</div>

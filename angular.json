@@ -43,9 +43,16 @@
             "styles": ["src/styles.scss"],
             "scripts": [
               "node_modules/emoji-toolkit/lib/js/joypixels.min.js",
-              "node_modules/clipboard/dist/clipboard.min.js"
+              "node_modules/clipboard/dist/clipboard.min.js",
+              "node_modules/prismjs/prism.js",
+              "node_modules/prismjs/components/prism-typescript.min.js",
+              "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.js",
+              "node_modules/prismjs/plugins/line-highlight/prism-line-highlight.js"
             ],
             "server": "src/main.server.ts",
+            "stylePreprocessorOptions": {
+              "includePaths": ["."]
+            },
             "prerender": true,
             "ssr": {
               "entry": "server.ts"
@@ -64,8 +71,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kB",
-                  "maximumError": "4kB"
+                  "maximumWarning": "4kB",
+                  "maximumError": "15kB"
                 }
               ],
               "outputHashing": "all",

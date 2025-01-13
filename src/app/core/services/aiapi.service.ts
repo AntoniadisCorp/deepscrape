@@ -15,6 +15,7 @@ import { Subject } from 'rxjs/internal/Subject';
 import { from } from 'rxjs/internal/observable/from';
 import { mergeMap } from 'rxjs/internal/operators/mergeMap';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
+import { finalize } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -120,7 +121,7 @@ export class AiAPIService {
     let previousText = '';
     let usage: { "prompt_tokens": number, "completion_tokens": number } = { prompt_tokens: 0, completion_tokens: 0 }
 
-    this.http.post(apiEndpoint, body, {
+    return this.http.post(apiEndpoint, body, {
       headers,
       observe: 'events',
       responseType: 'text',
@@ -185,20 +186,7 @@ export class AiAPIService {
         throw error
       })
 
-    ).subscribe({
-      next: (parsedChunks: any) => {
-        this.subjectClaudeAI.next(parsedChunks)
-      },
-      error: (error) => {
-        // console.error('Error:', error)
-        return this.subjectClaudeAI.error(error)
-      },
-      complete: () => {
-        // console.log('Stream completed')
-        return this.subjectClaudeAI.complete()
-      }
-    })
-    return this.subjectClaudeAI.asObservable().pipe(
+    ).pipe(
       scan((acc: any, chunk: claudeAiApiStreamData) => {
 
         if (chunk.type === 'content_block_delta' && chunk.delta && chunk.delta.text) {
@@ -224,8 +212,20 @@ export class AiAPIService {
         role: response?.role,
         usage: response?.usage
       }))
-
-    )
+    )/* .subscribe({
+      next: (parsedChunks: any) => {
+        this.subjectClaudeAI.next(parsedChunks)
+      },
+      error: (error) => {
+        // console.error('Error:', error)
+        return this.subjectClaudeAI.error(error)
+      },
+      complete: () => {
+        // console.log('Stream completed')
+        return this.subjectClaudeAI.complete()
+      }
+    }) */
+    // return this.subjectClaudeAI.asObservable()
   }
 
   sendToOpenAI(content: string | { role: string, content: string }[], modelName: string = 'gpt-4o-mini', sys?: string): Observable<{ content: string, usage: any | null, role: any | null }> {
@@ -264,7 +264,7 @@ export class AiAPIService {
 
     let previousText = '';
 
-    this.http.post(apiEndpoint, body, {
+    return this.http.post(apiEndpoint, body, {
       headers,
       observe: 'events',
       responseType: 'text',
@@ -334,20 +334,20 @@ export class AiAPIService {
         return throwError(() => error)
       })
     )
-      // takeWhile((text: string) => text?.length < 10000))
-      .subscribe({
-        next: (parsedChunks: any) => {
-          this.subjectOpenAI.next(parsedChunks)
-        },
-        error: (error: any) => {
-          console.error('Error in Open AI API call:', error)
-          this.subjectOpenAI.error(error)
-        },
-        complete: () => {
-          this.subjectOpenAI.complete()
-        }
-      })
-    return this.subjectOpenAI.asObservable()
+    // takeWhile((text: string) => text?.length < 10000))
+    /* .subscribe({
+      next: (parsedChunks: any) => {
+        this.subjectOpenAI.next(parsedChunks)
+      },
+      error: (error: any) => {
+        console.error('Error in Open AI API call:', error)
+        this.subjectOpenAI.error(error)
+      },
+      complete: () => {
+        this.subjectOpenAI.complete()
+      }
+    }) */
+    // return this.subjectOpenAI.asObservable()
   }
 
 

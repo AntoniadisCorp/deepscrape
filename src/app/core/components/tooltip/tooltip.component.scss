@@ -1,0 +1,99 @@
+.tooltip {
+    opacity: 0;
+    position: absolute;
+    z-index: 100;
+    background-color: rgba(122, 122, 122, 0.712);
+    border-radius: 4px;
+    color: #ffffff;
+    font-family: Arial;
+    padding: 3px 6px;
+    font-size: 13px;
+    width: max-content;
+    max-width: 250px;
+    text-align: center;
+
+    &--visible {
+        opacity: 1;
+        transition: opacity 300ms;
+    }
+
+    transform: translateX(-25%);
+    &::before {
+        content: "";
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 5px solid rgba(122, 122, 122, 0.712);
+        border: 5px solid rgba(122, 122, 122, 0.712);
+        position: absolute;
+        left: calc(50% - 5px);
+        top: -5px;
+    }
+
+    &--light {
+        background-color: white;
+        color: black;
+
+        &::before {
+            border: 5px solid white;
+        }
+    }
+
+    &--dark {
+        background-color: black;
+        color: white;
+
+        &::before {
+            border: 5px solid black;
+        }
+    }
+
+    &--below {
+        transform: translate(-50%, calc(50% - 7px));
+        margin-top: 7px;
+        &::before {
+            border-left-color: transparent;
+            border-right-color: transparent;
+            border-top: none;
+            top: calc(50% - 18px);
+        }
+    }
+
+    &--above {
+        transform: translate(-50%, calc(-100% - 7px));
+        margin-bottom: 7px;
+
+        &::before {
+            border-left-color: transparent;
+            border-right-color: transparent;
+            border-bottom: none;
+            top: calc(50% + 13px);
+        }
+    }
+
+    &--left {
+        transform: translate(calc(-100% + 25px), calc(-50% + -3px));
+        margin-right: 7px;
+        &::before {
+            border-top-color: transparent;
+            border-bottom-color: transparent;
+            border-right: none;
+            left: calc(100% + 0px);
+            top: calc(50% - 5px);
+        }
+    }
+
+    &--right {
+        transform: translateY(-50%);
+        margin-left: 7px;
+
+        &::before {
+            border-top-color: transparent;
+            border-bottom-color: transparent;
+            border-left: none;
+            left: -5px;
+            top: calc(50% - 5px);
+        }
+    }
+}

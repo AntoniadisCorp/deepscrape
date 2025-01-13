@@ -1,15 +1,15 @@
-import { Component, inject } from '@angular/core';
-import { AppScrapeComponent, PaymentComponent } from 'src/app/core/components';
+import { Component, HostBinding, inject } from '@angular/core';
 import { LocalStorage } from 'src/app/core/services';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [AppScrapeComponent, PaymentComponent],
+  imports: [],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent {
+  @HostBinding('class') classes = 'grow';
   private localStorage: Storage
   constructor() {
 

@@ -1,0 +1,31 @@
+<div
+  class="p-x-2 sticky z-20 block h-full bg-gray-100 dark:bg-gray-900 lg:pl-0 xs:mr-0 xs:h-auto"
+>
+  <ul class="w-56 space-y-4 font-medium">
+    <ng-template #sidebarNavTemplate let-navitems>
+      <div class="" *ngFor="let navitem of navitems">
+        <div
+          *ngIf="isDivider(navitem)"
+          class="border-t border-gray-200 dark:border-gray5/[.2] dark:shadow-md dark:shadow-blue-700"
+        ></div>
+        <div *ngIf="isTitle(navitem)">
+          <h3
+            class="flex items-center p-2 pt-0 text-left font-sans font-semibold text-lg bg-gradient-to-r bg-clip-text text-transparent from-pink-600 via-purple-900 to-gray6 dark:from-red-300 dark:via-purple-500 dark:to-pink-500 text-clip"
+          >
+            {{ navitem.name }}
+          </h3>
+        </div>
+        <div *ngIf="!isDivider(navitem) && !isTitle(navitem)">
+          <app-sidebar-nav-item
+            [item]="navitem"
+            [sidebarTemp]="sidebarNavTemplate"
+          ></app-sidebar-nav-item>
+        </div>
+      </div>
+    </ng-template>
+    <ng-container
+      *ngTemplateOutlet="sidebarNavTemplate; context: { $implicit: navigation }"
+    >
+    </ng-container>
+  </ul>
+</div>

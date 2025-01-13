@@ -7,8 +7,8 @@
     {
       "source": "functions",
       "codebase": "default",
-      "timeoutSeconds": 300,
-      "memory": "256MB",
+      // "timeoutSeconds": 300,
+      // "memory": "256MB",
       "runtime": "nodejs20",
       "ignore": [
         "node_modules",
@@ -17,10 +17,7 @@
         "firebase-debug.*.log",
         "*.local"
       ],
-      "predeploy": [
-        // "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
-      ]
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
     }
   ],
   "hosting": {

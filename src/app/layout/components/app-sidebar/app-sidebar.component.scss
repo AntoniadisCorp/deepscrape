@@ -1,0 +1,4 @@
+@import "/src/scss/core/mixins";
+aside {
+    @include scrollbar;
+}

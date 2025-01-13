@@ -1,28 +1,56 @@
 <header
-  class="fixed w-full bg-gray-50 dark:bg-gray-900 border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]"
+  class="fixed backdrop-blur-2xl backdrop-saturate-200 left-0 right-0 top-0 mx-auto flex h-auto flex-col gap-1 z-[60] w-full bg-gray-50 dark:bg-gray-900 border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]"
 >
   <div
     class="flex h-20 items-center justify-between px-4 md:px-8 lg:px-32 py-2"
   >
-    <a
-      [routerLink]="['/']"
-      routerLinkActive="active"
-      class="flex items-center justify-between space-x-2"
-    >
-      <h1
-        class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit"
+    <div class="flex items-center justify-between space-x-2">
+      <button
+        appRipple
+        rippleColor="dark"
+        data-drawer-target="logo-sidebar"
+        data-drawer-toggle="logo-sidebar"
+        (click)="addAsideBar(false)"
+        type="button"
+        class="inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 lg:hidden"
       >
-        <img
-          src=""
-          alt=""
-          srcset="assets/logo-512x512.png 2x"
-          class="mt-4 h-24 border-none"
-        />
-      </h1>
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-300">
-        DeepScrape
-      </h1>
-    </a>
+        <span class="sr-only">Open sidebar</span>
+        <svg
+          class="h-6 w-6"
+          aria-hidden="true"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            clip-rule="evenodd"
+            fill-rule="evenodd"
+            d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
+          ></path>
+        </svg>
+      </button>
+      <a
+        [routerLink]="['/']"
+        routerLinkActive="active"
+        class="flex items-center justify-between space-x-2"
+      >
+        <h1
+          class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit"
+        >
+          <img
+            src=""
+            alt=""
+            srcset="assets/logo-512x512.png 2x"
+            class="mt-4 h-24 border-none"
+          />
+        </h1>
+        <h1
+          class="text-2xl hidden xs:block sm:block font-bold text-gray-800 dark:text-gray-300"
+        >
+          DeepScrape
+        </h1>
+      </a>
+    </div>
     <div class="flex items-center gap-4">
       <!-- Theme Mode Switch -->
       <app-theme-toggle></app-theme-toggle>
@@ -47,6 +75,9 @@
       </button>
       <!-- DropDown Profile Menu -->
       <div
+        (outsideClick)="openProfileMenu($event)"
+        appOutsideClick
+        @enableProfileMenu
         *ngIf="showProfileMenu"
         class="fixed right-[1.1rem] top-[4.5rem] z-[90] list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6 md:right-[2.1rem] lg:right-[8.2rem]"
       >
@@ -94,53 +125,78 @@
             </div>
           </div>
         </div>
-        <ul class="py-1" role="none">
+        <ul class="py-1">
           <li>
             <a
-              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
               role="dashboard"
               alt="dashboard"
               (click)="closeProfileMenu($event, user.uid)"
-              >Dashboard</a
+              routerLinkActive="Active"
+              routerLink="/dashboard"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+            >
+              <div class="mt-1">
+                <mat-icon fontSet="material-icons-outlined"
+                  >space_dashboard</mat-icon
+                >
+              </div>
+              <div>Dashboard</div></a
             >
           </li>
           <li>
             <a
-              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
               role="billing"
               alt="billing"
               (click)="closeProfileMenu($event, user.uid)"
-              >Billing</a
+              routerLinkActive="Active"
+              routerLink="/billing"
+            >
+              <div class="mt-1">
+                <mat-icon fontSet="material-icons-outlined">wallet</mat-icon>
+              </div>
+              <div>Billing</div></a
             >
           </li>
 
           <li>
             <a
-              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
               role="chatai"
               alt="chatai"
               (click)="closeProfileMenu($event, user.uid)"
-              >Chatai</a
+              routerLinkActive="Active"
+              routerLink="/chatai"
             >
+              <div class="mt-1"><mat-icon>auto_awesome</mat-icon></div>
+              <div>Chatai</div>
+            </a>
           </li>
 
           <li>
             <a
-              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
               role="settings"
               alt="settings"
               (click)="closeProfileMenu($event, user.uid)"
-              >Settings</a
+              routerLinkActive="Active"
+              routerLink="/keys"
             >
+              <div class="mt-1">
+                <mat-icon fontSet="material-icons-outlined">settings</mat-icon>
+              </div>
+              <div>Settings</div>
+            </a>
           </li>
           <li>
             <a
               (click)="logout()"
-              class="block cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
               role="logout"
               alt="logout"
             >
-              <span class="flex w-fit items-start justify-start gap-3">
+              <div class="mt-1"><mat-icon>logout</mat-icon></div>
+              <div class="flex w-fit items-start justify-start gap-3">
                 Sign out @if (loading) {
                 <!-- Loading spinner -->
 
@@ -149,7 +205,7 @@
                   class="stroke-gray-200"
                 ></mat-spinner>
                 }
-              </span>
+              </div>
             </a>
           </li>
         </ul>
@@ -181,8 +237,25 @@
     </div>
   </div>
 </header>
+<!-- <div class="mx-auto w-full bg-white dark:bg-gray-900">
+  <div class="mt-28 flex"> -->
 
-<!-- Inner Section  -->
-<div [@routeAnimation]="getAnimationData(outlet)" class="block h-full">
+<!-- Inner Section  relative w-full rounded-lg p-4 lg:max-h-full -->
+<div
+  [@routeAnimation]="getAnimationData(outlet)"
+  [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
+  class="w-full mt-20 px-4 pt-0 md:px-8 lg:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2"
+>
+  <app-sidebar
+    [barClosed]="closeAsideBar"
+    [resizeScreen]="viewSmallDevices"
+    (backDropPressed)="closeAsideBar = $event"
+  ></app-sidebar>
   <router-outlet #outlet="outlet"></router-outlet>
 </div>
+<!-- </div>
+ [ngClass]="!closeAsideBar ? 'show' : 'hidden'"
+    [@asideBarAnimation]="!closeAsideBar ? 'open' : 'closed'"
+</div> -->
+
+<app-footer></app-footer>

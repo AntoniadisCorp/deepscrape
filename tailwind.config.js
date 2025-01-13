@@ -1,4 +1,3 @@
-
 import colors from '@material-tailwind/html/theme/base/colors';
 
 
@@ -188,4 +187,3 @@ module.exports = withMT({
     require('@tailwindcss/typography'),
   ],
 })
-

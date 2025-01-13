@@ -1,0 +1,15 @@
+<li
+  class="w-full"
+  [ngClass]="hasClass() ? ' ' + item.class : ' '"
+  [class.open]="isActive()"
+  routerLinkActive="open"
+>
+  <app-sidebar-nav-link
+    (click)="openDropDownMenu()"
+    [link]="item"
+  ></app-sidebar-nav-link>
+  <app-sidebar-nav-dropdown
+    [link]="item"
+    [sidebarNavTemp]="sidebarTemp"
+  ></app-sidebar-nav-dropdown>
+</li>

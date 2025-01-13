@@ -6,7 +6,7 @@
     "build:angular": "node cp-angular.js",
     "build": "npm run build:angular && tsc",
     "build:watch": "npm run build:angular && tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only \"functions,hosting\"",
+    "serve": "npm run build && firebase emulators:start --only \"functions,hosting,firestore,auth\"",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only \"functions,hosting\"",
@@ -18,10 +18,12 @@
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {
+    "@google-cloud/secret-manager": "^5.6.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1"
+    "firebase-functions": "^6.0.1",
+    "stripe": "^17.5.0"
   },
   "devDependencies": {
     "@types/stripe": "^8.0.417",

@@ -1,4 +1,6 @@
-/* To learn more about this file see: https://angular.io/config/tsconfig. */
+/* To learn more about this file see: https://angular.io/config/tsconfig. 
+https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-angular-projects-5bec056f23d8
+*/
 {
   "compileOnSave": false,
   "compilerOptions": {

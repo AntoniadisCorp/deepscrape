@@ -1,4 +1,20 @@
-import { OpenAITokenDetails } from "../types";
+export function cleanAndParseJSON(dirtyJsonString: string): any | null {
+    try {
+        // Use a regular expression to extract the JSON object match(/\[[^[\]]*\]|{[^}]*}/) //
+        const jsonMatch = dirtyJsonString.match(/(\[|\{)(?:[^[\]{}]|\{(?:[^{}]|\{[^{}]*\})*\}|\[(?:[^[\]]|\[.*?\])*\])*(\]|\})/)
+
+        if (!jsonMatch)
+            return null
+        // throw new Error('No valid JSON array of objects found in the string')
+
+        // Parse the extracted JSON string
+        return JSON.parse(jsonMatch[0])
+    } catch (error) {
+
+        // console.log('Error parsing JSON:', error)
+        return null
+    }
+}
 
 export function sanitizeJSON(jsonString: string): string {
     // Remove invalid characters
@@ -71,3 +87,5 @@ export function customUrlEncoder(input: string): string {
         throw new Error("Unsupported environment for Base64 encoding.");
     }
 }
+
+
