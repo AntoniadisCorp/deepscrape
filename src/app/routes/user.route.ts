@@ -1,10 +1,16 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '../core/guards';
+import { AuthGuard, redirectUnauthorizedTo } from '@angular/fire/auth-guard';
+
+
+
+// Define where to redirect unauthorized users
+const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['/service/login'])
 
 export const UserRoutes: Routes = [{
     path: '',
     loadComponent: () => import('../layout/full').then(c => c.AppUserLayoutComponent),
-    data: { title: 'user', animation: 'user' },
     loadChildren: () => import('./user/main.route').then(m => m.MainRoutes),
-    canActivate: [authGuard],
+    canActivate: [AuthGuard],
+    data: { authGuardPipe: redirectUnauthorizedToLogin, title: 'user', animation: 'user' }, // Apply the redirection
+
 }]

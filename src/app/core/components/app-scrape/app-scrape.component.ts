@@ -6,10 +6,15 @@ import { of } from 'rxjs/internal/observable/of';
 import { delay } from 'rxjs/internal/operators/delay';
 import { mergeMap } from 'rxjs/internal/operators/mergeMap';
 import { Subscription } from 'rxjs/internal/Subscription';
-import { arrayBufferToString, calculateOpenAICost, chatInBatchesAI, constructCookiesforJina, extractDomain, formatBytes, sanitizeJSON } from 'src/app/core/functions';
-import { aichunk, AIModel, Cookies, OpenAITokenDetails } from '../../types';
+import {
+  arrayBufferToString, calculateOpenAICost, chatInBatchesAI, constructCookiesforJina,
+  crawlOperationStatusColor,
+  extractDomain, formatBytes, sanitizeJSON,
+  setAIModel
+} from 'src/app/core/functions';
+import { aichunk, AIModel, BrowserConfigurationImpl, CrawlConfig, CrawlerRunConfigImpl, CrawlOperation, OpenAITokenDetails } from '../../types';
 import { GinputComponent } from '../ginput/ginput.component';
-import { AiAPIService, LocalStorage, SnackbarService } from '../../services';
+import { AiAPIService, AuthService, CrawlStoreService, LocalStorage, SnackbarService } from '../../services';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { NgIf } from '@angular/common';
@@ -21,7 +26,9 @@ import { FormControlPipe } from "../../pipes";
 import { BrowserCookiesComponent } from '../cookies/cookies.component';
 import { SnackBarType } from '../snackbar/snackbar.component';
 import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
-import { tap } from 'rxjs/internal/operators/tap';
+import { takeUntil } from 'rxjs/internal/operators/takeUntil';
+import { Subject } from 'rxjs/internal/Subject';
+import { CrawlOperationStatus } from '../../enum';
 
 @Component({
   selector: 'app-scrape',
@@ -46,14 +53,15 @@ export class AppScrapeComponent {
 
   jsonChunk: aichunk = { content: '', usage: null }
 
-  isProcessing: boolean = false
-  isComplete = false
-
-  isGetRecipe = false
+  isResultsProcessing: boolean = false
+  isCrawlProcessing: boolean = false
+  isGetResults = false
   errorMessage = ''
 
   forkJoinSubscription: Subscription
   aiResultsSub: Subscription
+
+  private destroy$ = new Subject<void>();
 
 
   model: AIModel[] = []
@@ -69,7 +77,7 @@ export class AppScrapeComponent {
     private fb: FormBuilder,
 
   ) {
-    this.setAIModel()
+    setAIModel(this.model)
     this.localStorage = inject(LocalStorage)
   }
 
@@ -142,22 +150,6 @@ export class AppScrapeComponent {
     return this.options.get('iframeEnable')
   }
 
-  private setAIModel() {
-    const model = [
-      { name: 'gpt-4-turbo', code: 'openai' },
-      { name: 'gpt-4', code: 'openai' },
-      { name: 'gpt-3.5', code: 'openai' },
-      { name: 'gpt-4o-mini', code: 'openai' },
-      { name: 'gpt-3.5-turbo', code: 'openai' },
-      { name: 'llama-3.1-8b-instant', code: 'groq' },
-      { name: 'llama-3.3-70b-versatile', code: 'groq' },
-      { name: 'claude-3-5-sonnet-20240620', code: 'claude' },
-      { name: 'claude-3-5-sonnet-20241022', code: 'claude' },
-      { name: 'claude-3-haiku-20240307', code: 'claude' },
-      { name: 'claude-3-5-haiku-20241022', code: 'claude' },
-    ]
-    this.model.push(...model)
-  }
 
   protected onDropDownSelected($event: any) {
     // throw new Error('Method not implemented.');
@@ -171,24 +163,28 @@ export class AppScrapeComponent {
 
   protected onPromptSubmited(prompt: string) {
 
-    // return an error message
-    if (!this.url.valid || !this.userprompt.valid)
+    // return an error message if url or userpormpt is invalid
+    if (!this.url.valid || !this.userprompt.valid || !this.modelAI.valid)
       return
 
+    // reset the results
     this.closeResults()
 
-    this.url.disable()
-    this.userprompt.disable()
-    this.submitButton.setValue(true)
-    this.modelAI.disable()
+    // disable the form
+    this.disableForm()
 
+    // save the Crawl operation
+    // this.prepareCrawlOperation()
+
+    // live processing
     this.processData(this.url.value, this.modelAI.value.code)
   }
 
 
-  processData(link: string, aitype: string = 'claude') {
-    this.isProcessing = true;
-    this.isComplete = false;
+  private processData(link: string, aitype: string = 'claude') {
+
+    this.isCrawlProcessing = true
+
     this.errorMessage = ''
 
     const urls = [
@@ -203,110 +199,80 @@ export class AppScrapeComponent {
         delay(index * 200), // Increasing delay for each request
         mergeMap(() => (this.forwardCookies?.value ? this.fetchCookiesFromExtension(url) : of(undefined))),
         mergeMap((cookies) =>
-          this.aiapi.sendToJinaAI(url, { iframe: "true", forwardCookies: this.forwardCookies?.value },
+          this.aiapi.sendToCrawl4AI(url, { iframe: "true", forwardCookies: this.forwardCookies?.value },
             Array.isArray(cookies) ? constructCookiesforJina(cookies)
               : undefined
           ))
       )
     })
 
+    // fork join the links
+    this.forkJoinSubscription = forkJoin(tasks)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: async (results) => {
+          this.isCrawlProcessing = false
+          const subsequentContent = results.map((result: string) => {
+            // const strlen = result.length
+            const encoder = new TextEncoder();
+            const bytesLength = encoder.encode(result).length;
+            // const spitlen = strlen / 400 / 5
+            console.log(formatBytes(bytesLength))
+            return result // .slice(0, 2) splitArrayIntoChunks(result.split('[!'), 6)
+          })
 
-    this.forkJoinSubscription = forkJoin(tasks).subscribe({
-      next: async (results) => {
+          let subsequentPosts: Observable<{
+            content: string;
+            usage: any | null;
+            role: any | null;
+          }>[] = []
 
-        const subsequentContent = results.map((result: string) => {
-          // const strlen = result.length
-          const encoder = new TextEncoder();
-          const bytesLength = encoder.encode(result).length;
-          // const spitlen = strlen / 400 / 5
-          console.log(formatBytes(bytesLength))
-          return result // .slice(0, 2) splitArrayIntoChunks(result.split('[!'), 6)
-        })
+          const role: string = aitype === 'claude' ? 'user' : 'system'
+          for await (const content of subsequentContent) {
+            // subsequentPosts =  content.map((subcontent: string, index: number) => {
+            let messages = []
 
-        // console.log(subsequentContent,)
+            messages.push({ role, content: sanitizeJSON(this.userprompt.value.replace(/\n+/gi, '')) })
 
-        let subsequentPosts: Observable<{
-          content: string;
-          usage: any | null;
-          role: any | null;
-        }>[] = []
+            chatInBatchesAI(messages, content)
+            console.log(messages)
 
-        const role: string = aitype === 'claude' ? 'user' : 'system'
-        for await (const content of subsequentContent) {
-          /* let article = 'Extract all articles information from website content return only data as markdown in typescript label if has code.'
-          let co = `Extract all recipe information from website content
-    recipe details like image video link steps tags or any usage data and return in JSON format of {
-        "Recipe": {
-          "title": "string",
-          "rating": "number",
-          "reviews": "number",
-          "photos": "string[]",
-          "video_link": "string | null",
-          "description": "string",
-          "submitted_by": "string",
-          "updated_on": "string",
-          "tested_by": "string",
-          "prep_time": "string",
-          "cook_time": "string",
-          "additional_time": "string",
-          "total_time": "string",
-          "servings": "number",
-          "ingredients": "string[]",
-          "steps": "string[]",
-          "tags": "string[]",
-          "nutrition": {
-           "calories": "number",
-          "fat": "string",
-          "carbs": "string",
-          "protein": "string"},
-          "usage_data": {
-            "most_common_pairing": "string",
-            "storage": "string"
+            subsequentPosts.push(of(null).pipe(
+              // delay(1 * 4000), // Increasing delay for each request
+              mergeMap(() => this.chooseAIModel(messages))
+            ))
+            // })
+
+            // this.getResultsFromClaudeAI(subsequentPosts)
           }
+
+          const arrayobs = subsequentPosts.shift() || null
+          if (!arrayobs)
+            return
+
+          this.getResultsFromAI([arrayobs])
+        },
+        complete: () => {
+          this.isResultsProcessing = this.isCrawlProcessing = false
+          this.enableForm()
+        },
+        error: (error: any) => {
+
+          // print the error
+          console.error('Error processing data:', error, arrayBufferToString(error.error));
+          // set the error message to show on the screen by snackbar popup
+          this.errorMessage = 'Error processing data. Please check console for details.';
+
+          // show snackbar Error
+          this.showSnackbar(this.errorMessage || "", SnackBarType.error, '', 5000)
+
+          // reset the processing status
+          this.isResultsProcessing = this.isCrawlProcessing = false
+
+          // reset the form
+          this.enableForm()
         }
-      }.
-    If a field is missing, use default value, return only the json data as markdown in typescript label.When use special characters must in content data use always Backslash` */
-          // subsequentPosts =  content.map((subcontent: string, index: number) => {
-          let messages = []
-
-          messages.push({ role, content: sanitizeJSON(this.userprompt.value.replace(/\n+/gi, '')) })
-
-          chatInBatchesAI(messages, content)
-          console.log(messages)
-          subsequentPosts.push(of(null).pipe(
-            // delay(1 * 4000), // Increasing delay for each request
-            mergeMap(() => this.chooseAIModel(messages))
-          ))
-          // })
-
-          // this.getResultsFromClaudeAI(subsequentPosts)
-        }
-
-        const arrayobs = subsequentPosts.shift() || null
-        if (!arrayobs)
-          return
-
-        this.getResultsFromAI([arrayobs])
-      },
-      complete: () => {
-        this.isProcessing = false
-        this.isComplete = true
-        this.url.enable()
-        this.userprompt.enable()
-        this.submitButton.setValue(false)
-        this.modelAI.enable()
-      },
-      error: (error: any) => {
-        console.error('Error processing data:', error, arrayBufferToString(error.error));
-        this.errorMessage = 'Error processing data. Please check console for details.';
-        this.showSnackbar(this.errorMessage || "", SnackBarType.error, '', 5000)
-        this.isProcessing = false;
-        this.url.enable()
-        this.userprompt.enable()
-        this.submitButton.setValue(false)
-        this.modelAI.enable()
-      }
-    })
+      })
   }
 
   private chooseAIModel(messages: any) {
@@ -328,13 +294,15 @@ export class AppScrapeComponent {
     }
   }
 
-  private sendBatchToOpenAI(messages: { role: string, content: string }[]): Observable<{ content: string, usage: any | null, role: any | null }> {
+  private sendBatchToOpenAI(messages: { role: string, content: string }[]):
+    Observable<{ content: string, usage: any | null, role: any | null }> {
 
     return this.aiapi.sendToOpenAI(messages, this.modelAI.value.name)
 
   }
 
-  private sendToClaudeAi(messages: { role: string, content: string }[]): Observable<{ content: string, role: string, usage: any | null }> {
+  private sendToClaudeAi(messages: { role: string, content: string }[]):
+    Observable<{ content: string, role: string, usage: any | null }> {
 
     return this.aiapi.sendToClaudeAI(messages, this.modelAI.value.name, "you are a nice assistant")
   }
@@ -343,66 +311,86 @@ export class AppScrapeComponent {
   private getResultsFromAI(subsequentPosts: Observable<{ content: string, usage: any | null, role: any | null }>[]) {
 
     // this.detailsMessage = 'Process AI Data'
+    /* Initialize the Results viariables  */
     this.errorMessage = ''
-    this.isProcessing = true
-    this.isComplete = false
-    this.isGetRecipe = true
-    let usage = 0
+    this.isGetResults = this.isResultsProcessing = true
+
+    // init the total cost and total tokens counter
+    let total_cost = 0
+    let total_tokens = 0
+
     // Add any necessary headers for Claude AI API
     this.aiResultsSub = subsequentPosts[0]
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         {
           next: (result: any) => {
 
             this.jsonChunk['content'] += result.content || ''
+
+
             if (result?.usage) {
-              usage = calculateOpenAICost(result?.usage as OpenAITokenDetails, this.modelAI.value.name)
-              this.jsonChunk['usage'] = usage
-              console.log('usage', result?.usage)
+              total_tokens = !(result?.usage as OpenAITokenDetails).total_tokens ?
+                (result?.usage as OpenAITokenDetails).completion_tokens + (result?.usage as OpenAITokenDetails).prompt_tokens :
+                (result?.usage as OpenAITokenDetails).total_tokens
+
+              total_cost = calculateOpenAICost(result?.usage as OpenAITokenDetails, this.modelAI.value.name)
+
+              // set jsonChunk usage
+              this.jsonChunk['usage'] = { total_tokens, total_cost }
+              // console.log('usage', result?.usage)
+              // console.log(`content: `, this.jsonChunk['content'])
             }
-            // console.log('Claude AI response:', products.flat())
           },
           complete: () => {
-            // console.log(JSON.parse(this.jsonChunk['content']), usage)
-            this.isProcessing = false
-            this.isComplete = true
-            this.url.enable()
-            this.userprompt.enable()
-            this.submitButton.setValue(false)
-            this.modelAI.enable()
+
+            // reset all variables to zero
+            this.isResultsProcessing = false
+
+            // reset the form
+            this.enableForm()
           },
           error: (error) => {
 
             console.error('Error sending data to AI:', error)
             this.errorMessage = 'Error on get data from AI. Please check console for details.'
+
+            // show show Snackbar
             this.showSnackbar(this.errorMessage || "", SnackBarType.error, '', 5000)
-            this.isProcessing = false;
-            this.url.enable()
-            this.userprompt.enable()
-            this.submitButton.setValue(false)
-            this.modelAI.enable()
+
+            // reset all variables to zero
+            this.isResultsProcessing = false;
+
+            // reset the form
+            this.enableForm()
           }
         }
       )
   }
 
+  private enableForm() {
+
+    this.url.enable()
+    this.userprompt.enable()
+    this.submitButton.setValue(false)
+    this.modelAI.enable()
+  }
+
+  private disableForm() {
+    this.url.disable()
+    this.userprompt.disable()
+    this.submitButton.setValue(true)
+    this.modelAI.disable()
+  }
+
   protected closeResults() {
 
-    this.isGetRecipe = !this.isGetRecipe
+    // Close results, reset results variables and subscribers
+    this.isGetResults = false
     this.jsonChunk['usage'] = null
     this.jsonChunk['content'] = ''
     this.aiResultsSub?.unsubscribe()
     this.forkJoinSubscription?.unsubscribe()
-  }
-
-  // Example function to handle cookies data
-  private handleCookies(cookies: string) {
-    // Validate and sanitize cookies data
-    console.log('Cookies handled:', cookies);
-  }
-
-  onSnackbarAction() {
-    this.snackbarService.hideSnackBar()
   }
   // 'info' | 'success' | 'warning' | 'error'
   showSnackbar(
@@ -423,11 +411,24 @@ export class AppScrapeComponent {
     this.url.setValue('')
   }
 
+  abortRequests() {
+
+    // Emit a signal to cancel the request
+    this.destroy$.next()
+    this.isResultsProcessing = this.isCrawlProcessing = false
+    this.enableForm()
+    this.showSnackbar('Request canceled', SnackBarType.info, '', 5000)
+  }
+
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
+    // Complete the Subject to prevent memory leaks
+    this.destroy$.next();
+    this.destroy$.complete();
     this.aiResultsSub?.unsubscribe()
     this.forkJoinSubscription?.unsubscribe()
   }
 }
+
 

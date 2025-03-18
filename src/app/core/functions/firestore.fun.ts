@@ -1,6 +1,8 @@
-import { doc, Firestore, getDoc, setDoc } from "@angular/fire/firestore";
-import { User, UserInfo } from "@angular/fire/auth";
+import { addDoc, writeBatch, collection, doc, Firestore, getDoc, setDoc, deleteDoc } from "@angular/fire/firestore";
+import { User } from "@angular/fire/auth";
 import { Users } from "../types/firestore.interface";
+import { throwError } from "rxjs";
+import { BrowserProfile } from "../types";
 
 export async function storeUserData(user: User, firestore: Firestore) {
     try {
@@ -26,9 +28,9 @@ export async function storeUserData(user: User, firestore: Firestore) {
 
 
 export async function getUserData(user: User, firestore: Firestore) {
-
     const userRef = doc(firestore, 'users', user.uid);
     let err, docSnapshot = await getDoc(userRef)
+
     if (err) {
         console.error('Error getting user data:', err)
         return null;
@@ -56,4 +58,126 @@ export function getErrorMessage(error: any): string {
         default:
             return error.message || 'An error occurred during signup.';
     }
+}
+
+
+/* Firestore Crawl Operation */
+export async function storeCrawlOperation(userId: string, operationData: any, firestore: Firestore): Promise<boolean> {
+    try {
+        const { metadata } = operationData
+
+        // Create a reference to the "metadata" collection
+        const metadataRef = metadata && (metadata?.crawler || metadata?.browser) ?
+            doc(collection(firestore, `users/${userId}/crawlconfigs`)) : null
+
+        // Create a reference to the "operations" subcollection of the user document
+        const operationsRef = doc(collection(firestore, `users/${userId}/operations`))
+
+        // Create a batch to group the operations
+        const batchRef = writeBatch(firestore);
+
+        if (metadataRef) {
+
+            const meta_data = {
+                ...metadata,
+                created_At: Date.now(),
+                uid: userId,
+            }
+
+            batchRef.set(metadataRef, meta_data)
+        }
+
+        // Add a new operation document to the subcollection
+        batchRef.set(operationsRef, { ...operationData, metadataId: metadataRef?.id || null })
+
+        // FIXME:  If the client is offline, the write fails. If you would like to see 
+        // local modifications or buffer writes until the client is online, use the full Firestore SDK.
+
+        // Commit the batch
+        await batchRef.commit()
+
+        console.log('Operation data stored successfully.')
+        return true
+    } catch (error) {
+        console.error('Error storing operation data:', error);
+        throw new Error(error as string)
+    }
+}
+
+export async function deleteOperationDoc(userId: string, operationId: string, firestore: Firestore) {
+
+    try {
+
+        // Create a reference to the "operations" subcollection of the user document
+        const operationRef = doc(firestore, `users/${userId}/operations`, operationId)
+        const operationMetricsRef = doc(firestore, `operation_metrics`, operationId)
+
+        // Create a batch to group the operations
+        const batchRef = writeBatch(firestore);
+
+        // Update the document with the soft delete flag and timestamp
+        batchRef.set(operationMetricsRef, { deleted_At: Date.now(), softDelete: true }, { merge: true })
+
+        // Delete the document
+        batchRef.delete(operationRef)
+
+        // Commit the batch
+        await batchRef.commit()
+
+        console.log("Document deleted successfully")
+        return true
+    } catch (error) {
+        console.error("Error deleting document: ", error)
+        throw new Error(error as string)
+    }
+
+
+}
+
+
+/* store the cart data when goes the app goes online */
+export async function savePackToFirestore(userId: string, item: any, firestore: Firestore, merge: boolean = true) {
+    try {
+        const cartRef = doc(firestore, `users/${userId}/packs`, userId)
+        await setDoc(cartRef, item, { merge })
+        console.log('Pack data stored successfully in Firestore.')
+
+    } catch (error) {
+        console.error('Error storing user data:', error)
+    }
+}
+
+export async function deletePackFromFirestore(userId: string, firestore: Firestore) {
+
+    try {
+
+        // Create a reference to the "operations" subcollection of the user document
+        const cartRef = doc(firestore, `users/${userId}/packs`, userId)
+
+        await deleteDoc(cartRef)
+        console.log("Document deleted successfully")
+
+    } catch (error) {
+        console.error('Error removing user data:', error)
+    }
+}
+
+export async function storeBrowserProfile(userId: string, profile: BrowserProfile, firestore: Firestore) {
+    try {
+
+        // Ensure unique ID
+        const browserRef = doc(collection(firestore, `users/${userId}/browser`))
+
+        // add the user id to the profile
+        profile.uid = userId
+
+        // Store the profile data in Firestore
+        await setDoc(browserRef, profile)
+
+        console.log('Browser profile data stored successfully in Firestore.')
+
+    } catch (error) {
+        console.error('Error storing user browser profile data:', error)
+    }
+
 }

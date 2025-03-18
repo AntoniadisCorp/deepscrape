@@ -1,0 +1,962 @@
+<form
+  [formGroup]="configForm"
+  (ngSubmit)="saveBrowserProfile()"
+  class="w-full grid grid-cols-1 sm:grid-cols-[1fr_13rem] xl:grid-cols-[1fr_13rem] lg:grid-cols-1 2xl:grid-cols-[1fr_20rem] gap-4"
+>
+  <!-- main content goes here -->
+  <div
+    class="mx-auto w-full pt-6 order-2 px-4 sm:order-1 lg:order-2 xl:order-1"
+  >
+    <h1
+      class="text-3xl text-center font-bold mb-8 text-gray-800 dark:text-gray-200"
+    >
+      Browsers
+    </h1>
+
+    <div class="w-full text-center inline-flex items-center justify-center">
+      <mat-icon
+        aria-label="chromium"
+        svgIcon="chromium"
+        class="font-bold !size-40 mb-4 text-gray-800 dark:text-gray-200"
+      ></mat-icon>
+      <mat-icon
+        aria-label="firefox"
+        svgIcon="firefox"
+        class="font-bold !size-40 mb-4 text-gray-800 dark:text-gray-200"
+      ></mat-icon>
+      <mat-icon
+        aria-label="webkit"
+        svgIcon="webkit"
+        class="font-bold !size-40 mb-4 text-gray-800 dark:text-gray-200"
+      ></mat-icon>
+    </div>
+
+    <h3
+      id="controlling-each-browser"
+      class="text-xl py-8 font-weight-light text-gray-800 dark:text-gray-200"
+    >
+      Controlling Each Browser Profile
+    </h3>
+
+    <!--  Parameters Hilights -->
+    <p class="mb-8 font-mono text-gray-800 dark:text-gray-200">
+      <span class="text-sky-500 bg-sky-700/10">BrowserConfig</span> focuses on
+      how the browser is launched and behaves. This includes headless mode,
+      proxies, user agents, and other environment tweaks.
+    </p>
+
+    <p class="font-mono text-gray-800 dark:text-gray-200">
+      <span class="text-green-600 font-semibold bg-green-700/10">Tips:</span> -
+      Set <span class="text-sky-500 bg-sky-700/10">headless=False</span> to
+      visually debug how pages load or how interactions proceed.
+    </p>
+    <p class="block font-mono text-gray-800 dark:text-gray-200">
+      - If you need authentication storage or repeated sessions, consider
+      <span
+        class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial] break-all"
+        >use_persistent_context=True</span
+      >
+      and specify <span class="text-sky-500 bg-sky-700/10">user_data_dir</span>.
+    </p>
+    <p class="mb-8 font-mono text-gray-800 dark:text-gray-200">
+      - For large pages, you might need a bigger
+      <span class="text-sky-500 bg-sky-700/10">viewport_width</span> and
+      <span class="text-sky-500 bg-sky-700/10">viewport_height</span> to handle
+      dynamic content.
+    </p>
+    <h3
+      class="flex flex-wrap justify-between mb-4 text-xl font-light text-gray-800 dark:text-gray-200"
+    >
+      <span>Recent Profiles</span>
+      <button
+        title="add new profile"
+        type="button"
+        (click)="addBrowserProfile()"
+        [ngClass]="
+          !newProfileOpened
+            ? 'hover:bg-gray-400/[0.5] dark:hover:bg-gray-700/20 dark:focus:bg-gray-700/[0.7] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300'
+            : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
+        "
+        class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+      >
+        <mat-icon
+          [ngClass]="
+            !newProfileOpened
+              ? 'text-gray-600 dark:text-gray-300/80'
+              : '-rotate-45'
+          "
+          class="text-3xl transition-transform !size-8 leading-8"
+          >add</mat-icon
+        >
+      </button>
+    </h3>
+
+    <!-- Recent Profiles Async List -->
+    <div class="w-full md:w-12/12 xl:w-12/12">
+      @if ((browserProfiles$ | async )?.length) {
+
+      <div
+        *ngIf="browserProfiles$ | async as profiles"
+        class="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+      >
+        <div
+          *ngFor="let profile of profiles; let i = index"
+          (click)="onSelectProfile(profile)"
+          [ngClass]="{
+            'bg-gray-300/70 dark:bg-gray-600/50':
+              showSettings && profile.id === profileSelectedById
+          }"
+          class="cursor-pointer flex flex-col gap-4 justify-between border rounded-xl p-4 border-gray-200 hover:border-gray-300/70 dark:hover:border-gray-600/0 hover:bg-gray-300/70 dark:border-gray-600 dark:hover:bg-gray-600/50"
+        >
+          <div class="flex justify-between items-start mb-4 gap-4">
+            <div class="flex items-start">
+              <mat-icon
+                svgIcon="{{ profile.config.browserType || 'chromium' }}"
+                class="mr-2 text-gray-600 dark:text-gray-200 text-sm max-h-[2.4rem] max-w-[2.4rem] !w-fit !h-fit"
+              ></mat-icon>
+              <span
+                class="text-base font-medium text-gray-700 dark:text-gray-200 text-wrap line-clamp-2"
+                >{{ profile.title }}</span
+              >
+            </div>
+            <button
+              type="button"
+              (click)="actionProfileClicked($event, profile)"
+              class="text-base inline-flex items-center text-center !size-8 font-medium h-full leading-6 transform flex-row flex-nowrap duration-300 rounded-full transition-colors hover:bg-gray-400/[0.5] dark:hover:bg-gray-900/70 dark:focus:bg-purple-700/[0.4] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300"
+            >
+              <mat-icon
+                fontSet="material-icons-outlined"
+                class="text-lg text-gray-600 dark:text-gray-300/80 !size-8 !leading-8"
+                >more_vert</mat-icon
+              >
+            </button>
+          </div>
+          <div
+            class="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+          >
+            <span>{{
+              profile.created_At | date : "MMMM dd, yyyy" | date : "medium"
+            }}</span>
+            <span
+              ><mat-icon
+                fontSet="material-icons-outlined"
+                class="mr-2 text-blue-400 dark:text-blue-300"
+                >web</mat-icon
+              >
+              <mat-icon
+                fontSet="material-icons-outlined"
+                class="mr-2 text-gray-600 dark:text-green-200"
+              >
+                cloud_done
+              </mat-icon></span
+            >
+          </div>
+          <div
+            class="flex justify-center items-end text-gray-500 dark:text-gray-400"
+          >
+            <a
+              *ngIf="profile.id === (packCart$ | async)?.id"
+              (click)="removePackFromCart($event)"
+              class="text-base text-center border border-green-600/80 leading-[0] gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-transparent text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+            >
+              <mat-icon>close</mat-icon>
+              <mat-icon
+                svgIcon="package-box"
+                class="font-bold !w-[2rem] !h-[1.6rem] text-sm"
+              ></mat-icon
+            ></a>
+            <a
+              *ngIf="profile.id !== (packCart$ | async)?.id"
+              (click)="addPackToCart($event, profile)"
+              class="text-base text-center border border-transparent leading-[0] gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+            >
+              <mat-icon>add</mat-icon>
+              <mat-icon
+                svgIcon="package-box"
+                class="font-bold !w-[2rem] !h-[1.6rem] text-sm"
+              ></mat-icon
+            ></a>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Loading state -->
+      <div
+        *ngIf="
+          !(browserProfiles$ | async) && (browserProfiles$ | async) !== null
+        "
+        class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+      >
+        <div
+          *ngFor="let item of [1, 2, 3, 4, 5]"
+          class="relative h-40 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray3 dark:bg-gray4/60"
+        ></div>
+      </div>
+
+      @if((browserProfiles$ | async)?.length === 0) {
+      <div class="text-center py-8">
+        <p class="text-gray-600 dark:text-gray-300">
+          No browser profile created yet. Click the 'plus' button to add a new
+          profile configuration.
+        </p>
+      </div>
+      } @if((browserProfiles$ | async) === null) {
+      <div class="text-center py-8">
+        <p class="text-red-600 dark:text-red-300">
+          An Error Occured. Please try again later. or contact with
+          administrator. find the feedback button in the sidebar
+        </p>
+      </div>
+      }
+    </div>
+
+    <h3
+      *ngIf="showSettings"
+      class="mb-8 text-xl font-light text-gray-800 dark:text-gray-200"
+    >
+      <span>{{ !newProfileOpened ? "Selected" : "New" }} Profile</span>
+      <span *ngIf="newProfileOpened" class="text-red-400 ml-2">*</span>
+    </h3>
+    <div
+      *ngIf="showSettings"
+      class="border rounded-xl p-4 border-gray-200 dark:border-gray6/70"
+    >
+      <div class="border-b-2 border-gray-200 dark:border-gray-700 mb-8 gap-1">
+        @if (!newProfileOpened) {
+        <div
+          class="flex justify-center items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2"
+        >
+          <mat-icon class="">travel_explore</mat-icon>
+          <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+            {{ configForm.get("title")?.value }}
+          </h3>
+        </div>
+        } @else {
+        <div
+          class="flex justify-between items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2"
+        >
+          <div class="w-full">
+            <app-stinput
+              [control]="configForm.get('title') | formControl"
+              [leftIcon]="'person'"
+              [label]="'Title'"
+              [errorLabel]="getErrorLabel('title')"
+            ></app-stinput>
+          </div>
+          <div>
+            <button
+              type="submit"
+              [disabled]="configForm.invalid || savingNewProfile"
+              [ngClass]="{
+                'bg-green-600/[.2] dark:bg-green-600/[0.2]':
+                  configForm.invalid || savingNewProfile
+              }"
+              title="save new profile"
+              class="inline-flex text-lg min-w-32 items-center justify-center text-center border border-transparent leading-[0] gap-2 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-3 px-4 duration-300 rounded-full transition-colors"
+            >
+              @if (!savingNewProfile) {
+              <span>save</span>
+              <mat-icon class="font-bold !w-[2rem] !h-[1.6rem]">save</mat-icon>
+              } @else {
+              <mat-spinner
+                [diameter]="20"
+                class="stroke-gray-200"
+              ></mat-spinner>
+              }
+            </button>
+          </div>
+        </div>
+        }
+
+        <div>
+          <h3
+            class="text-xl font-weight-light text-gray-800 dark:text-gray-200"
+          >
+            Parameters Highlights
+          </h3>
+          <h2
+            class="text-sm py-4 font-weight-light text-gray-800 dark:text-gray-200"
+          >
+            We group them by category.
+          </h2>
+        </div>
+      </div>
+      <!-- Browser Basic Settings Parameters -->
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="browser-settings"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Browser Basic Settings</span>
+        <a
+          (click)="scrollTo('browser-settings')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+      </h3>
+
+      <div class="space-y-4 p-4">
+        <!-- Browser Basic Settings Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Browser Type</label
+              >
+
+              <div
+                class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Which browser engine to use. </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">"chromium"</p>
+                <span> is typical for many sites, </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">"firefox"</p>
+                <span> or </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">"webkit"</p>
+                <span> for specialized tests.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set dropdown, default to None -->
+              <div class="w-full">
+                <app-dropdown
+                  [options]="browserTypeOptions"
+                  [control]="browserType | formControl"
+                  [padding]="'p-2'"
+                  dropDownName="take an action"
+                  (select)="onBrowserTypeSelect($event)"
+                >
+                </app-dropdown>
+              </div>
+            </label>
+          </div>
+
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Headless</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Headless means no visible UI.
+                  <span class="text-sky-500 bg-sky-700/10">False</span> is handy
+                  for debugging.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="headless"
+                title="Enabled/Disabled"
+                [control]="configForm.get('headless') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Light Mode</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <p>Disables some background features for performance gains.</p>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="lightMode"
+                title="Enabled/Disabled"
+                [control]="configForm.get('lightMode') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Text Mode</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <p>
+                  If
+                  <span class="text-sky-500 bg-sky-700/10">True</span>
+                  <span
+                    >, tries to disable images/other heavy content for
+                    speed.</span
+                  >
+                </p>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="textMode"
+                title="Enabled/Disabled"
+                [control]="configForm.get('textMode') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Use Managed Browser</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <p>
+                  For advanced “managed” interactions (debugging, CDP usage).
+                  Typically set automatically if persistent context is on.
+                </p>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="userManagedBrowser"
+                title="Enabled/Disabled"
+                [control]="configForm.get('userManagedBrowser') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >JavaScript Enabled</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <p>
+                  Disable if you want no JS overhead, or if only static content
+                  is needed.
+                </p>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="javaScriptEnabled"
+                title="Enabled/Disabled"
+                [control]="configForm.get('javaScriptEnabled') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Ignore Ηttps Εrrors</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <p>
+                  <span>If </span>
+                  <span class="text-sky-500 bg-sky-700/10">True</span>
+                  <span
+                    >, continues despite invalid certificates (common in
+                    dev/staging).</span
+                  >
+                </p>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="ignoreΗttpsΕrrors"
+                title="Enabled/Disabled"
+                [control]="configForm.get('ignoreΗttpsΕrrors') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >ViewPort Height</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Initial page height (in px).</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Page Timeout type of number -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('viewportHeight') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'800 ms..'"
+                  [errorLabel]="getErrorLabel('viewportHeight')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >ViewPort Width</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Initial page width (in px). Useful for testing responsive
+                  layouts.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Page Timeout type of number -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('viewportWidth') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'60000 ms..'"
+                  [errorLabel]="getErrorLabel('viewportWidth')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Browser User Data Parameters -->
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="browser-userdata"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Browser User Data Settings</span>
+        <a
+          (click)="scrollTo('browser-userdata')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+      </h3>
+      <div class="space-y-4 p-4">
+        <!-- Browser User Data Settings Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Use Persistent Context</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <p>
+                  <span>If </span>
+                  <span
+                    class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                    >True</span
+                  >
+                  <span
+                    >, uses a persistent browser context (keep cookies, sessions
+                    across runs). Also sets
+                  </span>
+                  <span
+                    class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                    >use_managed_browser=True</span
+                  >
+                </p>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button On/Off -->
+              <app-radiotoggle
+                identity="usePersistentContext"
+                title="Enabled/Disabled"
+                [control]="configForm.get('usePersistentContext') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >User Data Dir</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Directory to store user data (profiles, cookies). Must be set
+                  if you want permanent sessions.</span
+                >
+                <!-- <p class="text-sky-500 bg-sky-700/10 inline">
+                  ["ads.com", "trackers.io"]
+                </p>
+  
+                <span>).</span> -->
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('userDataDir') | formControl"
+                  [leftIcon]="'folder_shared'"
+                  [outlined]="true"
+                  [label]="'directory/path..'"
+                  [errorLabel]="getErrorLabel('userDataDir')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >User Agent</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Your custom or random user agent. </span>
+                <p
+                  class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  user_agent_mode="random"
+                </p>
+
+                <span> can shuffle it. For Example: </span>
+                <p
+                  class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+                  (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.3
+                </p>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('userAgent') | formControl"
+                  [leftIcon]="'verified_user'"
+                  [outlined]="true"
+                  [label]="'user agent..'"
+                  [errorLabel]="getErrorLabel('userAgent')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Cookies</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Pre-set cookies, each a dict like </span>
+                <p
+                  class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  {{ '[{"name": "session", "value": "...", "url": "..."}]' }}
+                </p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <div class="mb-4">
+                  <label
+                    for="cookies"
+                    class="block text-sm font-medium text-gray-700"
+                    >Cookies (JSON)</label
+                  >
+                  <textarea
+                    id="cookies"
+                    [formControl]="configForm.get('cookies') | formControl"
+                    placeholder="Cookie (JSON)"
+                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    rows="10"
+                  ></textarea>
+                  <div
+                    *ngIf="configForm.get('cookies')?.invalid"
+                    class="text-red-500 text-xs"
+                  >
+                    Invalid array of cookies JSON
+                    {{ configForm.get("cookies")?.errors | json }}
+                  </div>
+                </div>
+
+                <!-- <app-stinput
+                  [control]="configForm.get('userAgent') | formControl"
+                  [leftIcon]="'verified_user'"
+                  [outlined]="true"
+                  [label]="'user agent..'"
+                  [errorLabel]="getErrorLabel('userAgent')"
+                ></app-stinput> -->
+              </div>
+            </label>
+          </div>
+
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Headers</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Extra HTTP headers for every request, e.g. </span>
+                <p
+                  class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  {{ '[{"key": "Accept-Language", "value": "en-US"}]' }}
+                </p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <div class="mb-4">
+                  <label
+                    for="headers"
+                    class="block text-sm font-medium text-gray-700"
+                    >Headers (JSON)</label
+                  >
+                  <textarea
+                    id="headers"
+                    [formControl]="configForm.get('headers') | formControl"
+                    placeholder="Headers (JSON)"
+                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    rows="10"
+                  ></textarea>
+
+                  <div
+                    *ngIf="configForm.get('headers')?.invalid"
+                    class="text-red-500 text-xs"
+                  >
+                    Invalid headers JSON
+                    {{ configForm.get("headers")?.errors | json }}
+                  </div>
+                </div>
+
+                <!-- <app-stinput
+                  [control]="configForm.get('userAgent') | formControl"
+                  [leftIcon]="'verified_user'"
+                  [outlined]="true"
+                  [label]="'user agent..'"
+                  [errorLabel]="getErrorLabel('userAgent')"
+                ></app-stinput> -->
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Proxy</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Single-proxy URL if you want all traffic to go through it,
+                  e.g.</span
+                >
+                <span
+                  class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  {{ "https://user:pass@proxy:8080" }}
+                </span>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('proxy') | formControl"
+                  [leftIcon]="'dns'"
+                  [outlined]="true"
+                  [label]="'proxy..'"
+                  [errorLabel]="getErrorLabel('proxy')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Extra Arguments</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Additional flags for the underlying browser process, e.g.
+                </span>
+                <span
+                  class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  {{ '["--disable-extensions"]' }}
+                </span>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('extraArgs') | formControl"
+                  [leftIcon]="'exposure_plus_1'"
+                  [outlined]="false"
+                  [label]="'extraArgs..'"
+                  [errorLabel]="getErrorLabel('extraArgs')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- right sidebar goes here bg-gray-100 dark:bg-[rgb(36_38_40)] -->
+  <div
+    class="static top-[10rem] mt-4 sm:mt-0 xl:mt-0 lg:static w-full max-h-min max-w-full mx-auto lg:h-auto h-auto sm:sticky xl:sticky bg-transparent sm:h-[calc(100vh_-_5rem)] xl:h-[calc(100vh_-_5rem)] order-1 sm:order-2 lg:order-1 xl:order-2 overflow-auto overflow-x-hidden scrollbar px-4 border-0 border-[#70b1ff] left-0"
+  >
+    <!--   h-auto top-0  browser-userdata -->
+    <ul class="">
+      <li
+        class="flex relative before:h-7 before:top-[17px] before:-left-[9px] sm:before:top-[19px] sm:before:h-12 md:before:top-6 sm:before:-left-[9px] lg:before:top-5 lg:before:h-7 lg:before:-left-[9px] xl:before:top-6 2xl:before:top-5 before:absolute before:bottom-0 xl:before:h-12 2xl:before:h-7 xl:before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('controlling-each-browser')"
+          [ngClass]="
+            activeLink === 'controlling-each-browser'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-200 before:hidden'
+          "
+          class="cursor-pointer text-gray-600/60 hover:text-sky-600 focus:text-sky-700 dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] font-bold p-3 hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Controlling Each Browser</span></a
+        >
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('browser-settings')"
+          [ngClass]="
+            activeLink === 'browser-settings'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Basic Settings</span></a
+        >
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:h-[calc(100%_-_(8px_+_1rem))] before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('browser-userdata')"
+          [ngClass]="
+            activeLink === 'browser-userdata'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>User Data Settings</span></a
+        >
+      </li>
+    </ul>
+  </div>
+</form>

@@ -1,39 +1,81 @@
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
-// @use '@angular/material' as mat;
+@use "@angular/material" as mat;
+@use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
+
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
 // have to load a single css file for Angular Material in your app.
 // Be sure that you only ever include this mixin once!
-// @include mat.core();
+@include mat.core();
 
 // Define the theme object.
-/* $deepscrape-theme: mat.define-theme((
-  color: (
-    theme-type: light,
-    primary: mat.$azure-palette,
-    tertiary: mat.$blue-palette,
-  ),
-  density: (
-    scale: 0,
-  )
-)); */
+$my-theme: mat.define-theme(
+    (
+        color: (
+            theme-type: light,
+            primary: mat.$azure-palette,
+            tertiary: mat.$blue-palette
+        ),
+        density: (
+            scale: 0
+        )
+    )
+);
 
+// $mat-light-blue: #3dde;
+// // $app-warn-warn: rgba(238, 172, 51, 0.867);
+// $mat-red: #ff4081;
+// $mat-red2: #f32424;
+
+// $app-primary: mat-palette($mat-light-blue);
+// $app-accent: mat-palette($mat-light-blue);
+// $app-warn: mat-palette($mat-red);
+
+$my-theme-dark: mat.define-theme(
+    (
+        color: (
+            theme-type: dark,
+            primary: mat.$azure-palette,
+            tertiary: mat.$blue-palette
+        ),
+
+        density: (
+            scale: 0
+        )
+    )
+);
+
+// $theme-light: mat-light-theme($app-primary, $app-accent, $app-warn);
+
+html.dark {
+    @include mat-timepicker.timepicker-theme($my-theme-dark);
+    @include mat.all-component-colors($my-theme-dark);
+}
+
+// if you want to support color attribute in M3 add compatibility mixin
+@include mat.color-variants-backwards-compatibility($my-theme);
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-/* :root {
-  @include mat.all-component-themes($deepscrape-theme);
-} */
-
+:root {
+    // timepicker uses these component
+    // @include mat.mat-mdc-form-field($my-theme);
+    // @include mat.input-theme($my-theme);
+    // @include mat.button($my-theme);
+    // @include mat.fab-theme($my-theme);
+    // @include mat.icon-button-theme($my-theme);
+    // @include mat.divider-theme($my-theme);
+    // timepicker theme
+    @include mat-timepicker.timepicker-theme($my-theme);
+    @include mat.all-component-themes($my-theme);
+}
 // Comment out the line below if you want to use the pre-defined typography utility classes.
 // For more information: https://material.angular.io/guide/typography#using-typography-styles-in-your-application.
 // @include mat.typography-hierarchy($deepscrape-theme);
-
 // Comment out the line below if you want to use the deprecated `color` inputs.
 // @include mat.color-variants-backwards-compatibility($deepscrape-theme);
-
 @import "prismjs/themes/prism-okaidia.css";
 @import "prismjs/plugins/line-numbers/prism-line-numbers.css";
 @import "prismjs/plugins/line-highlight/prism-line-highlight.css";
@@ -148,6 +190,7 @@ html {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         @include scrollbar;
+        @apply bg-gray-100 dark:bg-gray-900;
     }
 }
 // add the code bellow
@@ -161,6 +204,19 @@ html {
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
     }
+
+    /* Code prism js and tailwind prose typography */
+    .prose :where(code):not(:where([class~="not-prose"], code[class*="language-"], [class~="not-prose"] *)) {
+        @apply text-purple-600 dark:text-purple-400;
+    }
+
+    .prose :where(strong):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+        @apply text-gray6 dark:text-white;
+    }
+
+    // .prose :where(h1, h2, h3, h4, h5, h6, th):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+    //     @apply no-underline;
+    // }
 }
 
 input:-webkit-autofill,

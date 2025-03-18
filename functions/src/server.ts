@@ -8,6 +8,7 @@ import { SyncAIapis } from "../../api"
 import express from "express"
 import cors from "cors"
 import { join, resolve } from "node:path"
+import { onRequest } from "firebase-functions/https"
 // see here: https://reddit.com/r/reactjs/comments/fsw405/firebase_cloud_functions_cors_policy_error/?rdt=47413
 // and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
@@ -65,7 +66,7 @@ function serveapp(): express.Application {
         index: "index.html",
     }))
 
-    server.get("*", (req, res) => {
+    server.get("*", (_, res) => {
         // const { protocol, originalUrl, baseUrl, headers } = req;
 
         res.status(404).sendFile(resolve(serverDistFolder, "404.html"))
@@ -81,5 +82,6 @@ function serveapp(): express.Application {
     return server;
 }
 
-export const app = serveapp()
+const app = serveapp()
 
+export const deepscrape = onRequest(app)

@@ -1,0 +1,25 @@
+/* @keyframes slide-in {
+    from {
+        transform: translateX(--slide-x);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(--slide-x);
+    }
+}
+
+.slide {
+    animation: slide-in 0.5s ease-in-out;
+} */
+
+.slide {
+    @apply transition-transform duration-500;
+}

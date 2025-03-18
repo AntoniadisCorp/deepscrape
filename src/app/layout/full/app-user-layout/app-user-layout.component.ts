@@ -1,45 +1,47 @@
 import { AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage } from '@angular/common'
-import { Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
+import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
 import { Auth, signOut, User } from '@angular/fire/auth'
 import { Firestore } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
-import { ChildrenOutletContexts, Router, RouterLink, RouterOutlet } from '@angular/router'
-import { catchError, delay, finalize, from, map, switchMap, timer } from 'rxjs'
+import { ChildrenOutletContexts, NavigationEnd, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
+import { catchError, delay, finalize, from, map, switchMap, throwError, timer } from 'rxjs'
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
 import { take } from 'rxjs/internal/operators/take'
 import { Subscription } from 'rxjs/internal/Subscription'
 import { asideBarAnimation, fadeInOutSlideAnimation, PopupAnimation } from 'src/app/animations'
-import { ImageSrcsetDirective, Outsideclick } from 'src/app/core/directives'
+import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { getUserData } from 'src/app/core/functions'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { FirestoreService, ScreenResizeService, WindowToken } from 'src/app/core/services'
+import { CartService, FirestoreService, ScreenResizeService } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
 import { ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
+import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
 
 @Component({
   selector: 'app-user-layout',
   standalone: true,
   imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
     MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
-    AppFooterComponent],
+    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
   animations: [fadeInOutSlideAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
 })
 export class AppUserLayoutComponent {
 
-  @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900'
+  @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900 min-h-svh'
 
   size!: SCREEN_SIZE;
 
   sizeSub: Subscription;
 
   user$: Observable<Users | null>
+  cartPackager$: Observable<any>
 
   // Toggle Button To Open and Close Profile Dropdown Menu
   showProfileMenu: boolean
@@ -54,6 +56,10 @@ export class AppUserLayoutComponent {
   logoutSubscription: Subscription
   userSubscription: Subscription
 
+  private btnSubs: Subscription
+
+  private routerEventSubscription: Subscription
+  protected compIsLoading = true;
   /* animations */
   viewSmallDevices: boolean
 
@@ -68,7 +74,14 @@ export class AppUserLayoutComponent {
     private firestore: Firestore,
 
     private firestoreService: FirestoreService,
+    private cartService: CartService,
   ) {
+
+    this.routerEventSubscription = this.router.events.subscribe((event: any) => {
+      if (event instanceof NavigationEnd) {
+        setTimeout(() => { this.compIsLoading = false; }, 1000)
+      }
+    })
 
     this.closeAsideBar = false
     this.viewSmallDevices = false
@@ -80,6 +93,7 @@ export class AppUserLayoutComponent {
     this.showProfileMenu = false
 
     this.user$ = of(null)
+    this.cartPackager$ = this.cartService.getCart()
 
 
   }
@@ -90,19 +104,26 @@ export class AppUserLayoutComponent {
     if (isPlatformBrowser(this.platformId))
       this.GetUserProfile()
 
+    this.InitCloseSideBarOnSmallDevices()
+  }
 
+
+
+  private InitCloseSideBarOnSmallDevices() {
     const { screenWidth } = this.resizeSvc.updateScreenSize()
 
+    // On startup, check the screen size, to close the e aside bar
     this.viewSmallDevices = this.closeAsideBar = screenWidth < 992
 
     this.sizeSub = this.resizeSvc.onResize$.subscribe(x => {
 
       this.size = x
       if (this.closeAsideBar != undefined)
-        this.closeAsideBar = this.viewSmallDevices = this.size < 3
+        this.closeAsideBar = this.viewSmallDevices = this.size < SCREEN_SIZE.LG
 
     })
   }
+
   addAsideBar(value: boolean) {
 
     if (value === this.closeAsideBar) // The value was same as this component
@@ -111,8 +132,9 @@ export class AppUserLayoutComponent {
     else this.closeAsideBar = value
   }
 
-  onCloseAsideBar() {
+  onCloseAsideBar(event: boolean) {
 
+    this.closeAsideBar = event
   }
 
 
@@ -128,8 +150,13 @@ export class AppUserLayoutComponent {
         if (user) {
           this.authorized = true
           this.userLoading = false
-          // console.log(user)
-          return from(getUserData(user, this.firestore))
+
+          return from(getUserData(user, this.firestore)).pipe(
+            catchError((err) => {
+              console.log(err)
+              return throwError(() => err)
+            }
+            ))
         }
         else {
           this.authorized = false
@@ -138,6 +165,7 @@ export class AppUserLayoutComponent {
         }
       }),
       catchError(error => {
+        console.log(error)
         this.userLoading = false
         return of(null)
       })
@@ -147,8 +175,7 @@ export class AppUserLayoutComponent {
 
 
   openProfileMenu(event?: any): void {
-    console.log('asdasdasdasddsa')
-    // if user push profile button
+    // if user press profile button
     if (event && (event.target.alt === "user photo"))
       this.showProfileMenu = true
 
@@ -157,7 +184,7 @@ export class AppUserLayoutComponent {
 
   }
 
-  closeProfileMenu(event: Event, username: string) {
+  closeProfileMenu(event: Event, username?: string) {
     this.showProfileMenu = false
     const target = event.target as HTMLElement
     let altAttribute = target.getAttribute('role')
@@ -170,7 +197,7 @@ export class AppUserLayoutComponent {
         this.router.navigate(['/billing'])
         break
       case 'settings':
-        this.router.navigate([username + '/account/settings'])
+        this.router.navigate([username ? username : '' + '/settings'])
         break
       case 'chatai':
         this.router.navigate(['/chatai'])
@@ -215,5 +242,6 @@ export class AppUserLayoutComponent {
     //Add 'implements OnDestroy' to the class.
     this.logoutSubscription?.unsubscribe()
     this.sizeSub?.unsubscribe()
+    this.routerEventSubscription?.unsubscribe()
   }
 }

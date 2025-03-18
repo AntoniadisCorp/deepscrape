@@ -6,11 +6,44 @@ import { Subscription } from 'rxjs/internal/Subscription';
 import { SnackbarService, SvgIconService } from './core/services';
 import { ThemeToggleComponent } from './shared';
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components';
+import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
+
+/* 
+                     ,//@@@.
+                .///////@@@@@@@&.
+           ,////////////@@@@@@@@@@@@@/
+      ./////////////////#@@@@@@@@@@@@@@@@@,
+ ,/////////////////.         ,&@@@@@@@@@@@@@@@@#
+/////////////.                     %@@@@@@@@@@@@@
+/////////.                             .%@@@@@@@@
+//////.                                   /@@@@@@
+///////     @@%     .@@/    .@@@@@@/      %@@@@@@
+.//////     @@@@(   .@@/   @@@%. ,@@@#    @@@@@@&
+.//////     @@%@@@  .@@/  &@@             @@@@@@(
+ //////     @@# ,@@@.@@/  @@@   &@@@@@.   @@@@@@.
+ //////,    @@#   %@@@@/  ,@@@    *@@#   ,@@@@@@
+ //////.    @@#     @@@/    @@@@@@@@,    #@@@@@@
+ ,//////                                 @@@@@@&
+ .//////                                 @@@@@@/
+  //////.      @@@  @@@  @@  @ @@@@     .@@@@@@.
+  //////,     @    @   @ @ @ @ @==      (@@@@@@
+  .//////      @@@  @@@  @  @@ @        &@@@@@@
+  .///////.                           %@@@@@@@&
+   ///////////                    ,@@@@@@@@@@@(
+     ,///////////,             #@@@@@@@@@@@&
+        .///////////.       &@@@@@@@@@@@%
+           ./////////////@@@@@@@@@@@@*
+              ./////////@@@@@@@@@@,
+                  ./////@@@@@@%
+                     .//@@@#
+
+     The World's Original Angular Conference
+      May 1st–3rd 2019 Salt Lake City, Utah */
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, LoadingBarRouterModule, MatProgressSpinner, SnackbarComponent,
+  imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
     SizeDetectorComponent,
   ],
   providers: [ThemeToggleComponent],

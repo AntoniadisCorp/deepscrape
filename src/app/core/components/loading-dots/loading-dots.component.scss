@@ -1,0 +1,25 @@
+.dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: hsl(204, 70%, 53%); /* Adjust color as needed */
+    border-radius: 50%;
+    display: inline-block;
+}
+
+// Define the bounce animation
+@keyframes bounce {
+    0%,
+    100% {
+        transform: translateY(-50%);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+        transform: none;
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+// Define the animation-bounce class
+.myanimation-bounce {
+    animation: bounce 1.2s infinite; // Use the bounce animation
+}

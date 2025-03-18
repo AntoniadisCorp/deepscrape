@@ -1,6 +1,5 @@
 import { inject, Injectable } from '@angular/core';
 import { BrowserToken } from './browser.service';
-import { Cookies } from '../types';
 import { EXTENSION_ID } from '../variables';
 
 /* https://github.com/jprivet-dev/chrome-extension-angular-starter-kit */

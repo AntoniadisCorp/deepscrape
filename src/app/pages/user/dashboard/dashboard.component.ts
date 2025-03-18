@@ -1,5 +1,5 @@
 import { Component, HostBinding, inject } from '@angular/core';
-import { LocalStorage } from 'src/app/core/services';
+import { AiAPIService, CrawlAPIService, LocalStorage } from 'src/app/core/services';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,7 +11,7 @@ import { LocalStorage } from 'src/app/core/services';
 export class DashboardComponent {
   @HostBinding('class') classes = 'grow';
   private localStorage: Storage
-  constructor() {
+  constructor(private crawlservice: CrawlAPIService) {
 
     this.localStorage = inject(LocalStorage)
   }
@@ -24,4 +24,17 @@ export class DashboardComponent {
   }
   // Handle consent decision
 
+  fetchData() {
+    this.crawlservice.getfromCrawl4Ai().subscribe({
+      error: (error) => {
+        console.log(error)
+      },
+      next: (data) => {
+        console.log(data)
+      },
+      complete: () => {
+        console.log('complete')
+      }
+    })
+  }
 }

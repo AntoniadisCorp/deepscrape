@@ -13,6 +13,8 @@ export class RadioToggleComponent {
   @Input() control: FormControl<boolean>
   @Input() title?: string
 
+  @Input() identity?: string
+
 
   constructor() { }
 

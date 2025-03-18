@@ -3,11 +3,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { RippleDirective } from '../../directives';
 
 @Component({
   selector: 'app-promptarea',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner],
+  imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
   templateUrl: './promptarea.component.html',
   styleUrl: './promptarea.component.scss'
 })
@@ -21,7 +22,9 @@ export class PromptareaComponent {
 
   @Output() clear: EventEmitter<void> = new EventEmitter<void>()
 
-  characterCount: number = 0;
+  @Output() abort: EventEmitter<void> = new EventEmitter<void>()
+
+  isProcessing: boolean = false
   maxCharacters: number = 4000;
   errors: string[] = [];
   submissionStatus: string = '';
@@ -60,7 +63,7 @@ export class PromptareaComponent {
       return;
     }
 
-    if (this.characterCount >= this.maxCharacters) {
+    if (this.userPrompt.value.length >= this.maxCharacters) {
       this.errors.push('Prompt exceeds the character limit.');
       return;
     }
@@ -81,5 +84,8 @@ export class PromptareaComponent {
   protected clearPrompt(): void {
     this.userPrompt.setValue('')
     this.clear.emit()
+  }
+  protected abortRequests(): void {
+    this.abort.emit()
   }
 }

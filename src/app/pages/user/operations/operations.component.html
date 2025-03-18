@@ -1,0 +1,612 @@
+<!-- <div class="flex flex-wrap justify-center mb-4">
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div
+      class="border dark:border-gray5/60 dark:bg-gray5/70 rounded shadow-md p-4"
+    >
+      <div class="flex items-center">
+        <i
+          class="fas p-3 px-4 rounded-full bg-red-500 dark:bg-red-300 fa-trash text-white dark:text-white text-2xl"
+        ></i>
+        <div class="mx-5">
+          <h4 class="text-2xl font-semibold text-gray-700 dark:text-gray-400">
+            {{ deletedCount }}
+          </h4>
+          <div class="text-gray-500 dark:text-gray-400">Deleted</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex items-center">
+        <i
+          class="fas p-3 px-4 rounded-full bg-yellow-800 dark:text- dark:bg-yellow-300 fa-ban text-white dark:text-white text-2xl"
+        ></i>
+        <div class="mx-5">
+          <h4 class="text-2xl font-semibold text-gray-700 dark:text-gray-400">
+            {{ canceledCount }}
+          </h4>
+          <div class="text-gray-500 dark:text-gray-400">Canceled</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex mb-4">
+        <i
+          class="fas p-3 rounded-full bg-pink-600/70 dark:bg-pink-60/70 fa-exclamation-triangle text-red-500 dark:text-red-300 text-2xl"
+        ></i>
+        <div class="ml-4">
+          <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+            Failed
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">{{ failedCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex mb-4">
+        <i
+          class="fas p-3 rounded-full bg-pink-600/70 dark:bg-pink-60/70 fa-clock text-blue-500 dark:text-blue-300 text-2xl"
+        ></i>
+        <div class="ml-4">
+          <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+            Scheduled
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">{{ scheduledCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex mb-4">
+        <i
+          class="fas p-3 rounded-full bg-pink-600/70 dark:bg-pink-60/70 fa-cog text-purple-500 dark:text-purple-300 text-2xl"
+        ></i>
+        <div class="ml-4">
+          <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+            Processing
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">{{ processingCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex mb-4">
+        <i
+          class="fas p-3 rounded-full bg-pink-600/70 dark:bg-pink-60/70 fa-hourglass-start text-gray-500 dark:text-gray-300 text-2xl"
+        ></i>
+        <div class="ml-4">
+          <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+            Not Started
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">{{ notStartedCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex mb-4">
+        <i
+          class="fas p-3 rounded-full bg-pink-600/70 dark:bg-pink-60/70 fa-save text-green-500 dark:text-green-300 text-2xl"
+        ></i>
+        <div class="ml-4">
+          <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+            Saved Results
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ savedResultsCount }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-full md:w-1/2 xl:w-1/3 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded shadow-md p-4">
+      <div class="flex mb-4">
+        <i
+          class="fas p-3 rounded-full bg-pink-600/70 dark:bg-pink-60/70 fa-link text-blue-500 dark:text-blue-300 text-2xl"
+        ></i>
+        <div class="ml-4">
+          <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+            Urls Used
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">{{ urlsUsedCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<div
+  *ngIf="addScrapperBtn"
+  class="mt-10 mb-4 flex flex-warp items-center p-2 justify-normal flex-col w-full gap-8"
+>
+  <div class="flex relative flex-col items-start gap-6">
+    <div class="absolute right-0 -top-2 z-10">
+      <button
+        title="Close form"
+        appRipple
+        rippleColor="dark"
+        type="button"
+        class="flex items-center leading-6 flex-row flex-nowrap text-lg gap-1 bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+        aria-label="Create an operation"
+        (click)="toggleScrapperBtn()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <h1 class="text-2xl font-roboto text-green-700 dark:text-green-100">
+      <span>🚀🤖 New Operation</span>
+    </h1>
+    <p
+      class="text-left text-base text-gray-500 dark:text-gray-300 max-w-screen-md"
+    >
+      Set mutiple urls separated by ',' choose your LLM model the crawl
+      conguration pack if've not set it up you can add
+      <a
+        [routerLink]="['/crawlpack']"
+        class="text-blue-400 hover:text-blue-600"
+      >
+        here</a
+      >, Fill the prompt, take an action
+      <span class="font-semibold">Run</span> to start instantly,
+      <span class="font-semibold">Save</span> to create and not take an action
+      or <span class="font-semibold">Schedule</span> to set a scheduler by
+      providing a Date
+    </p>
+  </div>
+  <div class="mt-2 w-full max-w-screen-md">
+    <div
+      class="flex flex-row flex-wrap items-center justify-between gap-4 mb-2"
+    >
+      <app-dropdown
+        [options]="model"
+        [control]="modelAI | formControl"
+        [padding]="'p-2'"
+        dropDownName="choose your model"
+        (select)="onDropDownSelected($event)"
+      >
+      </app-dropdown>
+
+      @if(!crawlConfigPack.length) {
+      <a
+        [routerLink]="['/crawlpack']"
+        class="text-lg gap-1 hover:bg-blue-600/[0.5] focus:bg-blue-900/[0.8] bg-blue-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+        >setup configuration <span class="text-red-400">*</span></a
+      >
+      }@else {
+      <app-dropdown
+        [options]="crawlConfigPack"
+        [control]="crawlPack | formControl"
+        [padding]="'p-2'"
+        dropDownName="choose your Crawl Config"
+        (select)="onDropDownSelected($event)"
+      >
+      </app-dropdown>
+      }
+    </div>
+    <div
+      class="flex mb-6 flex-row flex-wrap sm:flex-nowrap gap-6 justify-between items-center"
+    >
+      <div class="w-full">
+        <app-stinput
+          [control]="operationName | formControl"
+          [leftIcon]="'edit'"
+          [label]="'Title..'"
+        ></app-stinput>
+      </div>
+      <div>
+        <app-dropdown
+          [options]="operStatusList"
+          [control]="operationStatus | formControl"
+          [padding]="'p-2'"
+          dropDownName="take an action"
+          (select)="onDropDownSelected_Status($event)"
+        >
+        </app-dropdown>
+      </div>
+    </div>
+    <div
+      *ngIf="operationStatus.value.code == 'Scheduled'"
+      class="flex mb-6 flex-row flex-wrap sm:flex-nowrap gap-6 justify-between items-center"
+    >
+      <mat-form-field>
+        <mat-label>Schedule a date</mat-label>
+        <input
+          matInput
+          (dateChange)="setDateTime()"
+          [matDatepicker]="datepicker"
+          [formControl]="datePick"
+          [min]="minDate"
+        />
+        <mat-datepicker #datepicker />
+        <mat-datepicker-toggle [for]="datepicker" matSuffix />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>pick a time</mat-label>
+        <input
+          matInput
+          [matTimepicker]="timepicker"
+          [formControl]="timePick"
+          [min]="minTime"
+          (timeChange)="setTime()"
+        />
+        <mat-timepicker #timepicker />
+        <mat-timepicker-toggle [for]="timepicker" matSuffix />
+
+        @if (timePick.errors?.['matTimepickerParse']) {
+        <mat-error>Value isn't a valid time</mat-error>
+        } @if (timePick.errors?.['matTimepickerMin']) {
+        <mat-error>Value is too early</mat-error>
+        } @if (timePick.errors?.['matTimepickerMax']) {
+        <mat-error>Value is too late</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- <p class="text-gray-400 dark:text-gray1">
+        Value: {{ datePick.value }}{{ timePick.value }}
+      </p> -->
+    </div>
+    <div class="relative">
+      <!-- <div class="absolute right-3 top-4 z-10 h-5 w-5">
+        <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
+      </div> -->
+
+      <!-- input component -->
+      <app-ginput
+        class="min-w-full"
+        [control]="url"
+        (keyup.enter)="onDataLinkChange($event)"
+        bgColor="dark:bg-gray6 bg-white"
+      ></app-ginput>
+    </div>
+    <div>
+      <app-promptarea
+        [submitControl]="submitButton | formControl"
+        [userPrompt]="userprompt"
+        [enableClearBtn]="!!url.value"
+        (submited)="onPromptSubmited($event)"
+        (clear)="onClearText()"
+        (abort)="abortRequests()"
+      ></app-promptarea>
+    </div>
+  </div>
+</div>
+<div
+  class="flex flex-wrap max-w-screen-3xl mt-8 items-center justify-center gap-4 mb-4"
+>
+  <div class="flex items-center justify-center" *ngIf="addScrapperBtn">
+    <span class="bg-green-300 dark:bg-gray-50 h-1 w-28 rounded-2xl"></span>
+  </div>
+  <div
+    #searchBar
+    class="flex w-full justify-between items-center pb-3 pl-6 gap-4 flex-wrap sm:flex-nowrap"
+  >
+    <div class="w-full">
+      <app-stinput
+        [control]="search | formControl"
+        [leftIcon]="'search'"
+        [label]="'search'"
+        [errorLabel]="
+        search?.errors?.['userExists'] ? 'Email already exists' : ''
+      "
+      ></app-stinput>
+    </div>
+    <div>
+      <button
+        *ngIf="!addScrapperBtn"
+        appRipple
+        rippleColor="dark"
+        type="button"
+        class="flex items-center leading-6 flex-row flex-nowrap text-lg gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+        aria-label="Create an operation"
+        (click)="toggleScrapperBtn()"
+      >
+        <mat-icon>add</mat-icon>
+        scrapper
+      </button>
+    </div>
+    <div class="z-0 sm:px-0">
+      <button
+        appRipple
+        rippleColor="dark"
+        type="button"
+        title="Feed settings"
+        class="focus:outline-none text-purple-400/70 border-purple-600/50 dark:border-purple-400/30 shrink-0 rounded-md ring-offset-2 transition-colors hover:bg-purple-900/[.18] focus-visible:outline-none focus-visible:ring-1 active:scale-95 disabled:shadow-none disabled:drop-shadow-none dark:text-gray2 text-lg inline-flex h-10 flex-row items-center justify-center border px-5 font-medium no-underline shadow-sm duration-200 ease-in-out"
+      >
+        <svg
+          width="1em"
+          height="1em"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+          class="pointer-events-none -ml-2 mr-1 h-7 w-7 text-base"
+        >
+          <path
+            d="M16.5 12a3 3 0 0 1 3 3v1.5a3 3 0 0 1-3 3H15a3 3 0 0 1-3-3H5.25a.75.75 0 1 1 0-1.5H12a3 3 0 0 1 3-3zm0 1.5H15a1.5 1.5 0 0 0-1.493 1.356L13.5 15v1.5a1.5 1.5 0 0 0 1.356 1.493L15 18h1.5a1.5 1.5 0 0 0 1.493-1.356L18 16.5V15a1.5 1.5 0 0 0-1.356-1.493zM9 4.5a3 3 0 0 1 3 3h6.75a.75.75 0 1 1 0 1.5H12a3 3 0 0 1-3 3H7.5a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3zM7.5 6a1.5 1.5 0 0 0-1.493 1.356L6 7.5V9a1.5 1.5 0 0 0 1.356 1.493l.144.007H9a1.5 1.5 0 0 0 1.493-1.356L10.5 9V7.5a1.5 1.5 0 0 0-1.356-1.493L9 6z"
+            fill="currentcolor"
+            fill-rule="evenodd"
+          />
+        </svg>
+        Filters
+      </button>
+    </div>
+    <!-- <div>
+      <label for="filterSelect" class="sr-only">Filter options</label>
+      <select
+        id="filterSelect"
+        class="rounded-lg border border-blue-300/20 bg-gray5/20 px-2 py-2 text-blue-400 outline-none dark:bg-gray5/20"
+        aria-label="Filter options"
+      >
+        <option class="bg-gray5/20 dark:bg-gray5" value="">Filter by...</option>
+        <option class="bg-gray5/20 dark:bg-gray5" value="branch">Branch</option>
+        <option class="bg-gray5/20 dark:bg-gray5" value="chef">Chef</option>
+        <option class="bg-gray5/20 dark:bg-gray5" value="date">Date</option>
+      </select>
+    </div> -->
+  </div>
+  <div class="w-full md:w-12/12 xl:w-12/12 p-6">
+    <div class="">
+      <div class="mb-6">
+        <div class="flex items-center justify-between h-12 md:mr-8">
+          <h2
+            class="text-2xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+          >
+            Operations
+            <span
+              *ngIf="inTotal$ | async as inTotal"
+              class="dark:text-gray-300 text-sm dark:bg-gray5 rounded-full px-[.7rem] py-1 font-medium"
+              >{{ inTotal }}</span
+            >
+            <div
+              *ngIf="!(operations$ | async) && (operations$ | async) !== null"
+            >
+              <div
+                class="relative h-6 w-6 px-[.7rem] py-1 animate-pulse rounded-full bg-gray4 dark:bg-gray4"
+              ></div>
+            </div>
+          </h2>
+          <button
+            title="refresh"
+            type="button"
+            (click)="refreshOperationList()"
+            class="flex items-center h-full leading-6 flex-row flex-nowrap gap-1 hover:bg-gray-400/[0.5] dark:hover:bg-gray-700/20 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+          >
+            <mat-icon
+              [ngClass]="loadingOperList ? 'animate-spin' : '-rotate-45'"
+              class="text-gray-600 dark:text-gray-300/80 text-3xl !size-8 leading-8"
+              >refresh</mat-icon
+            >
+          </button>
+        </div>
+      </div>
+      <!-- active:scale-95 transform-gpu transition-transform duration-100 ease-in -->
+      <div
+        *ngIf="operations$ | async as operations"
+        class="flex flex-wrap justify-center bg-transparent gap-8"
+      >
+        <div
+          class="w-full cursor-pointer"
+          *ngFor="let operation of operations; let i = index"
+        >
+          <div
+            class="sm:rounded-full relative pr-12 pl-2 xs:px-8 rounded-md items-center bg-green-500/[.1] dark:bg-gray6/[.6] py-6 flex-wrap sm:flex-nowrap gap-4 flex flex-row"
+          >
+            <div
+              class="flex flex-col w-full max-w-lg flex-wrap sm:flex-nowrap items-start gap-2"
+            >
+              <div class="ml-4 w-full">
+                <h2 class="text-lg font-bold text-gray-700 dark:text-gray-300">
+                  {{ operation.name }}
+                </h2>
+              </div>
+              <div class="ml-4 w-full">
+                <!-- w-full -->
+                <a
+                  [href]="getOperation(operation)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <!-- truncate w-full -->
+                  <h2
+                    class="text-lg break-words w-fit max-w-full hover:text-blue-500 hover:underline font-light font-code text-[#af929b] dark:text-[#9bc6a0]"
+                  >
+                    {{ getOperation(operation) }}
+
+                    @if(isArray(operation.urls)) { ...
+                    <span class="text-gray-600 dark:text-gray-400 italic">
+                      +{{ operation.urls.length - 1 }} more
+                    </span>
+                    }
+                  </h2>
+                </a>
+              </div>
+            </div>
+            <div class="flex items-center flex-col justify-end w-full gap-6">
+              <div
+                class="flex flex-row items-center flex-wrap sm:flex-nowrap gap-4 sm:gap-0 justify-end w-full"
+              >
+                <div class="ml-4 cursor-pointer">
+                  <p
+                    class="text-gray-600 flex items-center leading-6 sm:rounded-full rounded-md flex-row flex-nowrap text-base gap-1 hover:bg-deep-purple-600/[0.5] focus:bg-deep-purple-900/[0.8] bg-deep-purple-600/[.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-2 duration-300 transition-colors"
+                  >
+                    {{ operation?.author?.displayName || "Anonymous :)" }}
+                  </p>
+                </div>
+                <div class="px-2">
+                  <span class="text-lg text-gray4 dark:text-gray-100">·</span>
+                </div>
+                <div>
+                  <p class="text-gray-600 dark:text-gray-400 italic">
+                    {{ operation.created_At | date : "MMMM dd, yyyy hh:mm a" }}
+                  </p>
+                </div>
+                <div class="px-2">
+                  <span class="text-lg text-gray4 dark:text-gray-100"> </span>
+                </div>
+                <div>
+                  <p class="text-gray-600 text-sm dark:text-gray-400 italic">
+                    tap to open
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-row items-center justify-end w-full gap-8">
+                <div
+                  [ngClass]="'operation-' + operation.color"
+                  class="text-gray-50 flex items-center leading-6 flex-row flex-nowrap text-base gap-1 text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+                >
+                  {{ operation.status }}
+                </div>
+                <app-loading-dots
+                  *ngIf="operation.status === 'In Progress'"
+                ></app-loading-dots>
+              </div>
+            </div>
+            <div
+              class="ml-4 absolute sm:static top-5 right-1 inline-flex items-center justify-end"
+            >
+              <div class="relative">
+                <button
+                  title="actions"
+                  type="button"
+                  class="flex items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-gray-400/[0.5] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+                  (click)="toggleMenuVisible($event, i)"
+                >
+                  <mat-icon class="text-gray-600 dark:text-gray-100"
+                    >more_horiz</mat-icon
+                  >
+                </button>
+                <ul
+                  appOutsideClick
+                  (outsideClick)="closeOptions($event, i)"
+                  aria-current="menu"
+                  [id]="'operation-' + operation.id"
+                  class="transition-shadow transl3d duration-300 hover:shadow-[0_-10px_60px_-15px_rgba(0,0,0,0.3)] before:absolute dark:before:border-b-gray5/10 dark:after:border-b-gray7 dark:hover:shadow-md dark:hover:shadow-gray7 before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-gray-200 before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-gray-200 after:content-[''] bg-gray-200 dark:bg-gray7 border-0.5 border-gray-300 absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-[.5rem] px-1 py-1 shadow-lg focus:outline-none transform opacity-100 scale-100"
+                  [hidden]="!operOptions[i].menu_visible"
+                >
+                  <li>
+                    <a
+                      (click)="deleteOperation(operation, i)"
+                      class="flex w-full items-center justify-end gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-gray-400/[0.5] focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                      [id]="'operation-del-' + operation.id"
+                    >
+                      <mat-icon>delete</mat-icon>
+                      Delete
+                      <span class="inline-flex flex-grow justify-end h-5 w-5">
+                        <mat-spinner
+                          *ngIf="isOperOptionsLoading"
+                          [diameter]="20"
+                          class="stroke-gray-200"
+                        ></mat-spinner>
+                      </span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination Buttons -->
+        @if(operations.length) {
+        <div
+          class="flex items-center gap-2"
+          *ngIf="totalOpePages$ | async as totalOpePages"
+        >
+          <!-- First button to move to previous page -->
+          <div
+            class="sm:static top-5 right-1 inline-flex items-center justify-end"
+          >
+            <button
+              [disabled]="currentOpePage === 1"
+              title="actions"
+              type="button"
+              (click)="onPageChanged(currentOpePage - 1, totalOpePages)"
+              class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+            >
+              <mat-icon
+                *ngIf="currentOpePage !== 1"
+                class="dark:disabled:text-white dark:disabled:hover:text-gray1/[.08]"
+                >chevron_left</mat-icon
+              >Previous
+            </button>
+          </div>
+
+          <!-- Pagination Buttons -->
+          <div class="flex justify-center gap-1">
+            <button
+              title="pagination buttons"
+              *ngFor="let page of Array(totalOpePages)"
+              [class]="
+                currentOpePage === page
+                  ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]'
+                  : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'
+              "
+              class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+              (click)="onPageChanged(page, totalOpePages)"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <!-- Next button to move to next page -->
+          <div
+            class="sm:static top-5 right-1 inline-flex items-center justify-end"
+          >
+            <button
+              disabled="true"
+              [disabled]="currentOpePage === totalOpePages"
+              title="actions"
+              type="button"
+              (click)="onPageChanged(currentOpePage + 1, totalOpePages)"
+              class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+            >
+              Next
+              <mat-icon
+                class="peer-disabled:text-gray5 dark:peer-disabled:!text-white dark:peer-disabled:hover:text-gray1/[.08]"
+                >chevron_right</mat-icon
+              >
+            </button>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- Loading state -->
+      <div
+        *ngIf="!(operations$ | async) && (operations$ | async) !== null"
+        class="w-full grid grid-row-1 md:grid-row-2 lg:grid-row-3 gap-4"
+      >
+        <div
+          *ngFor="let item of [1, 2, 3, 4, 5]"
+          class="relative h-36 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray4 dark:bg-gray4"
+        ></div>
+      </div>
+
+      <!-- No API keys Completed State -->
+      @if((operations$ | async)?.length === 0) {
+      <div class="text-center py-8">
+        <p class="text-gray-600 dark:text-gray-300">
+          No operations created yet. Click the green button to run instantly or
+          schedule or create.
+        </p>
+      </div>
+      } @if((operations$ | async) === null) {
+      <div class="text-center py-8">
+        <p class="text-red-600 dark:text-red-300">
+          An Error Occured. Please try again later. or contact with
+          administrator. find the feedback button in the sidebar
+        </p>
+      </div>
+      }
+    </div>
+  </div>
+</div>

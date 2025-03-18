@@ -1,4 +1,4 @@
-import { animate, group, query, style, transition, trigger } from "@angular/animations";
+import { animate, group, keyframes, query, style, transition, trigger } from "@angular/animations";
 export * from './sidebar'
 
 export const fadeInOutSlideAnimation =
@@ -49,3 +49,17 @@ export const PopupAnimation = trigger('enableProfileMenu', [
         animate('500ms', style({ opacity: 0, transform: 'translateY(5%)' })),
     ]),
 ])
+
+
+export const bounceAnim = trigger('bounceAnimation', [
+    transition('* => *', [
+        animate(
+            '1s',
+            keyframes([
+                style({ transform: 'translateY(40%)', offset: 0 }),
+                style({ transform: 'translateY(0)', offset: 0.5 }),
+                style({ transform: 'translateY(40%)', offset: 1 }),
+            ])
+        )
+    ])
+]);

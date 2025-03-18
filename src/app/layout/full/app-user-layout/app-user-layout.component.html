@@ -2,17 +2,15 @@
   class="fixed backdrop-blur-2xl backdrop-saturate-200 left-0 right-0 top-0 mx-auto flex h-auto flex-col gap-1 z-[60] w-full bg-gray-50 dark:bg-gray-900 border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]"
 >
   <div
-    class="flex h-20 items-center justify-between px-4 md:px-8 lg:px-32 py-2"
+    class="flex h-20 items-center justify-between px-4 lg:px-20 3xl:px-32 py-2"
   >
     <div class="flex items-center justify-between space-x-2">
       <button
         appRipple
         rippleColor="dark"
-        data-drawer-target="logo-sidebar"
-        data-drawer-toggle="logo-sidebar"
         (click)="addAsideBar(false)"
         type="button"
-        class="inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 lg:hidden"
+        class="inline-flex items-center rounded-full p-3 text-sm text-gray-500 hover:bg-gray-300/[.2] focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-300 dark:hover:bg-gray-700/[.2] dark:focus:ring-gray-600 lg:hidden"
       >
         <span class="sr-only">Open sidebar</span>
         <svg
@@ -52,6 +50,12 @@
       </a>
     </div>
     <div class="flex items-center gap-4">
+      <!-- Crawler Packager in Cart -->
+      @if (cartPackager$ | async) {
+      <app-cart-pack-notify></app-cart-pack-notify>
+      <app-dropdown-cart class="fixed"></app-dropdown-cart>
+      }
+
       <!-- Theme Mode Switch -->
       <app-theme-toggle></app-theme-toggle>
       @if (user$ | async; as user) {
@@ -70,25 +74,19 @@
           ng-img="true"
           decoding="sync"
           [srcset]="user | provider : user.providerId : 'photoURL'"
+          [name]="user | provider : user.providerId : 'displayName'"
           alt="user photo"
         />
       </button>
       <!-- DropDown Profile Menu -->
       <div
-        (outsideClick)="openProfileMenu($event)"
-        appOutsideClick
         @enableProfileMenu
+        appOutsideClick
+        (outsideClick)="openProfileMenu($event)"
         *ngIf="showProfileMenu"
         class="fixed right-[1.1rem] top-[4.5rem] z-[90] list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6 md:right-[2.1rem] lg:right-[8.2rem]"
       >
         <div class="px-4 py-3" role="none">
-          <p class="text-sm text-gray-900 dark:text-white" role="none">
-            <!--  {{
-              this.userData?.profile?.first_name +
-                ' ' +
-                this.userData?.profile?.last_name
-            }} -->
-          </p>
           <div
             class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
             role="none"
@@ -180,7 +178,7 @@
               alt="settings"
               (click)="closeProfileMenu($event, user.uid)"
               routerLinkActive="Active"
-              routerLink="/keys"
+              routerLink="/settings"
             >
               <div class="mt-1">
                 <mat-icon fontSet="material-icons-outlined">settings</mat-icon>
@@ -220,19 +218,109 @@
       </a> -->
       <button
         type="button"
+        (click)="openProfileMenu()"
         class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
         aria-expanded="false"
       >
         <span class="sr-only">Open user menu</span>
         <img
           class="rounded-full object-contain"
-          [srcset]="
-            'https://eu.ui-avatars.com/api/?name=Prok+Ant' + '&size=250'
-          "
+          [srcset]="''"
           alt="user photo"
         />
       </button>
+      <div
+        @enableProfileMenu
+        appOutsideClick
+        (outsideClick)="openProfileMenu($event)"
+        *ngIf="showProfileMenu"
+        class="fixed right-[1.1rem] top-[4.5rem] z-[90] list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6 md:right-[2.1rem] lg:right-[8.2rem]"
+      >
+        <ul class="py-1">
+          <li>
+            <a
+              role="dashboard"
+              alt="dashboard"
+              (click)="closeProfileMenu($event)"
+              routerLinkActive="Active"
+              routerLink="/dashboard"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+            >
+              <div class="mt-1">
+                <mat-icon fontSet="material-icons-outlined"
+                  >space_dashboard</mat-icon
+                >
+              </div>
+              <div>Dashboard</div></a
+            >
+          </li>
+          <li>
+            <a
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="billing"
+              alt="billing"
+              (click)="closeProfileMenu($event)"
+              routerLinkActive="Active"
+              routerLink="/billing"
+            >
+              <div class="mt-1">
+                <mat-icon fontSet="material-icons-outlined">wallet</mat-icon>
+              </div>
+              <div>Billing</div></a
+            >
+          </li>
 
+          <li>
+            <a
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="chatai"
+              alt="chatai"
+              (click)="closeProfileMenu($event)"
+              routerLinkActive="Active"
+              routerLink="/chatai"
+            >
+              <div class="mt-1"><mat-icon>auto_awesome</mat-icon></div>
+              <div>Chatai</div>
+            </a>
+          </li>
+
+          <li>
+            <a
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="settings"
+              alt="settings"
+              (click)="closeProfileMenu($event)"
+              routerLinkActive="Active"
+              routerLink="/settings"
+            >
+              <div class="mt-1">
+                <mat-icon fontSet="material-icons-outlined">settings</mat-icon>
+              </div>
+              <div>Settings</div>
+            </a>
+          </li>
+          <li>
+            <a
+              (click)="logout()"
+              class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+              role="logout"
+              alt="logout"
+            >
+              <div class="mt-1"><mat-icon>logout</mat-icon></div>
+              <div class="flex w-fit items-start justify-start gap-3">
+                Sign out @if (loading) {
+                <!-- Loading spinner -->
+
+                <mat-spinner
+                  [diameter]="20"
+                  class="stroke-gray-200"
+                ></mat-spinner>
+                }
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
       }
     </div>
   </div>
@@ -244,18 +332,19 @@
 <div
   [@routeAnimation]="getAnimationData(outlet)"
   [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
-  class="w-full mt-20 px-4 pt-0 md:px-8 lg:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2"
+  class="w-full mt-20 px-4 pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2"
 >
   <app-sidebar
     [barClosed]="closeAsideBar"
     [resizeScreen]="viewSmallDevices"
-    (backDropPressed)="closeAsideBar = $event"
+    (backDropPressed)="onCloseAsideBar($event)"
   ></app-sidebar>
   <router-outlet #outlet="outlet"></router-outlet>
 </div>
+@if(!compIsLoading) {
+<app-footer></app-footer>
+}
 <!-- </div>
  [ngClass]="!closeAsideBar ? 'show' : 'hidden'"
     [@asideBarAnimation]="!closeAsideBar ? 'open' : 'closed'"
 </div> -->
-
-<app-footer></app-footer>

@@ -21,15 +21,13 @@ import { provideImgixLoader } from '@angular/common';
 import { environment } from '../environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
 
-import 'prismjs';
+/* import 'prismjs';
 import 'prismjs/components/prism-typescript.min.js';
 import 'prismjs/plugins/line-numbers/prism-line-numbers.js';
-import 'prismjs/plugins/line-highlight/prism-line-highlight.js';
+import 'prismjs/plugins/line-highlight/prism-line-highlight.js'; */
 import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
-import { TokenInterceptor } from './core/guards';
-import { MatIconRegistry } from '@angular/material/icon';
 
 export const appConfig: ApplicationConfig = {
   providers: [

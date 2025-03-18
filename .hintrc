@@ -8,6 +8,12 @@
       {
         "aria-roles": "off"
       }
+    ],
+    "axe/forms": [
+      "default",
+      {
+        "label": "off"
+      }
     ]
   }
 }

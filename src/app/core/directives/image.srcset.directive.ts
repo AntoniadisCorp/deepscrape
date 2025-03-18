@@ -9,6 +9,8 @@ export class ImageSrcsetDirective implements OnInit, OnDestroy {
   @Input() dataSrcset: string;
   @Input() srcset: string | null;
 
+  @Input() name: string | null;
+
   private _image?: HTMLImageElement;
 
   constructor(private elementRef: ElementRef) { }
@@ -32,7 +34,17 @@ export class ImageSrcsetDirective implements OnInit, OnDestroy {
 
   private _handleError(): void {
     // Replace with a fallback image URL
-    this.nativeElement.srcset = 'https://eu.ui-avatars.com/api/?name=Prok+Ant' + '&size=250';
+    this.nativeElement.srcset = `https://eu.ui-avatars.com/api/?name=${this._handlerName(this.name || 'NA')}` + '&size=250';
+
+  }
+
+  private _handlerName(fullName: string): string {
+    // Split the full name into first name and last name
+    const [firstName, lastName] = fullName.split(' ');
+    const firstLetterFirstName = firstName?.charAt(0);
+    const firstLetterLastName = lastName?.charAt(0);
+    return firstLetterFirstName + '+' + firstLetterLastName;
+
   }
 
   private _handleLoad(): void {
@@ -53,10 +65,6 @@ export class ImageSrcsetDirective implements OnInit, OnDestroy {
     if (this.imageUrl) {
       this._loadImageUrl(this.imageUrl);
     }
-  }
-
-  private getProvider(): void {
-    // Implement provider logic
   }
 
   ngAfterViewInit(): void {

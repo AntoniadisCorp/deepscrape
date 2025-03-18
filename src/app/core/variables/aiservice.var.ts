@@ -5,3 +5,5 @@ export const API_OPENAI = environment?.production ? environment?.API_OPENAI + '/
 export const API_GROQAI = environment?.production ? environment?.API_GROQ + '/openai/v1' : '/groq'
 
 export const API_JINAAI = environment?.production ? environment?.API_JINAAI + '' : '/jina'
+
+export const API_CRAWL4AI = environment?.production ? environment?.API_CRAWL4AI + '/' : '/api'

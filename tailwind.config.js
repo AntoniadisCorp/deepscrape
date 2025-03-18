@@ -1,5 +1,5 @@
 import colors from '@material-tailwind/html/theme/base/colors';
-
+const defaultTheme = require('tailwindcss/defaultTheme')
 
 import withMT from "@material-tailwind/html/utils/withMT"
 /** @type {import('tailwindcss').Config} */
@@ -127,6 +127,16 @@ module.exports = withMT({
     },
 
     extend: {
+      fontFamily: {
+        sans: [
+          '"Inter var", sans-serif',
+          {
+            fontFeatureSettings: '"cv11", "ss01"',
+            fontVariationSettings: '"opsz" 32'
+          },
+          '"Proxima Nova"', ...defaultTheme.fontFamily.sans,
+        ],
+      },
       boxShadow: {
         '3xl': '0 5px 20px rgb(0 0 0 / 30%)',
         '4xl': '0 5px 20px rgb(0 0 0 / 90%)',

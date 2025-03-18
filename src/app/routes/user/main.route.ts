@@ -9,7 +9,15 @@ export const MainRoutes: Routes = [
         path: 'playground',
         loadComponent: () => import('../../pages').then(m => m.PlaygroundComponent),
     },
-
+    {
+        path: 'crawlpack',
+        loadComponent: () => import('../../pages').then(m => m.CrawlPackComponent),
+        loadChildren: () => import('./crawlpack.route').then(m => m.crawlerPackRoutes)
+    },
+    {
+        path: 'operations',
+        loadComponent: () => import('../../pages').then(m => m.OperationsComponent),
+    },
     {
         path: 'billing',
         loadComponent: () => import('../../pages').then(m => m.BillingComponent),

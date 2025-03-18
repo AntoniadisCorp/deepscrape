@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express"
-import fetch from 'node-fetch';
-import { JinaHeader } from "./types";
-import { customUrlDecoder } from "./fun";
+import fetch from 'node-fetch'
+import { JinaHeader } from "./types"
+import { customUrlDecoder } from "./fun"
 
 
 class SyncAIapis {
@@ -34,15 +34,15 @@ class SyncAIapis {
         this.router.get('/jina', async (req: Request, res: Response) => {
 
             try {
-                res.status(200).json({ message: 'Hello from the server!' });
+                res.status(200).json({ message: 'Hello from the server!' })
             } catch (error) {
-                console.error('Error:', error);
-                res.status(500).json({ error: 'Failed to connect to the API' });
+                console.error('Error:', error)
+                res.status(500).json({ error: 'Failed to connect to the API' })
             }
         })
 
         this.router.get('/jina/:url', async (req: Request, res: Response) => {
-            const { url } = req.params;
+            const { url } = req.params
             const apiKey = process.env["JINAAI_API_KEY"]
 
             let headers: JinaHeader = {
@@ -52,13 +52,13 @@ class SyncAIapis {
                 "X-Return-Format": req.headers["x-return-format"] as string || "markdown",
                 "X-Target-Selector": req.headers["x-target-selector"] as string || "body",
                 "X-With-Generated-Alt": req.headers["x-with-generated-alt"] as string || "true",
-            };
+            }
 
             if (req.headers['x-set-cookie']?.length) {
-                headers['X-Set-Cookie'] = req.headers['x-set-cookie'] as string;
+                headers['X-Set-Cookie'] = req.headers['x-set-cookie'] as string
             }
-            // const decodedUrl = decodeURIComponent(url); // decode the URL
-            const apiUrl = `https://r.jina.ai/${customUrlDecoder(url)}`;
+            // const decodedUrl = decodeURIComponent(url) // decode the URL
+            const apiUrl = `https://r.jina.ai/${customUrlDecoder(url)}`
 
             try {
                 const apiResponse = await fetch(apiUrl, {
@@ -67,17 +67,17 @@ class SyncAIapis {
                 })
 
                 if (!apiResponse.ok) {
-                    throw new Error(`API error: ${apiResponse.statusText}`);
+                    throw new Error(`API error: ${apiResponse.statusText}`)
                 }
-                const buffer = await apiResponse.arrayBuffer();
+                const buffer = await apiResponse.arrayBuffer()
                 res.writeHead(200, {
                     'Content-Type': 'application/octet-stream',
-                });
-                res.end(Buffer.from(buffer));
+                })
+                res.end(Buffer.from(buffer))
             }
             catch (error) {
-                console.error('Error:', error);
-                res.status(500).json({ error: 'Failed to connect to jina API' });
+                console.error('Error:', error)
+                res.status(500).json({ error: 'Failed to connect to jina API' })
             }
         })
     }
@@ -88,8 +88,8 @@ class SyncAIapis {
 
     httpRoutesPosts(): void {
         this.router.post('/anthropic/messages',/*  isJwtAuth, */async (req: Request, res: Response) => {
-            const apiUrl = 'https://api.anthropic.com/v1/messages';
-            const apiKey = process.env["ANTHROPIC_API_KEY"];
+            const apiUrl = 'https://api.anthropic.com/v1/messages'
+            const apiKey = process.env["ANTHROPIC_API_KEY"]
             // console.log(apiKey,)
             try {
                 const apiResponse = await fetch(apiUrl, {
@@ -103,7 +103,7 @@ class SyncAIapis {
                 })
 
                 if (!apiResponse.ok) {
-                    throw new Error(`API error: ${apiResponse.statusText}`);
+                    throw new Error(`API error: ${apiResponse.statusText}`)
                 }
 
                 // Stream data from Anthropic to the client
@@ -113,48 +113,48 @@ class SyncAIapis {
                     'Connection': 'keep-alive',
                     'Pragma': 'no-cache',
                     'Expires': '0',
-                });
+                })
 
 
                 // Accumulate chunks and send them line-by-line
-                let buffer = '';
+                let buffer = ''
 
                 apiResponse.body.on('data', (chunk: Buffer) => {
-                    const text = new TextDecoder('utf-8').decode(chunk);
-                    buffer += text;
+                    const text = new TextDecoder('utf-8').decode(chunk)
+                    buffer += text
 
-                    let boundary: number;
+                    let boundary: number
                     while ((boundary = buffer.indexOf('\n')) !== -1) {
-                        const jsonChunk = buffer.slice(0, boundary).trim();
-                        buffer = buffer.slice(boundary + 1);
+                        const jsonChunk = buffer.slice(0, boundary).trim()
+                        buffer = buffer.slice(boundary + 1)
 
                         if (jsonChunk) {
-                            res.write(`${jsonChunk}\n`); // Send chunked data as JSON
+                            res.write(`${jsonChunk}\n`) // Send chunked data as JSON
                         }
                     }
-                });
+                })
 
                 apiResponse.body.on('end', () => {
                     if (buffer.trim()) {
-                        res.write(`${buffer.trim()}\n`); // Send remaining data
+                        res.write(`${buffer.trim()}\n`) // Send remaining data
                     }
-                    res.end();
-                });
+                    res.end()
+                })
 
                 apiResponse.body.on('error', (error: Error) => {
-                    console.error('Stream error:', error);
-                    res.status(500).end('Stream error');
-                });
+                    console.error('Stream error:', error)
+                    res.status(500).end('Stream error')
+                })
             } catch (error) {
-                console.error('Error:', error);
-                res.status(500).json({ error: 'Failed to connect to Anthropic API' });
+                console.error('Error:', error)
+                res.status(500).json({ error: 'Failed to connect to Anthropic API' })
             }
 
         }) // Search for Markets
 
         this.router.post('/openai/chat/completions', async (req: Request, res: Response) => {
-            const apiUrl = 'https://api.openai.com/v1/chat/completions';
-            const apiKey = process.env["OPENAI_API_KEY"];
+            const apiUrl = 'https://api.openai.com/v1/chat/completions'
+            const apiKey = process.env["OPENAI_API_KEY"]
             try {
                 const apiResponse = await fetch(apiUrl, {
                     method: 'POST',
@@ -165,7 +165,7 @@ class SyncAIapis {
                     body: JSON.stringify(req.body),
                 })
                 if (!apiResponse.ok) {
-                    throw new Error(`API error: ${apiResponse.statusText}`);
+                    throw new Error(`API error: ${apiResponse.statusText}`)
                 }
                 // Stream data from OpenAI to the client
                 res.writeHead(200, {
@@ -174,46 +174,46 @@ class SyncAIapis {
                     'Connection': 'keep-alive',
                     'Pragma': 'no-cache',
                     'Expires': '0',
-                });
+                })
                 // Accumulate chunks and send them line-by-line
-                let buffer = '';
+                let buffer = ''
 
                 apiResponse.body.on('data', (chunk: Buffer) => {
-                    const text = new TextDecoder('utf-8').decode(chunk);
-                    buffer += text;
+                    const text = new TextDecoder('utf-8').decode(chunk)
+                    buffer += text
 
-                    let boundary: number;
+                    let boundary: number
                     while ((boundary = buffer.indexOf('\n')) !== -1) {
-                        const jsonChunk = buffer.slice(0, boundary).trim();
-                        buffer = buffer.slice(boundary + 1);
+                        const jsonChunk = buffer.slice(0, boundary).trim()
+                        buffer = buffer.slice(boundary + 1)
 
                         if (jsonChunk) {
-                            res.write(`${jsonChunk}\n`); // Send chunked data as JSON
+                            res.write(`${jsonChunk}\n`) // Send chunked data as JSON
                         }
                     }
-                });
+                })
 
                 apiResponse.body.on('end', () => {
                     if (buffer.trim()) {
-                        res.write(`${buffer.trim()}\n`); // Send remaining data
+                        res.write(`${buffer.trim()}\n`) // Send remaining data
                     }
-                    res.end();
-                });
+                    res.end()
+                })
 
                 apiResponse.body.on('error', (error: Error) => {
-                    console.error('Stream error:', error);
-                    res.status(500).end('Stream error');
-                });
+                    console.error('Stream error:', error)
+                    res.status(500).end('Stream error')
+                })
             }
             catch (error) {
-                console.error('Error:', error);
-                res.status(500).json({ error: 'Failed to connect to OpenAI API' });
+                console.error('Error:', error)
+                res.status(500).json({ error: 'Failed to connect to OpenAI API' })
             }
         })
 
         this.router.post('/groq/chat/completions', async (req: Request, res: Response) => {
-            const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-            const apiKey = process.env["GROQ_API_KEY"];
+            const apiUrl = 'https://api.groq.com/openai/v1/chat/completions'
+            const apiKey = process.env["GROQ_API_KEY"]
             try {
                 const apiResponse = await fetch(apiUrl, {
                     method: 'POST',
@@ -224,7 +224,7 @@ class SyncAIapis {
                     body: JSON.stringify(req.body),
                 })
                 if (!apiResponse.ok) {
-                    throw new Error(`API error: ${apiResponse.statusText}`);
+                    throw new Error(`API error: ${apiResponse.statusText}`)
                 }
                 // Stream data from OpenAI to the client
                 res.writeHead(200, {
@@ -233,46 +233,91 @@ class SyncAIapis {
                     'Connection': 'keep-alive',
                     'Pragma': 'no-cache',
                     'Expires': '0',
-                });
+                })
 
                 // Accumulate chunks and send them line-by-line
-                let buffer = '';
+                let buffer = ''
 
                 apiResponse.body.on('data', (chunk: Buffer) => {
-                    const text = new TextDecoder('utf-8').decode(chunk);
-                    buffer += text;
+                    const text = new TextDecoder('utf-8').decode(chunk)
+                    buffer += text
 
-                    let boundary: number;
+                    let boundary: number
                     while ((boundary = buffer.indexOf('\n')) !== -1) {
-                        const jsonChunk = buffer.slice(0, boundary).trim();
-                        buffer = buffer.slice(boundary + 1);
+                        const jsonChunk = buffer.slice(0, boundary).trim()
+                        buffer = buffer.slice(boundary + 1)
 
                         if (jsonChunk) {
-                            res.write(`${jsonChunk}\n`); // Send chunked data as JSON
+                            res.write(`${jsonChunk}\n`) // Send chunked data as JSON
                         }
                     }
-                });
+                })
 
                 apiResponse.body.on('end', () => {
                     if (buffer.trim()) {
-                        res.write(`${buffer.trim()}\n`); // Send remaining data
+                        res.write(`${buffer.trim()}\n`) // Send remaining data
                     }
-                    res.end();
-                });
+                    res.end()
+                })
 
                 apiResponse.body.on('error', (error: Error) => {
-                    console.error('Stream error:', error);
-                    res.status(500).end('Stream error');
-                });
+                    console.error('Stream error:', error)
+                    res.status(500).end('Stream error')
+                })
 
             }
             catch (error) {
-                console.error('Error:', error);
-                res.status(500).json({ error: 'Failed to connect to GROQAI API' });
+                console.error('Error:', error)
+                res.status(500).json({ error: 'Failed to connect to GROQAI API' })
             }
         })
 
+        this.router.post('/api/crawl', async (req: Request, res: Response) => {
+            // const decodedUrl = decodeURIComponent(url) // decode the URL
+            const apiUrl = `${process.env["API_CRAWL4AI_URL"]}/crawl`
+            const { urls, priority } = req.body
+            const body = {
+                urls,
+                priority
+            }
 
+            // const apiKey = process.env["JINAAI_API_KEY"]
+
+            let headers: JinaHeader = {
+                'Authorization': `${req.headers['authorization'] as string || 'Bearer '}`,
+                "Accept": req.headers['accept'] as string || "application/json",
+                "X-With-Iframe": req.headers['x-with-iframe'] as string || 'false',
+                "X-Return-Format": req.headers["x-return-format"] as string || "markdown",
+                "X-Target-Selector": req.headers["x-target-selector"] as string || "body",
+                "X-With-Generated-Alt": req.headers["x-with-generated-alt"] as string || "true",
+            }
+
+            if (req.headers['x-set-cookie']?.length) {
+                headers['X-Set-Cookie'] = req.headers['x-set-cookie'] as string
+            }
+
+            try {
+                const apiResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(body),
+                })
+
+                if (!apiResponse.ok)
+                    throw new Error(`API error: ${apiResponse.statusText}`)
+
+                const buffer = await apiResponse.arrayBuffer()
+                res.writeHead(200, {
+                    'Content-Type': 'application/octet-stream',
+                })
+
+                res.end(Buffer.from(buffer))
+            }
+            catch (error) {
+                console.error('Error:', error)
+                res.status(500).json({ error: 'Failed to connect to crawl API' })
+            }
+        })
     }
     /**
      * https Router Put

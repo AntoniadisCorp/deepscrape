@@ -18,6 +18,23 @@ export const navigation = [
         identity: true,
     },
     {
+        name: 'Crawl Pack',
+        url: '/crawlpack',
+        icon: 'crawl_logo',
+
+        identity: true,
+    },
+
+    {
+        name: 'Operations',
+        url: '/operations',
+        icon: {
+            matIcon: 'storage'
+        },
+
+        identity: true,
+    },
+    {
         name: 'AI Chat',
         url: '/chatai',
         icon: {

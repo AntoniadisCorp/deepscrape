@@ -1,0 +1,111 @@
+<div
+  class="group mt-6 flex max-w-lg flex-col items-start gap-2"
+  (click)="focus()"
+>
+  <div
+    [ngClass]="[
+      inputFocused && !(control.invalid && control.touched)
+        ? 'border-2 border-purple-300/[.5] dark:border-purple-600/40'
+        : control.invalid && control.touched && inputFocused
+        ? 'border-l-0 border-gray4 dark:border-l-0 dark:border-purple-900/40'
+        : !inputFocused && control.invalid && control.touched
+        ? 'border-l-0 border-gray-400 hover:border-purple-300 dark:border-0 '
+        : 'border-l-2 border-gray-400 hover:border-l-4 dark:border-0',
+      control.invalid && control.touched
+        ? 'shadow-[inset_2px_0_0_0_0] shadow-red-400 before:opacity-[24]'
+        : 'before:opacity-0'
+    ]"
+    class="relative flex h-12 ring-0 cursor-text w-full flex-row focus-within:border-l-purple-500 dark:focus-within:border-l-gray-100 hover:border-l-purple-500 dark:hover:border-l-deep-purple-400 items-center overflow-hidden rounded-full rounded-l-full border border-l-4 bg-white px-4 pl-3 outline-none transition-[border_,_colors] duration-75 ease-out before:absolute before:-left-7 before:top-0 before:h-full before:w-11 before:rounded-l-[14px] before:bg-gradient-to-l before:from-[rgba(252,83,141,0)] before:to-[#fc538d] before:content-[''] dark:bg-gray6"
+  >
+    <span
+      [ngClass]="
+        inputFocused
+          ? 'text-purple-500 dark:text-gray-100'
+          : 'text-gray5 dark:text-gray-300'
+      "
+      class="mr-2 h-5 w-5 group-hover:text-purple-500 dark:group-hover:text-gray-100"
+    >
+      <mat-icon
+        class="pointer-events-none h-5 w-5 text-[1.2rem]"
+        [fontSet]="outlined ? 'material-icons-outlined' : ''"
+        >{{ leftIcon ?? "" }}
+        {{
+          inputFocused ? "" : "" // lock_open if input is opened by scheduler
+        }}</mat-icon
+      >
+    </span>
+
+    <!-- appForbiddenName="^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$" -->
+    <div
+      class="flex max-w-full flex-1 flex-col items-start bg-inherit dark:bg-inherit"
+    >
+      <input
+        #stInput
+        [type]="isLabelPassword() ? 'password' : 'text'"
+        [formControl]="control"
+        (focus)="doFocus()"
+        (blur)="doBlur()"
+        (input)="doValidation()"
+        (keyup)="doValidation()"
+        (click)="doValidation()"
+        id="{{ label }}"
+        class="peer mb-1 block w-full cursor-text appearance-none rounded-t-lg border-0 bg-inherit bg-white px-2.5 pb-2.5 pl-0 pt-5 text-gray5 focus:outline-none focus:ring-0 dark:bg-inherit dark:text-white"
+        [placeholder]="Placeholder"
+      />
+      <label
+        for="{{ label }}"
+        class="absolute start-10 top-[0.8rem] z-10 origin-[0] -translate-y-3 scale-75 transform cursor-text text-sm text-gray5 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 dark:peer-hover:text-purple-400 peer-focus:scale-75 peer-focus:text-purple-700 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 dark:group-hover:text-white peer-focus:dark:text-gray-100"
+        >{{ label }}</label
+      >
+
+      <div
+        [ngClass]="
+          control.invalid && control.touched
+            ? 'bg-red-400'
+            : control.valid && control.touched && invalidCount > 0
+            ? 'bg-green-400'
+            : ''
+        "
+        class="absolute bottom-[1px] h-[3px] w-1/2 rounded-md transition-all"
+      ></div>
+    </div>
+
+    <!-- Lock icon -->
+    <span
+      [ngClass]="getRightIconClass()"
+      class="mr-2 h-5 w-5 dark:group-hover:text-gray-100"
+      (click)="togglePasswordVisibility()"
+    >
+      <mat-icon class="h-5 w-5 text-[1.2rem]"
+        >{{ rightIcon ?? "" }}
+        {{
+          inputFocused ? "" : "" // lock_open if input is opened by scheduler
+        }}</mat-icon
+      >
+    </span>
+  </div>
+  @if (control.invalid && control.touched) {
+
+  <div class="mt-0 px-2 text-sm text-red-400" role="alert">
+    {{
+          control.errors?.['required']
+            ? 'This field is required'
+            : control.errors?.['pattern']
+              ? errorLabel
+                ? errorLabel
+                : 'Invalid format'
+              : errorLabel
+    }}
+  </div>
+  } @else {
+  <div class="mt-0 px-2 text-sm text-green-400" role="alert">
+    {{
+      control.valid && control.touched && invalidCount > 0
+        ? errorLabel
+          ? errorLabel
+          : "Valid"
+        : ""
+    }}
+  </div>
+  }
+</div>

@@ -1,0 +1,2092 @@
+<form
+  [formGroup]="configForm"
+  (ngSubmit)="saveConfiguration()"
+  class="w-full grid grid-cols-1 sm:grid-cols-[1fr_13rem] xl:grid-cols-[1fr_13rem] lg:grid-cols-1 2xl:grid-cols-[1fr_20rem] gap-4"
+>
+  <!-- main content goes here -->
+  <div
+    class="mx-auto w-full pt-6 order-2 px-4 sm:order-1 lg:order-2 xl:order-1"
+  >
+    <h1
+      class="text-3xl text-center font-bold mb-8 text-gray-800 dark:text-gray-200"
+    >
+      Crawl Pack Configuration
+    </h1>
+
+    <div class="w-full text-center inline-flex items-center justify-center">
+      <mat-icon
+        aria-label="package-box"
+        svgIcon="package-box"
+        class="font-bold !size-40 mb-4 text-gray-800 dark:text-gray-200"
+      ></mat-icon>
+    </div>
+
+    <h3
+      id="controlling-each-crawl"
+      class="text-xl py-8 font-weight-light text-gray-800 dark:text-gray-200"
+    >
+      Controlling Each Crawl
+    </h3>
+
+    <!--  Parameters Hilights -->
+    <p class="mb-8 font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
+      While <span class="text-sky-500 bg-sky-700/10">BrowserConfig</span> sets
+      up the environment,
+      <span class="text-sky-500 bg-sky-700/10">CrawlerRunConfig</span> details
+      how each crawl operation should behave: caching, content filtering, link
+      or domain blocking, timeouts, JavaScript code, etc.
+    </p>
+
+    <!-- Recent Configs -->
+    <h3
+      class="flex flex-wrap justify-between mb-4 text-xl font-light text-gray-800 dark:text-gray-200"
+    >
+      <span>Recent Configs</span>
+      <button
+        title="add new profile"
+        type="button"
+        (click)="addCrawlConfig()"
+        [ngClass]="
+          !newConfigOpened
+            ? 'hover:bg-gray-400/[0.5] dark:hover:bg-gray-700/20 dark:focus:bg-gray-700/[0.7] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300'
+            : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
+        "
+        class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+      >
+        <mat-icon
+          [ngClass]="
+            !newConfigOpened
+              ? 'text-gray-600 dark:text-gray-300/80'
+              : '-rotate-45'
+          "
+          class="text-3xl transition-transform !size-8 leading-8"
+          >add</mat-icon
+        >
+      </button>
+    </h3>
+
+    <!-- Recent Crawl Config Async List -->
+    <div class="w-full md:w-12/12 xl:w-12/12">
+      @if ((crawlConfig$ | async )?.length) {
+
+      <div
+        *ngIf="crawlConfig$ | async as configs"
+        class="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+      >
+        <div
+          *ngFor="let config of configs; let i = index"
+          (click)="onSelectCrawlConfig(config)"
+          [ngClass]="{
+            'bg-gray-300/70 dark:bg-gray-600/50':
+              showSettings && config.id === configSelectedById
+          }"
+          class="cursor-pointer flex flex-col gap-4 justify-between border rounded-xl p-4 border-gray-200 hover:border-gray-300/70 dark:hover:border-gray-600/0 hover:bg-gray-300/70 dark:border-gray-600 dark:hover:bg-gray-600/50"
+        >
+          <div class="flex justify-between items-start mb-4 gap-4">
+            <div class="flex items-start">
+              <mat-icon
+                svgIcon="spider-crawl-config"
+                class="mr-2 text-gray-600 dark:text-gray-200 text-sm max-h-[2.4rem] max-w-[2.4rem] !w-fit !h-fit"
+              ></mat-icon>
+              <span
+                class="text-base font-medium text-gray-700 dark:text-gray-200 text-wrap line-clamp-2"
+                >{{ config.title }}</span
+              >
+            </div>
+            <button
+              type="button"
+              (click)="actionProfileClicked($event, config)"
+              class="text-base inline-flex items-center text-center !size-8 font-medium h-full leading-6 transform flex-row flex-nowrap duration-300 rounded-full transition-colors hover:bg-gray-400/[0.5] dark:hover:bg-gray-900/70 dark:focus:bg-purple-700/[0.4] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300"
+            >
+              <mat-icon
+                fontSet="material-icons-outlined"
+                class="text-lg text-gray-600 dark:text-gray-300/80 !size-8 !leading-8"
+                >more_vert</mat-icon
+              >
+            </button>
+          </div>
+          <div
+            class="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+          >
+            <span>{{
+              config.created_At | date : "MMMM dd, yyyy" | date : "medium"
+            }}</span>
+            <span
+              ><mat-icon
+                fontSet="material-icons-outlined"
+                class="mr-2 text-blue-400 dark:text-blue-300"
+                >web</mat-icon
+              >
+              <mat-icon
+                fontSet="material-icons-outlined"
+                class="mr-2 text-gray-600 dark:text-green-200"
+              >
+                cloud_done
+              </mat-icon></span
+            >
+          </div>
+          <div
+            class="flex justify-center items-end text-gray-500 dark:text-gray-400"
+          >
+            <a
+              *ngIf="config.id === (packCart$ | async)?.id"
+              (click)="removePackFromCart($event)"
+              class="text-base text-center border border-green-600/80 leading-[0] gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-transparent text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+            >
+              <mat-icon>close</mat-icon>
+              <mat-icon
+                svgIcon="package-box"
+                class="font-bold !w-[2rem] !h-[1.6rem] text-sm"
+              ></mat-icon
+            ></a>
+            <a
+              *ngIf="config.id !== (packCart$ | async)?.id"
+              (click)="addPackToCart($event, config)"
+              class="text-base text-center border border-transparent leading-[0] gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+            >
+              <mat-icon>add</mat-icon>
+              <mat-icon
+                svgIcon="package-box"
+                class="font-bold !w-[2rem] !h-[1.6rem] text-sm"
+              ></mat-icon
+            ></a>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Loading state -->
+      <div
+        *ngIf="!(crawlConfig$ | async) && (crawlConfig$ | async) !== null"
+        class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+      >
+        <div
+          *ngFor="let item of [1, 2, 3, 4, 5]"
+          class="relative h-40 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray3 dark:bg-gray4/60"
+        ></div>
+      </div>
+
+      @if((crawlConfig$ | async)?.length === 0) {
+      <div class="text-center py-8">
+        <p class="text-gray-600 dark:text-gray-300">
+          No crawler configuration created yet. Click the 'plus' button to add a
+          new configuration.
+        </p>
+      </div>
+      } @if((crawlConfig$ | async) === null) {
+      <div class="text-center py-8">
+        <p class="text-red-600 dark:text-red-300">
+          An Error Occured. Please try again later. or contact with
+          administrator. find the feedback button in the sidebar
+        </p>
+      </div>
+      }
+    </div>
+
+    <h3
+      *ngIf="showSettings"
+      class="mb-8 text-xl font-light text-gray-800 dark:text-gray-200"
+    >
+      <span>{{ !newConfigOpened ? "Selected" : "New" }} Crawl Config</span>
+      <span *ngIf="newConfigOpened" class="text-red-400 ml-2">*</span>
+    </h3>
+
+    <div
+      *ngIf="showSettings"
+      class="border rounded-xl p-4 border-gray-200 dark:border-gray6/70"
+    >
+      <div class="border-b-2 border-gray-200 dark:border-gray-700 mb-8 gap-1">
+        @if (!newConfigOpened) {
+        <div
+          class="flex justify-center items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2"
+        >
+          <mat-icon class="">travel_explore</mat-icon>
+          <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+            {{ configForm.get("title")?.value }}
+          </h3>
+        </div>
+        } @else {
+        <div
+          class="flex justify-between items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2"
+        >
+          <div class="w-full">
+            <app-stinput
+              [control]="configForm.get('title') | formControl"
+              [leftIcon]="'person'"
+              [label]="'Title'"
+              [errorLabel]="getErrorLabel('title')"
+            ></app-stinput>
+          </div>
+          <div>{{ configForm.errors | json }}</div>
+          <div>
+            <button
+              type="submit"
+              [disabled]="configForm.invalid || savingNewConfig"
+              [ngClass]="{
+                'bg-green-600/[.2] dark:bg-green-600/[0.2]':
+                  configForm.invalid || savingNewConfig
+              }"
+              title="save new profile"
+              class="inline-flex text-lg min-w-32 items-center justify-center text-center border border-transparent leading-[0] gap-2 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-3 px-4 duration-300 rounded-full transition-colors"
+            >
+              @if (!savingNewConfig) {
+              <span>save</span>
+              <mat-icon class="font-bold !w-[2rem] !h-[1.6rem]">save</mat-icon>
+              } @else {
+              <mat-spinner
+                [diameter]="20"
+                class="stroke-gray-200"
+              ></mat-spinner>
+              }
+            </button>
+          </div>
+        </div>
+        }
+        <!-- Parameters to Set -->
+        <div>
+          <h3 class="text-xl font-normal text-gray-800 dark:text-gray-200">
+            Parameters Highlights
+          </h3>
+          <h2 class="text-sm py-4 font-normal text-gray-800 dark:text-gray-200">
+            We group them by category.
+          </h2>
+        </div>
+      </div>
+
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="content-processing"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Content Processing</span>
+        <a
+          (click)="scrollTo('content-processing')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+
+        <!-- Set a radio button to defaults Enabled/Disabled -->
+      </h3>
+
+      <div class="space-y-4 p-4">
+        <!-- Content Processing Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+              >
+                Text Only
+              </label>
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <span>&nbsp;</span>
+                <p
+                  class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  True
+                </p>
+                <span>, tries to extract text-only content</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="onlyText"
+                [control]="configForm.get('onlyText') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Prettify HTML</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <span>&nbsp;</span>
+                <p
+                  class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  True
+                </p>
+                <span>, beautifies final HTML (slower, purely cosmetic)</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="prettify"
+                [control]="configForm.get('prettify') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] block text-base font-medium text-gray-700 dark:text-gray-200"
+                >Remove Forms</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <span>&nbsp;</span>
+                <p
+                  class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  True
+                </p>
+
+                , remove all <span>&nbsp;</span>
+                <p
+                  class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]"
+                >
+                  forms
+                </p>
+                <span>&nbsp;</span>
+                <span>elements.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="removeForms"
+                [control]="configForm.get('removeForms') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Keep Data Attributes</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                , preserve
+                <p class="text-sky-500 bg-sky-700/10 inline">data-*</p>
+                <span>&nbsp;</span>
+                attributes in cleaned HTML.
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="keepDataAttributes"
+                [control]="configForm.get('keepDataAttributes') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] block text-base font-medium text-gray-700 dark:text-gray-200"
+                >Word Count Threshold</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Skips text blocks below X words. Helps ignore trivial
+                  sections
+                </span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set  word count threshold type of number -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('wordCountThreshold') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'Words..'"
+                  [errorLabel]="getErrorLabel('wordCountThreshold')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Css Selector</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Retains only the part of the page matching this
+                  selector.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('cssSelector') | formControl"
+                  [leftIcon]="'tag'"
+                  [label]="'#idName .className..'"
+                  [errorLabel]="getErrorLabel('cssSelector')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Excluded Selector</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Like</span>
+                <span>&nbsp;</span>
+                <p class="text-sky-500 bg-sky-700/10 inline">css_selector</p>
+                but to exclude. E.g.
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  "#ads, .tracker"
+                </p>
+                .
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('excludedSelector') | formControl"
+                  [leftIcon]="'tag'"
+                  [label]="'#ads .tracker..'"
+                  [errorLabel]="getErrorLabel('excludedSelector')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+
+          <!-- excluded_tags -->
+          <!-- parser_type -->
+          <!-- content_filter -->
+          <!-- keep_attr -->
+          <!-- markdown_generator -->
+          <!-- extraction_strategy -->
+        </div>
+
+        <!-- <div class="flex flex-col">
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
+            >Page Timeout (ms)</label
+          >
+          <input
+            placeholder="pageTimeout"
+            type="number"
+            formControlName="pageTimeout"
+            class="block w-full py-2 pl-3 pr-10 text-base text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div> -->
+      </div>
+
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="caching-session"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Caching & Session</span>
+        <a
+          (click)="scrollTo('caching-session')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+
+        <!-- Set a radio button to defaults Enabled/Disabled -->
+      </h3>
+
+      <h2 class="p-4">
+        <p class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
+          Use these for controlling whether you read or write from a local
+          content cache. Handy for large batch crawls or repeated site visits.
+        </p>
+      </h2>
+
+      <div class="space-y-4 p-4">
+        <!-- Caching Session Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Cache Mode</label
+              >
+
+              <div
+                class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Controls how caching is handled {{ "(" }}</span>
+
+                <p class="text-sky-500 bg-sky-700/10 inline">ENABLED</p>
+                ,
+                <p class="text-sky-500 bg-sky-700/10 inline">BYPASS</p>
+                ,
+                <p class="text-sky-500 bg-sky-700/10 inline">DISABLED</p>
+                ,
+                <p class="text-sky-500 bg-sky-700/10 inline">None</p>
+                , etc.{{ ")" }}. If
+                <p class="text-sky-500 bg-sky-700/10 inline">None</p>
+                , typically defaults to
+                <p class="text-sky-500 bg-sky-700/10 inline">ENABLED</p>
+                .
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set dropdown, default to None -->
+              <div class="w-full">
+                <app-dropdown
+                  [options]="cachModeOptions"
+                  [control]="configForm.get('cacheMode') | formControl"
+                  [padding]="'p-2'"
+                  dropDownName="take an action"
+                  (select)="onCacheModeSelect($event)"
+                >
+                </app-dropdown>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Session Id</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Assign a unique ID to reuse a single browser session across
+                  multiple
+                </span>
+
+                <p class="text-sky-500 bg-sky-700/10 inline">arun()</p>
+                <span>&nbsp;</span>
+                <span>calls.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set dropdown, default to None -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('sessionId') | formControl"
+                  [leftIcon]="'fingerprint'"
+                  [label]="'str or None'"
+                  [errorLabel]="getErrorLabel('sessionId')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Bypass Cache</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                , acts like
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  CacheMode.BYPASS
+                </p>
+                <span>&nbsp;</span>.
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="bypassCache"
+                [control]="configForm.get('bypassCache') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Disable Cache</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                , acts like
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  CacheMode.DISABLED
+                </p>
+                <span>&nbsp;</span>.
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="disableCache"
+                [control]="configForm.get('disableCache') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >No Cache Read</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                , acts like
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  CacheMode.WRITE_ONLY
+                </p>
+                <span>&nbsp;</span>(writes cache but never reads).
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="noCacheRead"
+                [control]="configForm.get('noCacheRead') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >No Cache Write</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                , acts like
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  CacheMode.READ_ONLY
+                </p>
+                <span>&nbsp;</span> (reads cache but never writes).
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="noCacheWrite"
+                [control]="configForm.get('noCacheWrite') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="page-nav-timing"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Page Navigation & Timing</span>
+        <a
+          (click)="scrollTo('page-nav-timing')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+
+        <!-- Set a radio button to defaults Enabled/Disabled -->
+      </h3>
+
+      <div class="space-y-4 p-4">
+        <!-- Page Navigation & Timing Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Wait For Images</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Wait for images to load before finishing. Slows down if you
+                  only want text.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="waitForImages"
+                [control]="configForm.get('waitForImages') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Check Robots Txt</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Whether to check and respect robots.txt rules before
+                  crawling. If True, caches robots.txt for efficiency.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="checkRobotsTxt"
+                [control]="configForm.get('checkRobotsTxt') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Page Timeout</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Timeout for page navigation or JS steps. Increase for slow
+                  sites.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Page Timeout type of number -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('pageTimeout') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'60000 ms..'"
+                  [errorLabel]="getErrorLabel('pageTimeout')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Wait For</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Wait for a CSS (</span>
+                <p class="text-sky-500 bg-sky-700/10 inline">"css:selector"</p>
+                <span>) or JS (</span>
+                <p class="text-sky-500 bg-sky-700/10 inline">"js:() => bool"</p>
+                <span>) condition before content extraction.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Page Timeout type of number -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('waitFor') | formControl"
+                  [leftIcon]="'edit'"
+                  [label]="'css:selector, js:() => bool..'"
+                  [errorLabel]="getErrorLabel('waitFor')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Wait Until</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Condition for navigation to “complete”. Often </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">"networkidle"</p>
+                <span> or</span>
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  "domcontentloaded"
+                </p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Page Timeout type of number -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('waitUntil') | formControl"
+                  [leftIcon]="'edit'"
+                  [label]="'str or None..'"
+                  [errorLabel]="getErrorLabel('waitUntil')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Delay Before Return Html</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Additional pause (seconds) before final HTML is captured.
+                  Good for last-second updates.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="
+                    configForm.get('delayBeforeReturnHtml') | formControl
+                  "
+                  [leftIcon]="'123'"
+                  [label]="'seconds (float)..'"
+                  [errorLabel]="getErrorLabel('delayBeforeReturnHtml')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <!-- mean_delay and max_range - arun_many() -->
+          <!-- semaphore_count - arun_many() -->
+        </div>
+      </div>
+
+      <!-- Page Interaction Parameters -->
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="page-interaction"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Page Interaction</span>
+        <a
+          (click)="scrollTo('page-interaction')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+
+        <!-- Set a radio button to defaults Enabled/Disabled -->
+      </h3>
+
+      <h2 class="p-4">
+        <p class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
+          <span
+            >If your page is a single-page app with repeated JS updates, set
+          </span>
+          <span class="text-sky-500 bg-sky-700/10 inline">js_only=True</span>
+          <span> in subsequent calls, plus a </span>
+          <span class="text-sky-500 bg-sky-700/10 inline">session_id</span>
+          <span> for reusing the same tab.</span>
+        </p>
+      </h2>
+
+      <div class="space-y-4 p-4">
+        <!-- Page Interaction Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >JavaScript Code</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>JavaScript to run after load. E.g.</span>
+
+                <span
+                  class="break-all text-sky-500 w-full xs:w-[initial] bg-sky-700/10 inline-block"
+                >
+                  "document.querySelector('button')?.click();"
+                </span>
+
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('jsCode') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'str or list[str] or None..'"
+                  [errorLabel]="getErrorLabel('jsCode')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >JavaScript Only</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                <span
+                  >, indicates we’re reusing an existing session and only
+                  applying JS. No full reload.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="jsOnly"
+                [control]="configForm.get('jsOnly') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Ignore Body Visibility</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Skip checking if </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">&lt;body&gt;</p>
+                is visible. Usually best to keep
+                <span> is visible. Usually best to keep </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="ignoreBodyVisibility"
+                [control]="configForm.get('ignoreBodyVisibility') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Scan Full Page</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                <span
+                  >, auto-scroll the page to load dynamic content (infinite
+                  scroll).</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="scanFullPage"
+                [control]="configForm.get('scanFullPage') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Scroll Delay</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Delay between scroll steps if </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  scan_full_page=True
+                </p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('scrollDelay') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'seconds (float)..'"
+                  [errorLabel]="getErrorLabel('scrollDelay')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Process Iframes</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Inlines iframe content for single-page extraction.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="processIframes"
+                [control]="configForm.get('processIframes') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Remove Overlay Elements</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Removes potential modals/popups blocking the main
+                  content.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="removeOverlayElements"
+                [control]="
+                  configForm.get('removeOverlayElements') | formControl
+                "
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Simulate User</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Simulate user interactions (mouse movements) to avoid bot
+                  detection.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="simulateUser"
+                [control]="configForm.get('simulateUser') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Override Navigator</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Override </span>
+
+                <p class="text-sky-500 bg-sky-700/10 inline">navigator</p>
+                <span> properties in JS for stealth.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="overrideNavigator"
+                [control]="configForm.get('overrideNavigator') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Magic</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Automatic handling of popups/consent banners.
+                  Experimental.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="magic"
+                [control]="configForm.get('magic') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Adjust Viewport To Content</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Resizes viewport to match page content height.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="adjustViewportToContent"
+                [control]="
+                  configForm.get('adjustViewportToContent') | formControl
+                "
+              ></app-radiotoggle>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Media Handling Parameters -->
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="media-handling"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Media Handling</span>
+        <a
+          (click)="scrollTo('media-handling')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+
+        <!-- Set a radio button to defaults Enabled/Disabled -->
+      </h3>
+
+      <div class="space-y-4 p-4">
+        <!-- Media Handling Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >ScreenShot</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Capture a screenshot (base64) in </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  result.screenshot
+                </p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="screenshot"
+                title="Enabled/Disabled"
+                [control]="configForm.get('screenshot') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Screenshot Wait For</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Extra wait time before the screenshot.</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('screenshotWaitFor') | formControl"
+                  [leftIcon]="'123'"
+                  [label]="'seconds (float)..'"
+                  [errorLabel]="getErrorLabel('screenshotWaitFor')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Screenshot Height Threshold</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >If the page is taller than this, alternate screenshot
+                  strategies are used.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="
+                    configForm.get('screenshotHeightThreshold') | formControl
+                  "
+                  [leftIcon]="'123'"
+                  [label]="'(int)..'"
+                  [errorLabel]="getErrorLabel('screenshotHeightThreshold')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Pdf</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>If </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">True</p>
+                <span>, returns a PDF in </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">result.pdf</p>
+                <span>.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="pdf"
+                title="Enabled/Disabled"
+                [control]="configForm.get('pdf') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Image Description Min Tord Threshold</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Minimum words for an image’s alt text or description to be
+                  considered valid.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="
+                    configForm.get('imageDescriptionMinWordThreshold')
+                      | formControl
+                  "
+                  [leftIcon]="'123'"
+                  [label]="'(int)..'"
+                  [errorLabel]="
+                    getErrorLabel('imageDescriptionMinWordThreshold')
+                  "
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Image Score Threshold</label
+              >
+
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Filter out low-scoring images. The crawler scores images by
+                  relevance (size, context, etc.).</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- delay Before Return Html type of float -->
+              <div class="w-full">
+                <app-stinput
+                  [control]="
+                    configForm.get('imageScoreThreshold') | formControl
+                  "
+                  [leftIcon]="'123'"
+                  [label]="'(int)..'"
+                  [errorLabel]="getErrorLabel('imageScoreThreshold')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Exclude External Images</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span>Exclude images from other domains.</span>
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="excludeExternalImages"
+                title="Enabled/Disabled"
+                [control]="
+                  configForm.get('excludeExternalImages') | formControl
+                "
+              ></app-radiotoggle>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Link/Domain Handling Parameters -->
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="link-domain-handling"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Link/Domain Handling</span>
+        <a
+          (click)="scrollTo('link-domain-handling')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+
+        <!-- Set a radio button to defaults Enabled/Disabled -->
+      </h3>
+
+      <h2 class="p-4">
+        <p class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
+          <span
+            >Use these for link-level content filtering (often to keep crawls
+            “internal” or to remove spammy domains).
+          </span>
+        </p>
+      </h2>
+
+      <div class="space-y-4 p-4">
+        <!-- Link/Domain Handling Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Exclude External Links</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Removes all links pointing outside the current domain.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="excludeExternalLinks"
+                title="Enabled/Disabled"
+                [control]="configForm.get('excludeExternalLinks') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Exclude Social Media Links</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Strips links specifically to social sites (like Facebook or
+                  Twitter).</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="excludeSocialMediaLinks"
+                title="Enabled/Disabled"
+                [control]="
+                  configForm.get('excludeSocialMediaLinks') | formControl
+                "
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Exclude Social Media Domains</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >A default list can be extended. Any link to these domains is
+                  removed from final output.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <app-stinput
+                  [control]="
+                    configForm.get('excludeSocialMediaDomains') | formControl
+                  "
+                  [leftIcon]="'share'"
+                  [label]="'facebook.com..'"
+                  [errorLabel]="getErrorLabel('excludeSocialMediaDomains')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-1 items-center md:grid-cols-[1fr_24rem] lg:grid-cols-[1fr_32rem] xl:grid-cols-[1fr_24rem] 3xl:grid-cols-[1fr_32rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Exclude Domains</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span> Provide a custom list of domains to exclude (like </span>
+                <p class="text-sky-500 bg-sky-700/10 inline">
+                  ["ads.com", "trackers.io"]
+                </p>
+
+                <span>).</span>
+              </div>
+            </div>
+            <label
+              class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200"
+            >
+              <div class="w-full">
+                <app-stinput
+                  [control]="configForm.get('excludeDomains') | formControl"
+                  [leftIcon]="'share'"
+                  [label]="'ads.com,trackers.io..'"
+                  [errorLabel]="getErrorLabel('excludeDomains')"
+                ></app-stinput>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug & Logging Parameters -->
+      <h3
+        class="flex items-center p-4 rounded-xl bg-[#dce7ec] dark:bg-[#1b1d1e] gap-2 mb-4 text-xl font-weight-light text-gray-800 dark:text-gray-200"
+        id="debug-logging"
+        (mouseover)="showLink = true"
+        (mouseleave)="showLink = false"
+      >
+        <span class="border-b-4 border-gray5">Debug & Logging</span>
+        <a
+          (click)="scrollTo('debug-logging')"
+          *ngIf="showLink"
+          class="inline-flex cursor-pointer items-center justify-center"
+        >
+          <mat-icon class="text-gray-600 dark:text-gray4">link</mat-icon>
+        </a>
+      </h3>
+
+      <div class="space-y-4 p-4">
+        <!-- Debug & Logging Parameters -->
+        <div class="grid grid-cols-1 gap-10 mb-8">
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Verbose</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Prints logs detailing each step of crawling, interactions, or
+                  errors.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="verbose"
+                title="Enabled/Disabled"
+                [control]="configForm.get('verbose') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+          <div
+            class="grid grid-cols-2 items-center sm:grid-cols-[1fr_13rem] gap-4"
+          >
+            <div class="relative flex flex-col gap-4">
+              <label
+                class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200"
+                >Logging Console</label
+              >
+              <div
+                class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200"
+              >
+                <span
+                  >Logs the page’s JavaScript console output if you want deeper
+                  JS debugging.</span
+                >
+              </div>
+            </div>
+            <label
+              class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200"
+            >
+              <!-- Set a radio button Enabled/Disabled -->
+              <app-radiotoggle
+                title="Enabled/Disabled"
+                identity="logConsole"
+                title="Enabled/Disabled"
+                [control]="configForm.get('logConsole') | formControl"
+              ></app-radiotoggle>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- right sidebar goes here bg-gray-100 dark:bg-[rgb(36_38_40)] -->
+  <div
+    class="static top-[10rem] mt-4 sm:mt-0 xl:mt-0 lg:mt-4 lg:static w-full max-h-min max-w-full mx-auto lg:h-auto h-auto sm:sticky xl:sticky bg-transparent sm:h-[calc(100vh_-_5rem)] xl:h-[calc(100vh_-_5rem)] order-1 sm:order-2 lg:order-1 xl:order-2 overflow-auto overflow-x-hidden scrollbar px-4 border-0 border-[#70b1ff] left-0"
+  >
+    <!--   h-auto top-0   -->
+    <ul class="">
+      <li
+        class="flex relative before:h-7 before:top-[17px] before:-left-[9px] sm:before:top-[19px] sm:before:h-12 md:before:top-6 sm:before:-left-[9px] lg:before:top-5 lg:before:h-7 lg:before:-left-[9px] xl:before:top-6 2xl:before:top-5 before:absolute before:bottom-0 xl:before:h-12 2xl:before:h-7 xl:before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('controlling-each-crawl')"
+          [ngClass]="
+            activeLink === 'controlling-each-crawl'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-200 before:hidden'
+          "
+          class="cursor-pointer text-gray-600/60 hover:text-sky-600 focus:text-sky-700 dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] font-bold p-3 hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Controlling Each Crawl</span></a
+        >
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('content-processing')"
+          [ngClass]="
+            activeLink === 'content-processing'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex text-gray-600 cursor-pointer hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Content Processing</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Layout shifts in detail</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Layout shifts in detail</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('caching-session')"
+          [ngClass]="
+            activeLink === 'caching-session'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Caching & Session</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Field tools</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Lab tools</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('page-nav-timing')"
+          [ngClass]="
+            activeLink === 'page-nav-timing'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Page Navigation & Timing</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Field tools</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Lab tools</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('page-interaction')"
+          [ngClass]="
+            activeLink === 'page-interaction'
+              ? '  text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Page Interaction</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Field tools</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Lab tools</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('media-handling')"
+          [ngClass]="
+            activeLink === 'media-handling'
+              ? '  text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Media Handling</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Field tools</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Lab tools</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('link-domain-handling')"
+          [ngClass]="
+            activeLink === 'link-domain-handling'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Link/Domain Handling</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Field tools</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Lab tools</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+      <li
+        *ngIf="showSettings"
+        class="relative before:absolute before:h-[calc(100%_-_(8px_+_1rem))] before:top-0 before:bottom-0 before:-left-[9px] before:border-l before:border-gray-400/30"
+      >
+        <a
+          (click)="scrollTo('debug-logging')"
+          [ngClass]="
+            activeLink === 'debug-logging'
+              ? ' text-sky-600 dark:text-[#bae0ff] before:block'
+              : 'dark:text-gray-100 before:hidden'
+          "
+          class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]"
+          ><span>Debug & Logging</span></a
+        >
+        <!-- <ul class="pl-4">
+          <li>
+            <a
+              href="#subsection2-1"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Field tools</span></a
+            >
+          </li>
+          <li>
+            <a
+              href="#subsection2-2"
+              class="p-3 flex text-gray-400 dark:text-gray-100 font-serif text-lg font-medium"
+              ><span>Lab tools</span></a
+            >
+          </li>
+        </ul> -->
+      </li>
+    </ul>
+  </div>
+</form>

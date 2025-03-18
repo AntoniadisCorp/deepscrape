@@ -5,6 +5,9 @@ import { onCall } from "firebase-functions/v1/https"
 import { db, dbName, getSecretFromManager, saveToSecretManager, stripe } from "./config"
 import { createCustomer } from "./stripe"
 import { auth, firestore } from "firebase-functions/v1"
+import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
+import { redis } from "./cacheConfig"
+
 // import { onRequest } from "firebase-functions/https"
 
 export const createStripeCustomer = auth
@@ -288,3 +291,239 @@ export const getApiKeyDoVisible = onCall(async (data, context) => {
         return { error, apiKeyId: null, message: "Failed to retrieve API secret" }
     }
 })
+
+export const enqueueCrawlOperation = firestore
+    .database(dbName)
+    .document("users/{userId}/operations/{operationId}")
+    .onWrite(async (snap, context) => {
+        const after = snap.after.exists ? snap.after.data() : null
+        // check to see if the operation is ready to be processed or to be Scheduled
+        if (!after || !(after.status === "Start" || after.status === "Scheduled")) {
+            return null // Ignore non-ready or deleted operations
+        }
+        const operationId = context.params.operationId
+        const userId = context.params.userId
+
+        const task = {
+            operationId,
+            scheduled_At: after?.scheduled_At,
+            status: after.status,
+            author: after?.author,
+            uid: userId,
+            urls: after?.urls,
+            modelAI: after?.modelAI,
+            metadataId: after?.metadataId,
+            sumPrompt: after?.sumPrompt,
+        }
+
+        // const { client: redis, release } = await getRedisClient()
+        try {
+            const num = await redis.lpush("operation_queue", JSON.stringify(task))
+            console.log(`Operation ${operationId} queued successfully in position`, num)
+            return true
+        } catch (error) {
+            console.error(`Error enqueuing operation ${operationId}:`, error)
+            throw new HttpsError("internal", `Error enqueuing operation ${operationId}`)
+        } /* finally {
+            release() // Always release the client back to the pool
+        } */
+    })
+
+export const getOperationsPaging = onCall(
+
+    async (data, context) => {
+        const { currPage = 1, pageSize = 10 } = data
+
+        try {
+            const userId = context?.auth?.uid
+            if (!userId) {
+                throw new HttpsError("unauthenticated", "User must be authenticated.")
+            }
+
+            const operationsRef = db.collection(`users/${userId}/operations`).orderBy("created_At", "desc")
+
+            // Check if collection exists
+            const snapshot = await operationsRef.get()
+            if (snapshot.empty) {
+                return {
+                    error: null,
+                    operations: [],
+                    totalPages: 1,
+                    inTotal: 0,
+                    message: "Operations retrieved successfully",
+                }
+            }
+
+            // Get total count of operations
+            const totalOperationsQuery = await operationsRef.count().get()
+            const inTotal = totalOperationsQuery.data().count || 0
+
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
+            if (currPage > totalPages) {
+                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+            }
+
+            let query = operationsRef.limit(pageSize)
+
+            // Handle pagination using startAfter()
+            if (currPage > 1) {
+                const previousPageSnapshot = await operationsRef.limit((currPage - 1) * pageSize).get()
+                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
+                if (lastDocument) {
+                    query = query.startAfter(lastDocument)
+                }
+            }
+
+            // Fetch operations for the current page
+            const operationsSnapshot = await query.get()
+            const operations = operationsSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+
+            return {
+                error: null,
+                operations,
+                totalPages,
+                inTotal,
+                message: "Operations retrieved successfully",
+            }
+        } catch (error) {
+            console.error("Error retrieving operations:", error)
+            throw new HttpsError("internal", "Failed to retrieve operations by pagination.")
+        }
+    })
+
+
+export const getBrowserProfilesPaging = onCallv2(
+
+    async (req, resp) => {
+        const { currPage = 1, pageSize = 10 } = req.data
+
+        try {
+            const userId = req.auth?.uid
+            if (!userId) {
+                throw new HttpsError("unauthenticated", "User must be authenticated.")
+            }
+
+            const profilesRef = db.collection(`users/${userId}/browser`).orderBy("created_At", "desc")
+
+            // Check if collection exists
+            const snapshot = await profilesRef.get()
+            if (snapshot.empty) {
+                return {
+                    error: null,
+                    profiles: [],
+                    totalPages: 1,
+                    inTotal: 0,
+                    message: "Browser Profiles retrieved successfully",
+                }
+            }
+
+            // Get total count of operations
+            const totalBrowserProfilesQuery = await profilesRef.count().get()
+            const inTotal = totalBrowserProfilesQuery.data().count || 0
+
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
+            if (currPage > totalPages) {
+                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+            }
+
+            let query = profilesRef.limit(pageSize)
+
+            // Handle pagination using startAfter()
+            if (currPage > 1) {
+                const previousPageSnapshot = await profilesRef.limit((currPage - 1) * pageSize).get()
+                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
+                if (lastDocument) {
+                    query = query.startAfter(lastDocument)
+                }
+            }
+
+            // Fetch operations for the current page
+            const profilesSnapshot = await query.get()
+            const profiles = profilesSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+
+            return {
+                error: null,
+                profiles,
+                totalPages,
+                inTotal,
+                message: "Browser Profiles retrieved successfully",
+            }
+        } catch (error) {
+            console.error("Error retrieving browser profiles paging:", error)
+            throw new HttpsError("internal", "Failed to retrieve browser profiles by pagination.")
+        }
+    })
+
+export const getCrawlConfigsPaging = onCallv2(
+
+    async (req) => {
+        const { currPage = 1, pageSize = 10 } = req.data
+
+        try {
+            const userId = req.auth?.uid
+            if (!userId) {
+                throw new HttpsError("unauthenticated", "User must be authenticated.")
+            }
+
+            const configsRef = db.collection(`users/${userId}/crawlconfigs`).orderBy("created_At", "desc")
+
+            // Check if collection exists
+            const snapshot = await configsRef.get()
+            if (snapshot.empty) {
+                return {
+                    error: null,
+                    configs: [],
+                    totalPages: 1,
+                    inTotal: 0,
+                    message: "Crawler Configs retrieved successfully",
+                }
+            }
+
+            // Get total count of operations
+            const totalCrawlConfigsQuery = await configsRef.count().get()
+            const inTotal = totalCrawlConfigsQuery.data().count || 0
+
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
+            if (currPage > totalPages) {
+                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+            }
+
+            let query = configsRef.limit(pageSize)
+
+            // Handle pagination using startAfter()
+            if (currPage > 1) {
+                const previousPageSnapshot = await configsRef.limit((currPage - 1) * pageSize).get()
+                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
+                if (lastDocument) {
+                    query = query.startAfter(lastDocument)
+                }
+            }
+
+            // Fetch operations for the current page
+            const configsSnapshot = await query.get()
+            const configs = configsSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+
+            return {
+                error: null,
+                configs,
+                totalPages,
+                inTotal,
+                message: "Crawler Configs retrieved successfully",
+            }
+        } catch (error) {
+            console.error("Error retrieving Crawler Configurations paging:", error)
+            throw new HttpsError("internal", "Failed to retrieve Crawler Configurations by pagination.")
+        }
+    })

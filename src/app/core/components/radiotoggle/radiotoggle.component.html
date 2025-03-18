@@ -1,13 +1,13 @@
-<div class="flex items-center justify-start">
+<div class="flex cursor-pointer items-center justify-start">
   <div>
     <label
-      for="email_notification-switch"
+      for="toggle-switch-{{ identity ? identity : 'on' }}"
       class="w-fit max-w-[100px] cursor-pointer items-center"
     >
       <input
         title="toggle button"
         type="checkbox"
-        id="email_notification-switch"
+        id="toggle-switch-{{ identity ? identity : 'on' }}"
         name="email_notification"
         class="peer sr-only"
         [formControl]="control"

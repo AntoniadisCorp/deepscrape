@@ -1,0 +1,82 @@
+<div
+  #tabsContainer
+  class="right-0 relative overflow-hidden 3xl:w-full items-center"
+>
+  <!-- flex-row flex-nowrap gap-1 w-[3.5rem]   font-medium py-2 px-2 duration-300 transition-colors z-30 absolute right-0 top-1/2 transform -translate-y-1/2 border-0 p-2 rounded-full shadow-sm hover:shadow-md -->
+  <button
+    *ngIf="showPreviousButton"
+    class="z-30 absolute w-[3.5rem] left-0 top-1/2 transform -translate-y-1/2 border-0 p-2 shadow-sm hover:shadow-md flex items-center h-full leading-6 flex-row flex-nowrap gap-1 hover:bg-gray-400/[0.5] dark:bg-[rgb(36_38_40_/_32%)] dark:hover:bg-gray-700/20 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+    (click)="scrollTabs('previous')"
+  >
+    <mat-icon
+      fontSet="material-icons-outlined"
+      class="text-gray-600 dark:text-gray-300/80 text-3xl size-8 !w-10 leading-8"
+      >chevron_left</mat-icon
+    >
+  </button>
+
+  <div
+    class="whitespace-nowrap rounded-br-3xl rounded-bl-3xl overflow-hidden w-auto lg:max-w-[44rem] xl:max-w-[55rem] 2xl:max-w-[64rem] 3xl:max-w-full"
+  >
+    <ul
+      appTouchEvents
+      (swipeLeft)="onSwipeLeft($event)"
+      (swipeRight)="onSwipeRight($event)"
+      [style.transform]="'translateX(' + transformX + ')'"
+      #tabs
+      class="overflow-hidden relative grid grid-flow-col auto-rows-max 3xl:w-full transition-transform duration-300 ease-in-out w-[1400px] transform will-change-transform rounded-tr-md bg-slate-100 px-1.5 py-1.5 dark:bg-[rgb(36_38_40)]"
+      data-tabs="tabs"
+      role="presentation"
+    >
+      <li
+        *ngFor="let tab of linkTabs; let i = index"
+        role="tablist"
+        #tab
+        class="z-30 w-full flex-auto rounded-md text-center"
+        (click)="onTabChange($event, tab.index, i)"
+        appRipple
+        rippleColor="{{
+          themeIsDark() ? 'rgba(255, 255, 255, 0.2)' : 'rgba(33, 33, 33, 0.15)'
+        }}"
+      >
+        <a
+          [ngClass]="{
+          'text-blue-600 dark:text-white': tab.active,
+          'text-slate-500 dark:text-gray-500': !tab.active,
+        }"
+          class="z-30 mb-0 flex cursor-pointer w-48 items-center justify-center rounded-md border-0 px-2 py-2 text-sm transition-all ease-in-out dark:hover:text-white"
+          data-tab-target=""
+          [routerLink]="setRoutes(tab.link)"
+          routerLinkActive="router-link-active"
+          role="tab"
+        >
+          <mat-icon fontSet="material-icons-outlined">{{ tab.icon }}</mat-icon>
+          <span class="ml-1">{{ tab.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <!-- Show "next" button when screen size is smaller -->
+  <button
+    *ngIf="showNextButton"
+    class="flex-row flex-nowrap gap-1 w-[3.5rem] hover:bg-gray-400/[0.5] dark:bg-[rgb(36_38_40_/_32%)] dark:hover:bg-gray-700/20 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-2 duration-300 transition-colors z-30 absolute right-0 top-1/2 transform -translate-y-1/2 border-0 p-2 rounded-full shadow-sm hover:shadow-md"
+    (click)="scrollTabs('next')"
+  >
+    <mat-icon
+      fontSet="material-icons-outlined"
+      class="text-gray-600 dark:text-gray-300/80 text-3xl !size-8 leading-10"
+      >chevron_right</mat-icon
+    >
+  </button>
+  <div
+    role="tablist"
+    #bar
+    [ngStyle]="{ left: leftPosition, transform: transformPosition }"
+    class="animate-tab-selector slide absolute bottom-0 z-10 block h-1 w-28 flex-auto transform rounded-lg border-0 bg-inherit bg-none text-center text-slate-700 shadow"
+  >
+    <a
+      class="z-30 mb-0 flex h-1 w-full cursor-pointer items-center justify-center rounded-md border-0 bg-blue-600 px-0 text-sm text-slate-600 transition-all ease-in-out dark:bg-white dark:text-white"
+      role="tab"
+    ></a>
+  </div>
+</div>

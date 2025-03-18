@@ -5,8 +5,7 @@
 /*
 https://medium.com/@unravel-technologies/angular-loading-performance-deploying-ssr-ssg-to-firebase-2a48d4cc7fc5
 */
-import { onRequest } from "firebase-functions/v2/https"
-import { app } from "./server"
+import * as app from "./server"
 import * as auth from "./app/auth"
 
 // import path, { join } from "node:path"
@@ -27,23 +26,29 @@ import * as auth from "./app/auth"
 
 // Export the Firebase deepscrape SSR app
 // https://firebase.google.com/docs/functions/networking
-export const deepscrape = onRequest(app)
+export const deepscrape = app.deepscrape
 
 // const __filename = fileURLToPath(import.meta.url)
 // const __dirname = dirname(__filename)
 
-
-// Auth Functions
+/* Auth - Functions */
+// STRIPE Functions
 export const createStripeCustomer = auth.createStripeCustomer
-
 export const createPaymentIntent = auth.createPaymentIntent
-
 export const startSubscription = auth.startSubscription
-
 export const updateUsage = auth.updateUsage
 
-// API SECRET KEYS
+// API SECRET KEYS - Functions
 export const createMyApiKey = auth.createMyApiKey
 export const retrieveMyApiKeysPaging = auth.retrieveMyApiKeysPaging
-
 export const getApiKeyDoVisible = auth.getApiKeyDoVisible
+
+
+// CRAWL OPERATIONS - Function TRIGGERS
+export const enqueueCrawlOperation = auth.enqueueCrawlOperation
+export const getOperationsPaging = auth.getOperationsPaging
+
+
+// CRAWL PACK CONFIGURATIONS - Function TRIGGERS
+export const getBrowserProfilesPaging = auth.getBrowserProfilesPaging
+export const getCrawlConfigsPaging = auth.getCrawlConfigsPaging

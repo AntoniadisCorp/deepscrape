@@ -7,7 +7,7 @@ import { map } from 'rxjs/internal/operators/map';
 import { tap } from 'rxjs/internal/operators/tap';
 import { environment } from 'src/environments/environment';
 import { arrayBufferToString, customUrlEncoder, sanitizeJSON, switchModelApiEndpoint } from '../functions';
-import { API_ANTHROPIC, API_GROQAI, API_JINAAI, API_OPENAI } from '../variables';
+import { API_ANTHROPIC, API_CRAWL4AI, API_GROQAI, API_JINAAI, API_OPENAI } from '../variables';
 import { scan } from 'rxjs/internal/operators/scan';
 import { claudeAiApiStreamData, JinaOptions } from '../types';
 import { filter } from 'rxjs/internal/operators/filter';
@@ -15,7 +15,10 @@ import { Subject } from 'rxjs/internal/Subject';
 import { from } from 'rxjs/internal/observable/from';
 import { mergeMap } from 'rxjs/internal/operators/mergeMap';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { finalize } from 'rxjs';
+import { Auth, authState, getAuth } from '@angular/fire/auth';
+import { of } from 'rxjs/internal/observable/of';
+import { Subscription, take } from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -33,20 +36,23 @@ export class AiAPIService {
 
   private jinaAiEndpoint: string
 
+  private crawl4AiEndpoint: string
 
   private subjectClaudeAI = new Subject<claudeAiApiStreamData>()
   private subjectOpenAI = new Subject<{ content: string, usage: any | null, role: any | null }>()
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
 
     // Replace with actual AI API endpoint each model
     this.claudeAiEndpoint = API_ANTHROPIC + '/messages'  // Updated URL
     this.openAiEndpoint = API_OPENAI + '/chat/completions' // Updated URL
     this.groqAiEndpoint = API_GROQAI + '/chat/completions' // Updated URL
     this.jinaAiEndpoint = API_JINAAI + '/'// Updated URL
+    this.crawl4AiEndpoint = API_CRAWL4AI + '/crawl' // Updated URL
+
+    // initialize auth state
+    this.authService.initAuth()
   }
-
-
 
   sendToJinaAI(url: string, options: JinaOptions, cookies?: string): Observable<string> {
 
@@ -74,13 +80,58 @@ export class AiAPIService {
             title: response.data.title,
             status: response.status,
             url: response.data.url,
-            tokens: response.data.usage.tokens
+            tokens: response.data.usage?.tokens
           }
           console.log('Response data:', data)
         }),
         map((response: any) => response.data.content),
         catchError(error => {
           console.error('Error in Jina AI API call:', error)
+          throw error
+        })
+
+      )
+  }
+
+  sendToCrawl4AI(url: string, options: JinaOptions, cookies?: string,
+    content_type: "application/octet-stream" | "text/plain" | "application/json" | "text/event-stream" = "application/octet-stream"): Observable<string> {
+
+    const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url// customUrlEncoder(url);
+    // console.log("encodedUrl: ", encodedUrl, environment?.CRAWL4AI_API_KEY)
+    const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint
+    // const cookie = options.forwardCookies && cookies && cookies?.length ? { "X-Set-Cookie": cookies } : null // If cookies are provided, append them to the headers, )
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.authService.token}`, // Replace with your actual API key
+      'Accept': content_type as string,
+      // "X-With-Links-Summary": "true",
+      // "X-With-Iframe": options.iframe,
+      // "X-Return-Format": "markdown",
+      // "X-Target-Selector": "body",
+      // "X-With-Generated-Alt": "true",
+      // ...cookie
+    })
+
+    const body = {
+      "urls": encodedUrl,
+      "priority": 10,
+    }
+    return this.http.post(crawl4AiReaderEndpoint, body, { headers/* , transferCache: true */, responseType: 'arraybuffer' })
+      .pipe(
+        map((response: ArrayBuffer) => JSON.parse(arrayBufferToString(response))),
+        tap((response: any) => {
+
+          const data = {
+            code: response.code,
+            title: response.data.title,
+            status: response.status,
+            url: response.data.url,
+            tokens: response.data.usage?.tokens
+          }
+          console.log('Response data:', data)
+        }),
+        map((response: any) => response.data.content),
+        catchError(error => {
+          console.error('Error in Crawl4 AI API call:', error)
           throw error
         })
 
@@ -97,10 +148,10 @@ export class AiAPIService {
     })
 
     const system = sys || `You are a helpful assistant.Extract all recipe information from website content also clean unnecessary special characters
-    recipe details like image video link steps or any usage data and return in JSON format. If a field is missing, use null. 
+    recipe details like image video link steps or any usage data and return in JSON format. If a field is missing, use null.
     Do not say anything else.`/* `extract all product information from website content also clean unnecessary special characters
-                     products details as an array and return in JSON format with four keys: 
-                     code: number, price (number), title (string), productLink (string), discount (number). If a field is missing, use null. 
+                     products details as an array and return in JSON format with four keys:
+                     code: number, price (number), title (string), productLink (string), discount (number). If a field is missing, use null.
                      Do not say anything else.` */
 
 
@@ -128,7 +179,7 @@ export class AiAPIService {
       reportProgress: true, withCredentials: true
     }).pipe(
       /* tap((event: HttpEvent<string>) => {
-
+  
         switch (event.type) {
           case HttpEventType.DownloadProgress:
             // console.log('Uploaded ' + event.loaded + ' out of ' + event.total + ' bytes', Math.round((100 * event.loaded) / event.total!));
@@ -238,10 +289,10 @@ export class AiAPIService {
     })
 
     const system = sys || `You are a helpful assistant.Extract all recipe information from website content also clean unnecessary special characters
-    recipe details like image video link steps or any usage data and return in JSON format. If a field is missing, use null. 
+    recipe details like image video link steps or any usage data and return in JSON format. If a field is missing, use null.
     Do not say anything else.` /* `extract all product information from website content also clean unnecessary special characters
-    products details as an array and return in JSON format with four keys: 
-    code: number, price (number), title (string), productLink (string), discount (number). If a field is missing, use null. 
+    products details as an array and return in JSON format with four keys:
+    code: number, price (number), title (string), productLink (string), discount (number). If a field is missing, use null.
     Do not say anything else.` */
 
     const messages = Array.isArray(content) ? content : [
@@ -350,18 +401,6 @@ export class AiAPIService {
     // return this.subjectOpenAI.asObservable()
   }
 
-
-  private handleError(error: HttpErrorResponse) {
-    if (error.error instanceof ErrorEvent) {
-      console.error('An error occurred:', error.error.message);
-    } else {
-      console.error(
-        `Backend returned code ${error.status}, ` +
-        `body was: ${error.error}`);
-    }
-    return throwError(() => 'Something bad happened; please try again later.');
-  }
-
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
@@ -369,3 +408,4 @@ export class AiAPIService {
     this.subjectOpenAI?.unsubscribe()
   }
 }
+

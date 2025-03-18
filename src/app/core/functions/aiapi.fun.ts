@@ -1,4 +1,4 @@
-import { OpenAITokenDetails } from "../types";
+import { OpenAITokenDetails, Size } from "../types";
 import { sanitizeJSON } from "./global.fun";
 
 /**
@@ -109,6 +109,23 @@ export function switchModelApiEndpoint(modelName: string, apiEndpoints: string[]
             return [model, openApi, openApiKey, 'openai']
     }
 
+}
+
+export function setAIModel(newModel: Size[]) {
+    const model = [
+        { name: 'gpt-4-turbo', code: 'openai' },
+        { name: 'gpt-4', code: 'openai' },
+        { name: 'gpt-3.5', code: 'openai' },
+        { name: 'gpt-4o-mini', code: 'openai' },
+        { name: 'gpt-3.5-turbo', code: 'openai' },
+        { name: 'llama-3.1-8b-instant', code: 'groq' },
+        { name: 'llama-3.3-70b-versatile', code: 'groq' },
+        { name: 'claude-3-5-sonnet-20240620', code: 'claude' },
+        { name: 'claude-3-5-sonnet-20241022', code: 'claude' },
+        { name: 'claude-3-haiku-20240307', code: 'claude' },
+        { name: 'claude-3-5-haiku-20241022', code: 'claude' },
+    ]
+    newModel.push(...model)
 }
 
 export function constructCookiesforJina(cookies: { name: string, value: string, domain: string }[]): string {

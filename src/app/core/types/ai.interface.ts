@@ -39,11 +39,6 @@ export type claudeAiApiStreamData = {
 }
 
 
-export type Cookies = {
-    name: string
-    value: string
-}
-
 export type JinaOptions = {
     iframe: "true" | "false"
     forwardCookies: boolean
