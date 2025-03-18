@@ -114,7 +114,3 @@ export function getErrorLabel(configForm: FormGroup<any>, controlName: string): 
     }
     return 'invalid input'
 }
-
-export function isArray(variable: any): boolean {
-    return Array.isArray(variable)
-}

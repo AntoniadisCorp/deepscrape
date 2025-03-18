@@ -60,7 +60,7 @@ export class BrowserConfigComponent {
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private scrollService: ScrollService,
+    private scroll: ScrollService,
 
     private cartService: CartService,
 
@@ -396,7 +396,7 @@ export class BrowserConfigComponent {
     this.activeLink = link
     const elem = this.document.getElementById(link) as HTMLElement
     if (elem)
-      this.scrollService.scrollToElementByOffset(this.document.getElementById(link) as HTMLElement, 10 * 16)
+      this.scroll.scrollToElementByOffset(this.document.getElementById(link) as HTMLElement, 10 * 16)
   }
 
   scrollIntoView() {

@@ -1,5 +1,5 @@
 import { NgFor, NgIf, DatePipe, AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, inject, Inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, HostBinding, inject, Inject, OnInit } from '@angular/core';
 import { Observable, Subscription, tap } from 'rxjs';
 import { NAVIGATOR } from 'src/app/core/providers';
 import { CheckboxComponent, ClipboardbuttonComponent, SlideInModalComponent } from 'src/app/core/components';
@@ -22,10 +22,12 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 })
 export class ApiKeysComponent implements OnInit {
 
+  @HostBinding('class') classes = 'w-full'
+
   private apiKeySub: Subscription
   private localStorage: Storage = inject(LocalStorage)
-  popupNewKeyVisible: boolean = false;
-  apiKeys$: Observable<ApiKey[] | null>;
+  protected popupNewKeyVisible: boolean = false;
+  protected apiKeys$: Observable<ApiKey[] | null>;
 
   protected newApiKey: FormControl<string>
   protected newApiKeyName: FormControl<string>

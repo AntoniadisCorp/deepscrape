@@ -105,7 +105,7 @@ export class ApiKeyService {
                     // store key in cache
                     this.apiKeysSubject.next(updatedKeys);
                     this.saveApiKeys(updatedKeys);
-                    console.log(fun.data as any)
+                    // console.log(fun.data as any)
                 }))
     }
 
@@ -241,5 +241,6 @@ export class ApiKeyService {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.retrieveKeysSub?.unsubscribe()
+        this.apiKeysSubject?.unsubscribe()
     }
 }

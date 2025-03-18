@@ -27,12 +27,15 @@
         <mat-spinner diameter="40" class="stroke-blue-700"></mat-spinner>
       </div>
     </div>
-    <app-sidebar-nav [hidden]="isLoading"></app-sidebar-nav>
+    <app-sidebar-nav
+      [hidden]="isLoading"
+      (sidebarClosed)="onSidebarClose($event)"
+    ></app-sidebar-nav>
   </div>
 </aside>
 
 <div
   id="barblurid"
-  *ngIf="!barClosed"
+  *ngIf="!barClosed && resizeScreen"
   class="fixed left-0 right-0 z-[200] h-full w-full overflow-hidden bg-gray-600/[.06] backdrop-blur-[1px] dark:bg-gray-50/[.02]"
 ></div>

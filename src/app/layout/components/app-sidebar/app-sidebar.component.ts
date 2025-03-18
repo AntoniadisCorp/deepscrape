@@ -43,6 +43,10 @@ export class AppSidebarComponent {
     this.cdr.detectChanges()
   }
 
+  onSidebarClose(event: boolean): void {
+    // like a backDrop click
+    this.backDropPressed.emit(true)
+  }
   backDropClicked($event: MouseEvent) {
     const element = $event.target as HTMLElement
 

@@ -1,5 +1,6 @@
 import { CrawlOperationStatus } from "../enum"
 import { AIModel } from "./global.interface"
+import { Author } from "./user.interface"
 
 export interface BrowserConfig {
     /**
@@ -352,20 +353,38 @@ export type CrawlConfig = {
     updated_At?: number
 }
 
+export type CrawlStorageMetadata = {
+    created_At: number
+    updated_At?: number
+    file_compressed_size: number
+    file_size: number
+    file_name: string
+    key_name: string
+}
+
+
+export type CrawlStorage = {
+    error: string | null
+    metadata: CrawlStorageMetadata
+    url: string
+}
+export type CrawlPack = Record<string, CrawlerRunConfig | BrowserConfig>
 export type CrawlOperation = {
 
     id?: string
     urls: string[]
-    author: {
-        uid: string
-        displayName: string
-    },
+    author: Author,
     name: string
     color: string
-    modelAI: AIModel
+    modelAI?: AIModel
     created_At: number
     updated_At?: number
     scheduled_At?: number
     sumPrompt: string
     status: CrawlOperationStatus
+    metadataId?: string | null // CrawlPack
+
+    // Crawl Operation Metadata Results
+    error?: string | null
+    storage?: CrawlStorage[]
 }

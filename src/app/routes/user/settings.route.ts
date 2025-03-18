@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 
 export const settingsRoutes: Routes = [
+    {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'keys'
+    },
 
     {
         path: 'keys',

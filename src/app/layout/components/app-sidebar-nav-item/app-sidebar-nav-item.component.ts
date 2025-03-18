@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input, TemplateRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppSidebarNavLinkComponent } from '../app-sidebar-nav-link/app-sidebar-nav-link.component';
 import { AppSidebarNavDropdownComponent } from '../app-sidebar-nav-dropdown/app-sidebar-nav-dropdown.component';
@@ -15,6 +15,8 @@ import { AppSidebarNavDropdownComponent } from '../app-sidebar-nav-dropdown/app-
 export class AppSidebarNavItemComponent {
   @Input() item: any
   @Input() sidebarTemp!: TemplateRef<any>
+
+  @Output() sidebarClosed = new EventEmitter<boolean>()
 
   showMenu: boolean
 
@@ -60,6 +62,10 @@ export class AppSidebarNavItemComponent {
       this.item.dropdown = this.showMenu = !this.showMenu
       // console.log(this.item.dropdown, 'nav-link')
     }
+  }
+
+  onSidebarClose(event: boolean) {
+    this.sidebarClosed.emit(event)
   }
 
   constructor(private router: Router) {

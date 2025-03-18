@@ -71,7 +71,7 @@ export class CrawlConfigComponent {
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private scrollService: ScrollService,
+    private scroll: ScrollService,
     private cartService: CartService,
 
     private snackbarService: SnackbarService,
@@ -332,7 +332,7 @@ export class CrawlConfigComponent {
     this.activeLink = link
     const elem = this.document.getElementById(link) as HTMLElement
     if (elem)
-      this.scrollService.scrollToElementByOffset(this.document.getElementById(link) as HTMLElement, 10 * 16)
+      this.scroll.scrollToElementByOffset(this.document.getElementById(link) as HTMLElement, 10 * 16)
 
   }
 
@@ -363,7 +363,7 @@ export class CrawlConfigComponent {
   }
 
   private scrollToHash() {
-    this.scrollService.scrollAfterRender(300)
+    this.scroll.scrollAfterRender(300)
   }
 
   showSnackbar(

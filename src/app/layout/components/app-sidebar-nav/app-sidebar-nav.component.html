@@ -3,7 +3,7 @@
 >
   <ul class="w-56 space-y-4 font-medium">
     <ng-template #sidebarNavTemplate let-navitems>
-      <div class="" *ngFor="let navitem of navitems">
+      <div class="mr-2" *ngFor="let navitem of navitems">
         <div
           *ngIf="isDivider(navitem)"
           class="border-t border-gray-200 dark:border-gray5/[.2] dark:shadow-md dark:shadow-blue-700"
@@ -19,6 +19,7 @@
           <app-sidebar-nav-item
             [item]="navitem"
             [sidebarTemp]="sidebarNavTemplate"
+            (sidebarClosed)="onSidebarClose($event)"
           ></app-sidebar-nav-item>
         </div>
       </div>

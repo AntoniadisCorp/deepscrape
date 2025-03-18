@@ -1,11 +1,11 @@
 import { NgClass, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, Input } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { RemoveClassDirective, RippleDirective } from 'src/app/core/directives';
 import { cleanAndParseJSON } from 'src/app/core/functions';
-import { LocalStorage } from 'src/app/core/services';
+import { LocalStorage, ScreenResizeService } from 'src/app/core/services';
 import { Session } from 'src/app/core/types';
 
 @Component({
@@ -18,6 +18,7 @@ import { Session } from 'src/app/core/types';
 })
 export class AppSidebarNavLinkComponent {
   @Input() link: any
+  @Output() sidebarClosed = new EventEmitter<boolean>()
   private localStorage: Storage
 
   private routeSub: Subscription
@@ -55,7 +56,12 @@ export class AppSidebarNavLinkComponent {
   }
 
 
-  constructor(private router: Router, private cdr: ChangeDetectorRef) {
+  constructor(
+    private resizeSvc: ScreenResizeService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {
+
     this.localStorage = inject(LocalStorage)
 
 
@@ -76,7 +82,7 @@ export class AppSidebarNavLinkComponent {
         if (this.contains(user?.username))
           return
 
-        this.link.url = user !== null ? `/${user?.username}` + this.link.url : this.link.url
+        this.link.url = /* user !== null ? `/${user?.username}` + this.link.url :  */this.link.url
       }
     }
 
@@ -101,6 +107,15 @@ export class AppSidebarNavLinkComponent {
 
   private InitLinkActive() {
     this.link.active = this.router.isActive(this.link.url, true)
+  }
+
+  protected closeSideBar() {
+    const { screenWidth } = this.resizeSvc.updateScreenSize()
+
+    if (screenWidth >= 992)
+      return
+
+    this.sidebarClosed.emit(true)
   }
 
 

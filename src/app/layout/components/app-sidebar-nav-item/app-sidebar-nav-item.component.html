@@ -7,6 +7,7 @@
   <app-sidebar-nav-link
     (click)="openDropDownMenu()"
     [link]="item"
+    (sidebarClosed)="onSidebarClose($event)"
   ></app-sidebar-nav-link>
   <app-sidebar-nav-dropdown
     [link]="item"

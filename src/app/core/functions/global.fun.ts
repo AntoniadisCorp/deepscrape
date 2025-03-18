@@ -1,3 +1,6 @@
+export function isArray(arr: any): boolean {
+    return Array.isArray(arr) && arr.length > 0
+}
 export function cleanAndParseJSON(dirtyJsonString: string): any | null {
     try {
         // Use a regular expression to extract the JSON object match(/\[[^[\]]*\]|{[^}]*}/) //

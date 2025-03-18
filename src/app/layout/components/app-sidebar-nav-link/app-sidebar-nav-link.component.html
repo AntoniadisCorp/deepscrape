@@ -12,6 +12,7 @@
   "
   routerLinkActive="active"
   [routerLink]="link.url ? [link.url] : null"
+  (click)="closeSideBar()"
   class="group flex h-14 w-full cursor-pointer flex-row items-center justify-between rounded-lg p-2 text-base text-gray-900 hover:bg-gray-300/50 dark:text-white dark:hover:bg-gray5/30"
 >
   <!-- *ngIf="!isServicealLink(); else serviceal" -->
@@ -26,6 +27,11 @@
       faria-hidden="false"
       aria-label="face SVG icon"
       appRemoveClass="{{ link.icon.fontIcon ? 'mat-icon' : '' }}"
+      [ngClass]="
+        shouldDisplaySvgIcon(link.icon)
+          ? '!text-cyan-500 dark:!text-cyan-500'
+          : ''
+      "
       class="inline-flex !h-8 !max-w-8 flex-shrink-0 justify-center self-center text-2xl bg-gradient-to-r bg-clip-text text-transparent from-orange-900 via-purple-900 to-gray4 dark:from-orange-200 dark:via-blue-400 dark:to-red-200 dark:group-hover:text-blue-600 text-clip transition-colors ease-out duration-150 group-hover:text-blue-900"
       >{{ link.icon.matIcon ? link.icon.matIcon : "" }}</mat-icon
     >
