@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, Input, ViewChild } from
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
+import { generateRandomString } from '../../functions';
 
 @Component({
   selector: 'app-stinput',
@@ -21,6 +22,10 @@ export class StinputComponent {
 
   @Input() control: FormControl<string>
   @Input() label?: string = ''
+
+  @Input() idName?: string
+
+
   @Input() leftIcon?: string = ''
   @Input() rightIcon?: string = ''
 

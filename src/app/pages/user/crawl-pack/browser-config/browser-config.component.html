@@ -134,9 +134,7 @@
           <div
             class="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
           >
-            <span>{{
-              profile.created_At | date : "MMMM dd, yyyy" | date : "medium"
-            }}</span>
+            <span>{{ profile.created_At | date : "MMMM dd, yyyy" }}</span>
             <span
               ><mat-icon
                 fontSet="material-icons-outlined"
@@ -215,8 +213,18 @@
       *ngIf="showSettings"
       class="mb-8 text-xl font-light text-gray-800 dark:text-gray-200"
     >
-      <span>{{ !newProfileOpened ? "Selected" : "New" }} Profile</span>
-      <span *ngIf="newProfileOpened" class="text-red-400 ml-2">*</span>
+      <span>
+        <span
+          [ngClass]="{
+          'text-green-400 bg-green-600/10': newProfileOpened,
+          'text-yellow-900 bg-yellow-600/10': !newProfileOpened,
+        }"
+          class="p-2 rounded-xl"
+          >{{ !newProfileOpened ? "Selected" : "New" }}</span
+        >
+        Profile</span
+      >
+      <span *ngIf="newProfileOpened" class="text-red-400">*</span>
     </h3>
     <div
       *ngIf="showSettings"
@@ -749,7 +757,7 @@
                     id="cookies"
                     [formControl]="configForm.get('cookies') | formControl"
                     placeholder="Cookie (JSON)"
-                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    class="mt-1 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
                     rows="10"
                   ></textarea>
                   <div
@@ -806,7 +814,7 @@
                     id="headers"
                     [formControl]="configForm.get('headers') | formControl"
                     placeholder="Headers (JSON)"
-                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    class="mt-11 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
                     rows="10"
                   ></textarea>
 

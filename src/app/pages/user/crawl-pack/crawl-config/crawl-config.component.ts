@@ -1,20 +1,23 @@
 import { AsyncPipe, DatePipe, DOCUMENT, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, HostListener, inject, Inject, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, inject, Inject } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { NavigationEnd, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs/internal/Observable';
 import { of } from 'rxjs/internal/observable/of';
 import { map } from 'rxjs/internal/operators/map';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { DropdownComponent, RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
-import { browserTitleValidator, browserTypeValidator, cacheModeValidator } from 'src/app/core/directives';
+import {
+  browserTitleValidator, cacheModeValidator, containsStrings, cssSelector, delayBeforeReturnHtmlValidator, excludeDomains, excludedSelector,
+  includesStrings, jsCodeValidator, sessionIdValidator, waitForValidator
+} from 'src/app/core/directives';
 import { CrawlCachingMode } from 'src/app/core/enum';
 import { getErrorLabel, getOffsetTop, setCacheModeList } from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
 import { CartService, PackService, ScrollService, SnackbarService, WindowToken } from 'src/app/core/services';
-import { CrawlConfig, Size } from 'src/app/core/types';
+import { CrawlConfig, CrawlerRunConfig, Size } from 'src/app/core/types';
 
 @Component({
   selector: 'app-crawl-config',
@@ -59,7 +62,7 @@ export class CrawlConfigComponent {
 
   protected configSelectedById: string | undefined
 
-  protected crawlConfig$: Observable<CrawlConfig[] | null | undefined>
+  protected crawlConfigs$: Observable<CrawlConfig[] | null | undefined>
 
   protected totalConfigPages$: Observable<number>
   protected inTotal$: Observable<number>
@@ -89,15 +92,15 @@ export class CrawlConfigComponent {
     { id: 'link-domain-handling', label: 'Link/Domain Handling' },
     { id: 'debug-logging', label: 'Debug & Logging' },
     ]
-    this.crawlConfig$ = of([])
+
+    this.crawlConfigs$ = of([])
+
     this.packCart$ = this.cartService.getCart().pipe(
       map(cart => cart?.crawlConfig)
     )
 
     // set pack service with custom injectToken to be used on retrieving list of configurations by pagination
     this.packService = new PackService('crawlConfigs')
-
-
   }
 
   ngOnInit() {
@@ -131,24 +134,39 @@ export class CrawlConfigComponent {
 
       // Content Processing Parameters
       wordCountThreshold: this.fb.control(200, {
-        nonNullable: true, validators: [
-          Validators.required, Validators.pattern('^[0-9]+$'), Validators.min(1), Validators.max(10000)
+        nonNullable: false, validators: [
+          Validators.pattern('^[0-9]+$'),
+          Validators.min(1),
+          Validators.max(10000)
         ]
       }),
-      extractionStrategy: [null],
-      chunkingStrategy: [null],
-      markdownGenerator: [null],
-      contentFilter: [null],
-      cssSelector: [null],
-      onlyText: [false],
-      excludedTags: [null],
-      excludedSelector: [null],
-      keepDataAttributes: [false],
+      // extractionStrategy: [null],
+      // chunkingStrategy: [null],
+      // markdownGenerator: [null],
+      // contentFilter: [null],
+      // targetElements: [null], // List[str] (None)
+      cssSelector: this.fb.control(null,
+        {
+          nonNullable: false,
+          validators: [
+            cssSelector()
+          ]
+        }) as FormControl<string | null>,
+      onlyText: this.fb.control(false, { nonNullable: true, validators: [] }),
+      // excludedTags: [null],  
+      excludedSelector: this.fb.control(null,
+        {
+          nonNullable: false,
+          validators: [
+            excludedSelector()
+          ]
+        }) as FormControl<string | null>,
+      keepDataAttributes: this.fb.control(false, { nonNullable: true, validators: [] }),
       // FIXME: add new features to the form
       // keepAttributes: [null],
       // parserType: ['lxml'],
-      removeForms: [false],
-      prettify: [false],
+      removeForms: this.fb.control(false, { nonNullable: true, validators: [] }),
+      prettify: this.fb.control(false, { nonNullable: true, validators: [] }),
 
 
       // Caching Parameters
@@ -159,66 +177,127 @@ export class CrawlConfigComponent {
         }, { // Default value
         nonNullable: true,
         validators: [
-          Validators.required,
           cacheModeValidator(),
         ],
       }) as FormControl<Size>,
-      sessionId: [null],
-      bypassCache: [false],
-      disableCache: [false],
-      noCacheRead: [false],
-      noCacheWrite: [false],
-
-      // Page Navigation and Timing Parameters
-      waitUntil: ['domcontentloaded'],
-      waitFor: [null],
-      waitForImages: [false],
-      pageTimeout: this.fb.control(60000, {
-        nonNullable: true, validators: [
-          Validators.required, Validators.min(1000), Validators.pattern('^[0-9]+$'), Validators.max(100000)
+      sessionId: this.fb.control('', {
+        nonNullable: false, validators: [
+          sessionIdValidator(94) // 3 - 60 characters
         ]
       }),
-      delayBeforeReturnHtml: [0.1],
-      checkRobotsTxt: [false],
-      meanDelay: [0.1],
-      maxRange: [0.3],
-      semaphoreCount: [5],
+      bypassCache: this.fb.control(false, { nonNullable: true, validators: [] }),
+      disableCache: this.fb.control(false, { nonNullable: true, validators: [] }),
+      noCacheRead: this.fb.control(false, { nonNullable: true, validators: [] }),
+      noCacheWrite: this.fb.control(false, { nonNullable: true, validators: [] }),
+
+      // Page Navigation and Timing Parameters 
+      waitUntil: this.fb.control("domcontentloaded",
+        {
+          nonNullable: false,
+          validators: [
+            containsStrings(['domcontentloaded', 'load', 'networkidle0', 'networkidle2']) // 3 - 60 characters
+          ]
+        }),
+      waitFor: this.fb.control(null,
+        {
+          nonNullable: false,
+          validators: [
+            waitForValidator() // 3 - 60 characters
+          ]
+        }) as FormControl<string | null>, // 
+      waitForImages: this.fb.control(false, { nonNullable: true, validators: [] }),
+      checkRobotsTxt: this.fb.control(false, { nonNullable: true, validators: [] }),
+      pageTimeout: this.fb.control(60000, {
+        nonNullable: false, validators: [
+          Validators.min(1000),
+          Validators.pattern('^[0-9]+$'),
+          Validators.max(100000)
+        ]
+      }),
+      delayBeforeReturnHtml: this.fb.control(.1, {
+        nonNullable: false, validators: [
+          delayBeforeReturnHtmlValidator(0, 10, .1, 'delayBeforeReturnHtml')
+        ]
+      }),
+      // meanDelay: [0.1], jsCodeValidator
+      // maxRange: [0.3],
+      // semaphoreCount: [5],
 
       // Page Interaction Parameters
-      jsCode: [null],
-      jsOnly: [false],
-      ignoreBodyVisibility: [true],
-      scanFullPage: [false],
-      scrollDelay: [0.2],
-      processIframes: [false],
-      removeOverlayElements: [false],
-      simulateUser: [false],
-      overrideNavigator: [false],
-      magic: [false],
-      adjustViewportToContent: [false],
-
-      // Media Handling Parameters
-      screenshot: [false],
-      pdf: [false],
-      screenshotWaitFor: [null],
-      screenshotHeightThreshold: this.fb.control(60000, {
-        nonNullable: true, validators: [
-          Validators.required, Validators.min(1000), Validators.pattern('^[0-9]+$'), Validators.max(100000)
+      jsCode: this.fb.control(null,
+        {
+          nonNullable: false,
+          validators: [
+            jsCodeValidator() // 3 - 60 characters
+          ]
+        }) as FormControl<string | null>,
+      jsOnly: this.fb.control(false, { nonNullable: true, validators: [] }),
+      ignoreBodyVisibility: this.fb.control(true, { nonNullable: true, validators: [] }),
+      scanFullPage: this.fb.control(false, { nonNullable: true, validators: [] }),
+      scrollDelay: this.fb.control(.2, {
+        nonNullable: false, validators: [
+          delayBeforeReturnHtmlValidator(0, 10, .2, 'scrollDelay')
         ]
       }),
-      imageDescriptionMinWordThreshold: [50],
-      imageScoreThreshold: [3],
-      excludeExternalImages: [false],
+      processIframes: this.fb.control(false, { nonNullable: true, validators: [] }),
+      removeOverlayElements: this.fb.control(false, { nonNullable: true, validators: [] }),
+      simulateUser: this.fb.control(false, { nonNullable: true, validators: [] }),
+      overrideNavigator: this.fb.control(false, { nonNullable: true, validators: [] }),
+      magic: this.fb.control(false, { nonNullable: true, validators: [] }),
+      adjustViewportToContent: this.fb.control(false, { nonNullable: true, validators: [] }),
+
+      // Media Handling Parameters
+      screenshot: this.fb.control(false, { nonNullable: true, validators: [] }),
+      pdf: this.fb.control(false, { nonNullable: true, validators: [] }),
+      screenshotWaitFor: this.fb.control(.2, {
+        nonNullable: false, validators: [
+          delayBeforeReturnHtmlValidator(0, 10, .2, 'screenshotWaitFor')
+        ]
+      }),
+      screenshotHeightThreshold: this.fb.control(60000, {
+        nonNullable: false, validators: [
+          Validators.min(1000),
+          Validators.pattern('^[0-9]+$'),
+          Validators.max(100000)
+        ]
+      }),
+      imageDescriptionMinWordThreshold: this.fb.control(50, {
+        nonNullable: false, validators: [
+          Validators.min(5),
+          Validators.pattern('^[0-9]+$'),
+          Validators.max(4000)
+        ]
+      }),
+      imageScoreThreshold: this.fb.control(3, {
+        nonNullable: false, validators: [
+          Validators.min(0),
+          Validators.pattern('^[0-9]+$'),
+          Validators.max(300)
+        ]
+      }),
+      excludeExternalImages: this.fb.control(false, { nonNullable: true, validators: [] }),
 
       // Link and Domain Handling Parameters
-      excludeSocialMediaDomains: [[]],
-      excludeExternalLinks: [false],
-      excludeSocialMediaLinks: [false],
-      excludeDomains: [[]],
+      excludeSocialMediaDomains: this.fb.control("facebook",
+        {
+          nonNullable: false,
+          validators: [
+            includesStrings(['facebook', 'x', 'instagram', 'youtube', 'linkedin', 'tiktok', 'reddit', 'pinterest']) // 3 - 60 characters
+          ]
+        }), //
+      excludeExternalLinks: this.fb.control(false, { nonNullable: true, validators: [] }),
+      excludeSocialMediaLinks: this.fb.control(false, { nonNullable: true, validators: [] }),
+      excludeDomains: this.fb.control("ads.com",
+        {
+          nonNullable: false,
+          validators: [
+            excludeDomains() // 3 - 60 characters
+          ]
+        }) as FormControl<string | null>,
 
       // Debugging and Logging Parameters
-      verbose: [true],
-      logConsole: [false]
+      verbose: this.fb.control(true, { nonNullable: true, validators: [] }),
+      logConsole: this.fb.control(false, { nonNullable: true, validators: [] }),
 
       // Other parameters with default values
     }
@@ -226,9 +305,36 @@ export class CrawlConfigComponent {
 
   }
 
+  getAndFilterConfirmForm(): CrawlerRunConfig {
+    // get form values
+    const config = this.configForm.getRawValue()
+    const newConfig = { ...config }; // Create a copy of the config object
+    delete newConfig.title; // Remove the 'title' attribute from the config object
+
+
+    // Filter out null, unchanged, or default values
+    const filteredConfig: CrawlerRunConfig = Object.keys(newConfig).reduce((acc: any, key) => {
+      const formControl = this.configForm.get(key)
+
+      if (formControl && (formControl.dirty || !formControl.pristine) && newConfig[key] !== null && newConfig[key] !== '') {
+        if (key === 'cacheMode')
+          acc[key] = newConfig[key]?.code
+        else acc[key] = newConfig[key]
+      } else if (!formControl && newConfig[key] !== null && newConfig[key] !== '') {
+        if (key === 'cacheMode')
+          acc[key] = newConfig[key]?.code
+        else acc[key] = newConfig[key]
+      }
+      // console.log(acc, key)
+      return acc
+    }, {})
+
+    return filteredConfig
+  }
+
   private setCrawlConfiguration() {
 
-    this.crawlConfig$ = this.packService.crawlConfigs$
+    this.crawlConfigs$ = this.packService.crawlConfigs$
 
     setCacheModeList(this.cachModeOptions)
 
@@ -238,12 +344,19 @@ export class CrawlConfigComponent {
   onCacheModeSelect(event: Event) {
     // const selectedValue = (event.target as HTMLSelectElement).value;
     // this.configForm.get('cacheMode')?.setValue(null)
+    // console.log('selectedValue', event, this.configForm.getRawValue())
+
+    if (this.configForm.get('cacheMode')?.value?.code !== CrawlCachingMode.NONE)
+      this.configForm.get('cacheMode')?.markAsDirty()
   }
 
   protected addCrawlConfig() {
     this.newConfigOpened = !this.newConfigOpened
 
     this.showSettings = this.newConfigOpened
+
+    // remove the state of the selected config 
+    this.configSelectedById = ''
 
     // reset saving state
     this.savingNewConfig = false
@@ -253,25 +366,48 @@ export class CrawlConfigComponent {
     console.log('reset form', this.configForm.valid, this.configForm.errors)
   }
 
-  saveConfiguration() {
-    if (this.configForm.valid) {
-      const configData: CrawlConfig = {
-        ...this.configForm.value,
-        // id: uuidv4(), // Generate unique ID
-        createdAt: new Date()
-      };
+  saveCrawlConfiguration() {
 
-      /* this.firestore.collection('crawl-pack-configs')
-        .add(configData)
-        .then(() => {
-          alert('Configuration saved successfully!');
-          this.configForm.reset();
-        })
-        .catch(error => {
-          console.error('Error saving configuration', error);
-        }); */
+    // validate form before saving
+    if (this.configForm.invalid)
+      return
+
+    // get form values
+    const config: CrawlerRunConfig = this.getAndFilterConfirmForm()
+    const newCrawlConfig: CrawlConfig = {
+      title: this.configForm.get('title')?.value,
+      config,
+      created_At: Date.now(),
     }
+
+    // console.log('newCrawlConfig', newCrawlConfig)
+
+    // loading state
+    this.savingNewConfig = true
+
+    this.crawlConfigSubs = this.packService.storeCrawlConfig(newCrawlConfig)
+      .subscribe({
+        next: (res) => {
+          //  console.log(res)
+        },
+        error: (err) => {
+          console.log(err)
+          // show snackbar Error
+          this.showSnackbar(err || "", SnackBarType.error, '', 5000)
+        },
+        complete: () => {
+          // reset the form
+          this.savingNewConfig = false
+          this.newConfigOpened = false
+          this.showSettings = false
+          this.newConfigOpened = false
+          this.configForm.reset()
+          // show snackbar Error
+          this.showSnackbar('Crawler Configuration saved successfully.', SnackBarType.success, '', 5000)
+        }
+      })
   }
+
 
 
   onSelectCrawlConfig(crawl: CrawlConfig) {
@@ -289,7 +425,7 @@ export class CrawlConfigComponent {
 
       // set form values
       this.configForm.patchValue(crawl.config)
-      // this.browserType.patchValue({ code: crawl.config.browserType, name: crawl.config.browserType?.toUpperCase() })
+      this.configForm.get('cacheMode')?.patchValue({ code: crawl.config.cacheMode, name: crawl.config.cacheMode?.toUpperCase() })
     } else {
       this.configSelectedById = ''
       this.configForm.reset()
@@ -297,13 +433,15 @@ export class CrawlConfigComponent {
 
   }
 
+
+
   actionProfileClicked(event: Event, crawl: CrawlConfig) {
     event.stopPropagation() // prevent default behavior of outer div
     console.log(crawl)
   }
 
 
-  addPackToCart(event: Event, crawl: CrawlConfig) {
+  addConfigPackToCart(event: Event, crawl: CrawlConfig) {
 
     event.stopPropagation() // prevent default behavior of outer div
 
@@ -316,7 +454,7 @@ export class CrawlConfigComponent {
     )
   }
 
-  removePackFromCart(event: Event,) {
+  removeConfigPackFromCart(event: Event,) {
     event.stopPropagation() // prevent default behavior of outer div
 
     // remove crawler pacakage item,the configuration Browser Profile, from the cart system

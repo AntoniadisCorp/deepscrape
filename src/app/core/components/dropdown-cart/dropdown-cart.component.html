@@ -15,7 +15,7 @@
         class="flex border-solid border-b dark:border-gray-100/10 border-gray5 items-center justify-start min-h-12"
       >
         <h2
-          class="ml-4 grow font-medium text-gray-900 dark:text-gray-300 text-lg"
+          class="ml-4 grow font-semibold font-sans text-gray-900 dark:text-gray-300 text-lg"
         >
           Cart Packaging
         </h2>
@@ -41,12 +41,12 @@
         <!-- Title -->
         <div id="Configuration">
           <h2
-            class="text-base mt-5 mb-2 ml-[18px] dark:text-gray-100 text-gray4 font-normal"
+            class="text-base font-mono mt-5 mb-2 ml-[18px] dark:text-gray-100 text-gray4 font-normal"
           >
-            Configuration
+            Configurations
           </h2>
         </div>
-        @for (item of items | keyvalue; track item.key) {
+        @for (item of items | keyvalue | reverse; track item.key) {
         <li *ngIf="item.key !== 'uid'">
           <!-- content -->
           <div
@@ -56,7 +56,7 @@
               (click)="openLinkMenu($event, item.key)"
               routerLinkActive="Active"
               routerLink=""
-              class="flex flex-row items-center justify-start text-center text-sm"
+              class="flex flex-row items-center justify-start text-center text-sm min-h-20"
             >
               <div
                 id="new"
@@ -64,8 +64,7 @@
               ></div>
               <div class="mr-4 flex items-center">
                 <mat-icon
-                  aria-label="chromium"
-                  svgIcon="chromium"
+                  [svgIcon]="switchIcon(item.key)"
                   class="font-bold !size-10 text-gray-800 dark:text-gray-200 leading-7"
                 ></mat-icon>
               </div>

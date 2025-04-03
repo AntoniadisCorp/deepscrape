@@ -307,6 +307,81 @@ export class CrawlerRunConfigImpl implements CrawlerRunConfig {
     logConsole: boolean = false
 }
 
+// Define the interface for the Crawler Results
+interface MediaType {
+    [key: string]: { [key: string]: any }[] | string
+}
+
+type MarkdownGenerationResult = {
+    raw_markdown?: string
+    markdown_with_citations?: string
+    references_markdown?: string
+    fit_markdown?: string
+    fit_html?: string
+}
+
+/**
+ * Represents an SSL certificate with key properties as defined in Crawl4AI's SSLCertificate.
+ */
+interface SSLCertificate {
+    /**
+     * The issuer's distinguished name (DN) as a dictionary of components.
+     * Example: { "CN": "My Root CA", "O": "Organization" }
+     */
+    issuer: Record<string, string>;
+
+    /**
+     * The subject's distinguished name (DN) as a dictionary of components.
+     * Example: { "CN": "example.com", "O": "ExampleOrg" }
+     */
+    subject: Record<string, string>;
+
+    /**
+     * The certificate's NotBefore date/time, typically in ASN.1/UTC format.
+     * Example: "2023-01-01T00:00:00Z"
+     */
+    valid_from: string;
+
+    /**
+     * The certificate's NotAfter date/time, typically in ASN.1/UTC format.
+     * Example: "2024-01-01T00:00:00Z"
+     */
+    valid_until: string;
+
+    /**
+     * The SHA-256 fingerprint of the certificate in lowercase hexadecimal.
+     * Example: "d14d2e..."
+     */
+    fingerprint: string;
+}
+
+export interface CrawlResult {
+    id?: string
+
+    title: string
+    created_At?: number
+    url?: string
+    success?: boolean
+    html?: string
+    cleaned_html?: string
+    media?: MediaType
+    links?: MediaType
+
+    downloaded_files?: string[]
+    screenshot?: string
+    pdf?: Blob // or Buffer or Uint8Array
+
+    markdown?: string | MarkdownGenerationResult
+    extracted_content?: string // stored as JSON string or other text format
+    metadata?: any // keep on eye
+    error_message?: string
+    session_id?: string
+
+    response_headers?: { [key: string]: any } // HTTP response headers, if captured.
+    status_code?: number // HTTP status code (e.g., 200 for OK).
+    ssl_certificate?: SSLCertificate
+}
+
 
 // Define the interface for the proxy config
 export type ProxyConfig = {

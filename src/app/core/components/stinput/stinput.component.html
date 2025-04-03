@@ -48,7 +48,7 @@
         (input)="doValidation()"
         (keyup)="doValidation()"
         (click)="doValidation()"
-        id="{{ label }}"
+        id="{{ !idName ? label : idName }}"
         class="peer mb-1 block w-full cursor-text appearance-none rounded-t-lg border-0 bg-inherit bg-white px-2.5 pb-2.5 pl-0 pt-5 text-gray5 focus:outline-none focus:ring-0 dark:bg-inherit dark:text-white"
         [placeholder]="Placeholder"
       />

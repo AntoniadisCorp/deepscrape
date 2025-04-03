@@ -64,7 +64,7 @@ function sliceByPrefix(str: string, prefix: string) {
   return str.trim().split(prefix)
 }
 
-export function browserTitleValidator(): ValidatorFn {
+export function browserTitleValidator(maxChars: number = 60): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const title = control.value.trim() as string
 
@@ -75,8 +75,29 @@ export function browserTitleValidator(): ValidatorFn {
     if (!title) {
       return { title: 'Title is required' }
     }
-    if (title.length < 3 || title.length > 60) {
-      return { title: 'Title must be between 3 and 60 characters' }
+    if (title.length < 3 || title.length > maxChars) {
+      return { title: `Title must be between 3 and ${maxChars} characters` }
+    }
+    return null
+  }
+}
+
+export function sessionIdValidator(maxChars: number = 60): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const sessionId = control.value as string
+    if (!control.value || sessionId === '') {
+      return null
+    }
+
+    if (typeof sessionId !== 'string') {
+      return { sessionId: 'Must be a string' }
+    }
+
+    if (!sessionId) {
+      return { title: 'Session Id is required' }
+    }
+    if (sessionId.length < 3 || sessionId.length > maxChars) {
+      return { sessionId: `Session Id must be between 3 and ${maxChars} characters` }
     }
     return null
   }
@@ -98,7 +119,7 @@ export function cacheModeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const cacheMode: CrawlCachingMode = (control.value?.code || '') as CrawlCachingMode
 
-    if (!Object.values(CrawlCachingMode).includes(cacheMode)) {
+    if (!Object.values(CrawlCachingMode).some(value => value.toLowerCase().includes(cacheMode.toLowerCase()))) {
       return { cacheMode: 'Invalid cache mode type' }
     }
     return null
@@ -342,11 +363,11 @@ export function headersValidator(): ValidatorFn {
 export function extraArgsValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (control.value === null || control.value === '') {
-      return null; // null value is allowed
+      return null // null value is allowed
     }
 
     if (typeof control.value !== 'string') {
-      return { extraArgs: 'Must be a string' };
+      return { extraArgs: 'Must be a string' }
     }
 
     const extraArgs = control.value.trim().split(' ')
@@ -357,8 +378,8 @@ export function extraArgsValidator(): ValidatorFn {
       }
     }
 
-    return null;
-  };
+    return null
+  }
 }
 
 export function viewportDimensionValidator(min: number, max: number): ValidatorFn {
@@ -372,6 +393,249 @@ export function viewportDimensionValidator(min: number, max: number): ValidatorF
       return { viewportDimension: `Must be a number between ${min} and ${max}` }
     }
 
+    return null
+  }
+}
+
+
+export function includesStrings(strings: string[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const excludeSocialMediaDomains = control.value?.toLowerCase() as string
+    if (!control.value || excludeSocialMediaDomains === '') {
+      return null
+    }
+
+    if (typeof excludeSocialMediaDomains !== 'string') {
+      return { excludeSocialMediaDomains: 'Must be a string' }
+    }
+
+
+    if (excludeSocialMediaDomains.endsWith(','))
+      return { excludeSocialMediaDomains: 'Exclude Social Media Domains must not end with a comma' }
+    else if (!/^[a-zA-Z0-9]+(,[a-zA-Z0-9]+)*$/.test(excludeSocialMediaDomains)) {
+      return { excludeSocialMediaDomains: 'Exclude Social Media Domains must not include spaces' }
+    }
+
+    const mediaDomains = excludeSocialMediaDomains.split(',').map(domain => domain.toLowerCase())
+    const containsAtLeastOne = strings.some(str => mediaDomains.includes(str))
+
+    return containsAtLeastOne ? null : {
+      excludeSocialMediaDomains: `Exclude Social Media Domains must contain list of domains by comma separated ${strings.join(', ')}`
+    }
+
+  }
+}
+
+
+
+
+export function excludeDomains(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const excludeDomainValues = control.value?.toLowerCase() as string
+    if (!control.value || excludeDomainValues === '') {
+      return null
+    }
+    if (typeof excludeDomainValues !== 'string') {
+      return { excludeDomains: 'Must be a string' }
+    }
+    if (excludeDomainValues.endsWith(',')) {
+      return { excludeDomains: 'Exclude Domains must not end with a comma' }
+    } else if (/\s/.test(excludeDomainValues)) {
+      return { excludeDomains: 'Exclude Domains must not include spaces' }
+    } else if (!/^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)(,[a-zA-Z0-9]+(\.[a-zA-Z0-9]+))*$/.test(excludeDomainValues)) {
+      return { excludeDomains: 'Exclude Domains must include top-level domains (e.g. .com, .io)' }
+    }
+
+
+    const inputDomains = excludeDomainValues.split(',').map(domain => domain)
+
+    return inputDomains.length ? null : {
+      excludeDomains: `Exclude Domains must contain list of domains by comma separated`
+    }
+  }
+}
+
+export function containsStrings(strings: string[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const waitUntil = control.value?.trim().toLowerCase() as string
+
+    if (!waitUntil || waitUntil === '') {
+      return null // null value is allowed
+    }
+
+    if (typeof waitUntil !== 'string') {
+      return { waitUntil: 'Must be a string' }
+    }
+
+    if (!waitUntil) {
+      return { waitUntil: 'Wait Until is required' }
+    }
+
+    const containsAll = strings.includes(waitUntil)
+
+    return containsAll ? null : {
+      waitUntil: `Wait Until can use the following values: 
+      * load: Wait until the load event has been dispatched.
+      * domcontentloaded: Wait until the DOM content has been loaded.
+      * networkidle0: Wait until there are no more network connections for at least 500 ms. 
+      * networkidle2: Wait until there are no more network connections for at least 2000 ms.`
+    }
+
+  }
+}
+
+
+export function delayBeforeReturnHtmlValidator(minValue: number = 0, maxValue: number = 10, defaultValue: number = 0.1,
+  objectName: string = 'delayBeforeReturnHtml'
+): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const strnumber = control.value
+    if (!strnumber || strnumber === '') {
+      return null // null value is allowed
+    }
+    const value = parseFloat(strnumber)
+
+    if (typeof value !== 'number' || isNaN(value)) {
+      return { [objectName]: 'Must be a number' }
+    }
+
+    if (value < minValue) {
+      return { [objectName]: `Value must be at least ${minValue}` }
+    }
+
+    if (value > maxValue) {
+      return { [objectName]: `Value must be at most ${maxValue}` }
+    }
+
+    return null
+
+  }
+}
+
+
+export function waitForValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+
+    const value = control.value?.trim()
+
+    if (!value || value === '') {
+      return null
+    }
+
+    const isCss = value.startsWith('css:')
+    const isJs = value.startsWith('js:')
+
+    if (!isCss && !isJs) {
+      return { waitFor: 'Invalid wait for condition. Please use "css:" or "js:" prefix.' }
+    }
+
+    if (isCss) {
+      const cssSelector = value.substring(4)
+      if (!cssSelector) {
+        return { waitFor: 'Invalid CSS selector.' }
+      }
+    }
+
+    if (isJs) {
+      try {
+        const jsCondition = value.substring(3)
+        // Try to parse the JS condition
+        new Function(jsCondition)
+      } catch (error) {
+        return { waitFor: 'Invalid JavaScript condition.' }
+      }
+    }
+
+    return null
+
+  }
+}
+
+
+export function jsCodeValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+
+    const value = control.value?.trim()
+
+    if (!value || value === '') {
+      return null
+    }
+
+    if (typeof value === 'string') {
+      try {
+        if (value.trim().startsWith('[') && value.trim().endsWith(']')) {
+          // Try to parse the string as a JSON array
+          // Try to validate each script in the array
+          const scripts = JSON.parse(value)
+          for (const script of scripts) {
+            if (typeof script !== 'string') {
+              return { jsCode: 'All scripts in the array must be strings.' }
+            }
+            try {
+              new Function(script)
+            } catch (error) {
+              return { jsCode: 'Invalid JavaScript code in the list. --> ```' + script + '```' }
+            }
+          }
+        } else {
+          // Try to validate the script
+          new Function(value)
+        }
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          return { jsCode: 'Invalid JavaScript code.' }
+        } else if (error instanceof TypeError) {
+          return { jsCode: 'Invalid JSON array.' }
+        } else {
+          return { jsCode: 'An error occurred while validating the JavaScript code.' }
+        }
+      }
+    } else {
+      return { jsCode: 'Invalid input type. Must be a string, a list of strings, or null.' }
+    }
+
+    return null
+  }
+}
+
+export function excludedSelector(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const excludedSelectorValue = control.value?.toLowerCase() as string
+    if (!control.value || excludedSelectorValue === '') {
+      return null
+    }
+    if (typeof excludedSelectorValue !== 'string') {
+      return { excludedSelector: 'Must be a string' }
+    }
+    if (excludedSelectorValue.endsWith(',')) {
+      return { excludedSelector: 'Excluded selector must not end with a comma' }
+    } else if (/\s/.test(excludedSelectorValue)) {
+      return { excludedSelector: 'Excluded selector must not include spaces' }
+    } else if (!/^(?:[#:a-zA-Z0-9_-]+(?:[>~+]?[#:a-zA-Z0-9_-]+)*)+(?:,[#:a-zA-Z0-9_-]+(?:[>~+]?[#:a-zA-Z0-9_-]+)*)*$/.test(excludedSelectorValue)) {
+      return { excludedSelector: 'Invalid excluded selector' }
+    }
+    return null
+  }
+}
+
+export function cssSelector(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const cssSelector = control.value?.toLowerCase() as string
+    if (!control.value || cssSelector === '') {
+      return null
+    }
+    if (typeof cssSelector !== 'string') {
+      return { excludedSelector: 'Must be a string' }
+    }
+    if (cssSelector.endsWith(',')) {
+      return { cssSelector: 'Css selector must not end with a comma' }
+    } else if (/\s/.test(cssSelector)) {
+      return { cssSelector: 'Css selector must not include spaces' }
+    } else if (cssSelector.indexOf(',') !== -1) {
+      return { cssSelector: 'Only one Css selector is allowed' }
+    } else if (!/^(?:[#.]{0,1}[a-z0-9_-]+(?:[>.~+]{0,1}[a-z0-9_-]+)*)*$/.test(cssSelector)) {
+      return { cssSelector: 'Invalid Css selector' }
+    }
     return null
   }
 }

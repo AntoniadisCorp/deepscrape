@@ -2,7 +2,7 @@ import { addDoc, writeBatch, collection, doc, Firestore, getDoc, setDoc, deleteD
 import { User } from "@angular/fire/auth";
 import { Users } from "../types/firestore.interface";
 import { throwError } from "rxjs";
-import { BrowserProfile } from "../types";
+import { BrowserProfile, CrawlConfig } from "../types";
 
 export async function storeUserData(user: User, firestore: Firestore) {
     try {
@@ -180,4 +180,42 @@ export async function storeBrowserProfile(userId: string, profile: BrowserProfil
         console.error('Error storing user browser profile data:', error)
     }
 
+}
+
+
+export async function storeCrawlConfig(userId: string, config: CrawlConfig, firestore: Firestore) {
+    try {
+
+        // Ensure unique ID
+        const configRef = doc(collection(firestore, `users/${userId}/crawlconfigs`))
+
+        // add the user id to the profile
+        config.uid = userId
+
+        // Store the profile data in Firestore
+        await setDoc(configRef, config)
+
+        console.log('Crawl config data stored successfully in Firestore.')
+
+    } catch (error) {
+        console.error('Error storing Crawl config data:', error)
+    }
+}
+export async function storeCrawlResultsConfig(userId: string, config: any, firestore: Firestore) {
+    try {
+
+        // Ensure unique ID
+        const configRef = doc(collection(firestore, `users/${userId}/crawlresultsconfig`))
+
+        // add the user id to the profile
+        config.uid = userId
+
+        // Store the profile data in Firestore
+        await setDoc(configRef, config)
+
+        console.log('CrawlResult config data stored successfully in Firestore.')
+
+    } catch (error) {
+        console.error('Error storing Crawl config data:', error)
+    }
 }

@@ -95,6 +95,8 @@ export function getErrorLabel(configForm: FormGroup<any>, controlName: string): 
         return ''
 
     const max = configForm.get(controlName)?.errors?.['max']?.max
+    const min = configForm.get(controlName)?.errors?.['min']?.min
+
     const actual = parseInt(configForm.get(controlName)?.value, 10);
 
     // console.log(actual, max)
@@ -106,7 +108,7 @@ export function getErrorLabel(configForm: FormGroup<any>, controlName: string): 
     if (configForm.get(controlName)?.errors?.['required']) {
         return 'This field is required';
     } else if (configForm.get(controlName)?.errors?.['min']) {
-        return 'invalid value, the minimum value is ' + configForm.get('wordCountThreshold')?.errors?.['min']?.min;
+        return 'invalid value, the minimum value is ' + min;
     } else if (configForm.get(controlName)?.errors?.['pattern']) {
         return 'invalid input, use only numbers'
     } else if (configForm.get(controlName)?.errors?.[controlName]) {

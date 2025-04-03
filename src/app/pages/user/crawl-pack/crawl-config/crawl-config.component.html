@@ -1,6 +1,6 @@
 <form
   [formGroup]="configForm"
-  (ngSubmit)="saveConfiguration()"
+  (ngSubmit)="saveCrawlConfiguration()"
   class="w-full grid grid-cols-1 sm:grid-cols-[1fr_13rem] xl:grid-cols-[1fr_13rem] lg:grid-cols-1 2xl:grid-cols-[1fr_20rem] gap-4"
 >
   <!-- main content goes here -->
@@ -67,10 +67,10 @@
 
     <!-- Recent Crawl Config Async List -->
     <div class="w-full md:w-12/12 xl:w-12/12">
-      @if ((crawlConfig$ | async )?.length) {
+      @if ((crawlConfigs$ | async )?.length) {
 
       <div
-        *ngIf="crawlConfig$ | async as configs"
+        *ngIf="crawlConfigs$ | async as configs"
         class="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
       >
         <div
@@ -80,7 +80,7 @@
             'bg-gray-300/70 dark:bg-gray-600/50':
               showSettings && config.id === configSelectedById
           }"
-          class="cursor-pointer flex flex-col gap-4 justify-between border rounded-xl p-4 border-gray-200 hover:border-gray-300/70 dark:hover:border-gray-600/0 hover:bg-gray-300/70 dark:border-gray-600 dark:hover:bg-gray-600/50"
+          class="cursor-pointer shadow-lg dark:shadow-md dark:shadow-gray-500/20 flex flex-col gap-4 justify-between border rounded-xl p-4 border-gray-200 hover:border-gray-300/70 dark:hover:border-gray-600/0 hover:bg-gray-300/70 dark:border-gray-600/70 dark:hover:bg-gray-600/50"
         >
           <div class="flex justify-between items-start mb-4 gap-4">
             <div class="flex items-start">
@@ -108,9 +108,7 @@
           <div
             class="flex justify-between text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
           >
-            <span>{{
-              config.created_At | date : "MMMM dd, yyyy" | date : "medium"
-            }}</span>
+            <span>{{ config.created_At | date : "MMMM dd, yyyy" }}</span>
             <span
               ><mat-icon
                 fontSet="material-icons-outlined"
@@ -130,7 +128,7 @@
           >
             <a
               *ngIf="config.id === (packCart$ | async)?.id"
-              (click)="removePackFromCart($event)"
+              (click)="removeConfigPackFromCart($event)"
               class="text-base text-center border border-green-600/80 leading-[0] gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-transparent text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
             >
               <mat-icon>close</mat-icon>
@@ -141,7 +139,7 @@
             ></a>
             <a
               *ngIf="config.id !== (packCart$ | async)?.id"
-              (click)="addPackToCart($event, config)"
+              (click)="addConfigPackToCart($event, config)"
               class="text-base text-center border border-transparent leading-[0] gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
             >
               <mat-icon>add</mat-icon>
@@ -157,7 +155,7 @@
 
       <!-- Loading state -->
       <div
-        *ngIf="!(crawlConfig$ | async) && (crawlConfig$ | async) !== null"
+        *ngIf="!(crawlConfigs$ | async) && (crawlConfigs$ | async) !== null"
         class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
       >
         <div
@@ -166,14 +164,14 @@
         ></div>
       </div>
 
-      @if((crawlConfig$ | async)?.length === 0) {
+      @if((crawlConfigs$ | async)?.length === 0) {
       <div class="text-center py-8">
         <p class="text-gray-600 dark:text-gray-300">
           No crawler configuration created yet. Click the 'plus' button to add a
           new configuration.
         </p>
       </div>
-      } @if((crawlConfig$ | async) === null) {
+      } @if((crawlConfigs$ | async) === null) {
       <div class="text-center py-8">
         <p class="text-red-600 dark:text-red-300">
           An Error Occured. Please try again later. or contact with
@@ -187,8 +185,18 @@
       *ngIf="showSettings"
       class="mb-8 text-xl font-light text-gray-800 dark:text-gray-200"
     >
-      <span>{{ !newConfigOpened ? "Selected" : "New" }} Crawl Config</span>
-      <span *ngIf="newConfigOpened" class="text-red-400 ml-2">*</span>
+      <span
+        ><span
+          [ngClass]="{
+        'text-green-400 bg-green-600/10': newConfigOpened,
+        'text-yellow-900 bg-yellow-600/10': !newConfigOpened,
+      }"
+          class="p-2 rounded-xl"
+          >{{ !newConfigOpened ? "Selected" : "New" }}</span
+        >
+        Crawl Config</span
+      >
+      <span *ngIf="newConfigOpened" class="text-red-400">*</span>
     </h3>
 
     <div
@@ -217,7 +225,9 @@
               [errorLabel]="getErrorLabel('title')"
             ></app-stinput>
           </div>
-          <div>{{ configForm.errors | json }}</div>
+          <!-- <div>
+            {{ configForm.errors | json }}
+          </div> -->
           <div>
             <button
               type="submit"
@@ -982,6 +992,7 @@
                     configForm.get('delayBeforeReturnHtml') | formControl
                   "
                   [leftIcon]="'123'"
+                  [idName]="'delayBeforeReturnHtml'"
                   [label]="'seconds (float)..'"
                   [errorLabel]="getErrorLabel('delayBeforeReturnHtml')"
                 ></app-stinput>
@@ -1046,7 +1057,12 @@
                 >
                   "document.querySelector('button')?.click();"
                 </span>
-
+                <span> or list </span>
+                <span
+                  class="break-all text-sky-500 w-full xs:w-[initial] bg-sky-700/10 inline-block"
+                >
+                  ["document.querySelector('button').click()","const num = 3;"]
+                </span>
                 <span>.</span>
               </div>
             </div>
@@ -1055,12 +1071,35 @@
             >
               <!-- delay Before Return Html type of float -->
               <div class="w-full">
-                <app-stinput
-                  [control]="configForm.get('jsCode') | formControl"
-                  [leftIcon]="'123'"
-                  [label]="'str or list[str] or None..'"
-                  [errorLabel]="getErrorLabel('jsCode')"
-                ></app-stinput>
+                <div class="mb-4">
+                  <label
+                    for="jsCode"
+                    class="block text-sm font-medium text-gray-700"
+                    >JavaScript Code</label
+                  >
+                  <textarea
+                    id="jsCode"
+                    [formControl]="configForm.get('jsCode') | formControl"
+                    placeholder="JS Code"
+                    class="mt-1 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
+                    rows="10"
+                  ></textarea>
+                  <div
+                    *ngIf="configForm.get('jsCode')?.invalid"
+                    class="text-red-500 text-xs"
+                  >
+                    Invalid array of JavaScript Code
+                    {{ configForm.get("jsCode")?.errors | json }}
+                  </div>
+                </div>
+
+                <!-- <app-stinput
+                  [control]="configForm.get('userAgent') | formControl"
+                  [leftIcon]="'verified_user'"
+                  [outlined]="true"
+                  [label]="'user agent..'"
+                  [errorLabel]="getErrorLabel('userAgent')"
+                ></app-stinput> -->
               </div>
             </label>
           </div>
@@ -1184,6 +1223,7 @@
                 <app-stinput
                   [control]="configForm.get('scrollDelay') | formControl"
                   [leftIcon]="'123'"
+                  [idName]="'scrollDelay'"
                   [label]="'seconds (float)..'"
                   [errorLabel]="getErrorLabel('scrollDelay')"
                 ></app-stinput>
@@ -1439,6 +1479,7 @@
                 <app-stinput
                   [control]="configForm.get('screenshotWaitFor') | formControl"
                   [leftIcon]="'123'"
+                  [idName]="'screenshotWaitFor'"
                   [label]="'seconds (float)..'"
                   [errorLabel]="getErrorLabel('screenshotWaitFor')"
                 ></app-stinput>

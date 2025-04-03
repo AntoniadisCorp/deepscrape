@@ -5,7 +5,6 @@ import { BehaviorSubject } from 'rxjs'
 import { AuthService } from './auth.service'
 import { deletePackFromFirestore, savePackToFirestore } from '../functions'
 import { FirestoreService } from './firestore.service'
-import { BrowserProfile } from '../types'
 
 @Injectable({ providedIn: 'root' })
 export class CartService {

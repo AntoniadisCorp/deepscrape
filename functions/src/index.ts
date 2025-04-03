@@ -52,3 +52,4 @@ export const getOperationsPaging = auth.getOperationsPaging
 // CRAWL PACK CONFIGURATIONS - Function TRIGGERS
 export const getBrowserProfilesPaging = auth.getBrowserProfilesPaging
 export const getCrawlConfigsPaging = auth.getCrawlConfigsPaging
+export const getCrawlResultConfigsPaging = auth.getCrawlResultConfigsPaging

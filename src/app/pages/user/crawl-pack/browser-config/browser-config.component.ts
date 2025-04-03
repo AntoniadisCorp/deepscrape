@@ -27,7 +27,7 @@ export class BrowserConfigComponent {
   private window = inject(WindowToken)
   @HostListener('window:scroll', ['$event'])
   onScroll(event: any) {
-    const scrollPosition = window.scrollY
+    const scrollPosition = this.window.scrollY
     const links = this.links
     const activeLink = this.getActiveLink(scrollPosition, links)
     if (activeLink !== this.activeLink && activeLink)
@@ -279,6 +279,9 @@ export class BrowserConfigComponent {
     this.newProfileOpened = !this.newProfileOpened
 
     this.showSettings = this.newProfileOpened
+
+    // remove the state of the selected profile 
+    this.profileSelectedById = ''
 
     // reset saving state
     this.savingNewProfile = false

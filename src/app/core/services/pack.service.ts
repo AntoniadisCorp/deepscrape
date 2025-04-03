@@ -4,12 +4,12 @@ import { AuthService } from './auth.service';
 import { Firestore } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
-import { BrowserProfile, CrawlConfig } from '../types';
+import { BrowserProfile, CrawlConfig, CrawlResult } from '../types';
 import { from } from 'rxjs/internal/observable/from';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { tap } from 'rxjs/internal/operators/tap';
-import { storeBrowserProfile } from '../functions';
+import { storeBrowserProfile, storeCrawlConfig, storeCrawlResultsConfig } from '../functions';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable } from 'rxjs/internal/Observable';
 import { map } from 'rxjs/internal/operators/map';
@@ -37,6 +37,10 @@ export class PackService {
   private totalPagesConfigSubject = new BehaviorSubject<number>(1)
   private inTotalConfigSubject = new BehaviorSubject<number>(0)
 
+  private crawlResultsSubject = new BehaviorSubject<any[] | null | undefined>(undefined)
+  private totalPagesResultsSubject = new BehaviorSubject<number>(1)
+  private inTotalResultsSubject = new BehaviorSubject<number>(0)
+
   /* Browser Profiles Configuration Observables */
   browserProfiles$: Observable<BrowserProfile[] | null | undefined> = this.browserSubject.asObservable()
   totalPagesBrowsers$: Observable<number> = this.totalPagesBrowserSubject.asObservable()
@@ -46,6 +50,15 @@ export class PackService {
   crawlConfigs$: Observable<CrawlConfig[] | null | undefined>
   totalPagesConfigs$: Observable<number>
   inTotalConfigs$: Observable<number>
+
+
+  /* Crawler Results Configuration Observables */
+  crawlResults$: Observable<any[] | null | undefined>
+  totalPagesResults$: Observable<number>
+  inTotalResults$: Observable<number>
+
+  /* Crawler Results Configuration Observables */
+
 
 
   constructor(@Inject(CONTROL_NAME) private _controlName: string) {
@@ -80,6 +93,12 @@ export class PackService {
         this.totalPagesConfigs$ = this.totalPagesConfigSubject.asObservable()
         this.inTotalConfigs$ = this.inTotalConfigSubject.asObservable()
         this.initializeCrawlConfig(null)
+        break
+      case 'crawlResults':
+        this.crawlResults$ = this.crawlResultsSubject.asObservable()
+        this.totalPagesResults$ = this.totalPagesResultsSubject.asObservable()
+        this.inTotalResults$ = this.inTotalResultsSubject.asObservable()
+        this.initializeCrawlResults(null)
         break
       default:
         break
@@ -148,6 +167,35 @@ export class PackService {
 
   }
 
+  private initializeCrawlResults(localCrawlResults: string | null) {
+    if (localCrawlResults) {
+      this.crawlResultsSubject.next(JSON.parse(localCrawlResults))
+      // this.totalPagesSubject.next(1)
+    } else {
+      this.crawlResultsSubject.next(undefined)
+      this.totalPagesResultsSubject.next(1)
+      // Get Data from Firestore
+      this.fireSaveSub = this.getCrawlResultConfigsByPagination().pipe(
+      ).subscribe({
+        next: (results: any) => {
+          const { crawlResultConfigs, inTotal, totalPages } = results
+          // include totalPages in the response
+          // Update the Crawl Config Results in the BehaviorSubject
+          this.crawlResultsSubject.next(crawlResultConfigs)
+          this.totalPagesResultsSubject.next(totalPages)
+          this.inTotalResultsSubject.next(inTotal)
+          // this.saveOperations(operations)
+        },
+        error: (error: any) => {
+          console.error('Error retrieving Crawler Config Results:', error)
+          this.crawlResultsSubject.next(null)
+          this.totalPagesResultsSubject.next(0)
+          this.inTotalResultsSubject.next(0)
+        }
+      })
+    }
+  }
+
 
   storeBrowserProfile(browserProfile: BrowserProfile) {
 
@@ -201,6 +249,38 @@ export class PackService {
       )
   }
 
+  storeCrawlConfig(crawlConfig: CrawlConfig) {
+    // get the user document
+    return from(storeCrawlConfig(this.userId, crawlConfig, this.firestore)).pipe(
+      tap(() => {
+        // Get the current BehaviorSubject Value
+        const crawlConfigs: CrawlConfig[] | null | undefined = this.configSubject.value
+        let totalPages: number = this.totalPagesConfigSubject.value
+
+
+        console.log(totalPages)
+        if (!crawlConfigs || totalPages > 1)
+          return
+
+        // keep 10 size data
+        if (crawlConfigs.length >= 10)
+          crawlConfigs.pop()
+        // maintaining sorted order
+        crawlConfigs.unshift(crawlConfig)
+
+        // Update the Operations in the BehaviorSubject, 
+        this.configSubject.next(crawlConfigs)
+
+        totalPages = crawlConfigs.length > 10 ? 2 : 1
+        this.totalPagesConfigSubject.next(totalPages)
+      }),
+      catchError((err) => {
+        console.error(err)
+        return throwError(() => err)
+      })
+    )
+  }
+
 
   private getCrawlConfigsByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
     return from(httpsCallable(this.functions, "getCrawlConfigsPaging")
@@ -216,6 +296,55 @@ export class PackService {
           return { configs, inTotal, totalPages }
         })
       )
+  }
+
+  storeCrawlResultConfig(crawlResultConfig: any) {
+    // get the user document
+    return from(storeCrawlResultsConfig(this.userId, crawlResultConfig, this.firestore)).pipe(
+      tap(() => {
+        // Get the current BehaviorSubject Value
+        const crawlConfigs: any[] | null | undefined = this.crawlResultsSubject.value
+        let totalPages: number = this.totalPagesResultsSubject.value
+
+
+        console.log(totalPages)
+        if (!crawlConfigs || totalPages > 1)
+          return
+
+        // keep 10 size data
+        if (crawlConfigs.length >= 10)
+          crawlConfigs.pop()
+        // maintaining sorted order
+        crawlConfigs.unshift(crawlResultConfig)
+
+        // Update the Operations in the BehaviorSubject, 
+        this.configSubject.next(crawlConfigs)
+
+        totalPages = crawlConfigs.length > 10 ? 2 : 1
+        this.totalPagesResultsSubject.next(totalPages)
+      }),
+      catchError((err) => {
+        console.error(err)
+        return throwError(() => err)
+      })
+    )
+  }
+
+  private getCrawlResultConfigsByPagination(currPage: number = 1, pageSize: number = 10) {
+    return from(httpsCallable(this.functions, "getCrawlResultConfigsPaging")
+      ({ currPage, pageSize }))
+      .pipe(
+        map((fun: any) => {
+          const { error, crawlResultConfigs, inTotal, totalPages, message } = fun.data as any
+
+          if (error) {
+            console.error('Error retrieving Crawler Configurations by pagination:', error, crawlResultConfigs, message)
+            throw new Error(message, error)
+          }
+          return { crawlResultConfigs, inTotal, totalPages }
+        })
+      )
+
   }
 
   ngOnDestroy(): void {

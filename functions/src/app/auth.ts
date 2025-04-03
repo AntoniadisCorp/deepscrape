@@ -527,3 +527,69 @@ export const getCrawlConfigsPaging = onCallv2(
             throw new HttpsError("internal", "Failed to retrieve Crawler Configurations by pagination.")
         }
     })
+
+export const getCrawlResultConfigsPaging = onCallv2(
+    async (req) => {
+        const { currPage = 1, pageSize = 10 } = req.data
+
+        try {
+            const userId = req.auth?.uid
+            if (!userId) {
+                throw new HttpsError("unauthenticated", "User must be authenticated.")
+            }
+
+            const configsRef = db.collection(`users/${userId}/crawlresultsconfig`).orderBy("created_At", "desc")
+
+            // Check if collection exists
+            const snapshot = await configsRef.get()
+            if (snapshot.empty) {
+                return {
+                    error: null,
+                    crawlResultConfigs: [],
+                    totalPages: 1,
+                    inTotal: 0,
+                    message: "CrawlResult Configs retrieved successfully",
+                }
+            }
+
+            // Get total count of operations
+            const totalCrawlResultConfigsQuery = await configsRef.count().get()
+            const inTotal = totalCrawlResultConfigsQuery.data().count || 0
+
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
+            if (currPage > totalPages) {
+                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+            }
+
+            let query = configsRef.limit(pageSize)
+
+            // Handle pagination using startAfter()
+            if (currPage > 1) {
+                const previousPageSnapshot = await configsRef.limit((currPage - 1) * pageSize).get()
+                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
+                if (lastDocument) {
+                    query = query.startAfter(lastDocument)
+                }
+            }
+
+            // Fetch operations for the current page
+            const configsSnapshot = await query.get()
+            const crawlResultConfigs = configsSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+
+            return {
+                error: null,
+                crawlResultConfigs,
+                totalPages,
+                inTotal,
+                message: "CrawlResult Configs retrieved successfully",
+            }
+        } catch (error) {
+            console.error("Error retrieving CrawlResult Configurations paging:", error)
+            throw new HttpsError("internal", "Failed to retrieve CrawlResult Configurations by pagination.")
+        }
+    })
+
