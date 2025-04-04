@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: npm ci
       - name: Generate Environment File
         run: |
           touch .env
@@ -27,7 +29,7 @@ jobs:
           echo RECAPTCHA_KEY=${{ secrets.RECAPTCHA_KEY }} >> .env
           npm run prebuild
       - name: Build Angular App
-        run: npm ci && npm run deploy
+        run: npm run deploy
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.G_TOKEN }}
