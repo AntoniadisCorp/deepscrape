@@ -1,3 +1,8 @@
+// generate-env.ts
+import * as fs from 'fs';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 export const environment = {
     production: false,
     assetsUri: "https://deepscrape.web.app/assets/",
@@ -10,7 +15,7 @@ export const environment = {
         messagingSenderId: process.env["MESSAGING_SENDER_ID"],
         appId: process.env["APP_ID"],
     },
-    recpatcha: process.env["RECPATCHA_KEY"],
+    recpatcha: process.env["RECAPTCHA_KEY"],
     STRIPE_PUBLIC_KEY: 'pk_test_51OELbJFBBAUAyJFBp3qyNV35TE56uUP9g1IkZ0KOuWnrNLC2ijFoIIkG71xqISwnFwiibjCOumO8itPsLLIyA1py00ABQ2TJ4H',
     OPENAI_API_KEY: '',
     ANTHROPIC_API_KEY: '',
@@ -23,3 +28,6 @@ export const environment = {
     API_GROQ: "https://api.groq.com",
     API_JINAAI: "https://r.jina.ai",
 }
+
+const content = `export const environment = ${JSON.stringify(environment, null, 2)};`
+fs.writeFileSync('src/environments/environment.ts', content);

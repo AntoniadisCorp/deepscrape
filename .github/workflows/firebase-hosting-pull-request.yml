@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create env file
+      - name: Generate Environment File
         run: |
           touch .env
           echo API_ENDPOINT=${{ secrets.API_ENDPOINT }} >> .env
@@ -24,7 +24,10 @@ jobs:
           echo STORAGE_BUCKET=${{ secrets.STORAGE_BUCKET }} >> .env
           echo MESSAGING_SENDER_ID=${{ secrets.MESSAGING_SENDER_ID }} >> .env
           echo APP_ID=${{ secrets.APP_ID }} >> .env
-      - run: npm ci && npm run build
+          echo RECAPTCHA_KEY=${{ secrets.RECAPTCHA_KEY }} >> .env
+          npm run prebuild
+      - name: Build Angular App
+        run: npm ci && npm run deploy
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.G_TOKEN }}

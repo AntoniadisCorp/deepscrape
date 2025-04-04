@@ -4,7 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "prebuild": "ts-node src/environments/prod.ts",
+    "build": "ng build ",
     "watch": "ng build --watch --configuration development",
     "serve": "bun run build && cd functions && bun run serve",
     "deploy": "bun run build && cd functions && bun run deploy",
@@ -62,6 +63,7 @@
     "@types/readable-stream": "^4.0.18",
     "@types/stream-buffers": "^3.0.7",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.7",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
