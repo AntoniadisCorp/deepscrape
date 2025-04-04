@@ -7,8 +7,8 @@
     "prebuild": "ts-node src/environments/prod.ts",
     "build": "ng build ",
     "watch": "ng build --watch --configuration development",
-    "serve": "bun run build && cd functions && bun run serve",
-    "deploy": "bun run build && cd functions && bun run deploy",
+    "serve": "npm run build && cd functions && npm run serve",
+    "deploy": "npm run build && cd functions && npm run deploy",
     "test": "ng test",
     "serve:ssr:deepscrape": "node --env-file=.env dist/deepscrape/server/server.mjs"
   },
