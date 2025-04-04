@@ -28,8 +28,11 @@ jobs:
           echo APP_ID=${{ secrets.APP_ID }} >> .env
           echo RECAPTCHA_KEY=${{ secrets.RECAPTCHA_KEY }} >> .env
           npm run prebuild
-      - name: Build Angular App
-        run: npm run deploy
+
+      # - name: Install Firebase Functions Dependencies
+      #  run: cd functions && npm ci
+      # - name: Build Angular App
+      # run: cd .. && npm run deploy
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.G_TOKEN }}
