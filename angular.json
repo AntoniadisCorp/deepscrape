@@ -76,13 +76,13 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json",
+              "serviceWorker": "ngsw-config.json" /* ,
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/prod.ts"
+                  "with": "src/environments/prod_.ts"
                 }
-              ]
+              ] */
             },
             "development": {
               "optimization": false,

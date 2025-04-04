@@ -84,7 +84,7 @@ export const appConfig: ApplicationConfig = {
         if (typeof window !== 'undefined') {
           try {
             return initializeAppCheck(undefined, {
-              provider: new ReCaptchaV3Provider(environment.recpatcha),
+              provider: new ReCaptchaV3Provider(environment.RECAPTCHA_KEY),
               isTokenAutoRefreshEnabled: true
             })
           }
