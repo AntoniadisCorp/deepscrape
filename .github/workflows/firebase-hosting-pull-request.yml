@@ -33,6 +33,8 @@ jobs:
       #  run: cd functions && npm ci
       # - name: Build Angular App
       # run: cd .. && npm run deploy
+      - name: Build Angular App
+        run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.G_TOKEN }}
