@@ -188,14 +188,14 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
     if (diff > 0 && translateX < 0 && translateXPercentage > -0) {
       // Calculate the new X position
       newTranslateX = translateX + Math.abs(deltaX)
-      const diff = tabsWidth - Math.abs(newTranslateX)
+      const newDiff = tabsWidth - Math.abs(newTranslateX)
 
-      if (diff > tabsWidth) {
-        // Adjust the newX value to stay within the container width
-        newTranslateX = 0
-      }
+      // if (diff < tabsWidth) {
+      //   // Adjust the newX value to stay within the container width
+      //   newTranslateX = 0
+      // }
       this.transformX = newTranslateX + 'px'
-      console.log('newTranslateX', newTranslateX, 'diff: ', diff, 'tabsWidth', tabsWidth)
+      // console.log('newTranslateX', newTranslateX, 'newDiff: ', newDiff, 'oldDiff:', diff, 'tabsWidth', tabsWidth, diff > tabsWidth)
       this.updatePositions(newTranslateX)
     } else {
 
