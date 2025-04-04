@@ -35,8 +35,13 @@ jobs:
       # run: cd .. && npm run deploy
       - name: Build Angular App
         run: npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Install Functions Dependencies
+        working-directory: ./functions
+        run: npm ci
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.G_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIBNET_D76DB }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: libnet-d76db
+          entryPoint: "./functions" # Specify the Functions directory
