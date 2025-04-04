@@ -2,6 +2,8 @@
 
 # environments
 /src/environments/**/*.*
+!/src/environments/prod.ts
+
 # Compiled output
 /dist
 /tmp

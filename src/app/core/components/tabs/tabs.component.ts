@@ -148,7 +148,6 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
 
     let newTranslateX: number = 0
 
-
     // console.log('Swipe left', translateXPercentage)
     // left - next
     if (diff > 0 && Math.abs(translateX) < tabsWidth && translateXPercentage < 100) {
@@ -166,8 +165,6 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
       // Calculate the last X position to not exceed the tab container width
       if (diff < 0)
         this.transformX = -tabsWidth + 'px'
-
-      // this.updatePositions()
     }
 
   }
@@ -193,7 +190,7 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
       newTranslateX = translateX + Math.abs(deltaX)
       const diff = tabsWidth - Math.abs(newTranslateX)
 
-      if (diff < tabsWidth) {
+      if (diff > tabsWidth) {
         // Adjust the newX value to stay within the container width
         newTranslateX = 0
       }

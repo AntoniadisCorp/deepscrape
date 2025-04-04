@@ -15,9 +15,7 @@ import { Subject } from 'rxjs/internal/Subject';
 import { from } from 'rxjs/internal/observable/from';
 import { mergeMap } from 'rxjs/internal/operators/mergeMap';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { Auth, authState, getAuth } from '@angular/fire/auth';
-import { of } from 'rxjs/internal/observable/of';
-import { Subscription, take } from 'rxjs';
+// import { Auth, authState, getAuth } from '@angular/fire/auth';
 import { AuthService } from './auth.service';
 
 @Injectable({
