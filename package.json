@@ -4,10 +4,11 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "prbuild": "ts-node src/environments/prod.ts",
+    "build": "ng build ",
     "watch": "ng build --watch --configuration development",
-    "serve": "bun run build && cd functions && bun run serve",
-    "deploy": "bun run build && cd functions && bun run deploy",
+    "serve": "npm run build && cd functions && npm run serve",
+    "deploy": "npm run build && cd functions && npm run deploy",
     "test": "ng test",
     "serve:ssr:deepscrape": "node --env-file=.env dist/deepscrape/server/server.mjs"
   },
@@ -34,6 +35,7 @@
     "@stripe/stripe-js": "^4.10.0",
     "clipboard": "^2.0.11",
     "date-fns": "^4.1.0",
+    "elysia": "^1.2.25",
     "emoji-toolkit": "^9.0.1",
     "express": "^4.18.2",
     "firebase": "^11.0.2",
@@ -57,11 +59,11 @@
     "@types/express": "^4.17.17",
     "@types/jasmine": "~5.1.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^18.18.0",
     "@types/node-fetch": "^2.6.12",
     "@types/readable-stream": "^4.0.18",
     "@types/stream-buffers": "^3.0.7",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.7",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
@@ -70,6 +72,7 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
+    "ts-node": "^10.9.2",
     "typescript": "~5.4.2"
   }
 }

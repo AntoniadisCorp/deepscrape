@@ -80,7 +80,7 @@
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/prod.ts"
+                  "with": "src/environments/prod_.ts"
                 }
               ]
             },
@@ -88,6 +88,12 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+              /* "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment_.ts"
+                }
+              ] */
             }
           },
           "defaultConfiguration": "production"
