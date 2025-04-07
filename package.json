@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "prebuild": "ts-node src/environments/prod.ts",
+    "prbuild": "ts-node src/environments/prod.ts",
     "build": "ng build ",
     "watch": "ng build --watch --configuration development",
     "serve": "npm run build && cd functions && npm run serve",
@@ -35,6 +35,7 @@
     "@stripe/stripe-js": "^4.10.0",
     "clipboard": "^2.0.11",
     "date-fns": "^4.1.0",
+    "elysia": "^1.2.25",
     "emoji-toolkit": "^9.0.1",
     "express": "^4.18.2",
     "firebase": "^11.0.2",
