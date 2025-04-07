@@ -6,11 +6,10 @@ import { LocalStorage } from '../../services';
 import { Outsideclick } from '../../directives';
 
 @Component({
-  selector: 'app-dropdown',
-  standalone: true,
-  imports: [CommonModule, MatIcon, ReactiveFormsModule, Outsideclick],
-  templateUrl: './dropdown.component.html',
-  styleUrl: './dropdown.component.scss'
+    selector: 'app-dropdown',
+    imports: [CommonModule, MatIcon, ReactiveFormsModule, Outsideclick],
+    templateUrl: './dropdown.component.html',
+    styleUrl: './dropdown.component.scss'
 })
 export class DropdownComponent {
 

@@ -4,12 +4,11 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ForbiddenValidatorDirective } from '../../directives';
 
 @Component({
-  selector: 'app-ginput',
-  standalone: true,
-  imports: [NgClass, NgIf, ForbiddenValidatorDirective, ReactiveFormsModule],
-  providers: [],
-  templateUrl: './ginput.component.html',
-  styleUrl: './ginput.component.scss'
+    selector: 'app-ginput',
+    imports: [NgClass, NgIf, ForbiddenValidatorDirective, ReactiveFormsModule],
+    providers: [],
+    templateUrl: './ginput.component.html',
+    styleUrl: './ginput.component.scss'
 })
 export class GinputComponent {
   // The Form Controller of Market URL Input  

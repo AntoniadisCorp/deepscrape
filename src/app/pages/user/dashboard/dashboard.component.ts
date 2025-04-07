@@ -2,11 +2,10 @@ import { Component, HostBinding, inject } from '@angular/core';
 import { AiAPIService, CrawlAPIService, LocalStorage } from 'src/app/core/services';
 
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  imports: [],
-  templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.scss'
+    selector: 'app-dashboard',
+    imports: [],
+    templateUrl: './dashboard.component.html',
+    styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent {
   @HostBinding('class') classes = 'grow';

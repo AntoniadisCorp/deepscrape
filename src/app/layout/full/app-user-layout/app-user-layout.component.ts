@@ -23,14 +23,13 @@ import { SCREEN_SIZE } from 'src/app/core/enum'
 import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
 
 @Component({
-  selector: 'app-user-layout',
-  standalone: true,
-  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
-    MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
-    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
-  animations: [fadeInOutSlideAnimation, PopupAnimation, asideBarAnimation],
-  templateUrl: './app-user-layout.component.html',
-  styleUrl: './app-user-layout.component.scss'
+    selector: 'app-user-layout',
+    imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
+        MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
+        AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
+    animations: [fadeInOutSlideAnimation, PopupAnimation, asideBarAnimation],
+    templateUrl: './app-user-layout.component.html',
+    styleUrl: './app-user-layout.component.scss'
 })
 export class AppUserLayoutComponent {
 

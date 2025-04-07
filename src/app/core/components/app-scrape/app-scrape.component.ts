@@ -31,15 +31,14 @@ import { Subject } from 'rxjs/internal/Subject';
 import { CrawlOperationStatus } from '../../enum';
 
 @Component({
-  selector: 'app-scrape',
-  standalone: true,
-  imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
-    GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
-    RadioToggleComponent,
-    BrowserCookiesComponent
-  ],
-  templateUrl: './app-scrape.component.html',
-  styleUrl: './app-scrape.component.scss'
+    selector: 'app-scrape',
+    imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
+        GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
+        RadioToggleComponent,
+        BrowserCookiesComponent
+    ],
+    templateUrl: './app-scrape.component.html',
+    styleUrl: './app-scrape.component.scss'
 })
 export class AppScrapeComponent {
   readonly clipboardButton = ClipboardbuttonComponent;

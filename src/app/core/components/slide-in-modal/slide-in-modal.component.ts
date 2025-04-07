@@ -5,12 +5,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { slideInModalAnimation } from 'src/app/animations';
 
 @Component({
-  selector: 'app-slideinmodal',
-  standalone: true,
-  imports: [NgClass, NgIf, MatProgressBarModule],
-  templateUrl: './slide-in-modal.component.html',
-  styleUrl: './slide-in-modal.component.scss',
-  animations: [slideInModalAnimation]
+    selector: 'app-slideinmodal',
+    imports: [NgClass, NgIf, MatProgressBarModule],
+    templateUrl: './slide-in-modal.component.html',
+    styleUrl: './slide-in-modal.component.scss',
+    animations: [slideInModalAnimation]
 })
 export class SlideInModalComponent {
 

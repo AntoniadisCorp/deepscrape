@@ -41,14 +41,13 @@ import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
       May 1st–3rd 2019 Salt Lake City, Utah */
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
-    SizeDetectorComponent,
-  ],
-  providers: [ThemeToggleComponent],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+    selector: 'app-root',
+    imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
+        SizeDetectorComponent,
+    ],
+    providers: [ThemeToggleComponent],
+    templateUrl: './app.component.html',
+    styleUrl: './app.component.scss'
 })
 export class AppComponent {
 

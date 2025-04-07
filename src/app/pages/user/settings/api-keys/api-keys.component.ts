@@ -11,14 +11,12 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
-  selector: 'app-api-keys',
-  standalone: true,
-  imports: [NgFor, NgIf, DatePipe, AsyncPipe, ClipboardbuttonComponent, TooltipDirective,
-    MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule,
-    CheckboxComponent],
-  templateUrl: './api-keys.component.html',
-
-  styleUrl: './api-keys.component.scss'
+    selector: 'app-api-keys',
+    imports: [NgFor, NgIf, DatePipe, AsyncPipe, ClipboardbuttonComponent, TooltipDirective,
+        MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule,
+        CheckboxComponent],
+    templateUrl: './api-keys.component.html',
+    styleUrl: './api-keys.component.scss'
 })
 export class ApiKeysComponent implements OnInit {
 

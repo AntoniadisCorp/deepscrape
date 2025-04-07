@@ -18,11 +18,10 @@ import { getErrorMessage, getUserData, storeUserData } from 'src/app/core/functi
 import { FirestoreService } from 'src/app/core/services';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon],
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+    selector: 'app-login',
+    imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon],
+    templateUrl: './login.component.html',
+    styleUrl: './login.component.scss'
 })
 export class LoginComponent {
 

@@ -5,12 +5,11 @@ import { AppSidebarNavLinkComponent } from '../app-sidebar-nav-link/app-sidebar-
 import { AppSidebarNavDropdownComponent } from '../app-sidebar-nav-dropdown/app-sidebar-nav-dropdown.component';
 
 @Component({
-  selector: 'app-sidebar-nav-item',
-  standalone: true,
-  imports: [NgClass, AppSidebarNavLinkComponent, AppSidebarNavDropdownComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './app-sidebar-nav-item.component.html',
-  styleUrl: './app-sidebar-nav-item.component.scss'
+    selector: 'app-sidebar-nav-item',
+    imports: [NgClass, AppSidebarNavLinkComponent, AppSidebarNavDropdownComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    templateUrl: './app-sidebar-nav-item.component.html',
+    styleUrl: './app-sidebar-nav-item.component.scss'
 })
 export class AppSidebarNavItemComponent {
   @Input() item: any

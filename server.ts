@@ -1,5 +1,5 @@
 import { APP_BASE_HREF } from '@angular/common';
-import { CommonEngine } from '@angular/ssr';
+import { CommonEngine } from '@angular/ssr/node';
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -37,7 +37,7 @@ function serveapp(): express.Application {
   server.use('/', airouter.router)
 
   // *PWA Service Worker (if running in production)
-  server.use((req, res, next) => {
+  server.use((req: any, res: any, next: any) => {
     if (req.url.includes('ngsw')) {
       res.setHeader('Service-Worker-Allowed', '/')
     }
@@ -53,7 +53,7 @@ function serveapp(): express.Application {
   }))
 
   // All regular routes use the Angular engine **
-  server.get('*', (req, res, next) => {
+  server.get('*', (req: any, res: any, next: any) => {
     const { protocol, originalUrl, baseUrl, headers } = req;
 
     commonEngine

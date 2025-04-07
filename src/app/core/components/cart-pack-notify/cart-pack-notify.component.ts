@@ -3,11 +3,10 @@ import { MatIcon } from '@angular/material/icon';
 import { ToggleBtnService } from '../../services';
 
 @Component({
-  selector: 'app-cart-pack-notify',
-  standalone: true,
-  imports: [MatIcon],
-  templateUrl: './cart-pack-notify.component.html',
-  styleUrl: './cart-pack-notify.component.scss'
+    selector: 'app-cart-pack-notify',
+    imports: [MatIcon],
+    templateUrl: './cart-pack-notify.component.html',
+    styleUrl: './cart-pack-notify.component.scss'
 })
 export class CartPackNotifyComponent {
 

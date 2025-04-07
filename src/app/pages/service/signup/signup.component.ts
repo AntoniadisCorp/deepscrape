@@ -12,7 +12,6 @@ import { FirestoreService } from 'src/app/core/services';
 
 @Component({
     selector: 'app-signup',
-    standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,

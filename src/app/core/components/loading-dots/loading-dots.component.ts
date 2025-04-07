@@ -3,14 +3,13 @@ import { Component } from '@angular/core';
 import { bounceAnim } from 'src/app/animations';
 
 @Component({
-  selector: 'app-loading-dots',
-  standalone: true,
-  imports: [],
-  templateUrl: './loading-dots.component.html',
-  styleUrl: './loading-dots.component.scss',
-  animations: [
-    bounceAnim
-  ],
+    selector: 'app-loading-dots',
+    imports: [],
+    templateUrl: './loading-dots.component.html',
+    styleUrl: './loading-dots.component.scss',
+    animations: [
+        bounceAnim
+    ]
 })
 export class LoadingDotsComponent {
   flash = false;

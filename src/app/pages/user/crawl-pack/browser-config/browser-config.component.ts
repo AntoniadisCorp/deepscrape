@@ -14,14 +14,13 @@ import { CartService, PackService, ScrollService, SnackbarService, WindowToken }
 import { BrowserConfig, BrowserProfile, Cookies, Headers, ProxyConfig, Size } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-browser-config',
-  standalone: true,
-  imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, NgFor, AsyncPipe, DatePipe,
-    RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe,
-    DropdownComponent, MatProgressSpinner,
-  ],
-  templateUrl: './browser-config.component.html',
-  styleUrl: './browser-config.component.scss'
+    selector: 'app-browser-config',
+    imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, NgFor, AsyncPipe, DatePipe,
+        RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe,
+        DropdownComponent, MatProgressSpinner,
+    ],
+    templateUrl: './browser-config.component.html',
+    styleUrl: './browser-config.component.scss'
 })
 export class BrowserConfigComponent {
   private window = inject(WindowToken)

@@ -6,11 +6,10 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { RippleDirective } from '../../directives';
 
 @Component({
-  selector: 'app-promptarea',
-  standalone: true,
-  imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
-  templateUrl: './promptarea.component.html',
-  styleUrl: './promptarea.component.scss'
+    selector: 'app-promptarea',
+    imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
+    templateUrl: './promptarea.component.html',
+    styleUrl: './promptarea.component.scss'
 })
 export class PromptareaComponent {
 

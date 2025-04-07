@@ -19,8 +19,7 @@ export const storageKey = 'app-theme-dark';
     </button>
     </div>
   `,
-    imports: [MatIcon],
-    standalone: true
+    imports: [MatIcon]
 })
 export class ThemeToggleComponent {
     isDark = false;

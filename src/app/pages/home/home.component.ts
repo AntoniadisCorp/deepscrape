@@ -4,11 +4,10 @@ import { CommonModule, NgIf } from '@angular/common';
 import { ThemeToggleComponent } from 'src/app/shared';
 
 @Component({
-  selector: 'app-home',
-  standalone: true,
-  imports: [RouterLink, ThemeToggleComponent],
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.scss'
+    selector: 'app-home',
+    imports: [RouterLink, ThemeToggleComponent],
+    templateUrl: './home.component.html',
+    styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
   isDarkMode = false;

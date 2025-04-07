@@ -8,13 +8,12 @@ import { CrawlLinkTab, LinkTabs, ScrollDimensions } from '../../types';
 import { MatIcon } from '@angular/material/icon';
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
 @Component({
-  selector: 'app-tabs',
-  standalone: true,
-  imports: [RippleDirective, NgClass, NgStyle,
-    MatIcon, RouterLink, NgFor, NgIf,
-    TouchEventsDirective],
-  templateUrl: './tabs.component.html',
-  styleUrl: './tabs.component.scss'
+    selector: 'app-tabs',
+    imports: [RippleDirective, NgClass, NgStyle,
+        MatIcon, RouterLink, NgFor, NgIf,
+        TouchEventsDirective],
+    templateUrl: './tabs.component.html',
+    styleUrl: './tabs.component.scss'
 })
 export class AppTabsComponent implements OnInit, AfterViewInit {
 

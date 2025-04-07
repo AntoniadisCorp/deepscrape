@@ -4,8 +4,7 @@ import { LocalStorage } from 'src/app/core/services';
 
 @Component({
   selector: 'app-playground',
-  standalone: true,
-  imports: [AppScrapeComponent, PaymentComponent],
+  imports: [AppScrapeComponent, /* PaymentComponent */],
   templateUrl: './playground.component.html',
   styleUrl: './playground.component.scss'
 })

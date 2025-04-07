@@ -5,11 +5,10 @@ import { SCREEN_SIZE } from 'src/app/core/enum';
 
 
 @Component({
-  selector: 'app-size-detector',
-  standalone: true,
-  imports: [NgFor],
-  templateUrl: './size-detector.component.html',
-  styleUrl: './size-detector.component.scss'
+    selector: 'app-size-detector',
+    imports: [NgFor],
+    templateUrl: './size-detector.component.html',
+    styleUrl: './size-detector.component.scss'
 })
 // size-detector.component.ts
 

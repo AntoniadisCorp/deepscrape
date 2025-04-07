@@ -3,11 +3,10 @@ import { Component, Input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
 @Component({
-  selector: 'app-clipboard-button',
-  standalone: true,
-  imports: [MatIcon, NgClass],
-  templateUrl: './clipboardbutton.component.html',
-  styleUrl: './clipboardbutton.component.scss'
+    selector: 'app-clipboard-button',
+    imports: [MatIcon, NgClass],
+    templateUrl: './clipboardbutton.component.html',
+    styleUrl: './clipboardbutton.component.scss'
 })
 export class ClipboardbuttonComponent {
 

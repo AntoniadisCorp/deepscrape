@@ -9,12 +9,11 @@ import { LocalStorage, ScreenResizeService } from 'src/app/core/services';
 import { Session } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-sidebar-nav-link',
-  standalone: true,
-  imports: [NgClass, NgIf, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './app-sidebar-nav-link.component.html',
-  styleUrl: './app-sidebar-nav-link.component.scss'
+    selector: 'app-sidebar-nav-link',
+    imports: [NgClass, NgIf, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    templateUrl: './app-sidebar-nav-link.component.html',
+    styleUrl: './app-sidebar-nav-link.component.scss'
 })
 export class AppSidebarNavLinkComponent {
   @Input() link: any

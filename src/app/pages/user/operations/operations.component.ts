@@ -22,20 +22,19 @@ import { MatTimepickerModule, provideNativeDateTimeAdapter } from '@dhutaryan/ng
 
 
 @Component({
-  selector: 'app-operations',
-  standalone: true,
-  imports: [NgFor, NgIf, DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe,
-    MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe,
-    GinputComponent, DropdownComponent, RouterLink, PromptareaComponent,
-    ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner,
-    MatInputModule,
-    MatTimepickerModule,
-    MatDatepickerModule,
-  ],
-  providers: [provideNativeDateAdapter(), provideNativeDateTimeAdapter()],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './operations.component.html',
-  styleUrl: './operations.component.scss'
+    selector: 'app-operations',
+    imports: [NgFor, NgIf, DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe,
+        MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe,
+        GinputComponent, DropdownComponent, RouterLink, PromptareaComponent,
+        ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner,
+        MatInputModule,
+        MatTimepickerModule,
+        MatDatepickerModule,
+    ],
+    providers: [provideNativeDateAdapter(), provideNativeDateTimeAdapter()],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    templateUrl: './operations.component.html',
+    styleUrl: './operations.component.scss'
 })
 export class OperationsComponent {
 

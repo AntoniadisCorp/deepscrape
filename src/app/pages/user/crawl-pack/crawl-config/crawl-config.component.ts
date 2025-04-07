@@ -20,13 +20,12 @@ import { CartService, PackService, ScrollService, SnackbarService, WindowToken }
 import { CrawlConfig, CrawlerRunConfig, Size } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-crawl-config',
-  standalone: true,
-  imports: [ReactiveFormsModule, NgIf, MatIcon, RadioToggleComponent, FormControlPipe, NgClass,
-    StinputComponent, DropdownComponent, AsyncPipe, DatePipe, NgFor, MatProgressSpinner, JsonPipe
-  ],
-  templateUrl: './crawl-config.component.html',
-  styleUrl: './crawl-config.component.scss'
+    selector: 'app-crawl-config',
+    imports: [ReactiveFormsModule, NgIf, MatIcon, RadioToggleComponent, FormControlPipe, NgClass,
+        StinputComponent, DropdownComponent, AsyncPipe, DatePipe, NgFor, MatProgressSpinner, JsonPipe
+    ],
+    templateUrl: './crawl-config.component.html',
+    styleUrl: './crawl-config.component.scss'
 })
 export class CrawlConfigComponent {
 
