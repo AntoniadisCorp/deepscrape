@@ -1,7 +1,8 @@
 import { Request, Response, Router } from "express"
-import fetch from 'node-fetch'
 import { JinaHeader } from "./types"
 import { customUrlDecoder } from "./fun"
+import fetch from "node-fetch"
+import { crawl4aiCore, receiveLogs } from "./middleware"
 
 
 class SyncAIapis {
@@ -106,6 +107,10 @@ class SyncAIapis {
                     throw new Error(`API error: ${apiResponse.statusText}`)
                 }
 
+                if (!apiResponse.body) {
+                    throw new Error('API response body is empty')
+
+                }
                 // Stream data from Anthropic to the client
                 res.writeHead(200, {
                     'Content-Type': 'text/event-stream',
@@ -114,7 +119,6 @@ class SyncAIapis {
                     'Pragma': 'no-cache',
                     'Expires': '0',
                 })
-
 
                 // Accumulate chunks and send them line-by-line
                 let buffer = ''
@@ -129,14 +133,26 @@ class SyncAIapis {
                         buffer = buffer.slice(boundary + 1)
 
                         if (jsonChunk) {
-                            res.write(`${jsonChunk}\n`) // Send chunked data as JSON
+                            if (!res.write(`${jsonChunk}\n`)) { // Send chunked data as JSON
+                                apiResponse.body?.pause()  // Pause the stream if backpressure occurs
+                                res.once('drain', () => {
+                                    apiResponse.body?.resume()  // Resume the stream when the client is ready
+                                });
+                            }
+
                         }
                     }
                 })
 
                 apiResponse.body.on('end', () => {
                     if (buffer.trim()) {
-                        res.write(`${buffer.trim()}\n`) // Send remaining data
+                        if (!res.write(`${buffer.trim()}\n`)) { // Send remaining data
+                            apiResponse.body?.pause()  // Pause the stream if backpressure occurs
+                            res.once('drain', () => {
+                                apiResponse.body?.resume()  // Resume the stream when the client is ready
+                            });
+                        }
+
                     }
                     res.end()
                 })
@@ -167,6 +183,11 @@ class SyncAIapis {
                 if (!apiResponse.ok) {
                     throw new Error(`API error: ${apiResponse.statusText}`)
                 }
+
+                if (!apiResponse.body) {
+                    throw new Error('API response body is empty')
+                }
+
                 // Stream data from OpenAI to the client
                 res.writeHead(200, {
                     'Content-Type': 'text/event-stream',
@@ -188,7 +209,13 @@ class SyncAIapis {
                         buffer = buffer.slice(boundary + 1)
 
                         if (jsonChunk) {
-                            res.write(`${jsonChunk}\n`) // Send chunked data as JSON
+                            if (!res.write(`${jsonChunk}\n`)) {
+                                apiResponse.body?.pause()  // Pause the stream if backpressure occurs
+                                res.once('drain', () => {
+                                    apiResponse.body?.resume()  // Resume the stream when the client is ready
+                                });
+                            } // Send chunked data as JSON
+
                         }
                     }
                 })
@@ -226,6 +253,10 @@ class SyncAIapis {
                 if (!apiResponse.ok) {
                     throw new Error(`API error: ${apiResponse.statusText}`)
                 }
+
+                if (!apiResponse.body) {
+                    throw new Error('API response body is empty')
+                }
                 // Stream data from OpenAI to the client
                 res.writeHead(200, {
                     'Content-Type': 'text/event-stream',
@@ -248,7 +279,13 @@ class SyncAIapis {
                         buffer = buffer.slice(boundary + 1)
 
                         if (jsonChunk) {
-                            res.write(`${jsonChunk}\n`) // Send chunked data as JSON
+                            if (!res.write(`${jsonChunk}\n`)) {
+                                apiResponse.body?.pause()  // Pause the stream if backpressure occurs
+                                res.once('drain', () => {
+                                    apiResponse.body?.resume()  // Resume the stream when the client is ready
+                                });
+                            } // Send chunked data as JSON
+
                         }
                     }
                 })
@@ -272,52 +309,8 @@ class SyncAIapis {
             }
         })
 
-        this.router.post('/api/crawl', async (req: Request, res: Response) => {
-            // const decodedUrl = decodeURIComponent(url) // decode the URL
-            const apiUrl = `${process.env["API_CRAWL4AI_URL"]}/crawl`
-            const { urls, priority } = req.body
-            const body = {
-                urls,
-                priority
-            }
-
-            // const apiKey = process.env["JINAAI_API_KEY"]
-
-            let headers: JinaHeader = {
-                'Authorization': `${req.headers['authorization'] as string || 'Bearer '}`,
-                "Accept": req.headers['accept'] as string || "application/json",
-                "X-With-Iframe": req.headers['x-with-iframe'] as string || 'false',
-                "X-Return-Format": req.headers["x-return-format"] as string || "markdown",
-                "X-Target-Selector": req.headers["x-target-selector"] as string || "body",
-                "X-With-Generated-Alt": req.headers["x-with-generated-alt"] as string || "true",
-            }
-
-            if (req.headers['x-set-cookie']?.length) {
-                headers['X-Set-Cookie'] = req.headers['x-set-cookie'] as string
-            }
-
-            try {
-                const apiResponse = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(body),
-                })
-
-                if (!apiResponse.ok)
-                    throw new Error(`API error: ${apiResponse.statusText}`)
-
-                const buffer = await apiResponse.arrayBuffer()
-                res.writeHead(200, {
-                    'Content-Type': 'application/octet-stream',
-                })
-
-                res.end(Buffer.from(buffer))
-            }
-            catch (error) {
-                console.error('Error:', error)
-                res.status(500).json({ error: 'Failed to connect to crawl API' })
-            }
-        })
+        this.router.post('/api/crawl', crawl4aiCore)
+        this.router.post('/api/machines/logs', receiveLogs)
     }
     /**
      * https Router Put

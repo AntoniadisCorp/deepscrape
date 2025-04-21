@@ -1,3 +1,5 @@
+import { DropDownOption } from "../types"
+
 export function isArray(arr: any): boolean {
     return Array.isArray(arr) && arr.length > 0
 }
@@ -99,4 +101,50 @@ export function generateRandomString(length: number): string {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
     return result;
+}
+
+export function setDefaultImages(array: DropDownOption[]): void {
+    const defaultImages = [
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+    ]
+
+    array.push(...defaultImages)
+}
+
+export function setExistingMachines(array: DropDownOption[]): void {
+    const clone = [
+        { name: 'rough-forest-9606', code: '7843403a111178' },
+        { name: 'broken-grass-6037', code: 'e82d623b363d68' },
+
+    ]
+    array.push(...clone)
+}
+
+export function preSetRegions(array: DropDownOption[]): void {
+    const regions = [
+        { name: 'us-east-1', code: 'us-east-1' },
+        { name: 'eu-east', code: 'eu-east' },
+        { name: 'eu-west-1', code: 'eu-west-1' },
+    ]
+    array.push(...regions)
+}
+
+export function setAutoContainerOptions(array: DropDownOption[]): void {
+    const autoContainerOptions = [
+        { name: 'suspend', code: 'suspend' },
+        { name: 'stop', code: 'stop' },
+        { name: 'manual', code: 'off' },
+    ]
+    array.push(...autoContainerOptions)
 }

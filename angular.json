@@ -28,6 +28,7 @@
               "prismjs/components/prism-typescript.min.js"
             ],
             "outputPath": "dist/deepscrape",
+            // "outputMode": "server",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -94,6 +95,12 @@
                   "with": "src/environments/environment_.ts"
                 }
               ] */
+            },
+            "elysia": {
+              "optimization": false,
+              "ssr": {
+                "entry": "server.ts"
+              }
             }
           },
           "defaultConfiguration": "production"

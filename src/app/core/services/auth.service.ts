@@ -78,7 +78,7 @@ export class AuthService {
     try {
       const auth = getAuth();
       const token = await auth.currentUser?.getIdToken()
-      this.token = token
+      this.token = token || undefined
     } catch (error) {
       console.error('Error initializing auth:', error);
     }

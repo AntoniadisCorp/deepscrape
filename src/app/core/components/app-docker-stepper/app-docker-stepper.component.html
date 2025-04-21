@@ -1,0 +1,315 @@
+<!-- Stepper -->
+<div class="relative flex justify-between mb-8">
+  <div
+    *ngFor="let step of [1, 2, 3, 4]"
+    [class]="step !== 4 ? 'w-full' : ''"
+    class="flex items-center"
+  >
+    <button
+      type="button"
+      class="flex items-center p-2 rounded-md dark:hover:bg-gray-600/10 hover:bg-blue-400/10"
+    >
+      <div
+        [class.bg-blue-500]="step <= currentStep"
+        [class.bg-gray-300]="step > currentStep"
+        [class.text-white]="step <= currentStep"
+        [class.dark:bg-blue-800]="step <= currentStep"
+        [class.dark:bg-gray-600]="step > currentStep"
+        [class.dark:text-gray-100]="step <= currentStep"
+        class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+      >
+        {{ step }}
+      </div>
+      <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+        {{
+          step === 1
+            ? "Select Image"
+            : step === 2
+            ? "Settings"
+            : step === 3
+            ? "Advanced"
+            : "Review"
+        }}
+      </span>
+    </button>
+    <!-- Connecting Line -->
+    <div
+      [class.bg-blue-500]="step < currentStep"
+      [class.bg-gray-300]="step >= currentStep"
+      class="mx-2 top-4 grow left-4 right-4 h-[.05rem]"
+      *ngIf="step !== 4"
+    ></div>
+  </div>
+</div>
+
+<!-- Stepper Content -->
+<div
+  class="p-3 max-w-3xl bg-transparent mx-auto overflow-y-auto scrollbar max-h-[55vh]"
+>
+  <!-- Step 1 -->
+  <div *ngIf="currentStep === 1">
+    <form [formGroup]="formStep1" class="space-y-6">
+      <div class="space-y-4">
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Select Docker Image Option
+        </label>
+        <div class="space-y-6">
+          <label class="mb-4 flex items-center h-10 gap-2 cursor-pointer">
+            <app-radio-button
+              [control]="formStep1.get('imageOption') | formControl"
+              [title]="'Use a Default System Image'"
+              [value]="'default'"
+              class="grow"
+            ></app-radio-button>
+          </label>
+          <div class="w-full block">
+            <app-dropdown
+              *ngIf="formStep1.value.imageOption === 'default'"
+              [options]="defaultImages"
+              [control]="formStep1.get('defaultImage') | formControl"
+              [padding]="'p-2'"
+              dropDownName="Select an image"
+            >
+            </app-dropdown>
+          </div>
+
+          <label class="mb-4 flex items-center h-10 gap-2 cursor-pointer">
+            <app-radio-button
+              [control]="formStep1.get('imageOption') | formControl"
+              [title]="'Clone an Existing Machine'"
+              [value]="'clone'"
+              class="grow"
+            ></app-radio-button>
+          </label>
+          <div class="w-full block">
+            <app-dropdown
+              *ngIf="formStep1.value.imageOption === 'clone'"
+              [options]="existingMachines"
+              [control]="formStep1.get('cloneMachine') | formControl"
+              [padding]="'p-2'"
+              dropDownName="Select a machine to clone"
+            >
+            </app-dropdown>
+          </div>
+
+          <div
+            *ngIf="formStep1.get('cloneMachine')?.errors?.['cloneMachine']"
+            class="text-red-500 text-sm mt-1"
+          >
+            {{ formStep1.get('cloneMachine')?.errors?.['cloneMachine'] }}
+          </div>
+
+          <label class="flex items-center h-10 gap-2 cursor-pointer">
+            <app-radio-button
+              [control]="formStep1.get('imageOption') | formControl"
+              [title]="'Upload a Dockerfile'"
+              [value]="'upload'"
+              class="grow"
+            ></app-radio-button>
+          </label>
+          <div
+            *ngIf="formStep1.value.imageOption === 'upload'"
+            class="flex gap-2 w-full text-center items-center"
+          >
+            <mat-icon svgIcon="dockerfile"></mat-icon>
+            <input
+              type="file"
+              (change)="onFileSelected($event)"
+              accept="application/octet-stream"
+              placeholder="Choose File"
+              class="w-full cursor-pointer text-gray-700 dark:text-gray-300 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+            />
+          </div>
+          <div
+            *ngIf="formStep1.get('dockerfile')?.errors?.['invalidDockerfile']"
+            class="text-red-500 text-sm mt-1"
+          >
+            {{ formStep1.get('dockerfile')?.errors?.['invalidDockerfile'] }}
+          </div>
+
+          <label class="flex items-center h-10 gap-2 cursor-pointer">
+            <app-radio-button
+              [control]="formStep1.get('imageOption') | formControl"
+              [title]="'Specify Docker Hub Image URL'"
+              [value]="'url'"
+              class="grow"
+            ></app-radio-button>
+          </label>
+          <input
+            class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray5 dark:text-gray-300 dark:shadow-inner focus:dark:shadow-gray-800 dark:focus:ring-gray5"
+            *ngIf="formStep1.value.imageOption === 'url'"
+            type="text"
+            id="dockerHubUrl"
+            formControlName="dockerHubUrl"
+            placeholder="container url.."
+          />
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Step 2 -->
+  <div *ngIf="currentStep === 2">
+    <form [formGroup]="formStep2" class="space-y-6">
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Machine Name</label
+        >
+        <input
+          class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800"
+          type="text"
+          id="machineName"
+          formControlName="machineName"
+          placeholder="container name.."
+        />
+      </div>
+      <div>
+        <label
+          class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Region</label
+        >
+        <app-dropdown
+          [options]="regions"
+          [control]="formStep2.get('region') | formControl"
+          [padding]="'p-2'"
+          dropDownName="Select a region"
+        >
+        </app-dropdown>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >CPU Cores</label
+          >
+          <input
+            class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800"
+            type="number"
+            id="cpuCores"
+            formControlName="cpuCores"
+            placeholder="2.."
+          />
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >Memory (MB)</label
+          >
+          <input
+            class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800"
+            type="number"
+            id="memory"
+            formControlName="memory"
+            placeholder="256.."
+          />
+        </div>
+      </div>
+      <div>
+        <label class="flex items-center">
+          <app-checkbox
+            class="mr-2 h-8 font-code inline-flex justify-start w-full"
+            [control]="formStep2.get('autoStart') | formControl"
+            [title]="'AutoStart'"
+            (change)="onCheckBoxChange()"
+          ></app-checkbox>
+        </label>
+      </div>
+      <div>
+        <label
+          class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >Auto-Stop</label
+        >
+        <app-dropdown
+          [options]="autoContainerOptions"
+          [control]="formStep2.get('autoStop') | formControl"
+          [padding]="'p-2'"
+          dropDownName="Select auto-stop"
+        >
+        </app-dropdown>
+      </div>
+      <div formArrayName="environmentVariables" class="space-y-2">
+        <div
+          *ngFor="let envVar of environmentVariables.controls; let i = index"
+          [formGroupName]="i"
+          class="flex gap-2 items-center"
+        >
+          <input
+            formControlName="key"
+            placeholder="Key"
+            class="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition"
+          />
+          <input
+            formControlName="value"
+            placeholder="Value"
+            class="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition"
+          />
+          <button
+            (click)="removeEnvVar(i)"
+            class="text-red-500 hover:text-red-700 transition"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+        <button
+          (click)="addEnvVar()"
+          class="mt-2 text-blue-500 hover:text-blue-700 transition"
+        >
+          Add Environment Variable
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Step 3 -->
+  <div *ngIf="currentStep === 3">
+    <form [formGroup]="formStep3" class="space-y-6">
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          fly.toml Configuration (Optional)
+        </label>
+        <textarea
+          formControlName="flyToml"
+          rows="5"
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition"
+        ></textarea>
+      </div>
+    </form>
+  </div>
+
+  <!-- Step 4 -->
+  <div *ngIf="currentStep === 4">
+    <div class="space-y-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        Configuration Summary
+      </h3>
+      <pre
+        class="bg-gray-100 dark:bg-gray-700 p-4 rounded-md text-gray-900 dark:text-gray-100 overflow-auto"
+      >
+            {{ getConfiguration() | json }}
+          </pre
+      >
+    </div>
+    <!-- <div class="mt-6 flex justify-between">
+      <button
+        (click)="prevStep()"
+        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
+      >
+        Back
+      </button>
+      <button
+        (click)="deploy()"
+        [disabled]="isDeploying"
+        class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+      >
+        <span *ngIf="!isDeploying">Deploy</span>
+        <span *ngIf="isDeploying" class="animate-spin inline-block">⏳</span>
+      </button>
+    </div>
+  </div> -->
+  </div>
+</div>

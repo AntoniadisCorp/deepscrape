@@ -27,7 +27,9 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
     ],
     "types": [
       "chrome",
+      "jest"
       // "node"
+      // "bun"
     ],
     "resolveJsonModule": true,
     "esModuleInterop": true,

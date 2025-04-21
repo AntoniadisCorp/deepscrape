@@ -1,1 +1,318 @@
-<p>machines works!</p>
+<!-- src/app/pages/user/crawl-pack/machines/machines.component.html -->
+
+<!-- Page Header -->
+<div class="container mx-auto p-4 pt-6 xl:pt-16 md:p-6 lg:p-12 xl:p-24">
+  <h1
+    class="text-3xl text-center font-bold mb-4 text-gray-800 dark:text-gray-200"
+  >
+    <mat-icon class="!text-3xl !size-8 !h-7">memory</mat-icon>
+    Machines
+  </h1>
+  <p class="text-lg text-center text-gray-600 dark:text-gray-500 mb-4">
+    Manage and monitor your machines 🚀
+  </p>
+
+  <div class="w-full text-center inline-flex items-center justify-center">
+    <mat-icon
+      aria-label="docker-original"
+      svgIcon="docker-original"
+      class="!size-40 mb-4 text-gray-800 dark:text-gray-200"
+    ></mat-icon>
+  </div>
+
+  <p class="mb-8 text-lg max-w-screen-xl text-gray-800 dark:text-gray-300">
+    This page covers installation, configuration, and usage of
+    <span class="text-sky-500 bg-sky-700/10">Crawler</span> in Docker
+    environment. For managing your containerized services you can either build
+    your own image from the provided Dockerfile or use the pre-built image from
+    <span class="text-sky-500 bg-sky-700/10">Docker Hub</span> or use our
+    pre-built image.
+  </p>
+
+  <!-- Slide in Modal -->
+  <app-slideinmodal
+    *ngIf="isModalOpen.value"
+    [maxWidth]="'max-w-3xl'"
+    [isOpen]="isModalOpen"
+    [loading]="isModalLoading.modal"
+    position="center"
+    [hasBlur]="true"
+    [title]="'Set up ' + '' + 'New Container '"
+  >
+    <!-- Modal Content -->
+    <div class="flex flex-col items-start justify-center gap-4 w-full">
+      <!-- Stepper -->
+      <div class="text-lg relative w-full">
+        <app-docker-stepper
+          (stepStatus)="getCurrentStepByEvent($event)"
+        ></app-docker-stepper>
+      </div>
+    </div>
+    <!-- Modal Buttons -->
+    <div class="mt-4 flex items-center justify-between">
+      <div class="relative flex gap-4">
+        <!-- Previous Button -->
+        <button
+          *ngIf="currentStep > 1"
+          (click)="prevStep()"
+          type="button"
+          class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-gray-600/[.1] dark:text-white dark:hover:bg-gray-500/70 dark:hover:text-white dark:focus:ring-gray-200/60 disabled:opacity-50"
+        >
+          Back
+        </button>
+        <!-- Clear Button -->
+        <div [tooltip]="'Clear'" position="above" class="relative">
+          <button
+            *ngIf="currentStep < 4"
+            (click)="clearInput()"
+            appRipple
+            rippleColor="{{
+              themeIsDark()
+                ? 'rgba(255, 255, 255, 0.35)'
+                : 'rgba(33, 33, 33, 0.35)'
+            }}"
+            type="button"
+            title="Clear form"
+            class="h-11 w-11 rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60"
+          >
+            <mat-icon
+              svgIcon="clear"
+              faria-hidden="false"
+              aria-label="clear"
+            ></mat-icon>
+          </button>
+        </div>
+      </div>
+      <!-- Next and Deploy button -->
+      <button
+        class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50"
+        type="button"
+        *ngIf="currentStep < 4"
+        [disabled]="!isStepValid(currentStep)"
+        (click)="nextStep()"
+        appRipple
+        rippleColor="{{
+          themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
+        }}"
+      >
+        Next
+        <mat-icon class="!h-5 !w-5 pt-[0.1rem] leading-4 top-1 relative"
+          >chevron_right</mat-icon
+        >
+      </button>
+      <button
+        *ngIf="currentStep > 3"
+        (click)="deploy()"
+        [disabled]="isDeploying || isModalLoading.modal"
+        class="min-w-fit transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        appRipple
+        rippleColor="{{
+          themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
+        }}"
+      >
+        <span *ngIf="isDeploying">Deploy</span>
+        <span *ngIf="!isDeploying" class="animate-spin inline-block">⏳</span>
+      </button>
+    </div>
+  </app-slideinmodal>
+  <!-- Recent Containers -->
+  <h3
+    class="flex flex-wrap items-center justify-between mb-4 text-xl font-light text-gray-800 dark:text-gray-200 mt-4"
+  >
+    <span>Recent Containers</span>
+    <button
+      title="add new container"
+      type="button"
+      (click)="createMachine()"
+      [ngClass]="
+        !modalOpened
+          ? 'hover:bg-gray-400/[0.5] dark:hover:bg-gray-700/20 dark:focus:bg-gray-700/[0.7] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300'
+          : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
+      "
+      class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors"
+    >
+      <mat-icon
+        [ngClass]="
+          !modalOpened ? 'text-gray-600 dark:text-gray-300/80' : '-rotate-45'
+        "
+        class="text-3xl transition-transform !size-8 leading-8"
+        >add</mat-icon
+      >
+    </button>
+  </h3>
+  <p class="text-lg text-gray-500 mb-4">View and manage all your machines</p>
+
+  <!-- Empty State -->
+  <div
+    class="flex flex-col items-center justify-center"
+    *ngIf="machines.length === 0"
+  >
+    <mat-icon
+      aria-label="container"
+      svgIcon="container"
+      class="!size-40 mb-4 text-gray-800 dark:text-gray-200"
+    ></mat-icon>
+    <p class="text-gray-500 text-lg mb-4">No machines created yet</p>
+  </div>
+
+  <!-- Machines Grid -->
+  <div
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+    *ngIf="machines.length > 0"
+  >
+    <div class="card" *ngFor="let machine of machines">
+      <div class="card-header flex justify-between items-center">
+        <p class="text-lg font-medium text-gray-700 truncate">
+          {{ machine.name }}
+        </p>
+        <p class="text-gray-500 text-sm">
+          Created: {{ machine.creationDate | date }}
+        </p>
+      </div>
+      <div class="card-body flex flex-col items-center justify-center py-4">
+        <!-- Status Badge -->
+        <span
+          class="status-badge"
+          [ngClass]="{
+            'bg-green-500': machine.status === 'Running',
+            'bg-red-500': machine.status === 'Stopped',
+            'bg-amber-500': machine.status === 'Suspended',
+            'bg-indigo-500': machine.status === 'Deployed'
+          }"
+        >
+          <i
+            class="fas"
+            [ngClass]="{
+              'fa-play': machine.status === 'Running',
+              'fa-stop': machine.status === 'Stopped',
+              'fa-pause': machine.status === 'Suspended',
+              'fa-cloud': machine.status === 'Deployed'
+            }"
+          ></i>
+          {{ machine.status }}
+        </span>
+
+        <!-- Resources Visualization -->
+        <div class="resources flex flex-col items-center justify-center py-4">
+          <!-- CPU -->
+          <div class="cpu flex items-center justify-center">
+            <div class="cpu-bar" *ngFor="let core of machine.cpuCores">
+              <div
+                class="cpu-bar-filled"
+                [style.width]="core.usage + '%'"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Memory -->
+          <div class="memory flex items-center justify-center">
+            <div class="memory-circle">
+              <div
+                class="memory-circle-filled"
+                [style.background]="
+                  'conic-gradient(#3B82F6 ' +
+                  machine.memoryUsage +
+                  '%, #E5E7EB ' +
+                  (100 - machine.memoryUsage) +
+                  '%)'
+                "
+              ></div>
+            </div>
+          </div>
+
+          <!-- Network -->
+          <div class="network flex items-center justify-center">
+            <i class="fas fa-globe" *ngIf="machine.network === 'public'"></i>
+            <i class="fas fa-lock" *ngIf="machine.network === 'dedicated'"></i>
+          </div>
+
+          <!-- Performance -->
+          <div class="performance flex items-center justify-center">
+            <span
+              class="performance-tag"
+              [ngClass]="{
+                'bg-green-100': machine.performance === 'Shared',
+                'bg-blue-100': machine.performance === 'Performance'
+              }"
+            >
+              {{ machine.performance }}
+              <i
+                class="fas fa-check"
+                *ngIf="machine.performance === 'Shared'"
+              ></i>
+              <i
+                class="fas fa-rocket"
+                *ngIf="machine.performance === 'Performance'"
+              ></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Action Buttons Row -->
+        <div class="action-buttons flex justify-between items-center py-4">
+          <button class="btn btn-primary" (click)="startStopMachine(machine)">
+            {{ machine.status === "Running" ? "Stop" : "Start" }}
+          </button>
+          <div class="menu-dropdown">
+            <button
+              class="btn btn-secondary"
+              (click)="openMenuDropdown(machine)"
+            >
+              Menu
+            </button>
+            <ul class="menu-dropdown-list">
+              <li><a (click)="editMachine(machine)">Edit</a></li>
+              <li><a (click)="deleteMachine(machine)">Delete</a></li>
+              <li><a (click)="suspendMachine(machine)">Suspend</a></li>
+              <li><a (click)="autoSuspendMachine(machine)">Auto-Suspend</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Machine Button -->
+  <!-- <button class="fab btn btn-primary" (click)="openCreateMachineModal()">
+    <i class="fas fa-plus"></i>
+    <span class="fab-text">Create Machine</span>
+  </button> -->
+
+  <!-- Create Machine Modal -->
+  <!-- <div class="modal" *ngIf="createMachineModalOpen">
+    <div class="modal-content">
+      <h2 class="modal-title">Create Machine</h2>
+      <form [formGroup]="createMachineForm">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" formControlName="name" />
+        </div>
+        <div class="form-group">
+          <label for="cpuCores">CPU Cores</label>
+          <input type="number" id="cpuCores" formControlName="cpuCores" />
+        </div>
+        <div class="form-group">
+          <label for="memory">Memory</label>
+          <input type="number" id="memory" formControlName="memory" />
+        </div>
+        <div class="form-group">
+          <label for="network">Network</label>
+          <select id="network" formControlName="network">
+            <option value="public">Public</option>
+            <option value="dedicated">Dedicated</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="performance">Performance</label>
+          <select id="performance" formControlName="performance">
+            <option value="Shared">Shared</option>
+            <option value="Performance">Performance</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" (click)="createMachine()">
+          Create
+        </button>
+      </form>
+    </div>
+  </div> -->
+</div>

@@ -2,16 +2,14 @@
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
 import { onCall } from "firebase-functions/v1/https"
-import { db, dbName, getSecretFromManager, saveToSecretManager, stripe } from "./config"
+import { db, dbName, getSecretFromManager, saveToSecretManager, stripe/* , auth as adminAuth */ } from "./config"
 import { createCustomer } from "./stripe"
 import { auth, firestore } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { redis } from "./cacheConfig"
 
-// import { onRequest } from "firebase-functions/https"
-
 export const createStripeCustomer = auth
-    .user().onCreate(async (user: any) => {
+    .user().onCreate(async (user: auth.UserRecord) => {
         const firebaseUID = user.uid
         const fireUserDoc = `users/${firebaseUID}`
         try {
@@ -398,7 +396,7 @@ export const getOperationsPaging = onCall(
 
 export const getBrowserProfilesPaging = onCallv2(
 
-    async (req, resp) => {
+    async (req) => {
         const { currPage = 1, pageSize = 10 } = req.data
 
         try {
@@ -592,4 +590,42 @@ export const getCrawlResultConfigsPaging = onCallv2(
             throw new HttpsError("internal", "Failed to retrieve CrawlResult Configurations by pagination.")
         }
     })
+/*
+export const receiveLogs = onRequest(async (request, response) => {
+    const authHeader = request.headers.authorization
 
+    // if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    //     return response.status(401).send("Unauthorized")
+    // }
+    const body = request.body as string
+
+    try {
+        // const token = authHeader.split("Bearer ")[1]
+        // await adminAuth.verifyIdToken(token) // Validate token
+
+
+        const logs: string[] = body.split("\n").filter(Boolean) // Split by newlines and filter empty strings
+        const logPromises = logs.map((log: any) => {
+            const parsedLog = JSON.parse(log)
+            // return db.collection(`users/${userId}/logs`).add({
+            //     ...parsedLog,
+            //     timestamp: Timestamp,
+            // })
+            return parsedLog
+        })
+
+        // Process each log entry
+        logs.forEach((log: any) => {
+            console.log(log, authHeader) // Log to Firebase Function logs for debugging
+            // Optionally, store in Firestore or another database
+            // Example: admin.firestore().collection('logs').add(JSON.parse(log));
+        })
+        await Promise.all(logPromises)
+        response.sendStatus(200) // Respond with success
+    } catch (error) {
+        console.error("Error retrieving the machine logs from fly datadog:", error)
+        response.sendStatus(404) // Respond with success
+        // throw new HttpsError("internal", "Error retrieving the machine logs from fly datadog")
+    }
+})
+ */

@@ -2,6 +2,39 @@
 // For more information: https://material.angular.io/guide/theming
 @use "@angular/material" as mat;
 @use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
+/* You can add global styles to this file, and also import other style files */
+@use "scss/main.scss" as core;
+/**
+ * This injects Tailwind's base styles and any base styles registered by
+ * plugins.
+ */
+
+@tailwind base;
+
+// @import "tailwindcss/base";
+
+/**
+  * This injects Tailwind's component classes and any component classes
+  * registered by plugins.
+  */
+// @import "tailwindcss/components";
+@tailwind components;
+
+/**
+  * This injects Tailwind's utility classes and any utility classes registered
+  * by plugins.
+  */
+// @import "tailwindcss/utilities";
+@tailwind utilities;
+/**
+  * Use this directive to control where Tailwind injects the hover, focus,
+  * responsive, dark mode, and other variants of each class.
+  *
+  * If omitted, Tailwind will append these classes to the very end of
+  * your stylesheet by default.
+  */
+// @import "tailwindcss/variants";
+@tailwind variants;
 
 // Plus imports for other components in your app.
 
@@ -49,13 +82,29 @@ $my-theme-dark: mat.define-theme(
 
 // $theme-light: mat-light-theme($app-primary, $app-accent, $app-warn);
 
+// if you want to support color attribute in M3 add compatibility mixin
+@include mat.color-variants-backwards-compatibility($my-theme);
+
+// Comment out the line below if you want to use the pre-defined typography utility classes.
+// For more information: https://material.angular.io/guide/typography#using-typography-styles-in-your-application.
+// @include mat.typography-hierarchy($deepscrape-theme);
+// Comment out the line below if you want to use the deprecated `color` inputs.
+// @include mat.color-variants-backwards-compatibility($deepscrape-theme);
+@import "prismjs/themes/prism-okaidia.css";
+@import "prismjs/plugins/line-numbers/prism-line-numbers.css";
+@import "prismjs/plugins/line-highlight/prism-line-highlight.css";
+
+// console.log() CSS Debugger
+/* * {
+    box-sizing: border-box;
+    background-color: rgb(0 100 0 / 0.1) !important;
+} */
+
 html.dark {
     @include mat-timepicker.timepicker-theme($my-theme-dark);
     @include mat.all-component-colors($my-theme-dark);
 }
 
-// if you want to support color attribute in M3 add compatibility mixin
-@include mat.color-variants-backwards-compatibility($my-theme);
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
@@ -71,55 +120,6 @@ html.dark {
     @include mat-timepicker.timepicker-theme($my-theme);
     @include mat.all-component-themes($my-theme);
 }
-// Comment out the line below if you want to use the pre-defined typography utility classes.
-// For more information: https://material.angular.io/guide/typography#using-typography-styles-in-your-application.
-// @include mat.typography-hierarchy($deepscrape-theme);
-// Comment out the line below if you want to use the deprecated `color` inputs.
-// @include mat.color-variants-backwards-compatibility($deepscrape-theme);
-@import "prismjs/themes/prism-okaidia.css";
-@import "prismjs/plugins/line-numbers/prism-line-numbers.css";
-@import "prismjs/plugins/line-highlight/prism-line-highlight.css";
-
-/**
- * This injects Tailwind's base styles and any base styles registered by
- * plugins.
- */
-
-// @tailwind base;
-
-@import "tailwindcss/base";
-
-/**
-  * This injects Tailwind's component classes and any component classes
-  * registered by plugins.
-  */
-@import "tailwindcss/components";
-// @tailwind components;
-
-/**
-  * This injects Tailwind's utility classes and any utility classes registered
-  * by plugins.
-  */
-@import "tailwindcss/utilities";
-// @tailwind utilities;
-/**
-  * Use this directive to control where Tailwind injects the hover, focus,
-  * responsive, dark mode, and other variants of each class.
-  *
-  * If omitted, Tailwind will append these classes to the very end of
-  * your stylesheet by default.
-  */
-@import "tailwindcss/variants";
-// @tailwind variants;
-
-/* You can add global styles to this file, and also import other style files */
-@import "scss/main.scss";
-
-// console.log() CSS Debugger
-/* * {
-    box-sizing: border-box;
-    background-color: rgb(0 100 0 / 0.1) !important;
-} */
 
 h1,
 h2,
@@ -189,7 +189,7 @@ html {
         background-attachment: fixed;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        @include scrollbar;
+        @include core.scrollbar;
         @apply bg-gray-100 dark:bg-gray-900;
     }
 }

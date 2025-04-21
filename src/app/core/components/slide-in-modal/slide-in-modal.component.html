@@ -1,17 +1,17 @@
 <div
   #modal
   [@slideInOut]
-  [ngClass]="getPosition()"
-  class="fixed right-0 z-[1000] w-full max-w-lg"
+  [ngClass]="getPosition() + ' ' + maxWidth"
+  class="fixed inset-0 z-[1000] h-fit"
   *ngIf="isOpen.value"
 >
-  <div class="p-5">
+  <div class="relative p-5 max-w-3xl">
     <!-- Container -->
     <div class="grid grid-cols-1 md:grid-cols-1">
       <!-- Add Menu Item Card -->
 
       <div
-        class="rounded-lg bg-white shadow-md transition-shadow duration-300 hover:shadow-lg dark:bg-gray6 dark:text-gray-100 dark:hover:shadow-md dark:hover:shadow-gray6"
+        class="rounded-lg bg-white shadow-md transition-shadow duration-300 hover:shadow-lg dark:bg-[rgb(36_38_40)] dark:text-gray-100 dark:hover:shadow-inner-pressed dark:hover:shadow-blue-500/20"
       >
         <span class=""
           ><mat-progress-bar
@@ -31,27 +31,27 @@
         </div>
       </div>
     </div>
-  </div>
-  <button
-    title="close modal"
-    (click)="close()"
-    class="absolute right-9 top-9 rounded-full p-2 text-blue-500 transition-colors duration-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-blue-400 dark:hover:bg-blue-400/60 dark:hover:text-gray-100 dark:focus:ring-blue-700"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-6 w-6"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
+    <button
+      title="close modal"
+      (click)="close()"
+      class="absolute right-9 top-9 rounded-full p-2 text-blue-500 transition-colors duration-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-blue-400 dark:hover:bg-blue-400/60 dark:hover:text-gray-100 dark:focus:ring-blue-700"
     >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M6 18L18 6M6 6l12 12"
-      />
-    </svg>
-  </button>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    </button>
+  </div>
 </div>
 <div
   *ngIf="isOpen.value && hasBackdropBlur"

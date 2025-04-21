@@ -4,7 +4,7 @@ export type Loading = {
     github: boolean
 }
 
-export type Size = {
+export type DropDownOption = {
 
     name: string
     code: string
@@ -17,8 +17,8 @@ export type ScrollDimensions = {
 }
 
 
-export type AIModel = Size
-export type Unit = Size
+export type AIModel = DropDownOption
+export type Unit = DropDownOption
 
 
 export type PlanPeriod = {

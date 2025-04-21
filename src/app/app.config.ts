@@ -28,7 +28,11 @@ import 'prismjs/plugins/line-highlight/prism-line-highlight.js'; */
 import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
+import { LogLevel, setLogLevel } from '@angular/fire';
 
+const app = initializeApp(environment.firebaseConfig)
+setLogLevel(LogLevel.VERBOSE)
+// const analytics = getAnalytics(app);
 export const appConfig: ApplicationConfig = {
   providers: [
     NAVIGATOR_PROVIDER,
@@ -70,13 +74,13 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
     }),
-    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
+    provideFirebaseApp(() => app),
 
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
     provideFunctions(() => getFunctions()),
     provideMessaging(() => getMessaging()),
-    providePerformance(() => getPerformance()),
+    providePerformance(() => getPerformance(app)),
     provideStorage(() => getStorage()),
     {
       provide: 'APP_CHECK',
