@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -30,7 +30,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
 import { LogLevel, setLogLevel } from '@angular/fire';
 
-const app = initializeApp(environment.firebaseConfig)
 setLogLevel(LogLevel.VERBOSE)
 // const analytics = getAnalytics(app);
 export const appConfig: ApplicationConfig = {
@@ -39,15 +38,6 @@ export const appConfig: ApplicationConfig = {
     STORAGE_PROVIDERS,
     { provide: WindowToken, useFactory: windowProvider },
     { provide: BrowserToken, useFactory: browserProvider },
-
-    /* {
-      provide: MatIconRegistry,
-      useFactory: (registry: MatIconRegistry, sanitizer: DomSanitizer) => {
-        registry.registerFontClassAlias('custom-font', 'custom-font');
-        return registry;
-      },
-      deps: [MatIconRegistry, DomSanitizer],
-    }, */
 
     importProvidersFrom(LoadingBarHttpClientModule),
     provideMarkdown({
@@ -67,20 +57,21 @@ export const appConfig: ApplicationConfig = {
     // Call the function and add the result to the `providers` array:
     provideImgixLoader(environment.assetsUri),
 
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    // provideZoneChangeDetection({ eventCoalescing: true }),
+    provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
     provideClientHydration(),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
     }),
-    provideFirebaseApp(() => app),
+    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
 
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
     provideFunctions(() => getFunctions()),
     provideMessaging(() => getMessaging()),
-    providePerformance(() => getPerformance(app)),
+    providePerformance(() => getPerformance(initializeApp(environment.firebaseConfig))),
     provideStorage(() => getStorage()),
     {
       provide: 'APP_CHECK',

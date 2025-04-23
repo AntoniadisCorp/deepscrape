@@ -28,10 +28,12 @@
               "prismjs/components/prism-typescript.min.js"
             ],
             "outputPath": "dist/deepscrape",
-            // "outputMode": "server",
+            "outputMode": "server",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              // "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -41,7 +43,7 @@
               },
               "src/assets"
             ],
-            "styles": ["src/styles.scss"],
+            "styles": ["src/styles.scss", "src/scss/main.scss"],
             "scripts": [
               "node_modules/emoji-toolkit/lib/js/joypixels.min.js",
               "node_modules/clipboard/dist/clipboard.min.js",
@@ -54,7 +56,6 @@
             "stylePreprocessorOptions": {
               "includePaths": ["."]
             },
-            "prerender": true,
             "ssr": {
               "entry": "server.ts"
             }
@@ -68,7 +69,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "2MB"
+                  "maximumError": "2.3MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -88,18 +89,18 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
-              /* "fileReplacements": [
+              "sourceMap": true,
+              "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment_.ts"
+                  "with": "src/environments/prod_.ts"
                 }
-              ] */
+              ]
             },
             "elysia": {
               "optimization": false,
               "ssr": {
-                "entry": "server.ts"
+                "entry": "server-elysia.ts"
               }
             }
           },
@@ -116,6 +117,9 @@
             },
             "development": {
               "buildTarget": "deepscrape:build:development"
+            },
+            "elysia": {
+              "buildTarget": "deepscrape:build:elysia"
             }
           },
           "defaultConfiguration": "development"

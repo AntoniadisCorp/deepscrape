@@ -5,12 +5,14 @@
     "ng": "ng",
     "start": "ng serve",
     "prbuild": "ts-node src/environments/prod.ts",
-    "build": "ng build ",
+    "build": "ng build --configuration=production",
+    "build:elysia": "ng build --configuration=elysia",
     "watch": "ng build --watch --configuration development",
     "serve": "npm run build && cd functions && npm run serve",
     "deploy": "npm run build && cd functions && npm run deploy",
     "test": "ng test",
-    "serve:ssr:deepscrape": "node --env-file=.env dist/deepscrape/server/server.mjs"
+    "bun:ssr:deepscrape": "bun --env-file=.env dist/deepscrape/server/server.mjs",
+    "node:ssr:deepscrape": "node --env-file=.env dist/deepscrape/server/server.mjs"
   },
   "dependencies": {
     "@angular/animations": "^19.2.5",
@@ -29,7 +31,10 @@
     "@angular/service-worker": "^19.2.5",
     "@angular/ssr": "^19.2.6",
     "@dhutaryan/ngx-mat-timepicker": "^19.1.0",
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/node": "^1.2.6",
     "@elysiajs/static": "^1.2.0",
+    "@elysiajs/swagger": "^1.2.2",
     "@material-tailwind/html": "^2.3.2",
     "@ngx-loading-bar/http-client": "^7.0.0",
     "@ngx-loading-bar/router": "^7.0.0",
@@ -57,12 +62,12 @@
     "@angular/cli": "^19.2.6",
     "@angular/compiler-cli": "^19.2.5",
     "@tailwindcss/typography": "^0.5.15",
+    "@types/bun": "^1.2.10",
     "@types/chrome": "^0.0.287",
     "@types/express": "^4.17.17",
     "@types/jasmine": "~5.1.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.14.0",
-    "@types/node-fetch": "^2.6.12",
+    "@types/node": "^22.14.1",
     "@types/readable-stream": "^4.0.18",
     "@types/stream-buffers": "^3.0.7",
     "autoprefixer": "^10.4.20",
@@ -76,6 +81,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "ts-node": "^10.9.2",
-    "typescript": "~5.8.3"
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
   }
 }
