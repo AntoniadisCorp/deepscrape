@@ -68,8 +68,14 @@
       }
       async function loadJsDynamically() {
         try {
+          let Prism;
           await loadScript("assets/js/prism.js");
-          Prism.highlightAll();
+          // Ensure Prism is available after the script loads
+          if (window.Prism) {
+            Prism?.highlightAll();
+          } else {
+            console.error("Prism object not found after script load.");
+          }
           // Add more scripts as needed
           console.log("Scripts loaded dynamically");
         } catch (error) {

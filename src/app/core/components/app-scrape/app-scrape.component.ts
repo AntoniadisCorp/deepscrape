@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild } from '@angular/core';
+import { Component, HostBinding, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs/internal/Observable';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
@@ -31,16 +31,18 @@ import { Subject } from 'rxjs/internal/Subject';
 import { CrawlOperationStatus } from '../../enum';
 
 @Component({
-    selector: 'app-scrape',
-    imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
-        GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
-        RadioToggleComponent,
-        BrowserCookiesComponent
-    ],
-    templateUrl: './app-scrape.component.html',
-    styleUrl: './app-scrape.component.scss'
+  selector: 'app-scrape',
+  imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
+    GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
+    RadioToggleComponent,
+    BrowserCookiesComponent
+  ],
+  templateUrl: './app-scrape.component.html',
+  styleUrl: './app-scrape.component.scss'
 })
 export class AppScrapeComponent {
+  @HostBinding('class') classes = 'flex items-center flex-col relative';
+
   readonly clipboardButton = ClipboardbuttonComponent;
   private localStorage: Storage
   @ViewChild(BrowserCookiesComponent) browserCookies: BrowserCookiesComponent;

@@ -170,6 +170,15 @@ html {
     .prose :where(strong):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
         @apply text-gray6 dark:text-white;
     }
+    pre[class*="language-"] {
+        @include core.scrollbar;
+    }
+
+    code[class*="language-"] {
+        max-width: 53rem;
+        display: block;
+        width: min-content;
+    }
 
     // .prose :where(h1, h2, h3, h4, h5, h6, th):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     //     @apply no-underline;
