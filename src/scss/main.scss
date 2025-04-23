@@ -1,7 +1,10 @@
-// Override Boostrap variables
-@import "bootstrap-variables";
+// Load Bootstrap variables (makes them available)
+// @import "bootstrap-variables";
 
-// Override core variables
+// Load Core variables (makes them available, potentially overriding Bootstrap ones if !default isn't used correctly)
 @import "core-variables";
 
+@import "mat-theme";
+
+// Load core styles/mixins
 @import "core";
