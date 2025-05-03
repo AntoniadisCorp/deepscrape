@@ -2,14 +2,16 @@ import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { AppDockerStepperComponent, RadioButtonComponent, SlideInModalComponent } from 'src/app/core/components';
 import { RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { LocalStorage } from 'src/app/core/services';
+import { themeStorageKey } from 'src/app/shared';
 
 @Component({
     selector: 'app-machines',
     imports: [NgFor, DatePipe, NgClass, NgIf, ReactiveFormsModule, MatIcon, SlideInModalComponent,
-        RippleDirective, TooltipDirective, AppDockerStepperComponent
+        RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './machines.component.html',
@@ -113,6 +115,10 @@ export class MachinesComponent {
 
     getCurrentStepByEvent(currentStep: number) {
         this.currentStep = currentStep
+        if (this.currentStep > 4) {
+            this.isDeploying = false
+            this.isModalOpen.setValue(this.isDeploying)
+        }
     }
 
     isStepValid(step: number) {
@@ -130,11 +136,12 @@ export class MachinesComponent {
     }
 
     deploy() {
+        this.isDeploying = true
         this.dockerStepper.deploy()
     }
 
     themeIsDark() {
 
-        return this.localStorage?.getItem('ai-theme') === 'true'
+        return this.localStorage?.getItem(themeStorageKey) === 'true'
     }
 }

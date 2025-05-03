@@ -30,11 +30,11 @@ export const fadeInOutSlideAnimation =
 
 export const slideInModalAnimation = trigger('slideInOut', [
     transition(':enter', [
-        style({ transform: 'translateX(100%)' }),
-        animate('300ms ease-out', style({ transform: 'translateX(0%)' }))
+        style({ transform: 'translate(100%,-50%)' }),
+        animate('300ms ease-out', style({ transform: 'translate(-50%,-50%)' }))
     ]),
     transition(':leave', [
-        animate('300ms ease-in', style({ transform: 'translateX(100%)' }))
+        animate('300ms ease-in', style({ transform: 'translate(100%,-50%)' }))
     ])
 ])
 

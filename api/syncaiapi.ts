@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express"
 import { anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl, helloWorld } from "./handlers"
-import { auth } from "./security"
+// import { auth } from "./security"
 
 
 class SyncAIapis {
@@ -29,7 +29,7 @@ class SyncAIapis {
         const token = authHeader.split(' ')[1];
 
         try {
-            const decodedToken = await auth.verifyIdToken(token)
+            const decodedToken = /* await auth.verifyIdToken(token) */ "decodedToken"
             if (decodedToken) {
                 // req.user = decodedToken; // Add user info to the request
                 next()

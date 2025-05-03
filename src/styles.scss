@@ -6,9 +6,9 @@
 @use "scss/main.scss" as core; // Reverted to include .scss extension
 
 // Forward prismjs styles
-@forward "prismjs/themes/prism-okaidia.css";
-@forward "prismjs/plugins/line-numbers/prism-line-numbers.css";
-@forward "prismjs/plugins/line-highlight/prism-line-highlight.css";
+// @forward "prismjs/themes/prism-okaidia.css";
+// @forward "prismjs/plugins/line-numbers/prism-line-numbers.css";
+// @forward "prismjs/plugins/line-highlight/prism-line-highlight.css";
 /**
  * This injects Tailwind's base styles and any base styles registered by
  * plugins.
@@ -191,7 +191,6 @@ input:-webkit-autofill:focus {
         background-color 0s 600000s,
         color 0s 600000s !important;
 }
-
 /* @font-face {
     font-family: "icomoon";
     src:

@@ -30,8 +30,8 @@ function serveapp(): express.Application {
   const indexHtml = join(serverDistFolder, 'index.server.html')
 
   // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
-  // const angularNodeAppEngine = new AngularNodeAppEngine()
-  const commonEngine = new CommonEngine()
+  const angularNodeAppEngine = new AngularNodeAppEngine()
+  // const commonEngine = new CommonEngine()
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
@@ -65,7 +65,7 @@ function serveapp(): express.Application {
     const { protocol, originalUrl, baseUrl, headers } = req
     // Yes, this is executed in devMode via the Vite DevServer
     console.log('request', req.url, res.statusCode, protocol, originalUrl, baseUrl)
-    commonEngine
+    /* commonEngine
       .render({
         bootstrap,
         documentFilePath: indexHtml,
@@ -74,37 +74,39 @@ function serveapp(): express.Application {
         providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
       })
       .then((html) => res.send(html))
-      .catch((err) => next(err))
-    /* angularNodeAppEngine
+      .catch((err) => next(err)) */
+    angularNodeAppEngine
       .handle(req, { server: 'express' })
       .then((response) =>
         response ? writeResponseToNodeResponse(response, res) : next()
       )
-      .catch(next) */
+      .catch(next)
   })
 
   return server
 }
 
 
-// function run(): void {
-const host = process.env['HOST'] || 'localhost'
-// Start up the Node server
-const server = serveapp()
-if (isMainModule(import.meta.url)) {
-  const port = process.env['PORT'] || 4000
-  console.log(`Running on http://${host}:${process.env['PORT']}`)
-  server.listen(port, () => {
-    console.log(`Node Express server listening on http://${host}:${port}`)
-    return host
-  })
+function run(): void {
+  const host = process.env['HOST'] || 'localhost'
+  // Start up the Node server
+  const server = serveapp()
+  if (isMainModule(import.meta.url)) {
+    const port = process.env['PORT'] || 4000
+    console.log(`Running on http://${host}:${process.env['PORT']}`)
+    server.listen(port, () => {
+      console.log(`Node Express server listening on http://${host}:${port}`)
+      return host
+    })
+  }
 }
-// }
 
+let reqHandler = null
 
-// if (process.env['PRODUCTION'] === 'false') {
-// run()
-// }
+if (process.env['PRODUCTION'] === 'true') {
+  run()
+} else {
+  reqHandler = createNodeRequestHandler(serveapp())
+}
 
-
-export const reqHandler = createNodeRequestHandler(server)
+export { reqHandler }

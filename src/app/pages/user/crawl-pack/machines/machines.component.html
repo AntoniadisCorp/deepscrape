@@ -56,8 +56,9 @@
           *ngIf="currentStep > 1"
           (click)="prevStep()"
           type="button"
-          class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-gray-600/[.1] dark:text-white dark:hover:bg-gray-500/70 dark:hover:text-white dark:focus:ring-gray-200/60 disabled:opacity-50"
+          class="rounded-lg flex items-center p-2 min-w-fit text-white transition-colors duration-200 hover:bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-gray-600/[.1] dark:text-white dark:hover:bg-gray-500/70 dark:hover:text-white dark:focus:ring-gray-200/60 disabled:opacity-50"
         >
+          <mat-icon>chevron_left</mat-icon>
           Back
         </button>
         <!-- Clear Button -->
@@ -104,14 +105,19 @@
         *ngIf="currentStep > 3"
         (click)="deploy()"
         [disabled]="isDeploying || isModalLoading.modal"
-        class="min-w-fit transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        class="min-w-fit transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50 px-4 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
         appRipple
         rippleColor="{{
           themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
         }}"
       >
-        <span *ngIf="isDeploying">Deploy</span>
-        <span *ngIf="!isDeploying" class="animate-spin inline-block">⏳</span>
+        <span *ngIf="!isDeploying">Deploy</span>
+        <span *ngIf="isDeploying" class="animate-spin block"
+          ><!-- ⏳ --><mat-spinner
+            [diameter]="20"
+            class="stroke-gray-200"
+          ></mat-spinner
+        ></span>
       </button>
     </div>
   </app-slideinmodal>

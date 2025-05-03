@@ -7,13 +7,14 @@ import { RemoveClassDirective, RippleDirective } from 'src/app/core/directives';
 import { cleanAndParseJSON } from 'src/app/core/functions';
 import { LocalStorage, ScreenResizeService } from 'src/app/core/services';
 import { Session } from 'src/app/core/types';
+import { themeStorageKey } from 'src/app/shared';
 
 @Component({
-    selector: 'app-sidebar-nav-link',
-    imports: [NgClass, NgIf, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    templateUrl: './app-sidebar-nav-link.component.html',
-    styleUrl: './app-sidebar-nav-link.component.scss'
+  selector: 'app-sidebar-nav-link',
+  imports: [NgClass, NgIf, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './app-sidebar-nav-link.component.html',
+  styleUrl: './app-sidebar-nav-link.component.scss'
 })
 export class AppSidebarNavLinkComponent {
   @Input() link: any
@@ -120,7 +121,7 @@ export class AppSidebarNavLinkComponent {
 
   themeIsDark() {
 
-    return this.localStorage?.getItem('ai-theme') === 'true'
+    return this.localStorage?.getItem(themeStorageKey) === 'true'
   }
 
   ngOnDestroy(): void {

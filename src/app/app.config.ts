@@ -20,11 +20,6 @@ import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterce
 import { provideImgixLoader } from '@angular/common';
 import { environment } from '../environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
-
-/* import 'prismjs';
-import 'prismjs/components/prism-typescript.min.js';
-import 'prismjs/plugins/line-numbers/prism-line-numbers.js';
-import 'prismjs/plugins/line-highlight/prism-line-highlight.js'; */
 import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
