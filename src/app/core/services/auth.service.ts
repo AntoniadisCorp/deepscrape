@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Auth, AuthProvider, authState, FacebookAuthProvider, getAuth, GoogleAuthProvider, linkWithPopup, signInWithEmailAndPassword, signInWithPopup, User } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
-import { catchError, from, map, of, Subscription, take } from 'rxjs';
+import { catchError, from, map, Observable, of, Subscription, take } from 'rxjs';
 import { Users } from '../types';
 
 @Injectable({
@@ -108,8 +108,10 @@ export class AuthService {
 
   }
 
-  isAuthenticated() {
+  isAuthenticated(): Observable<boolean> {
+
     return authState(this.auth).pipe(map(user => !!user))
+    // return this.getUser().user !== null ? of(true) : of(false)
   }
 
   ngOnDestroy() {

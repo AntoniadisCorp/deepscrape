@@ -80,14 +80,14 @@ export class SlideInModalComponent {
     const elementRef = this.modal.nativeElement as HTMLElement
     this.windowWidth = screenWidth >= 576 ? elementRef.offsetWidth / 2 : screenWidth / 2
     const rootFontSize = 16; // Assuming the root font size is 16px
-    const leftCalculation = `calc(50% - ${this.windowWidth / rootFontSize}rem)`
+    const leftCalculation = `50%`// `calc(50% - ${this.windowWidth / rootFontSize}rem)`
     // console.log(`Modal ${elementRef.offsetWidth}`, screenWidth, this.windowWidth)
     this.modal.nativeElement.style.left = `${leftCalculation}`
   }
 
   protected getPosition() {
 
-    const leftPosition = 'left-[calc(50%_-_16rem)]'
+    const leftPosition = 'left-[50%]'
     console.log(leftPosition)
 
     switch (this.position) {

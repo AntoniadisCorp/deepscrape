@@ -47,6 +47,14 @@
       "^/recaptcha": "/api"
     }
   },
+  "/api/deploy": {
+    "target": "http://127.0.0.1:8080",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/deploy": "/api/deploy"
+    }
+  },
   "/api": {
     "target": "http://localhost:8000",
     "secure": false,

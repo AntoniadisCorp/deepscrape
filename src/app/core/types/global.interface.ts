@@ -34,3 +34,11 @@ export type LinkTabs = {
     icon: string
     index: CrawlLinkTab
 }
+
+
+export interface DockerImageInfo {
+    registry: string;
+    org: string;
+    name: string;
+    tag: string;
+}

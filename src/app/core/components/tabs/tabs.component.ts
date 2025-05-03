@@ -7,13 +7,14 @@ import { SCREEN_SIZE } from '../../enum';
 import { CrawlLinkTab, LinkTabs, ScrollDimensions } from '../../types';
 import { MatIcon } from '@angular/material/icon';
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
+import { themeStorageKey } from 'src/app/shared';
 @Component({
-    selector: 'app-tabs',
-    imports: [RippleDirective, NgClass, NgStyle,
-        MatIcon, RouterLink, NgFor, NgIf,
-        TouchEventsDirective],
-    templateUrl: './tabs.component.html',
-    styleUrl: './tabs.component.scss'
+  selector: 'app-tabs',
+  imports: [RippleDirective, NgClass, NgStyle,
+    MatIcon, RouterLink, NgFor, NgIf,
+    TouchEventsDirective],
+  templateUrl: './tabs.component.html',
+  styleUrl: './tabs.component.scss'
 })
 export class AppTabsComponent implements OnInit, AfterViewInit {
 
@@ -329,7 +330,7 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
   }
 
   themeIsDark() {
-    return this.localStorage?.getItem('ai-theme') === 'true'
+    return this.localStorage?.getItem(themeStorageKey) === 'true'
   }
 
   ngOnDestroy(): void {

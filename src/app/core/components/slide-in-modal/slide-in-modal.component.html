@@ -1,11 +1,11 @@
 <div
   #modal
   [@slideInOut]
-  [ngClass]="getPosition() + ' ' + maxWidth"
-  class="fixed inset-0 z-[1000] h-fit"
+  [ngClass]="' ' + maxWidth"
+  class="fixed z-[1000] modal w-full xs:w-[75vw]"
   *ngIf="isOpen.value"
 >
-  <div class="relative p-5 max-w-3xl">
+  <div class="relative p-5 max-w-max xs:max-w-3xl">
     <!-- Container -->
     <div class="grid grid-cols-1 md:grid-cols-1">
       <!-- Add Menu Item Card -->

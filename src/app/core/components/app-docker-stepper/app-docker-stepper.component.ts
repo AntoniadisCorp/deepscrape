@@ -1,28 +1,44 @@
-import { JsonPipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, JsonPipe, NgFor, NgIf } from '@angular/common'
 import { Component, EventEmitter, inject, Output } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
 import { FormControlPipe } from '../../pipes'
 import { DropdownComponent } from '../dropdown/dropdown.component'
-import { DropDownOption } from '../../types'
-import { preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
+import { DockerImageInfo, DropDownOption } from '../../types'
+import { isImageDeployable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
 import { cloneMachineValidator } from '../../directives'
 import { CheckboxComponent } from '../checkbox/checkbox.component'
+import { MarkdownModule } from 'ngx-markdown'
+import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component'
+import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component'
+import { DeploymentService } from '../../services'
+import { Subscription } from 'rxjs/internal/Subscription'
+import { debounceTime } from 'rxjs/internal/operators/debounceTime'
+import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged'
+import { switchMap } from 'rxjs/internal/operators/switchMap'
+import { map } from 'rxjs/internal/operators/map'
+import { filter } from 'rxjs/internal/operators/filter'
+
 
 
 
 @Component({
   selector: 'app-docker-stepper',
   imports: [NgIf, ReactiveFormsModule, NgFor, JsonPipe, MatIcon, RadioButtonComponent,
-    FormControlPipe, DropdownComponent, CheckboxComponent
+    FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule
   ],
   templateUrl: './app-docker-stepper.component.html',
   styleUrl: './app-docker-stepper.component.scss'
 })
 export class AppDockerStepperComponent {
   private fb: FormBuilder = inject(FormBuilder)
+  private deploySub: Subscription
+  private dockerUrlSub: Subscription
   @Output() stepStatus: EventEmitter<number> = new EventEmitter<number>()
+
+  readonly clipboardButton = ClipboardbuttonComponent
+
   currentStep = 1
   totalSteps = 4
 
@@ -38,10 +54,18 @@ export class AppDockerStepperComponent {
   defaultImages: DropDownOption[] = []
   existingMachines: DropDownOption[] = []
   regions: DropDownOption[] = []
+  CPUTypes: DropDownOption[] = []
   autoContainerOptions: DropDownOption[] = []
   isDeploying = false
 
-  constructor() { }
+  // fly Toml controls
+  flyTomlMarkdown: string = ''
+
+  constructor(private deployService: DeploymentService) { }
+
+  get dockerHubUrl(): FormControl<string | null> {
+    return this.formStep1.get('dockerHubUrl') as FormControl<string | null>
+  }
 
   ngOnInit() {
 
@@ -53,6 +77,9 @@ export class AppDockerStepperComponent {
 
     // preset Regions
     preSetRegions(this.regions)
+
+    // preset CPUTypes
+    preSetCPUtypes(this.CPUTypes)
 
     // preSet autoContainerOptions
     setAutoContainerOptions(this.autoContainerOptions)
@@ -105,8 +132,20 @@ export class AppDockerStepperComponent {
         nonNullable: true,
         validators: [Validators.required]
       }) as FormControl<DropDownOption>,
-      cpuCores: [1, [Validators.required, Validators.min(1)]],
-      memory: [256, [Validators.required, Validators.min(256)]],
+      cpukind: this.fb.control(this.CPUTypes[0], {
+        nonNullable: true,
+        validators: [Validators.required]
+      }) as FormControl<DropDownOption>,
+      cpuCores: [1, [Validators.required, Validators.min(1),
+      this.cpuValidator()
+      ]],
+      memory: [256, [
+        Validators
+          .required,
+        Validators.min(256),
+        this.memoryValidator()
+
+      ]],
       autoStart: [false],
       autoStop: this.fb.control(this.autoContainerOptions[0], { validators: [Validators.required] }),
       environmentVariables: this.fb.array([]),
@@ -114,13 +153,64 @@ export class AppDockerStepperComponent {
 
     /* Set Step 3 */
     this.formStep3 = this.fb.group({
-      flyToml: [''],
+      flyToml: this.fb.control('', {
+        nonNullable: true,
+        validators: [Validators.required]
+      }),
+      flyTomlViewer: this.fb.control(false, {
+        nonNullable: true,
+        validators: [Validators.required]
+      })
     })
 
 
     this.formStep1.get('imageOption')?.valueChanges.subscribe((value) => {
       this.updateStep1Validators(value)
     })
+
+
+    this.dockerUrlSub = this.dockerHubUrl.valueChanges.pipe(
+      debounceTime(600),
+      filter((value): value is string => !!value && !this.dockerHubUrl.invalid),
+      distinctUntilChanged(),
+      map((registryValue: string) => {
+        if (!registryValue) {
+          new Error('Invalid Docker Image URL')
+        }
+        return registryValue
+      }),
+      switchMap((imageName: string) =>
+        this.deployService.checkImageDeployability(imageName))
+    ).subscribe({
+      next: (image: {
+        exists: boolean;
+        info: DockerImageInfo;
+      }) => {
+        console.log('Image deployability response:', image);
+
+        if (image.exists) {
+          const { registry, org, name, tag } = image.info;
+          this.formStep1.get('defaultImage')?.setValue(
+            this.formStep1.get('defaultImage')?.value as DropDownOption,
+            {
+              name: `${registry}/${org}/${name}:${!tag ? 'latest' : tag}`,
+              code: `${org}/${name}:${!tag ? 'latest' : tag}`,
+            })
+          this.dockerHubUrl.patchValue(`${org}/${name}`, { emitEvent: false })
+          // this.formStep1.get('imageOption')?.setValue('dockerHubUrl')
+        } else {
+          console.error('Image is not deployable')
+        }
+      },
+      error: (error) => {
+        console.error('Error checking image deployability:', error);
+      },
+    })
+
+    this.formStep3.get('flyToml')?.valueChanges.subscribe((value) => {
+      this.flyTomlMarkdown = value
+    })
+
     this.updateStep1Validators('default')
   }
   // Custom validator for Dockerfile (must be named "Dockerfile")
@@ -133,6 +223,30 @@ export class AppDockerStepperComponent {
     };
   }
 
+  private memoryValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const validMemorySizes = [256, 512, 1024, 2048, 4096, 8192, 16384]; // MB values
+      const value = control.value;
+
+      if (!validMemorySizes.includes(value)) {
+        return { invalidMemory: 'Memory must be one of: 256MB, 512MB, 1GB, 2GB, 4GB, 8GB, or 16GB' };
+      }
+      return null;
+    };
+  }
+
+  private cpuValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const validCPUValues = [1, 2, 4, 8, 16];
+      const value = control.value;
+
+      if (!validCPUValues.includes(value)) {
+        return { invalidCPU: 'CPU must be one of: 1, 2, 4, 8, or 16' };
+      }
+      return null;
+    };
+  }
+
   updateStep1Validators(option: string | null | undefined) {
     const controls = {
       defaultImage: this.formStep1.get('defaultImage'),
@@ -141,11 +255,14 @@ export class AppDockerStepperComponent {
       dockerHubUrl: this.formStep1.get('dockerHubUrl'),
     };
 
+    console.log('Validators updated:', option);
+    // Clear all validators
     Object.values(controls).forEach((control) => control?.clearValidators());
     if (option === 'default') controls.defaultImage?.setValidators(Validators.required)
     else if (option === 'clone') controls.cloneMachine?.setValidators([Validators.required, cloneMachineValidator()])
     else if (option === 'upload') controls.dockerfile?.setValidators(this.dockerfileValidator())
-    else if (option === 'url') controls.dockerHubUrl?.setValidators([Validators.required, Validators.pattern(/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/)])
+    else if (option === 'url') controls.dockerHubUrl?.setValidators([Validators.required, Validators.pattern(/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/)])
+    // ^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$
 
     Object.values(controls).forEach((control) => control?.updateValueAndValidity())
   }
@@ -175,19 +292,63 @@ export class AppDockerStepperComponent {
     this.formStep1.get('dockerfile')?.updateValueAndValidity()
   }
 
+  protected onCPUTypeChange(value: DropDownOption) {
+    const selectedCPUtype: DropDownOption = value
+
+    const getCpuNumber = (selected: string) => {
+      const match = selected.match(/(\d+)x/)
+      return match ? parseInt(match[1], 10) : null
+    }
+
+    const cpuNumber = getCpuNumber(selectedCPUtype?.code)
+
+
+    if (!cpuNumber)
+      return
+
+    this.formStep2.patchValue({ cpuCores: cpuNumber })
+  }
+
   getConfiguration() {
+
+    const extractResourceType = (resourceClass: string): string => {
+      if (resourceClass.startsWith("shared")) {
+        return "shared";
+      } else if (resourceClass.startsWith("performance")) {
+        return "performance";
+      }
+      return resourceClass;
+    }
+
+    const resourceType = extractResourceType(this.formStep2.value.cpukind.code)
+    if (!resourceType)
+      return
+
+    let dockerHubUrl = this.formStep1.value.dockerHubUrl
+
+    /* const { exists, info } = isImageDeployable(this.formStep1.value.dockerHubUrl)
+    if (info) {
+      const { registry, org, name, tag } = info
+      dockerHubUrl = `${org}/${name}:${!tag ? 'latest' : tag}`
+    }
+
+    console.log(exists, info) */
+
     return {
       imageOption: this.formStep1.value.imageOption,
-      defaultImage: this.formStep1.value.defaultImage,
-      cloneMachine: this.formStep1.value.cloneMachine,
+      defaultImage: this.formStep1.value.defaultImage.name,
+      cloneMachine: this.formStep1.value.cloneMachine.code,
       dockerfile: this.dockerfileFile,
-      dockerHubUrl: this.formStep1.value.dockerHubUrl,
+      dockerHubUrl,
       machineName: this.formStep2.value.machineName,
-      region: this.formStep2.value.region,
+      region: this.formStep2.value.region.code,
       cpuCores: this.formStep2.value.cpuCores,
+      cpuType: resourceType,
+      // add gpu cores
+      // gpu type
       memory: this.formStep2.value.memory,
       autoStart: this.formStep2.value.autoStart,
-      autoStop: this.formStep2.value.autoStop,
+      autoStop: this.formStep2.value.autoStop.code,
       environmentVariables: this.formStep2.value.environmentVariables,
       flyToml: this.formStep3.value.flyToml,
       apiJson: this.formStep3.value.apiJson,
@@ -261,6 +422,9 @@ export class AppDockerStepperComponent {
     this.isDeploying = true
     const config = this.getConfiguration()
     const formData = new FormData()
+
+
+    // Loop through the config object and append each key-value pair to the formData object
     for (const key in config) {
       if (key === 'dockerfile' && config[key]) {
         formData.append('dockerfile', config[key] as File)
@@ -271,16 +435,16 @@ export class AppDockerStepperComponent {
       }
     }
 
-    /* this.http.post('/deploy', formData).subscribe({
+    this.deploySub = this.deployService.createMachine(formData).subscribe({
       next: (response) => {
         console.log('Deployed:', response)
-        this.isDeploying = false
+        this.stepStatus.emit(++this.currentStep)
       },
+      complete: () => { this.isDeploying = false },
       error: (error) => {
         console.error('Deploy failed:', error)
-        this.isDeploying = false
       },
-    }) */
+    })
   }
 
   onCheckBoxChange() {
@@ -291,6 +455,8 @@ export class AppDockerStepperComponent {
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
+    this.deploySub?.unsubscribe()
+    this.dockerUrlSub?.unsubscribe()
     this.stepStatus.complete()
   }
 }
