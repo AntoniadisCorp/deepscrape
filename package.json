@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "prbuild": "ts-node src/environments/prod.ts",
+    "staging": "ng build --configuration=staging",
     "build": "ng build --configuration=production",
     "build:elysia": "ng build --configuration=elysia",
     "watch": "ng build --watch --configuration development",
