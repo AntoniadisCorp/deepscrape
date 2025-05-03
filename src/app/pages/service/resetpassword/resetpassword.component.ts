@@ -8,7 +8,6 @@ import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
 
 @Component({
     selector: 'app-resetpassword',
-    standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,

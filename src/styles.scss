@@ -2,106 +2,34 @@
 // For more information: https://material.angular.io/guide/theming
 @use "@angular/material" as mat;
 @use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
+/* You can add global styles to this file, and also import other style files */
+@use "scss/main.scss" as core; // Reverted to include .scss extension
 
-// Plus imports for other components in your app.
-
-// Include the common styles for Angular Material. We include this here so that you only
-// have to load a single css file for Angular Material in your app.
-// Be sure that you only ever include this mixin once!
-@include mat.core();
-
-// Define the theme object.
-$my-theme: mat.define-theme(
-    (
-        color: (
-            theme-type: light,
-            primary: mat.$azure-palette,
-            tertiary: mat.$blue-palette
-        ),
-        density: (
-            scale: 0
-        )
-    )
-);
-
-// $mat-light-blue: #3dde;
-// // $app-warn-warn: rgba(238, 172, 51, 0.867);
-// $mat-red: #ff4081;
-// $mat-red2: #f32424;
-
-// $app-primary: mat-palette($mat-light-blue);
-// $app-accent: mat-palette($mat-light-blue);
-// $app-warn: mat-palette($mat-red);
-
-$my-theme-dark: mat.define-theme(
-    (
-        color: (
-            theme-type: dark,
-            primary: mat.$azure-palette,
-            tertiary: mat.$blue-palette
-        ),
-
-        density: (
-            scale: 0
-        )
-    )
-);
-
-// $theme-light: mat-light-theme($app-primary, $app-accent, $app-warn);
-
-html.dark {
-    @include mat-timepicker.timepicker-theme($my-theme-dark);
-    @include mat.all-component-colors($my-theme-dark);
-}
-
-// if you want to support color attribute in M3 add compatibility mixin
-@include mat.color-variants-backwards-compatibility($my-theme);
-// Include theme styles for core and each component used in your app.
-// Alternatively, you can import and @include the theme mixins for each component
-// that you are using.
-:root {
-    // timepicker uses these component
-    // @include mat.mat-mdc-form-field($my-theme);
-    // @include mat.input-theme($my-theme);
-    // @include mat.button($my-theme);
-    // @include mat.fab-theme($my-theme);
-    // @include mat.icon-button-theme($my-theme);
-    // @include mat.divider-theme($my-theme);
-    // timepicker theme
-    @include mat-timepicker.timepicker-theme($my-theme);
-    @include mat.all-component-themes($my-theme);
-}
-// Comment out the line below if you want to use the pre-defined typography utility classes.
-// For more information: https://material.angular.io/guide/typography#using-typography-styles-in-your-application.
-// @include mat.typography-hierarchy($deepscrape-theme);
-// Comment out the line below if you want to use the deprecated `color` inputs.
-// @include mat.color-variants-backwards-compatibility($deepscrape-theme);
-@import "prismjs/themes/prism-okaidia.css";
-@import "prismjs/plugins/line-numbers/prism-line-numbers.css";
-@import "prismjs/plugins/line-highlight/prism-line-highlight.css";
-
+// Forward prismjs styles
+// @forward "prismjs/themes/prism-okaidia.css";
+// @forward "prismjs/plugins/line-numbers/prism-line-numbers.css";
+// @forward "prismjs/plugins/line-highlight/prism-line-highlight.css";
 /**
  * This injects Tailwind's base styles and any base styles registered by
  * plugins.
  */
 
-// @tailwind base;
+@tailwind base;
 
-@import "tailwindcss/base";
+// @import "tailwindcss/base";
 
 /**
   * This injects Tailwind's component classes and any component classes
   * registered by plugins.
   */
-@import "tailwindcss/components";
-// @tailwind components;
+// @import "tailwindcss/components";
+@tailwind components;
 
 /**
   * This injects Tailwind's utility classes and any utility classes registered
   * by plugins.
   */
-@import "tailwindcss/utilities";
-// @tailwind utilities;
+@tailwind utilities;
 /**
   * Use this directive to control where Tailwind injects the hover, focus,
   * responsive, dark mode, and other variants of each class.
@@ -109,17 +37,43 @@ html.dark {
   * If omitted, Tailwind will append these classes to the very end of
   * your stylesheet by default.
   */
-@import "tailwindcss/variants";
-// @tailwind variants;
+@tailwind variants;
 
-/* You can add global styles to this file, and also import other style files */
-@import "scss/main.scss";
+// if you want to support color attribute in M3 add compatibility mixin
+@include mat.color-variants-backwards-compatibility(core.$my-theme);
+
+// Comment out the line below if you want to use the pre-defined typography utility classes.
+// For more information: https://material.angular.io/guide/typography#using-typography-styles-in-your-application.
+// @include mat.typography-hierarchy($deepscrape-theme);
+// Comment out the line below if you want to use the deprecated `color` inputs.
+// @include mat.color-variants-backwards-compatibility($deepscrape-theme);
 
 // console.log() CSS Debugger
 /* * {
     box-sizing: border-box;
     background-color: rgb(0 100 0 / 0.1) !important;
 } */
+
+html.dark {
+    @include mat-timepicker.timepicker-theme(core.$my-theme-dark);
+    @include mat.all-component-colors(core.$my-theme-dark);
+}
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+:root {
+    // timepicker uses these component
+    // @include mat.mat-mdc-form-field(core.$my-theme);
+    // @include mat.input-theme(core.$my-theme);
+    // @include mat.button(core.$my-theme);
+    // @include mat.fab-theme(core.$my-theme);
+    // @include mat.icon-button-theme(core.$my-theme);
+    // @include mat.divider-theme(core.$my-theme);
+    // timepicker theme
+    @include mat-timepicker.timepicker-theme(core.$my-theme);
+    @include mat.all-component-themes(core.$my-theme);
+}
 
 h1,
 h2,
@@ -156,9 +110,11 @@ video {
 }
 
 svg {
-    height: 100%;
     width: 100%;
     fill: currentColor;
+    & {
+        height: 100%;
+    }
 }
 *,
 ::before,
@@ -175,10 +131,11 @@ svg {
 html {
     display: block;
     font-size: 13px;
+    height: 100%;
+
     @media (min-width: 1024px) {
         font-size: 16px;
     }
-    height: 100%;
 }
 
 @layer utilities {
@@ -189,7 +146,7 @@ html {
         background-attachment: fixed;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        @include scrollbar;
+        @include core.scrollbar;
         @apply bg-gray-100 dark:bg-gray-900;
     }
 }
@@ -213,6 +170,15 @@ html {
     .prose :where(strong):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
         @apply text-gray6 dark:text-white;
     }
+    pre[class*="language-"] {
+        @include core.scrollbar;
+    }
+
+    code[class*="language-"] {
+        max-width: 53rem;
+        display: block;
+        width: min-content;
+    }
 
     // .prose :where(h1, h2, h3, h4, h5, h6, th):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     //     @apply no-underline;
@@ -225,7 +191,6 @@ input:-webkit-autofill:focus {
         background-color 0s 600000s,
         color 0s 600000s !important;
 }
-
 /* @font-face {
     font-family: "icomoon";
     src:

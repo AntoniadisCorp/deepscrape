@@ -53,3 +53,7 @@ export const getOperationsPaging = auth.getOperationsPaging
 export const getBrowserProfilesPaging = auth.getBrowserProfilesPaging
 export const getCrawlConfigsPaging = auth.getCrawlConfigsPaging
 export const getCrawlResultConfigsPaging = auth.getCrawlResultConfigsPaging
+
+
+// MACHINE LOGGERS - Function TRIGGERS
+// export const receiveLogs = auth.receiveLogs

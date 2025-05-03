@@ -1,12 +1,14 @@
 import { NgClass, NgIf } from '@angular/common';
-import { Component, ElementRef, HostListener, Input, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, Input, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { Subscription } from 'rxjs/internal/Subscription';
 import { slideInModalAnimation } from 'src/app/animations';
+import { SCREEN_SIZE } from '../../enum';
+import { ScreenResizeService } from '../../services';
 
 @Component({
   selector: 'app-slideinmodal',
-  standalone: true,
   imports: [NgClass, NgIf, MatProgressBarModule],
   templateUrl: './slide-in-modal.component.html',
   styleUrl: './slide-in-modal.component.scss',
@@ -26,10 +28,15 @@ export class SlideInModalComponent {
     }
   }
 
-  constructor() {
+  private screenSub: Subscription
+  private size!: SCREEN_SIZE
+  private windowWidth: number
+  protected fixedPosition: string = ''
 
+  constructor(private resizeSvc: ScreenResizeService,) {
   }
 
+  @Input() maxWidth?: string = 'max-w-lg'
   @Input() isOpen: FormControl<boolean>
   @Input() title: string = 'Add Menu item'
   @Input() position?: string = 'right'
@@ -38,9 +45,50 @@ export class SlideInModalComponent {
 
   @Input('hasBlur') hasBackdropBlur?: boolean = false
 
+  ngOnInit(): void {
+    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
+    //Add 'implements OnInit' to the class.
+    // this.fixedPosition = this.getPosition()
+    // Subscribe to the Screen Resize event
+    this.screenSub = this.resizeSvc.onResize$.subscribe((x: SCREEN_SIZE) => {
 
+      const elementRef = this.modal.nativeElement as HTMLElement
+      this.windowWidth = elementRef.offsetWidth / 2
+
+      this.size = x
+      console.log(this.size)
+
+      if (this.size >= SCREEN_SIZE.SM) {
+        this.setStyle()
+      } else this.modal.nativeElement.style.left = "none"
+    })
+  }
+
+  ngAfterViewInit(): void {
+    //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
+    //Add 'implements AfterViewInit' to the class.
+    this.setStyle()
+  }
+
+  private setStyle() {
+
+    const { screenWidth } = this.resizeSvc.updateScreenSize()
+    if (screenWidth < 480)
+      return
+
+
+    const elementRef = this.modal.nativeElement as HTMLElement
+    this.windowWidth = screenWidth >= 576 ? elementRef.offsetWidth / 2 : screenWidth / 2
+    const rootFontSize = 16; // Assuming the root font size is 16px
+    const leftCalculation = `50%`// `calc(50% - ${this.windowWidth / rootFontSize}rem)`
+    // console.log(`Modal ${elementRef.offsetWidth}`, screenWidth, this.windowWidth)
+    this.modal.nativeElement.style.left = `${leftCalculation}`
+  }
 
   protected getPosition() {
+
+    const leftPosition = 'left-[50%]'
+    console.log(leftPosition)
 
     switch (this.position) {
       case 'left':
@@ -48,13 +96,14 @@ export class SlideInModalComponent {
       case 'right':
         return 'top-28'
       case 'bottom':
-        return 'top-[calc(50%_+_112px)] xs:left-[calc(50%_-_16rem)]'
+        return 'top-[calc(50%_+_112px)] xs:' + leftPosition
       case 'center':
-        return 'top-28 xs:left-[calc(50%_-_16rem)]'
+        return 'top-28 xs:' + leftPosition
       default:
         return 'top-28'
     }
   }
+
   close() {
     this.isOpen.setValue(false);
   }
@@ -63,5 +112,6 @@ export class SlideInModalComponent {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.hasBackdropBlur = false
+    this.screenSub?.unsubscribe()
   }
 }

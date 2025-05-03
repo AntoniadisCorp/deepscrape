@@ -11,11 +11,10 @@ import { BrowserType } from 'src/app/core/enum';
 import { getErrorLabel, getOffsetTop, setBrowserTypeList } from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
 import { CartService, PackService, ScrollService, SnackbarService, WindowToken } from 'src/app/core/services';
-import { BrowserConfig, BrowserProfile, Cookies, Headers, ProxyConfig, Size } from 'src/app/core/types';
+import { BrowserConfig, BrowserProfile, Cookies, Headers, ProxyConfig, DropDownOption } from 'src/app/core/types';
 
 @Component({
   selector: 'app-browser-config',
-  standalone: true,
   imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, NgFor, AsyncPipe, DatePipe,
     RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe,
     DropdownComponent, MatProgressSpinner,
@@ -45,7 +44,7 @@ export class BrowserConfigComponent {
 
   protected profileSelectedById: string | undefined
 
-  browserTypeOptions: Size[] = []
+  browserTypeOptions: DropDownOption[] = []
 
   protected browserProfiles$: Observable<BrowserProfile[] | null | undefined>
 
@@ -102,7 +101,7 @@ export class BrowserConfigComponent {
   }
 
   get browserType() {
-    return this.configForm.get('browserType') as FormControl<Size>
+    return this.configForm.get('browserType') as FormControl<DropDownOption>
   }
 
   private initForm() {
@@ -128,7 +127,7 @@ export class BrowserConfigComponent {
           Validators.required,
           browserTypeValidator(),
         ],
-      }) as FormControl<Size>,
+      }) as FormControl<DropDownOption>,
 
       // Boolean Parameters
       headless: this.fb.control(true, { nonNullable: true, validators: [Validators.required] }),
@@ -333,7 +332,7 @@ export class BrowserConfigComponent {
       })
   }
 
-  onBrowserTypeSelect(event: Size) {
+  onBrowserTypeSelect(event: DropDownOption) {
     // const selectedValue = event as Size
     // this.configForm.get('browserType')?.setValue(selectedValue)
     // console.log(selectedValue)

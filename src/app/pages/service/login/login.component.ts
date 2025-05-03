@@ -12,14 +12,14 @@ import {
   signInWithEmailAndPassword, signInWithPopup,
   User
 } from '@angular/fire/auth';
-import { doc, Firestore, getDoc } from '@angular/fire/firestore';
+import { Firestore } from '@angular/fire/firestore';
 import { from } from 'rxjs/internal/observable/from';
 import { getErrorMessage, getUserData, storeUserData } from 'src/app/core/functions';
 import { FirestoreService } from 'src/app/core/services';
+import { doc, getDoc } from "firebase/firestore";
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'

@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs/internal/Observable';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
@@ -32,7 +32,6 @@ import { CrawlOperationStatus } from '../../enum';
 
 @Component({
   selector: 'app-scrape',
-  standalone: true,
   imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
     GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
     RadioToggleComponent,
@@ -42,6 +41,8 @@ import { CrawlOperationStatus } from '../../enum';
   styleUrl: './app-scrape.component.scss'
 })
 export class AppScrapeComponent {
+  @HostBinding('class') classes = 'flex items-center flex-col relative';
+
   readonly clipboardButton = ClipboardbuttonComponent;
   private localStorage: Storage
   @ViewChild(BrowserCookiesComponent) browserCookies: BrowserCookiesComponent;
@@ -53,9 +54,9 @@ export class AppScrapeComponent {
 
   jsonChunk: aichunk = { content: '', usage: null }
 
-  isResultsProcessing: boolean = false
-  isCrawlProcessing: boolean = false
-  isGetResults = false
+  protected isResultsProcessing: boolean
+  protected isCrawlProcessing: boolean
+  protected isGetResults: boolean
   errorMessage = ''
 
   forkJoinSubscription: Subscription
@@ -75,6 +76,7 @@ export class AppScrapeComponent {
     private aiapi: AiAPIService,
     private snackbarService: SnackbarService,
     private fb: FormBuilder,
+    private cdr: ChangeDetectorRef
 
   ) {
     setAIModel(this.model)
@@ -82,6 +84,11 @@ export class AppScrapeComponent {
   }
 
   ngOnInit(): void {
+    this.isResultsProcessing = false
+    this.isCrawlProcessing = false
+    this.isGetResults = false
+    this.errorMessage = ''
+
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
     this.url = new FormControl('', {
@@ -109,8 +116,7 @@ export class AppScrapeComponent {
       // updateOn: 'blur', //default will be change
       nonNullable: true,
       validators: [
-        Validators.required,
-        // forbiddenNameValidator(/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/i)
+        Validators.required
       ]
     })
 
@@ -119,9 +125,7 @@ export class AppScrapeComponent {
         // updateOn: 'change', //default will be change
         nonNullable: true,
         validators: [
-          Validators.required,
-          // Strong Password Validation
-          // forbiddenNameValidator(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/i)
+          Validators.required
         ]
       }),
       // Enable iframe Extraction
@@ -130,8 +134,6 @@ export class AppScrapeComponent {
         // updateOn: 'change', //default will be change
         validators: [
           Validators.required,
-          // Strong Password Validation
-          // forbiddenNameValidator(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/i)
         ]
       })
     })
@@ -176,14 +178,15 @@ export class AppScrapeComponent {
     // save the Crawl operation
     // this.prepareCrawlOperation()
 
+    // start the crawl operation
+    this.isCrawlProcessing = true
+
     // live processing
     this.processData(this.url.value, this.modelAI.value.code)
   }
 
 
   private processData(link: string, aitype: string = 'claude') {
-
-    this.isCrawlProcessing = true
 
     this.errorMessage = ''
 
@@ -211,7 +214,6 @@ export class AppScrapeComponent {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: async (results) => {
-          this.isCrawlProcessing = false
           const subsequentContent = results.map((result: string) => {
             // const strlen = result.length
             const encoder = new TextEncoder();
@@ -253,8 +255,13 @@ export class AppScrapeComponent {
           this.getResultsFromAI([arrayobs])
         },
         complete: () => {
-          this.isResultsProcessing = this.isCrawlProcessing = false
+          // reset the processing status
+          // this.isResultsProcessing = this.isCrawlProcessing = false
+          this.isCrawlProcessing = false
+          // reset the form
           this.enableForm()
+
+          this.cdr?.detectChanges()
         },
         error: (error: any) => {
 
@@ -263,14 +270,10 @@ export class AppScrapeComponent {
           // set the error message to show on the screen by snackbar popup
           this.errorMessage = 'Error processing data. Please check console for details.';
 
+          // reset the processing status
+          this.isResultsProcessing = false
           // show snackbar Error
           this.showSnackbar(this.errorMessage || "", SnackBarType.error, '', 5000)
-
-          // reset the processing status
-          this.isResultsProcessing = this.isCrawlProcessing = false
-
-          // reset the form
-          this.enableForm()
         }
       })
   }
@@ -313,8 +316,10 @@ export class AppScrapeComponent {
     // this.detailsMessage = 'Process AI Data'
     /* Initialize the Results viariables  */
     this.errorMessage = ''
-    this.isGetResults = this.isResultsProcessing = true
+    this.isGetResults = true
+    this.isResultsProcessing = true
 
+    this.cdr?.detectChanges()
     // init the total cost and total tokens counter
     let total_cost = 0
     let total_tokens = 0

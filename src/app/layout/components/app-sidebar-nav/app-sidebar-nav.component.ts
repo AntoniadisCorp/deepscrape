@@ -5,11 +5,10 @@ import { AppSidebarNavItemComponent } from '../app-sidebar-nav-item/app-sidebar-
 import { LoadingService } from 'src/app/core/services';
 
 @Component({
-  selector: 'app-sidebar-nav',
-  standalone: true,
-  imports: [NgIf, NgFor, AppSidebarNavItemComponent, NgTemplateOutlet,],
-  templateUrl: './app-sidebar-nav.component.html',
-  styleUrl: './app-sidebar-nav.component.scss'
+    selector: 'app-sidebar-nav',
+    imports: [NgIf, NgFor, AppSidebarNavItemComponent, NgTemplateOutlet,],
+    templateUrl: './app-sidebar-nav.component.html',
+    styleUrl: './app-sidebar-nav.component.scss'
 })
 export class AppSidebarNavComponent {
 

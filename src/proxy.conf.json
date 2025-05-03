@@ -1,10 +1,10 @@
 {
-  "/anthropic": {
+  "/api/anthropic": {
     "target": "https://api.anthropic.com",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/anthropic": "/v1"
+      "^/api/anthropic": "/v1"
     }
   },
   "/geo": {
@@ -15,28 +15,28 @@
       "^/geo": ""
     }
   },
-  "/openai": {
+  "/api/openai": {
     "target": "https://api.openai.com",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/openai": "/v1"
+      "^/api/openai": "/v1"
     }
   },
-  "/groq": {
+  "/api/groq": {
     "target": "https://api.groq.com",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/groq": "/openai/v1"
+      "^/api/groq": "/openai/v1"
     }
   },
-  "/jina": {
+  "/api/jina": {
     "target": "https://r.jina.ai",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/jina": ""
+      "^/api/jina": ""
     }
   },
   "/recaptcha": {
@@ -45,6 +45,14 @@
     "changeOrigin": true,
     "pathRewrite": {
       "^/recaptcha": "/api"
+    }
+  },
+  "/api/deploy": {
+    "target": "http://127.0.0.1:8080",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/deploy": "/api/deploy"
     }
   },
   "/api": {

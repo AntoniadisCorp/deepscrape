@@ -1,21 +1,19 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { Auth, authState } from '@angular/fire/auth';
+import { AuthService } from '../services';
 import { map, take } from 'rxjs/operators';
 
 export const LoginGuard: CanActivateFn = (route, state) => {
-  const auth = inject(Auth);
+  const authService = inject(AuthService); // Directly inject the service
   const router = inject(Router);
 
-  return authState(auth).pipe(
-    // take(1),
-    map(user => {
-      // If a user is already authenticated on the login page, redirect to home/dashboard
-      if (user) {
-        router.navigate(['/dashboard']); // Adjust this route as needed
+  return authService.isAuthenticated().pipe(
+    map(isAuthenticated => {
+      if (isAuthenticated) {
+        router.navigate(['/dashboard']);
         return false;
       }
-      return true; // Allow access to login page if not authenticated
+      return true;
     })
   );
 };

@@ -4,10 +4,10 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { LocalStorage } from '../../services';
 import { Outsideclick } from '../../directives';
+import { themeStorageKey } from 'src/app/shared';
 
 @Component({
   selector: 'app-dropdown',
-  standalone: true,
   imports: [CommonModule, MatIcon, ReactiveFormsModule, Outsideclick],
   templateUrl: './dropdown.component.html',
   styleUrl: './dropdown.component.scss'
@@ -113,12 +113,13 @@ export class DropdownComponent {
     if (optionElement) {
       optionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-      if (this.localStorage?.getItem('ai-theme') === 'true') {
+      if (this.localStorage?.getItem(themeStorageKey) === 'true') {
         optionElement.style.backgroundColor = '#90caf9 ';
         optionElement.style.color = '#2a2e35';
       } else {
 
-        optionElement.style.backgroundColor = '#f5f5f5';
+        optionElement.style.backgroundColor = '#274983FF';
+        optionElement.style.color = '#FFF';
       }
 
     }
@@ -129,12 +130,13 @@ export class DropdownComponent {
 
     if (optionElement) {
 
-      if (this.localStorage?.getItem('ai-theme') === 'true') {
+      if (this.localStorage?.getItem(themeStorageKey) === 'true') {
         optionElement.style.backgroundColor = '#2a2e35';
         optionElement.style.color = '#fff';
         optionElement.removeAttribute('style');
       } else {
-        optionElement.style.backgroundColor = '#fff';
+        optionElement.style.backgroundColor = '#ffffff00';
+        optionElement.style.color = '#2a2e35';
       }
 
       // optionElement.style.backgroundColor = 'inherit';

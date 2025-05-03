@@ -17,13 +17,12 @@ import { CartService, PackService, ScrollService, SnackbarService, WindowToken }
 import { CrawlResult } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-crawl-results',
-  standalone: true,
-  imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, AsyncPipe, NgIf,
-    DatePipe, NgForOf, MatProgressSpinner, StinputComponent, FormControlPipe,
-    RadioToggleComponent],
-  templateUrl: './crawl-results.component.html',
-  styleUrl: './crawl-results.component.scss'
+    selector: 'app-crawl-results',
+    imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, AsyncPipe, NgIf,
+        DatePipe, NgForOf, MatProgressSpinner, StinputComponent, FormControlPipe,
+        RadioToggleComponent],
+    templateUrl: './crawl-results.component.html',
+    styleUrl: './crawl-results.component.scss'
 })
 export class CrawlResultsComponent {
 

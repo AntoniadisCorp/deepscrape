@@ -7,9 +7,9 @@ import { SCREEN_SIZE } from '../../enum';
 import { CrawlLinkTab, LinkTabs, ScrollDimensions } from '../../types';
 import { MatIcon } from '@angular/material/icon';
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
+import { themeStorageKey } from 'src/app/shared';
 @Component({
   selector: 'app-tabs',
-  standalone: true,
   imports: [RippleDirective, NgClass, NgStyle,
     MatIcon, RouterLink, NgFor, NgIf,
     TouchEventsDirective],
@@ -148,7 +148,6 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
 
     let newTranslateX: number = 0
 
-
     // console.log('Swipe left', translateXPercentage)
     // left - next
     if (diff > 0 && Math.abs(translateX) < tabsWidth && translateXPercentage < 100) {
@@ -166,8 +165,6 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
       // Calculate the last X position to not exceed the tab container width
       if (diff < 0)
         this.transformX = -tabsWidth + 'px'
-
-      // this.updatePositions()
     }
 
   }
@@ -191,14 +188,14 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
     if (diff > 0 && translateX < 0 && translateXPercentage > -0) {
       // Calculate the new X position
       newTranslateX = translateX + Math.abs(deltaX)
-      const diff = tabsWidth - Math.abs(newTranslateX)
+      const newDiff = tabsWidth - Math.abs(newTranslateX)
 
-      if (diff < tabsWidth) {
-        // Adjust the newX value to stay within the container width
-        newTranslateX = 0
-      }
+      // if (diff < tabsWidth) {
+      //   // Adjust the newX value to stay within the container width
+      //   newTranslateX = 0
+      // }
       this.transformX = newTranslateX + 'px'
-      console.log('newTranslateX', newTranslateX, 'diff: ', diff, 'tabsWidth', tabsWidth)
+      // console.log('newTranslateX', newTranslateX, 'newDiff: ', newDiff, 'oldDiff:', diff, 'tabsWidth', tabsWidth, diff > tabsWidth)
       this.updatePositions(newTranslateX)
     } else {
 
@@ -333,7 +330,7 @@ export class AppTabsComponent implements OnInit, AfterViewInit {
   }
 
   themeIsDark() {
-    return this.localStorage?.getItem('ai-theme') === 'true'
+    return this.localStorage?.getItem(themeStorageKey) === 'true'
   }
 
   ngOnDestroy(): void {

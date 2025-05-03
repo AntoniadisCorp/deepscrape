@@ -15,9 +15,7 @@ import { Subject } from 'rxjs/internal/Subject';
 import { from } from 'rxjs/internal/observable/from';
 import { mergeMap } from 'rxjs/internal/operators/mergeMap';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { Auth, authState, getAuth } from '@angular/fire/auth';
-import { of } from 'rxjs/internal/observable/of';
-import { Subscription, take } from 'rxjs';
+// import { Auth, authState, getAuth } from '@angular/fire/auth';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -61,6 +59,7 @@ export class AiAPIService {
     const jinaAiReaderEndpoint: string = this.jinaAiEndpoint + encodedUrl
     const cookie = options.forwardCookies && cookies && cookies?.length ? { "X-Set-Cookie": cookies } : null // If cookies are provided, append them to the headers, )
     const headers = new HttpHeaders({
+      'api-key': `Bearer ${this.authService.token}`, // Replace with your actual API key`,
       'Authorization': `Bearer ${environment.JINAAI_API_KEY}`, // Replace with your actual API key
       'Accept': 'application/json',
       // "X-With-Links-Summary": "true",
@@ -101,7 +100,8 @@ export class AiAPIService {
     const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint
     // const cookie = options.forwardCookies && cookies && cookies?.length ? { "X-Set-Cookie": cookies } : null // If cookies are provided, append them to the headers, )
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.authService.token}`, // Replace with your actual API key
+      'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
+      'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
       'Accept': content_type as string,
       // "X-With-Links-Summary": "true",
       // "X-With-Iframe": options.iframe,
@@ -115,6 +115,7 @@ export class AiAPIService {
       "urls": encodedUrl,
       "priority": 10,
     }
+
     return this.http.post(crawl4AiReaderEndpoint, body, { headers/* , transferCache: true */, responseType: 'arraybuffer' })
       .pipe(
         map((response: ArrayBuffer) => JSON.parse(arrayBufferToString(response))),
@@ -141,6 +142,7 @@ export class AiAPIService {
   sendToClaudeAI(content: string | { role: string, content: string }[], modelName: string = 'claude-3-5-sonnet-20241022', sys?: string): Observable<{ content: string, role: string, usage: any | null }> {
     const [model, apiEndpoint, API_KEY, apiName] = switchModelApiEndpoint(modelName, [this.claudeAiEndpoint, ""], [this.CLAUDE_API_KEY, ""])
     const headers = new HttpHeaders({
+      'api-key': `Bearer ${this.authService.token}`, // Replace with your actual API key`,
       'x-api-key': API_KEY,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
@@ -284,6 +286,7 @@ export class AiAPIService {
     const [model, apiEndpoint, API_KEY, apiName] = switchModelApiEndpoint(modelName, [this.openAiEndpoint, this.groqAiEndpoint], [this.OPENAI_API_KEY, this.GROQ_API_KEY])
 
     const headers = new HttpHeaders({
+      'api-key': `Bearer ${this.authService.token}`, // Replace with your actual API key`,
       'Authorization': `Bearer ${API_KEY}`,
       'content-type': 'application/json',
     })

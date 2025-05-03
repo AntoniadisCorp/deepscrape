@@ -11,13 +11,13 @@
     width: max-content;
     max-width: 250px;
     text-align: center;
+    transform: translateX(-25%); // Moved this line up
 
     &--visible {
         opacity: 1;
         transition: opacity 300ms;
     }
 
-    transform: translateX(-25%);
     &::before {
         content: "";
         width: 0;

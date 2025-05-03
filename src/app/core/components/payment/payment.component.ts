@@ -12,11 +12,10 @@ import { SnackBarType } from '../snackbar/snackbar.component'
 
 
 @Component({
-  selector: 'app-payment',
-  standalone: true,
-  imports: [ReactiveFormsModule, NgIf, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
-  templateUrl: './payment.component.html',
-  styleUrl: './payment.component.scss'
+    selector: 'app-payment',
+    imports: [ReactiveFormsModule, NgIf, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
+    templateUrl: './payment.component.html',
+    styleUrl: './payment.component.scss'
 })
 export class PaymentComponent {
 

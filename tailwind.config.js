@@ -110,10 +110,6 @@ module.exports = withMT({
 
     },
 
-    animation: {
-      'bounce-slow': 'bounce 3s infinite',
-      'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-    },
     screens: {
       // X-Small devices (portrait phones, less than 480px)
       // => @media (min-width: 480px) { ... }
@@ -153,6 +149,10 @@ module.exports = withMT({
           },
           '"Proxima Nova"', ...defaultTheme.fontFamily.sans,
         ],
+      },
+      animation: {
+        'bounce-slow': 'bounce 3s infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       boxShadow: {
         '3xl': '0 5px 20px rgb(0 0 0 / 30%)',

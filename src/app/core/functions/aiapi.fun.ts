@@ -1,4 +1,4 @@
-import { OpenAITokenDetails, Size } from "../types";
+import { OpenAITokenDetails, DropDownOption } from "../types";
 import { sanitizeJSON } from "./global.fun";
 
 /**
@@ -111,7 +111,7 @@ export function switchModelApiEndpoint(modelName: string, apiEndpoints: string[]
 
 }
 
-export function setAIModel(newModel: Size[]) {
+export function setAIModel(newModel: DropDownOption[]) {
     const model = [
         { name: 'gpt-4-turbo', code: 'openai' },
         { name: 'gpt-4', code: 'openai' },

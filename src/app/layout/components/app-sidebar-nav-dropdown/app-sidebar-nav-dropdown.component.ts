@@ -3,15 +3,14 @@ import { Component, Input, TemplateRef } from '@angular/core';
 import { sidebarItemAnimation } from 'src/app/animations';
 
 @Component({
-  selector: 'app-sidebar-nav-dropdown',
-  standalone: true,
-  imports: [NgClass, NgIf, NgTemplateOutlet,],
-  templateUrl: './app-sidebar-nav-dropdown.component.html',
-  styleUrl: './app-sidebar-nav-dropdown.component.scss',
-  animations: [
-    // animation triggers go here
-    sidebarItemAnimation
-  ]
+    selector: 'app-sidebar-nav-dropdown',
+    imports: [NgClass, NgIf, NgTemplateOutlet,],
+    templateUrl: './app-sidebar-nav-dropdown.component.html',
+    styleUrl: './app-sidebar-nav-dropdown.component.scss',
+    animations: [
+        // animation triggers go here
+        sidebarItemAnimation
+    ]
 })
 export class AppSidebarNavDropdownComponent {
   @Input() link: any

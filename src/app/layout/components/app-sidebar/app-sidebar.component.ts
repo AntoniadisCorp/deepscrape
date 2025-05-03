@@ -8,14 +8,13 @@ import { asideBarAnimation } from 'src/app/animations';
 import { Outsideclick } from 'src/app/core/directives';
 
 @Component({
-  selector: 'app-sidebar',
-  standalone: true,
-  imports: [NgClass, NgIf, AppSidebarNavComponent, MatProgressSpinner, Outsideclick],
-  templateUrl: './app-sidebar.component.html',
-  styleUrl: './app-sidebar.component.scss',
-  animations: [
-    asideBarAnimation
-  ],
+    selector: 'app-sidebar',
+    imports: [NgClass, NgIf, AppSidebarNavComponent, MatProgressSpinner, Outsideclick],
+    templateUrl: './app-sidebar.component.html',
+    styleUrl: './app-sidebar.component.scss',
+    animations: [
+        asideBarAnimation
+    ]
 })
 export class AppSidebarComponent {
 

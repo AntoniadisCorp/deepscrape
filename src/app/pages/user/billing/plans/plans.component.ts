@@ -5,11 +5,10 @@ import { RippleDirective } from 'src/app/core/directives';
 import { PlanPeriod } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-plans',
-  standalone: true,
-  imports: [NgIf, NgFor, RippleDirective, CurrencyPipe, MatIcon],
-  templateUrl: './plans.component.html',
-  styleUrl: './plans.component.scss'
+    selector: 'app-plans',
+    imports: [NgIf, NgFor, RippleDirective, CurrencyPipe, MatIcon],
+    templateUrl: './plans.component.html',
+    styleUrl: './plans.component.scss'
 })
 
 

@@ -17,11 +17,10 @@ import { CrawlCachingMode } from 'src/app/core/enum';
 import { getErrorLabel, getOffsetTop, setCacheModeList } from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
 import { CartService, PackService, ScrollService, SnackbarService, WindowToken } from 'src/app/core/services';
-import { CrawlConfig, CrawlerRunConfig, Size } from 'src/app/core/types';
+import { CrawlConfig, CrawlerRunConfig, DropDownOption } from 'src/app/core/types';
 
 @Component({
   selector: 'app-crawl-config',
-  standalone: true,
   imports: [ReactiveFormsModule, NgIf, MatIcon, RadioToggleComponent, FormControlPipe, NgClass,
     StinputComponent, DropdownComponent, AsyncPipe, DatePipe, NgFor, MatProgressSpinner, JsonPipe
   ],
@@ -58,7 +57,7 @@ export class CrawlConfigComponent {
   protected savingNewConfig: boolean
   protected showSettings: boolean
 
-  protected cachModeOptions: Size[] = []
+  protected cachModeOptions: DropDownOption[] = []
 
   protected configSelectedById: string | undefined
 
@@ -179,7 +178,7 @@ export class CrawlConfigComponent {
         validators: [
           cacheModeValidator(),
         ],
-      }) as FormControl<Size>,
+      }) as FormControl<DropDownOption>,
       sessionId: this.fb.control('', {
         nonNullable: false, validators: [
           sessionIdValidator(94) // 3 - 60 characters

@@ -11,25 +11,24 @@ export enum SnackBarType {
 }
 
 @Component({
-  selector: 'app-snackbar',
-  standalone: true,
-  imports: [NgClass, MatIcon, NgIf],
-  templateUrl: './snackbar.component.html',
-  styleUrl: './snackbar.component.scss',
-  animations: [
-    trigger('snackbarState', [
-      state('void', style({
-        transform: 'translateY(100%)',
-        opacity: 0
-      })),
-      state('visible', style({
-        transform: 'translateY(0)',
-        opacity: 1
-      })),
-      transition('void => visible', animate('300ms ease-out')),
-      transition('visible => void', animate('200ms ease-in'))
-    ])
-  ]
+    selector: 'app-snackbar',
+    imports: [NgClass, MatIcon, NgIf],
+    templateUrl: './snackbar.component.html',
+    styleUrl: './snackbar.component.scss',
+    animations: [
+        trigger('snackbarState', [
+            state('void', style({
+                transform: 'translateY(100%)',
+                opacity: 0
+            })),
+            state('visible', style({
+                transform: 'translateY(0)',
+                opacity: 1
+            })),
+            transition('void => visible', animate('300ms ease-out')),
+            transition('visible => void', animate('200ms ease-in'))
+        ])
+    ]
 })
 export class SnackbarComponent {
   @Input() message: string = ''

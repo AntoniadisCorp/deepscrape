@@ -9,11 +9,10 @@ import { of } from 'rxjs/internal/observable/of';
 import { EXTENSION_ID } from '../../variables';
 
 @Component({
-  selector: 'app-cookies',
-  standalone: true,
-  imports: [ConsentModalComponent, NgIf, ReactiveFormsModule],
-  templateUrl: './cookies.component.html',
-  styleUrl: './cookies.component.scss'
+    selector: 'app-cookies',
+    imports: [ConsentModalComponent, NgIf, ReactiveFormsModule],
+    templateUrl: './cookies.component.html',
+    styleUrl: './cookies.component.scss'
 })
 export class BrowserCookiesComponent {
 

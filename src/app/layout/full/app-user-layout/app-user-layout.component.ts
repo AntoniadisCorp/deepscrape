@@ -21,10 +21,10 @@ import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
 import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
+import { doc, getDoc } from 'firebase/firestore'
 
 @Component({
   selector: 'app-user-layout',
-  standalone: true,
   imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
     MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
     AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
@@ -144,7 +144,7 @@ export class AppUserLayoutComponent {
 
     // Create an Http request to get the user profile data
     this.userLoading = true
-    this.user$ = of(this.auth.currentUser).pipe(
+    /* this.user$ = of(this.auth.currentUser).pipe(
       take(1),
       switchMap(user => {
         if (user) {
@@ -169,7 +169,7 @@ export class AppUserLayoutComponent {
         this.userLoading = false
         return of(null)
       })
-    )
+    ) */
 
   }
 

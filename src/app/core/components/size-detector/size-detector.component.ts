@@ -6,7 +6,6 @@ import { SCREEN_SIZE } from 'src/app/core/enum';
 
 @Component({
   selector: 'app-size-detector',
-  standalone: true,
   imports: [NgFor],
   templateUrl: './size-detector.component.html',
   styleUrl: './size-detector.component.scss'
@@ -20,6 +19,9 @@ export class SizeDetectorComponent implements AfterViewInit {
 
   prefix = 'is-';
   sizes = [
+    {
+      id: SCREEN_SIZE.XXS, name: 'xxs', css: `block xs:hidden` // `d-block d-xs-none`
+    },
     {
       id: SCREEN_SIZE.XS, name: 'xs', css: `block sm:hidden` // `d-block d-sm-none`
     },

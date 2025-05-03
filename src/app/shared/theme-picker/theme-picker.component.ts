@@ -4,7 +4,7 @@ import { MatIcon } from '@angular/material/icon';
 import { AppTheme } from 'src/app/core/enum';
 import { LocalStorage, WindowToken } from 'src/app/core/services';
 
-export const storageKey = 'app-theme-dark';
+export const themeStorageKey = 'app-theme-dark';
 
 @Component({
     selector: 'app-theme-toggle',
@@ -19,8 +19,7 @@ export const storageKey = 'app-theme-dark';
     </button>
     </div>
   `,
-    imports: [MatIcon],
-    standalone: true
+    imports: [MatIcon]
 })
 export class ThemeToggleComponent {
     isDark = false;
@@ -48,7 +47,7 @@ export class ThemeToggleComponent {
     private initializeThemeFromPreferences(): void {
 
         // Check whether there's an explicit preference in localStorage.
-        this.storedPreference = this.storage ? this.storage?.getItem(storageKey) as AppTheme || undefined : undefined
+        this.storedPreference = this.storage ? this.storage?.getItem(themeStorageKey) as AppTheme || undefined : undefined
 
         this.currentTheme = signal<AppTheme | undefined>(this.storedPreference)
 
@@ -146,12 +145,12 @@ export class ThemeToggleComponent {
     }
     private setToLocalStorage(theme: AppTheme) {
 
-        this.storage?.setItem(storageKey, theme);
+        this.storage?.setItem(themeStorageKey, theme);
 
     }
     private removeFromLocalStorage() {
 
-        this.storage?.removeItem(storageKey);
+        this.storage?.removeItem(themeStorageKey);
 
     }
 }

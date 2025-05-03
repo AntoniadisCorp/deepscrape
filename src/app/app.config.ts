@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -20,30 +20,19 @@ import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterce
 import { provideImgixLoader } from '@angular/common';
 import { environment } from '../environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
-
-/* import 'prismjs';
-import 'prismjs/components/prism-typescript.min.js';
-import 'prismjs/plugins/line-numbers/prism-line-numbers.js';
-import 'prismjs/plugins/line-highlight/prism-line-highlight.js'; */
 import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
+import { LogLevel, setLogLevel } from '@angular/fire';
 
+setLogLevel(LogLevel.VERBOSE)
+// const analytics = getAnalytics(app);
 export const appConfig: ApplicationConfig = {
   providers: [
     NAVIGATOR_PROVIDER,
     STORAGE_PROVIDERS,
     { provide: WindowToken, useFactory: windowProvider },
     { provide: BrowserToken, useFactory: browserProvider },
-
-    /* {
-      provide: MatIconRegistry,
-      useFactory: (registry: MatIconRegistry, sanitizer: DomSanitizer) => {
-        registry.registerFontClassAlias('custom-font', 'custom-font');
-        return registry;
-      },
-      deps: [MatIconRegistry, DomSanitizer],
-    }, */
 
     importProvidersFrom(LoadingBarHttpClientModule),
     provideMarkdown({
@@ -63,7 +52,8 @@ export const appConfig: ApplicationConfig = {
     // Call the function and add the result to the `providers` array:
     provideImgixLoader(environment.assetsUri),
 
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    // provideZoneChangeDetection({ eventCoalescing: true }),
+    provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
     provideClientHydration(),
     provideServiceWorker('ngsw-worker.js', {
@@ -76,7 +66,7 @@ export const appConfig: ApplicationConfig = {
     provideFirestore(() => getFirestore()),
     provideFunctions(() => getFunctions()),
     provideMessaging(() => getMessaging()),
-    providePerformance(() => getPerformance()),
+    providePerformance(() => getPerformance(initializeApp(environment.firebaseConfig))),
     provideStorage(() => getStorage()),
     {
       provide: 'APP_CHECK',
@@ -84,7 +74,7 @@ export const appConfig: ApplicationConfig = {
         if (typeof window !== 'undefined') {
           try {
             return initializeAppCheck(undefined, {
-              provider: new ReCaptchaV3Provider(environment.recpatcha),
+              provider: new ReCaptchaV3Provider(environment.RECAPTCHA_KEY),
               isTokenAutoRefreshEnabled: true
             })
           }

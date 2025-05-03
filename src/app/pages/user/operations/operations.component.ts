@@ -12,7 +12,7 @@ import { CrawlOperationStatus } from 'src/app/core/enum'
 import { crawlOperationStatusColor, isArray, setAIModel, setOperationStatusList } from 'src/app/core/functions'
 import { FormControlPipe } from 'src/app/core/pipes'
 import { AuthService, CrawlStoreService, ScrollService, SnackbarService } from 'src/app/core/services'
-import { AIModel, CrawlConfig, CrawlOperation, Size } from 'src/app/core/types'
+import { AIModel, CrawlConfig, CrawlOperation, DropDownOption } from 'src/app/core/types'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { provideNativeDateAdapter } from '@angular/material/core'
@@ -23,7 +23,6 @@ import { MatTimepickerModule, provideNativeDateTimeAdapter } from '@dhutaryan/ng
 
 @Component({
   selector: 'app-operations',
-  standalone: true,
   imports: [NgFor, NgIf, DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe,
     MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe,
     GinputComponent, DropdownComponent, RouterLink, PromptareaComponent,
@@ -49,16 +48,16 @@ export class OperationsComponent {
 
   model: AIModel[] = []
 
-  crawlPack: FormControl<Size | null>
+  crawlPack: FormControl<DropDownOption | null>
 
   // retrieves data dynamically from server
-  crawlConfigPack: Size[] = []
+  crawlConfigPack: DropDownOption[] = []
   userprompt: FormControl<string>
   submitButton: FormControl<boolean>
   operationName: FormControl<string>
 
-  operationStatus: FormControl<Size>
-  operStatusList: Size[] = []
+  operationStatus: FormControl<DropDownOption>
+  operStatusList: DropDownOption[] = []
 
   loadingOperList: boolean = false
 
@@ -134,7 +133,7 @@ export class OperationsComponent {
       ]
     },)
 
-    this.modelAI = new FormControl<Size>({ name: 'claude-3-5-haiku-20241022', code: "claude" }, {
+    this.modelAI = new FormControl<DropDownOption>({ name: 'claude-3-5-haiku-20241022', code: "claude" }, {
       // updateOn: 'blur', //default will be change
       nonNullable: true,
       validators: [
@@ -145,7 +144,7 @@ export class OperationsComponent {
 
     setAIModel(this.model)
 
-    this.crawlPack = new FormControl<Size | null>(null, {
+    this.crawlPack = new FormControl<DropDownOption | null>(null, {
       // updateOn: 'blur', //default will be change
       nonNullable: false,
       validators: [
@@ -160,7 +159,7 @@ export class OperationsComponent {
       Prompt Form 
      */
 
-    this.operationStatus = new FormControl<Size>({
+    this.operationStatus = new FormControl<DropDownOption>({
       name: "Save",
       code: CrawlOperationStatus.READY
     }, {

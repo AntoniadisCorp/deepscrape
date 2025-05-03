@@ -4,11 +4,10 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CrawlConfig } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-webcrawler',
-  standalone: true,
-  imports: [ReactiveFormsModule, NgIf,],
-  templateUrl: './webcrawler.component.html',
-  styleUrl: './webcrawler.component.scss'
+    selector: 'app-webcrawler',
+    imports: [ReactiveFormsModule,],
+    templateUrl: './webcrawler.component.html',
+    styleUrl: './webcrawler.component.scss'
 })
 export class WebCrawlerComponent {
 

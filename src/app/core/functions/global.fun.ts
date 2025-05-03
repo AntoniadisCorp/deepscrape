@@ -1,3 +1,5 @@
+import { DropDownOption } from "../types"
+
 export function isArray(arr: any): boolean {
     return Array.isArray(arr) && arr.length > 0
 }
@@ -99,4 +101,89 @@ export function generateRandomString(length: number): string {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
     return result;
+}
+
+export function setDefaultImages(array: DropDownOption[]): void {
+    const defaultImages = [
+        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+    ]
+
+    array.push(...defaultImages)
+}
+
+export function setExistingMachines(array: DropDownOption[]): void {
+    const clone = [
+        { name: 'rough-forest-9606', code: '7843403a111178' },
+        { name: 'broken-grass-6037', code: 'e82d623b363d68' },
+
+    ]
+    array.push(...clone)
+}
+
+export function preSetRegions(array: DropDownOption[]): void {
+    const regions = [
+        { name: 'Amsterdam, Netherlands', code: 'ams' },
+        { name: 'Stockholm, Sweden', code: 'arn' },
+        { name: 'Atlanta, Georgia (US)', code: 'atl' },
+        { name: 'Bogotá, Colombia', code: 'bog' },
+        { name: 'Mumbai, India', code: 'bom' },
+        { name: 'Boston, Massachusetts (US)', code: 'bos' },
+        { name: 'Paris, France', code: 'cdg' },
+        { name: 'Denver, Colorado (US)', code: 'den' },
+        { name: 'Dallas, Texas (US)', code: 'dfw' },
+        { name: 'Dubai, United Arab Emirates', code: 'dxb' },
+        { name: 'Secaucus, NJ (US)', code: 'ewr' },
+        { name: 'Ezeiza, Argentina', code: 'eze' },
+        { name: 'Frankfurt, Germany', code: 'fra' },
+        { name: 'Guadalajara, Mexico', code: 'gdl' },
+        { name: 'Rio de Janeiro, Brazil', code: 'gig' },
+        { name: 'Sao Paulo, Brazil', code: 'gru' },
+        { name: 'Hong Kong, Hong Kong', code: 'hkg' },
+        { name: 'Ashburn, Virginia (US)', code: 'iad' },
+        { name: 'Istanbul, Turkey', code: 'ist' },
+        { name: 'Johannesburg, South Africa', code: 'jnb' },
+        { name: 'Los Angeles, California (US)', code: 'lax' },
+        { name: 'London, United Kingdom', code: 'lhr' },
+        { name: 'Madrid, Spain', code: 'mad' },
+        { name: 'Melbourne, Australia', code: 'mel' },
+        { name: 'Miami, Florida (US)', code: 'mia' },
+        { name: 'Tokyo, Japan', code: 'nrt' },
+        { name: 'Chicago, Illinois (US)', code: 'ord' },
+        { name: 'Bucharest, Romania', code: 'otp' },
+        { name: 'Phoenix, Arizona (US)', code: 'phx' },
+        { name: 'Querétaro, Mexico', code: 'qro' },
+        { name: 'Santiago, Chile', code: 'scl' },
+        { name: 'Seattle, Washington (US)', code: 'sea' },
+        { name: 'Singapore, Singapore', code: 'sin' },
+        { name: 'San Jose, California (US)', code: 'sjc' },
+        { name: 'Sydney, Australia', code: 'syd' },
+        { name: 'Warsaw, Poland', code: 'waw' },
+        { name: 'Montreal, Canada', code: 'yul' },
+        { name: 'Toronto, Canada', code: 'yyz' }
+    ];
+    array.push(...regions)
+}
+
+export function preSetCPUtypes(array: DropDownOption[]): void {
+    const cpuskind = [
+        { "name": "Shared CPU 1x", "code": "shared-cpu-1x" },
+        { "name": "Shared CPU 2x", "code": "shared-cpu-2x" },
+        { "name": "Shared CPU 4x", "code": "shared-cpu-4x" },
+        { "name": "Shared CPU 8x", "code": "shared-cpu-8x" },
+        { "name": "Performance CPU 1x", "code": "performance--1x" },
+        { "name": "Performance CPU 2x", "code": "performance-2x" },
+        { "name": "Performance CPU 4x", "code": "performance-4x" },
+        { "name": "Performance CPU 8x", "code": "performance-8x" },
+        { "name": "Performance CPU 16x", "code": "performance-16x" }
+    ]
+    array.push(...cpuskind)
+}
+
+export function setAutoContainerOptions(array: DropDownOption[]): void {
+    const autoContainerOptions = [
+        { name: 'suspend', code: 'suspend' },
+        { name: 'stop', code: 'stop' },
+        { name: 'manual', code: 'off' },
+    ]
+    array.push(...autoContainerOptions)
 }

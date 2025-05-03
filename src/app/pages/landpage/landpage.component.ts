@@ -2,23 +2,21 @@ import { Component, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 @Component({
-  selector: 'app-landpage',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './landpage.component.html',
-  styleUrl: './landpage.component.scss',
-
-  animations: [
-    trigger('fadeInOut', [
-      state('void', style({
-        opacity: 0,
-        transform: 'translateY(20px)'
-      })),
-      transition('void <=> *', [
-        animate('0.5s ease-in-out')
-      ])
-    ])
-  ]
+    selector: 'app-landpage',
+    imports: [CommonModule],
+    templateUrl: './landpage.component.html',
+    styleUrl: './landpage.component.scss',
+    animations: [
+        trigger('fadeInOut', [
+            state('void', style({
+                opacity: 0,
+                transform: 'translateY(20px)'
+            })),
+            transition('void <=> *', [
+                animate('0.5s ease-in-out')
+            ])
+        ])
+    ]
 })
 export class LandPageComponent {
 

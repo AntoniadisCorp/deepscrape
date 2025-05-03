@@ -1,0 +1,46 @@
+@use "@angular/material" as mat;
+@use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker; // Added this line
+// Plus imports for other components in your app.
+
+// $mat-light-blue: #3dde;
+// // $app-warn-warn: rgba(238, 172, 51, 0.867);
+// $mat-red: #ff4081;
+// $mat-red2: #f32424;
+
+// $app-primary: mat-palette($mat-light-blue);
+// $app-accent: mat-palette($mat-light-blue);
+// $app-warn: mat-palette($mat-red);
+
+// $theme-light: mat-light-theme($app-primary, $app-accent, $app-warn);
+
+$my-theme: mat.define-theme(
+    (
+        color: (
+            theme-type: light,
+            primary: mat.$azure-palette,
+            tertiary: mat.$blue-palette
+        ),
+        density: (
+            scale: 0
+        )
+    )
+);
+
+$my-theme-dark: mat.define-theme(
+    (
+        color: (
+            theme-type: dark,
+            primary: mat.$azure-palette,
+            tertiary: mat.$blue-palette
+        ),
+
+        density: (
+            scale: 0
+        )
+    )
+);
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@include mat.core();

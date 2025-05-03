@@ -14,10 +14,11 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
-    "downlevelIteration": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
     "importHelpers": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
@@ -27,7 +28,10 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
       "node_modules/@types",
     ],
     "types": [
-      "chrome"
+      "chrome",
+      "jest"
+      // "node"
+      // "bun"
     ],
     "resolveJsonModule": true,
     "esModuleInterop": true,
@@ -35,7 +39,7 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
       "ES2022",
       "dom"
     ],
-    "emitDecoratorMetadata": true,
+    // "emitDecoratorMetadata": true,
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

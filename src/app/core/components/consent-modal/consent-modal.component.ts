@@ -7,11 +7,10 @@ import { RippleDirective } from '../../directives';
 
 
 @Component({
-  selector: 'app-consent-modal',
-  standalone: true,
-  imports: [NgIf, MatIcon, RippleDirective],
-  templateUrl: './consent-modal.component.html',
-  styleUrl: './consent-modal.component.scss'
+    selector: 'app-consent-modal',
+    imports: [NgIf, MatIcon, RippleDirective],
+    templateUrl: './consent-modal.component.html',
+    styleUrl: './consent-modal.component.scss'
 })
 export class ConsentModalComponent {
   isConsent: boolean = false;

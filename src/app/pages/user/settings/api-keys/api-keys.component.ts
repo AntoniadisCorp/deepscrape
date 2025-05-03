@@ -9,15 +9,14 @@ import { ApiKeyService, LocalStorage } from 'src/app/core/services';
 import { Outsideclick, RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { themeStorageKey } from 'src/app/shared';
 
 @Component({
   selector: 'app-api-keys',
-  standalone: true,
   imports: [NgFor, NgIf, DatePipe, AsyncPipe, ClipboardbuttonComponent, TooltipDirective,
     MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule,
     CheckboxComponent],
   templateUrl: './api-keys.component.html',
-
   styleUrl: './api-keys.component.scss'
 })
 export class ApiKeysComponent implements OnInit {
@@ -192,7 +191,7 @@ export class ApiKeysComponent implements OnInit {
 
   themeIsDark() {
 
-    return this.localStorage?.getItem('ai-theme') === 'true'
+    return this.localStorage?.getItem(themeStorageKey) === 'true'
   }
 
   ngOnDestroy(): void {

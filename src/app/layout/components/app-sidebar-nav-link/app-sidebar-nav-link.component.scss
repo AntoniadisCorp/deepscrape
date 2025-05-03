@@ -1,19 +1,20 @@
-@tailwind components;
+// @tailwind components;
 
-@layer components {
-    .badge {
-        @apply ml-3 inline-flex h-6  max-w-[4rem] items-center justify-center p-3 rounded-md font-medium;
+// @layer components {
 
-        &.info {
-            @apply bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-300;
-        }
+// }
+.badge {
+    @apply ml-3 inline-flex h-6  max-w-[4rem] items-center justify-center p-3 rounded-md font-medium;
 
-        &.new {
-            @apply bg-green-100   text-green-900 dark:bg-green-900 dark:text-green-300;
-        }
+    &.info {
+        @apply bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-300;
     }
 
-    .active {
-        @apply bg-gray-300/70 transition dark:bg-gray5/40;
+    &.new {
+        @apply bg-green-100   text-green-900 dark:bg-green-900 dark:text-green-300;
     }
+}
+
+.active {
+    @apply bg-gray-300/70 transition dark:bg-gray5/40;
 }

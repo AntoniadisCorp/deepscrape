@@ -1,7 +1,7 @@
 import { Directive, Input } from '@angular/core'
 import { AbstractControl, FormControl, NG_VALIDATORS, ValidationErrors, Validator, ValidatorFn } from '@angular/forms'
 import { BrowserType, CrawlCachingMode } from '../enum'
-import { Cookies, Headers } from '../types'
+import { Cookies, DropDownOption, Headers } from '../types'
 
 @Directive({
   selector: '[appForbiddenName]',
@@ -636,6 +636,20 @@ export function cssSelector(): ValidatorFn {
     } else if (!/^(?:[#.]{0,1}[a-z0-9_-]+(?:[>.~+]{0,1}[a-z0-9_-]+)*)*$/.test(cssSelector)) {
       return { cssSelector: 'Invalid Css selector' }
     }
+    return null
+  }
+}
+
+export function cloneMachineValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const cloneMachineValue = control.value as DropDownOption
+    if (!cloneMachineValue) {
+      return null
+    }
+    if (JSON.stringify(cloneMachineValue) === JSON.stringify({})) {
+      return { cloneMachine: 'Must be typeof DropDownOption not empty' }
+    }
+
     return null
   }
 }

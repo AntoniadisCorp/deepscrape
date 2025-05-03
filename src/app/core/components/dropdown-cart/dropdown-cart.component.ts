@@ -10,12 +10,11 @@ import { Router } from '@angular/router';
 import { ReversePipe } from '../../pipes';
 
 @Component({
-  selector: 'app-dropdown-cart',
-  standalone: true,
-  imports: [NgIf, Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
-  templateUrl: './dropdown-cart.component.html',
-  styleUrl: './dropdown-cart.component.scss',
-  animations: [PopupAnimation]
+    selector: 'app-dropdown-cart',
+    imports: [NgIf, Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
+    templateUrl: './dropdown-cart.component.html',
+    styleUrl: './dropdown-cart.component.scss',
+    animations: [PopupAnimation]
 })
 export class DropdownCartComponent {
 

@@ -1,4 +1,4 @@
-import { addDoc, writeBatch, collection, doc, Firestore, getDoc, setDoc, deleteDoc } from "@angular/fire/firestore";
+import { addDoc, writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore";
 import { User } from "@angular/fire/auth";
 import { Users } from "../types/firestore.interface";
 import { throwError } from "rxjs";
@@ -32,7 +32,7 @@ export async function getUserData(user: User, firestore: Firestore) {
     let err, docSnapshot = await getDoc(userRef)
 
     if (err) {
-        console.error('Error getting user data:', err)
+        console.error("Failed to get user's data:", err)
         return null;
     }
 

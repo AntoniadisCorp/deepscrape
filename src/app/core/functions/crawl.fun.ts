@@ -1,6 +1,6 @@
 import { FormGroup } from "@angular/forms"
 import { BrowserType, CrawlCachingMode, CrawlOperationStatus } from "../enum"
-import { Size } from "../types"
+import { DropDownOption } from "../types"
 
 export function crawlOperationStatusColor(status: CrawlOperationStatus) {
     let color = 'gray'
@@ -35,7 +35,7 @@ export function crawlOperationStatusColor(status: CrawlOperationStatus) {
 }
 
 
-export function setOperationStatusList(statusList: Size[]) {
+export function setOperationStatusList(statusList: DropDownOption[]) {
     const list = [
         { name: 'Save', code: CrawlOperationStatus.READY },
         { name: 'Run', code: CrawlOperationStatus.STARTED },
@@ -44,7 +44,7 @@ export function setOperationStatusList(statusList: Size[]) {
     statusList.push(...list)
 }
 
-export function setCacheModeList(cacheModeList: Size[]) {
+export function setCacheModeList(cacheModeList: DropDownOption[]) {
     const list = [
         { name: CrawlCachingMode.ENABLED.toUpperCase(), code: CrawlCachingMode.ENABLED.toLowerCase() },
         { name: CrawlCachingMode.DISABLED.toUpperCase(), code: CrawlCachingMode.DISABLED.toLowerCase() },
@@ -56,7 +56,7 @@ export function setCacheModeList(cacheModeList: Size[]) {
     cacheModeList.push(...list)
 }
 
-export function setBrowserTypeList(browserTypeList: Size[]) {
+export function setBrowserTypeList(browserTypeList: DropDownOption[]) {
     const list = [
         { name: BrowserType.Chromium.toUpperCase(), code: BrowserType.Chromium.toLowerCase() },
         { name: BrowserType.Firefox.toUpperCase(), code: BrowserType.Firefox.toLowerCase() },

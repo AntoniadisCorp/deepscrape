@@ -28,9 +28,10 @@
               "prismjs/components/prism-typescript.min.js"
             ],
             "outputPath": "dist/deepscrape",
+            "prerender": true,
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -40,22 +41,25 @@
               },
               "src/assets"
             ],
-            "styles": ["src/styles.scss"],
+            "styles": [
+              "src/styles.scss",
+              "node_modules/prismjs/themes/prism-okaidia.css",
+              "node_modules/prismjs/plugins/line-highlight/prism-line-highlight.css",
+              "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.css"
+            ],
             "scripts": [
               "node_modules/emoji-toolkit/lib/js/joypixels.min.js",
               "node_modules/clipboard/dist/clipboard.min.js",
               "node_modules/prismjs/prism.js",
               "node_modules/prismjs/components/prism-typescript.min.js",
+              "node_modules/prismjs/components/prism-toml.min.js",
+              "node_modules/prismjs/components/prism-python.min.js",
               "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.js",
               "node_modules/prismjs/plugins/line-highlight/prism-line-highlight.js"
             ],
             "server": "src/main.server.ts",
             "stylePreprocessorOptions": {
               "includePaths": ["."]
-            },
-            "prerender": true,
-            "ssr": {
-              "entry": "server.ts"
             }
           },
           "configurations": {
@@ -67,7 +71,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "2MB"
+                  "maximumError": "2.3MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -80,14 +84,40 @@
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/prod.ts"
+                  "with": "src/environments/prod_.ts"
                 }
               ]
             },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": []
+            },
+            "elysia": {
+              "optimization": false,
+              "ssr": {
+                "entry": "server-elysia.ts"
+              }
+            },
+            "staging": {
+              "optimization": false,
+              "sourceMap": true,
+              "namedChunks": false,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "2.3MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "15kB"
+                }
+              ],
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             }
           },
           "defaultConfiguration": "production"
@@ -103,6 +133,9 @@
             },
             "development": {
               "buildTarget": "deepscrape:build:development"
+            },
+            "elysia": {
+              "buildTarget": "deepscrape:build:elysia"
             }
           },
           "defaultConfiguration": "development"

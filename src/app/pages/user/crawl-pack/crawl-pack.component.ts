@@ -7,11 +7,10 @@ import { AppTabsComponent } from 'src/app/core/components';
 import { LinkTabs } from 'src/app/core/types';
 
 @Component({
-  selector: 'app-crawl-pack',
-  standalone: true,
-  imports: [RouterOutlet, AppTabsComponent],
-  templateUrl: './crawl-pack.component.html',
-  styleUrl: './crawl-pack.component.scss'
+    selector: 'app-crawl-pack',
+    imports: [RouterOutlet, AppTabsComponent],
+    templateUrl: './crawl-pack.component.html',
+    styleUrl: './crawl-pack.component.scss'
 })
 export class CrawlPackComponent {
 

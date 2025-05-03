@@ -5,12 +5,11 @@ import { MatIcon } from '@angular/material/icon';
 import { generateRandomString } from '../../functions';
 
 @Component({
-  selector: 'app-stinput',
-  standalone: true,
-  imports: [CommonModule, CommonModule, ReactiveFormsModule/* , ForbiddenValidatorDirective */, MatIcon],
-  templateUrl: './stinput.component.html',
-  styleUrl: './stinput.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-stinput',
+    imports: [CommonModule, CommonModule, ReactiveFormsModule /* , ForbiddenValidatorDirective */, MatIcon],
+    templateUrl: './stinput.component.html',
+    styleUrl: './stinput.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StinputComponent {
 
