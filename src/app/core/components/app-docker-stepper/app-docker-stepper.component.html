@@ -8,12 +8,12 @@
       class="flex items-center p-2 rounded-md dark:hover:bg-gray-600/10 hover:bg-blue-400/10"
     >
       <div
-        [class.bg-blue-500]="step <= currentStep"
-        [class.bg-gray-300]="step > currentStep"
-        [class.text-white]="step <= currentStep"
-        [class.dark:bg-blue-800]="step <= currentStep"
-        [class.dark:bg-gray-600]="step > currentStep"
-        [class.dark:text-gray-100]="step <= currentStep"
+        [class.bg-blue-500]="step <= currentStep()"
+        [class.bg-gray-300]="step > currentStep()"
+        [class.text-white]="step <= currentStep()"
+        [class.dark:bg-blue-800]="step <= currentStep()"
+        [class.dark:bg-gray-600]="step > currentStep()"
+        [class.dark:text-gray-100]="step <= currentStep()"
         class="max-w-8 h-8 rounded-full flex items-center justify-center transition-colors min-w-8 w-full"
       >
         {{ step }}
@@ -32,8 +32,8 @@
     </button>
     <!-- Connecting Line -->
     <div
-      [class.bg-blue-500]="step < currentStep"
-      [class.bg-gray-300]="step >= currentStep"
+      [class.bg-blue-500]="step < currentStep()"
+      [class.bg-gray-300]="step >= currentStep()"
       class="hidden md:block max-w-16 w-full mx-2 top-4 grow left-4 right-4 h-[.05rem]"
       *ngIf="step !== 4"
     ></div>
@@ -45,7 +45,7 @@
   class="p-3 max-w-3xl bg-transparent mx-auto overflow-y-auto scrollbar max-h-[55vh]"
 >
   <!-- Step 1 -->
-  <div *ngIf="currentStep === 1">
+  <div *ngIf="currentStep() === 1">
     <form [formGroup]="formStep1" class="space-y-6">
       <div class="space-y-4">
         <label
@@ -144,9 +144,11 @@
               formControlName="dockerHubUrl"
               placeholder="container url.."
             />
-            <!-- {{ formStep1.get("dockerHubUrl")?.errors | json }} -->
+            {{ imageIsChecking }}
+            {{ formStep1.get("dockerHubUrl")?.errors | json }}
             @if (formStep1.get('dockerHubUrl')?.errors !== null ||
-            formStep1.get('dockerHubUrl')?.errors?.['pattern'] ) {
+            (formStep1.get('dockerHubUrl')?.errors?.['pattern'] &&
+            imageIsChecking === null) ) {
             <mat-icon
               class="absolute !w-7 !h-7 inset-0 right-0 left-2 top-2 text-gray-400 dark:text-gray-300"
               svgIcon="package_2"
@@ -156,12 +158,20 @@
               svgIcon="dockerimage"
               class="absolute !w-8 !h-8 inset-0 right-0 left-2 top-1"
             ></mat-icon>
-            }
-
+            {{ imageIsChecking }}
+            } @if (imageIsChecking === true) {
+            <span class="absolute z-[1001] !w-6 !h-6 text-2xl right-2 top-2"
+              ><!-- ⏳ --><mat-spinner
+                [diameter]="20"
+                class="stroke-gray-200"
+              ></mat-spinner
+            ></span>
+            } @else if (imageIsChecking === false) {
             <mat-icon
               class="absolute !w-6 !h-6 text-2xl right-2 top-2 text-green-500 rounded-full"
               >check</mat-icon
             >
+            } @else { }
           </div>
         </div>
       </div>
@@ -169,7 +179,7 @@
   </div>
 
   <!-- Step 2 -->
-  <div *ngIf="currentStep === 2">
+  <div *ngIf="currentStep() === 2">
     <form [formGroup]="formStep2" class="space-y-6">
       <div>
         <label
@@ -300,7 +310,7 @@
   </div>
 
   <!-- Step 3 -->
-  <div *ngIf="currentStep === 3">
+  <div *ngIf="currentStep() === 3">
     <form [formGroup]="formStep3" class="space-y-6">
       <div>
         <div class="flex flex-wrap items-center justify-between">
@@ -343,7 +353,7 @@
   </div>
 
   <!-- Step 4 -->
-  <div *ngIf="currentStep === 4">
+  <div *ngIf="currentStep() === 4">
     <div class="space-y-4">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
         Configuration Summary
@@ -352,27 +362,10 @@
         class="block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 px-4 py-2 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1"
       >
         <markdown
-          *ngIf="currentStep === 4"
+          *ngIf="currentStep() === 4"
           [data]="getConfiguration() | json | language : 'json'"
         ></markdown>
       </div>
     </div>
-    <!-- <div class="mt-6 flex justify-between">
-      <button
-        (click)="prevStep()"
-        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
-      >
-        Back
-      </button>
-      <button
-        (click)="deploy()"
-        [disabled]="isDeploying"
-        class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-      >
-        <span *ngIf="!isDeploying">Deploy</span>
-        <span *ngIf="isDeploying" class="animate-spin inline-block">⏳</span>
-      </button>
-    </div>
-  </div> -->
   </div>
 </div>

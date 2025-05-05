@@ -1,12 +1,12 @@
 import { AsyncPipe, JsonPipe, NgFor, NgIf } from '@angular/common'
-import { Component, EventEmitter, inject, Output } from '@angular/core'
+import { Component, EventEmitter, inject, input, model, Output } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
 import { FormControlPipe } from '../../pipes'
 import { DropdownComponent } from '../dropdown/dropdown.component'
 import { DockerImageInfo, DropDownOption } from '../../types'
-import { isImageDeployable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
+import { isImageParsable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
 import { cloneMachineValidator } from '../../directives'
 import { CheckboxComponent } from '../checkbox/checkbox.component'
 import { MarkdownModule } from 'ngx-markdown'
@@ -19,6 +19,8 @@ import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChang
 import { switchMap } from 'rxjs/internal/operators/switchMap'
 import { map } from 'rxjs/internal/operators/map'
 import { filter } from 'rxjs/internal/operators/filter'
+import { tap } from 'rxjs'
+import { MatProgressSpinner } from '@angular/material/progress-spinner'
 
 
 
@@ -26,20 +28,19 @@ import { filter } from 'rxjs/internal/operators/filter'
 @Component({
   selector: 'app-docker-stepper',
   imports: [NgIf, ReactiveFormsModule, NgFor, JsonPipe, MatIcon, RadioButtonComponent,
-    FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule
+    FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule,
+    MatProgressSpinner
   ],
   templateUrl: './app-docker-stepper.component.html',
   styleUrl: './app-docker-stepper.component.scss'
 })
 export class AppDockerStepperComponent {
   private fb: FormBuilder = inject(FormBuilder)
-  private deploySub: Subscription
+
   private dockerUrlSub: Subscription
-  @Output() stepStatus: EventEmitter<number> = new EventEmitter<number>()
 
   readonly clipboardButton = ClipboardbuttonComponent
-
-  currentStep = 1
+  currentStep = model.required<number>()
   totalSteps = 4
 
   // Form groups for each step
@@ -56,10 +57,11 @@ export class AppDockerStepperComponent {
   regions: DropDownOption[] = []
   CPUTypes: DropDownOption[] = []
   autoContainerOptions: DropDownOption[] = []
-  isDeploying = false
 
   // fly Toml controls
   flyTomlMarkdown: string = ''
+
+  protected imageIsChecking: boolean | null = null
 
   constructor(private deployService: DeploymentService) { }
 
@@ -88,7 +90,7 @@ export class AppDockerStepperComponent {
     this.initForms()
 
     // Emit Step Status to the parent component
-    this.stepStatus.emit(this.currentStep)
+    this.currentStep.set(1)
   }
   /**
    * comment initForms
@@ -170,12 +172,19 @@ export class AppDockerStepperComponent {
 
 
     this.dockerUrlSub = this.dockerHubUrl.valueChanges.pipe(
-      debounceTime(600),
+      tap(() => this.imageIsChecking = null),
       filter((value): value is string => !!value && !this.dockerHubUrl.invalid),
       distinctUntilChanged(),
+      debounceTime(1000), // Adjust the debounce time as needed
       map((registryValue: string) => {
+        this.imageIsChecking = true
         if (!registryValue) {
-          new Error('Invalid Docker Image URL')
+          throw new Error('Invalid Docker Image URL')
+        }
+        const { info } = isImageParsable(registryValue)
+        if (info) {
+          const { registry, repository, namespace, tag } = info
+          registryValue = `${namespace}/${repository}:${!tag ? 'latest' : tag}`
         }
         return registryValue
       }),
@@ -189,20 +198,17 @@ export class AppDockerStepperComponent {
         console.log('Image deployability response:', image);
 
         if (image.exists) {
-          const { registry, org, name, tag } = image.info;
-          this.formStep1.get('defaultImage')?.setValue(
-            this.formStep1.get('defaultImage')?.value as DropDownOption,
-            {
-              name: `${registry}/${org}/${name}:${!tag ? 'latest' : tag}`,
-              code: `${org}/${name}:${!tag ? 'latest' : tag}`,
-            })
-          this.dockerHubUrl.patchValue(`${org}/${name}`, { emitEvent: false })
-          // this.formStep1.get('imageOption')?.setValue('dockerHubUrl')
+          const { repository, tag } = image.info;
+          this.dockerHubUrl.patchValue(`${repository}:${!tag ? 'latest' : tag}`, { emitEvent: false })
+          this.dockerHubUrl.setErrors(null)
+          this.imageIsChecking = false
         } else {
           console.error('Image is not deployable')
+          this.imageIsChecking = null
         }
       },
       error: (error) => {
+        this.imageIsChecking = null
         console.error('Error checking image deployability:', error);
       },
     })
@@ -356,7 +362,7 @@ export class AppDockerStepperComponent {
   }
 
   clearCurrStepInput() {
-    switch (this.currentStep) {
+    switch (this.currentStep()) {
       case 1:
         this.formStep1.reset()
         this.formStep1.get('imageOption')?.setValue('default')
@@ -379,7 +385,7 @@ export class AppDockerStepperComponent {
 
   nextStep() {
 
-    if (this.currentStep === 1 && this.isStepValid(this.currentStep)) {
+    if (this.currentStep() === 1 && this.isStepValid(this.currentStep())) {
       // Reset all fields except imageOption, clear pristine/touched states
       /* const imageOption = this.formStep1.value.imageOption;
       this.formStep1.reset({ imageOption });
@@ -390,18 +396,15 @@ export class AppDockerStepperComponent {
         control?.markAsPristine();
       })
       this.updateStep1Validators(imageOption) */
-      this.currentStep++;
-    } else if (this.currentStep < this.totalSteps && this.isStepValid(this.currentStep)) {
-      this.currentStep++
+      this.currentStep.set(this.currentStep() + 1)
+    } else if (this.currentStep() < this.totalSteps && this.isStepValid(this.currentStep())) {
+      this.currentStep.set(this.currentStep() + 1)
     }
-
-    this.stepStatus.emit(this.currentStep)
   }
 
   prevStep(setStep?: number) {
 
-    if (this.currentStep > 1) this.currentStep--
-    this.stepStatus.emit(this.currentStep)
+    if (this.currentStep() > 1) this.currentStep.set(this.currentStep() - 1)
   }
 
   isStepValid(step: number): boolean {
@@ -419,10 +422,8 @@ export class AppDockerStepperComponent {
   }
 
   deploy() {
-    this.isDeploying = true
     const config = this.getConfiguration()
     const formData = new FormData()
-
 
     // Loop through the config object and append each key-value pair to the formData object
     for (const key in config) {
@@ -435,16 +436,7 @@ export class AppDockerStepperComponent {
       }
     }
 
-    this.deploySub = this.deployService.createMachine(formData).subscribe({
-      next: (response) => {
-        console.log('Deployed:', response)
-        this.stepStatus.emit(++this.currentStep)
-      },
-      complete: () => { this.isDeploying = false },
-      error: (error) => {
-        console.error('Deploy failed:', error)
-      },
-    })
+    return this.deployService.createMachine(formData)
   }
 
   onCheckBoxChange() {
@@ -455,8 +447,6 @@ export class AppDockerStepperComponent {
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
-    this.deploySub?.unsubscribe()
     this.dockerUrlSub?.unsubscribe()
-    this.stepStatus.complete()
   }
 }
