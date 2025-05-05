@@ -38,7 +38,9 @@ export type LinkTabs = {
 
 export interface DockerImageInfo {
     registry: string;
-    org: string;
-    name: string;
-    tag: string;
+    namespace: string;
+    repository: string;
+    tag?: string;
+    digest?: string;
+    fullName: string;
 }

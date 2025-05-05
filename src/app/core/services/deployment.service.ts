@@ -7,6 +7,8 @@ import { tap } from 'rxjs/internal/operators/tap';
 import { DockerImageInfo } from '../types';
 import { Observable } from 'rxjs/internal/Observable';
 import { of } from 'rxjs/internal/observable/of';
+import { handleError } from '../functions';
+import { map } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -34,16 +36,14 @@ export class DeploymentService {
     const headers = {
       'Authorization': `Bearer ${this.authService.token}`
     }
-    const params = new HttpParams().set('imageName', encodeURIComponent(imageName))
+    const params = new HttpParams().set('name', encodeURIComponent(imageName))
 
     return this.http.get<{ exists: boolean; info: DockerImageInfo }>(url, { headers, params }).pipe(
       tap((response: any) => {
         console.log('Image deployability check successful:', response)
       }),
-      catchError(error => {
-        console.error('Error checking image deployability:', error)
-        throw error
-      })
+      map((response: any) => response.data),
+      catchError(handleError)
     )
   }
 

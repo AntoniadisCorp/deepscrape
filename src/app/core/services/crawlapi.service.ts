@@ -5,6 +5,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { AuthService } from './auth.service';
 import { throwError } from 'rxjs/internal/observable/throwError';
+import { handleError } from '../functions';
 
 @Injectable({
   providedIn: 'root'
@@ -23,19 +24,7 @@ export class CrawlAPIService {
 
     return this.http.get(crawl4AiReaderEndpoint, { headers, responseType: 'text' })
       .pipe(
-        catchError(this.handleError)
+        catchError(handleError)
       )
-  }
-
-
-  private handleError(error: HttpErrorResponse | any): Observable<never> {
-    if (error.error instanceof ErrorEvent) {
-      console.error('An error occurred:', error.error.message);
-    } else {
-      console.error(
-        `Backend returned code ${error.status}, ` +
-        `body was: ${error.error}`);
-    }
-    return throwError(() => 'Something bad happened; please try again later.');
   }
 }
