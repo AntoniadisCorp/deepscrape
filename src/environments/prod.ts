@@ -21,7 +21,7 @@ const environment = {
     ANTHROPIC_API_KEY: env["ANTHROPIC_API_KEY"],
     JINAAI_API_KEY: env["JINAAI_API_KEY"],
     GROQ_API_KEY: env["GROQ_API_KEY"],
-    CRAWL4AI_API_KEY: '',
+    CRAWL4AI_API_KEY: env["CRAWL4AI_API_KEY"],
     API_CRAWL4AI: "https://deepcrawl4ai.fly.dev",
     API_DEPLOY4SCRAP: "https://arachnefly.fly.dev",
     API_ANTHROPIC: "https://api.anthropic.com",
@@ -31,4 +31,5 @@ const environment = {
 }
 
 const content = `export const environment = ${JSON.stringify(environment, null, 2)};`
+console.log(content);
 fs.writeFileSync('src/environments/environment.ts', content);
