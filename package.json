@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "prbuild": "ts-node src/environments/prod.ts",
+    "prbuild": "ts-node src/environments/prod_gen.ts",
     "staging": "npm run prbuild && ng build --configuration=staging",
     "build": "ng build --configuration=production",
     "build:elysia": "ng build --configuration=elysia",
