@@ -104,8 +104,8 @@
               }
             },
             "staging": {
-              "optimization": false,
-              "sourceMap": true,
+              "optimization": true,
+              "sourceMap": false,
               "namedChunks": false,
               "budgets": [
                 {
@@ -126,7 +126,10 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "ssr": {
+                "entry": "server.ts"
+              }
             }
           },
           "defaultConfiguration": "production"
