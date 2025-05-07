@@ -88,7 +88,7 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: libnet-d76db
           channelId: pr-${{ github.event.pull_request.number }}
-          entryPoint: "./functions"
+          entryPoint: "."
           expires: 30d
         env:
           PRODUCTION: true
