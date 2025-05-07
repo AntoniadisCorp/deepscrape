@@ -41,13 +41,13 @@ import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
       May 1st–3rd 2019 Salt Lake City, Utah */
 
 @Component({
-    selector: 'app-root',
-    imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
-        SizeDetectorComponent,
-    ],
-    providers: [ThemeToggleComponent],
-    templateUrl: './app.component.html',
-    styleUrl: './app.component.scss'
+  selector: 'app-root',
+  imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
+    SizeDetectorComponent,
+  ],
+  providers: [ThemeToggleComponent],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss'
 })
 export class AppComponent {
 
@@ -56,7 +56,7 @@ export class AppComponent {
   protected snackbarType: SnackBarType = SnackBarType.info;
   protected snackbarDuration = 3000;
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent;
-  protected title = 'deepscrape';
+
   protected isLoading = false;
 
   private routerEventSubscription: Subscription
@@ -80,6 +80,10 @@ export class AppComponent {
 
     // Mat SAFE SVGs icons
     this.matIconRegistry.addSvgIconResolver()
+  }
+
+  get title() {
+    return 'deepscrape'
   }
 
   ngOnInit(): void {

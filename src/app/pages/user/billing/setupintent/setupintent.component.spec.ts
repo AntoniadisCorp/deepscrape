@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SetupintentComponent } from './setupintent.component';
+import { SetupIntentComponent } from './setupintent.component';
 
-describe('SetupintentComponent', () => {
-  let component: SetupintentComponent;
-  let fixture: ComponentFixture<SetupintentComponent>;
+describe('SetupIntentComponent', () => {
+  let component: SetupIntentComponent;
+  let fixture: ComponentFixture<SetupIntentComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SetupintentComponent]
+      imports: [SetupIntentComponent]
     })
-    .compileComponents();
+      .compileComponents();
 
-    fixture = TestBed.createComponent(SetupintentComponent);
+    fixture = TestBed.createComponent(SetupIntentComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

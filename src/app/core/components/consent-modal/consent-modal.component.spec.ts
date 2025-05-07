@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ConsetModalComponent } from './consent-modal.component';
+import { ConsentModalComponent } from './consent-modal.component';
 
-describe('ConsetModalComponent', () => {
-  let component: ConsetModalComponent;
-  let fixture: ComponentFixture<ConsetModalComponent>;
+describe('ConsentModalComponent', () => {
+  let component: ConsentModalComponent;
+  let fixture: ComponentFixture<ConsentModalComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConsetModalComponent]
+      imports: [ConsentModalComponent]
     })
       .compileComponents();
 
-    fixture = TestBed.createComponent(ConsetModalComponent);
+    fixture = TestBed.createComponent(ConsentModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

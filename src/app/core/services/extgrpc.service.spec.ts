@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ExtgrpcService } from './extgrpc.service';
+import { ExtensionService } from './extgrpc.service';
 
 describe('ExtgrpcService', () => {
-  let service: ExtgrpcService;
+  let service: ExtensionService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(ExtgrpcService);
+    service = TestBed.inject(ExtensionService);
   });
 
   it('should be created', () => {

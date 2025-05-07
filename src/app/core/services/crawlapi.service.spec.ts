@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { CrawlapiService } from './crawlapi.service';
+import { CrawlAPIService } from './crawlapi.service';
 
-describe('CrawlapiService', () => {
-  let service: CrawlapiService;
+describe('CrawlAPIService', () => {
+  let service: CrawlAPIService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(CrawlapiService);
+    service = TestBed.inject(CrawlAPIService);
   });
 
   it('should be created', () => {

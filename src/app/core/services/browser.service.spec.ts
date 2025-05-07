@@ -1,16 +1,51 @@
 import { TestBed } from '@angular/core/testing';
-
-import { BrowserService } from './browser.service';
+import { BrowserToken, browserProvider, Chrome } from './browser.service';
 
 describe('BrowserService', () => {
-  let service: BrowserService;
+  let originalChrome: any;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(BrowserService);
+    // Save the original `chrome` object if it exists
+    originalChrome = (window as any).chrome;
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  afterEach(() => {
+    // Restore the original `chrome` object after each test
+    (window as any).chrome = originalChrome;
+  });
+
+  it('should provide chrome object when available', () => {
+    const mockChrome = { runtime: { id: 'test' } };
+    (window as any).chrome = mockChrome; // Mock the `chrome` object
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: BrowserToken,
+          useFactory: browserProvider,
+        },
+      ],
+    });
+
+    const injectedChrome = TestBed.inject(BrowserToken);
+    expect(injectedChrome).toEqual(mockChrome);
+
+    delete (window as any).chrome; // Cleanup mock
+  });
+
+  it('should return undefined when chrome is not available', () => {
+    delete (window as any).chrome; // Ensure `chrome` is undefined
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: BrowserToken,
+          useFactory: browserProvider,
+        },
+      ],
+    });
+
+    const injectedChrome = TestBed.inject(BrowserToken);
+    expect(injectedChrome).toBeUndefined();
   });
 });

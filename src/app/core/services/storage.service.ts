@@ -14,11 +14,13 @@ export const STORAGE_PROVIDERS: StaticProvider[] = [
 
 export class NoopStorage implements Storage {
   length = 0;
-  clear() { }
-  getItem() { return null; }
-  key() { return null; }
-  removeItem() { }
-  setItem() { }
+  constructor() {
+  }
+  clear(): void { }
+  getItem(key: string): string | null { return null; }
+  key(index: number): string | null { return null; }
+  removeItem(key: string): void { }
+  setItem(key: string, data: string): void { }
 }
 
 function getStorage(win: Window, storageType: 'localStorage' | 'sessionStorage'): Storage {
