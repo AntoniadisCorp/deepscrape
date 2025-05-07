@@ -373,7 +373,7 @@ export class AppScrapeComponent {
       )
   }
 
-  private enableForm() {
+  enableForm() {
 
     this.url.enable()
     this.userprompt.enable()

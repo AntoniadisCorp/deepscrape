@@ -1,8 +1,8 @@
-import { FormcontrolPipe } from './formcontrol.pipe';
+import { FormControlPipe } from './formcontrol.pipe';
 
-describe('FormcontrolPipe', () => {
+describe('FormControlPipe', () => {
   it('create an instance', () => {
-    const pipe = new FormcontrolPipe();
+    const pipe = new FormControlPipe();
     expect(pipe).toBeTruthy();
   });
 });

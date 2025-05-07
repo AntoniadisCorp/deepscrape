@@ -65,7 +65,7 @@ export class TooltipDirective {
     }
   }
 
-  private setTooltipComponentProperties() {
+  setTooltipComponentProperties() {
     if (this.componentRef !== null) {
       this.componentRef.instance.tooltip = this.tooltip;
       this.componentRef.instance.position = this.position

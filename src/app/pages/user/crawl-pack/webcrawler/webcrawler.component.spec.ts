@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { WebcrawlerComponent } from './webcrawler.component';
+import { WebCrawlerComponent } from './webcrawler.component';
 
-describe('WebcrawlerComponent', () => {
-  let component: WebcrawlerComponent;
-  let fixture: ComponentFixture<WebcrawlerComponent>;
+describe('WebCrawlerComponent', () => {
+  let component: WebCrawlerComponent;
+  let fixture: ComponentFixture<WebCrawlerComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [WebcrawlerComponent]
+      imports: [WebCrawlerComponent]
     })
-    .compileComponents();
+      .compileComponents();
 
-    fixture = TestBed.createComponent(WebcrawlerComponent);
+    fixture = TestBed.createComponent(WebCrawlerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { SvgiconService } from './svgicon.service';
+import { SvgIconService } from './svgicon.service';
 
-describe('SvgiconService', () => {
-  let service: SvgiconService;
+describe('SvgIconService', () => {
+  let service: SvgIconService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(SvgiconService);
+    service = TestBed.inject(SvgIconService);
   });
 
   it('should be created', () => {

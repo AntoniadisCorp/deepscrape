@@ -11,6 +11,10 @@ export class AuthService {
 
   token: string | undefined
 
+  get getToken(): string | undefined {
+    return this.token;
+  }
+
   user: { uid?: string, displayName?: string | null } | null
 
   private userSubs: Subscription

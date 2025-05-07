@@ -1,16 +1,27 @@
 import { TestBed } from '@angular/core/testing';
 
-import { WindowService } from './window.service';
+import { WindowToken, windowProvider } from './window.service';
 
 describe('WindowService', () => {
-  let service: WindowService;
+  let windowObj: Window;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(WindowService);
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: WindowToken,
+          useFactory: windowProvider,
+        },
+      ],
+    });
+    windowObj = TestBed.inject(WindowToken);
   });
 
   it('should be created', () => {
-    expect(service).toBeTruthy();
+    expect(windowObj).toBeTruthy();
+  });
+
+  it('should return the native window object', () => {
+    expect(windowObj).toBe(window);
   });
 });
