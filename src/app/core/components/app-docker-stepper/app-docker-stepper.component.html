@@ -83,7 +83,10 @@
           </label>
           <div class="w-full block">
             <app-dropdown
-              *ngIf="formStep1.value.imageOption === 'clone'"
+              *ngIf="
+                formStep1.value.imageOption === 'clone' &&
+                existingMachines.length
+              "
               [options]="existingMachines"
               [control]="formStep1.get('cloneMachine') | formControl"
               [padding]="'p-2'"
@@ -144,8 +147,13 @@
               formControlName="dockerHubUrl"
               placeholder="container url.."
             />
-            {{ imageIsChecking }}
-            {{ formStep1.get("dockerHubUrl")?.errors | json }}
+
+            <div
+              *ngIf="formStep1.get('dockerHubUrl')?.errors?.['dockerHubUrl'] || formStep1.get('dockerHubUrl')?.errors?.['pattern']"
+              class="text-red-500 text-sm mt-1"
+            >
+              {{ formStep1.get('dockerHubUrl')?.errors?.['dockerHubUrl'] }}
+            </div>
             @if (formStep1.get('dockerHubUrl')?.errors !== null ||
             (formStep1.get('dockerHubUrl')?.errors?.['pattern'] &&
             imageIsChecking === null) ) {

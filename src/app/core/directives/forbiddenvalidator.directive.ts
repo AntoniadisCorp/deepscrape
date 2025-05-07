@@ -647,9 +647,25 @@ export function cloneMachineValidator(): ValidatorFn {
       return null
     }
     if (JSON.stringify(cloneMachineValue) === JSON.stringify({})) {
-      return { cloneMachine: 'Must be typeof DropDownOption not empty' }
+      return { cloneMachine: 'there is no available machine' }
     }
 
+    return null
+  }
+}
+
+export function dockerHubUrlValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const dockerHubUrl = control.value as string
+    if (!dockerHubUrl || dockerHubUrl === '') {
+      return null
+    }
+    if (typeof dockerHubUrl !== 'string') {
+      return { dockerHubUrl: 'Must be a string' }
+    }
+    if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(dockerHubUrl)) {
+      return { dockerHubUrl: 'Invalid Docker Hub URL' }
+    }
     return null
   }
 }

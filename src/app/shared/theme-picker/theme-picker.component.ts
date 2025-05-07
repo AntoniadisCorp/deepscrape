@@ -27,10 +27,11 @@ export class ThemeToggleComponent {
     private storedPreference: AppTheme | undefined = undefined;
     private window = inject(WindowToken)
 
+    private storage = inject(LocalStorage)
+
     private currentTheme: WritableSignal<AppTheme | undefined>
 
     constructor(@Inject(DOCUMENT) private document: Document,
-        @Inject(LocalStorage) private storage: Storage,
         @Inject(PLATFORM_ID) private platformId: object) {
         this.initializeThemeFromPreferences();
     }

@@ -7,7 +7,7 @@ import { FormControlPipe } from '../../pipes'
 import { DropdownComponent } from '../dropdown/dropdown.component'
 import { DockerImageInfo, DropDownOption } from '../../types'
 import { isImageParsable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
-import { cloneMachineValidator } from '../../directives'
+import { cloneMachineValidator, dockerHubUrlValidator } from '../../directives'
 import { CheckboxComponent } from '../checkbox/checkbox.component'
 import { MarkdownModule } from 'ngx-markdown'
 import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component'
@@ -75,7 +75,7 @@ export class AppDockerStepperComponent {
     setDefaultImages(this.defaultImages)
 
     // preSet existing machines
-    setExistingMachines(this.existingMachines)
+    // setExistingMachines(this.existingMachines)
 
     // preset Regions
     preSetRegions(this.regions)
@@ -123,7 +123,7 @@ export class AppDockerStepperComponent {
           ]
         }) as FormControl<string | null>,
       dockerHubUrl: this.fb.control('', {
-        validators: [Validators.required, Validators.pattern(/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/)],
+        validators: [Validators.required, dockerHubUrlValidator()],
       }),
     })
 
@@ -209,6 +209,7 @@ export class AppDockerStepperComponent {
       },
       error: (error) => {
         this.imageIsChecking = null
+        this.dockerHubUrl.setErrors({ dockerHubUrl: error })
         console.error('Error checking image deployability:', error);
       },
     })
@@ -267,7 +268,7 @@ export class AppDockerStepperComponent {
     if (option === 'default') controls.defaultImage?.setValidators(Validators.required)
     else if (option === 'clone') controls.cloneMachine?.setValidators([Validators.required, cloneMachineValidator()])
     else if (option === 'upload') controls.dockerfile?.setValidators(this.dockerfileValidator())
-    else if (option === 'url') controls.dockerHubUrl?.setValidators([Validators.required, Validators.pattern(/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/)])
+    else if (option === 'url') controls.dockerHubUrl?.setValidators([Validators.required, dockerHubUrlValidator()]) // (/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/)
     // ^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$
 
     Object.values(controls).forEach((control) => control?.updateValueAndValidity())
