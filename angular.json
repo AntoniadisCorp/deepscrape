@@ -28,6 +28,7 @@
               "prismjs/components/prism-typescript.min.js"
             ],
             "outputMode": "server",
+            "prerender": true,
             "outputPath": "dist/deepscrape",
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -87,7 +88,7 @@
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/prod_.ts"
+                  "with": "src/environments/prod.ts"
                 }
               ],
               "ssr": {
@@ -122,11 +123,14 @@
                   "maximumError": "15kB"
                 }
               ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/staging.ts"
+                }
+              ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json",
-              "ssr": {
-                "entry": "server.ts"
-              }
+              "serviceWorker": "ngsw-config.json"
             }
           },
           "defaultConfiguration": "production"

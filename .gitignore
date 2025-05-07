@@ -3,6 +3,8 @@
 # environments
 /src/environments/**/*.*
 !/src/environments/prod.ts
+!/src/environments/prod_gen.ts
+!/src/environments/staging.ts
 
 # Compiled output
 /dist
