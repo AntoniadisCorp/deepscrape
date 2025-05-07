@@ -28,6 +28,7 @@
               "prismjs/components/prism-typescript.min.js"
             ],
             "outputMode": "server",
+            "prerender": true,
             "outputPath": "dist/deepscrape",
             "index": "src/index.html",
             "browser": "src/main.ts",
