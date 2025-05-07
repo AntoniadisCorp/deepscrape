@@ -29,7 +29,6 @@
             ],
             "outputMode": "server",
             "outputPath": "dist/deepscrape",
-            "prerender": true,
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [],
@@ -61,6 +60,9 @@
             "server": "src/main.server.ts",
             "stylePreprocessorOptions": {
               "includePaths": ["."]
+            },
+            "ssr": {
+              "entry": "server.ts"
             }
           },
           "configurations": {
@@ -118,12 +120,6 @@
                   "type": "anyComponentStyle",
                   "maximumWarning": "4kB",
                   "maximumError": "15kB"
-                }
-              ],
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/prod.ts",
-                  "with": "src/environments/environment.ts"
                 }
               ],
               "outputHashing": "all",
