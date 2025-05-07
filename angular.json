@@ -119,6 +119,12 @@
                   "maximumError": "15kB"
                 }
               ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/prod.ts",
+                  "with": "src/environments/environment.ts"
+                }
+              ],
               "outputHashing": "all",
               "serviceWorker": "ngsw-config.json"
             }
