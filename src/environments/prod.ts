@@ -15,7 +15,7 @@ const environment = {
         messagingSenderId: env["MESSAGING_SENDER_ID"],
         appId: env["APP_ID"],
     },
-    STRIPE_PUBLIC_KEY: 'pk_test_51OELbJFBBAUAyJFBp3qyNV35TE56uUP9g1IkZ0KOuWnrNLC2ijFoIIkG71xqISwnFwiibjCOumO8itPsLLIyA1py00ABQ2TJ4H',
+    STRIPE_PUBLIC_KEY: env["STRIPE_PUBLIC_KEY"],
     RECAPTCHA_KEY: env["RECAPTCHA_KEY"],
     OPENAI_API_KEY: env["OPENAI_API_KEY"],
     ANTHROPIC_API_KEY: env["ANTHROPIC_API_KEY"],
