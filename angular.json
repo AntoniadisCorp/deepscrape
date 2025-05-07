@@ -27,8 +27,8 @@
               "prismjs",
               "prismjs/components/prism-typescript.min.js"
             ],
+            "outputMode": "server",
             "outputPath": "dist/deepscrape",
-            "prerender": true,
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [],
@@ -60,6 +60,9 @@
             "server": "src/main.server.ts",
             "stylePreprocessorOptions": {
               "includePaths": ["."]
+            },
+            "ssr": {
+              "entry": "server.ts"
             }
           },
           "configurations": {
@@ -86,7 +89,10 @@
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/prod_.ts"
                 }
-              ]
+              ],
+              "ssr": {
+                "entry": "server.ts"
+              }
             },
             "development": {
               "optimization": false,
@@ -101,8 +107,8 @@
               }
             },
             "staging": {
-              "optimization": false,
-              "sourceMap": true,
+              "optimization": true,
+              "sourceMap": false,
               "namedChunks": false,
               "budgets": [
                 {
@@ -117,7 +123,10 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "ssr": {
+                "entry": "server.ts"
+              }
             }
           },
           "defaultConfiguration": "production"
