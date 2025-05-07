@@ -124,10 +124,7 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json",
-              "ssr": {
-                "entry": "server.ts"
-              }
+              "serviceWorker": "ngsw-config.json"
             }
           },
           "defaultConfiguration": "production"

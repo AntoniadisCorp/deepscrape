@@ -31,5 +31,5 @@ const environment = {
 }
 
 const content = `export const environment = ${JSON.stringify(environment, null, 2)};`
-console.log(content);
+
 fs.writeFileSync('src/environments/environment.ts', content);
