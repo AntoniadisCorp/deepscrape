@@ -33,8 +33,8 @@
       "resources": {
         "files": ["/assets/img/**", "/assets/menu/**"]
       },
-      "cachePolicy": {
-        "strategy": "StaleWhileRevalidate"
+      "cacheConfig": {
+        "strategy": "staleWhileRevalidate"
       }
     }
   ],
@@ -50,7 +50,8 @@
       "cacheConfig": {
         "strategy": "freshness",
         "maxSize": 0,
-        "timeout": "0s"
+        "timeout": "0s",
+        "maxAge": "3600s"
       }
     }
   ]

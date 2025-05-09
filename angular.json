@@ -18,17 +18,15 @@
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "allowedCommonJsDependencies": [
-              "undici",
               "@grpc/proto-loader",
               "@grpc/grpc-js",
-              "whatwg-url",
-              "encoding",
-              "http-proxy-middleware",
-              "prismjs",
-              "prismjs/components/prism-typescript.min.js"
+              "web-streams-polyfill/dist/ponyfill.es2018.js",
+              "node-domexception"
             ],
             "outputMode": "server",
-            "prerender": true,
+            "ssr": {
+              "entry": "server.ts"
+            },
             "outputPath": "dist/deepscrape",
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -61,9 +59,6 @@
             "server": "src/main.server.ts",
             "stylePreprocessorOptions": {
               "includePaths": ["."]
-            },
-            "ssr": {
-              "entry": "server.ts"
             }
           },
           "configurations": {
@@ -102,10 +97,14 @@
               "fileReplacements": []
             },
             "elysia": {
-              "optimization": false,
+              "optimization": true,
+              "sourceMap": false,
+              "namedChunks": false,
               "ssr": {
                 "entry": "server-elysia.ts"
-              }
+              },
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "staging": {
               "optimization": true,
