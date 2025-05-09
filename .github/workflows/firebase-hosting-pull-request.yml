@@ -89,7 +89,7 @@ jobs:
           projectId: libnet-d76db
           channelId: pr-${{ github.event.pull_request.number }}
           entryPoint: "."
-          expires: 30d
+          expires: 5d
         env:
           PRODUCTION: true
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
