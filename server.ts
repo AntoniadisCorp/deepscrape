@@ -1,6 +1,6 @@
 import { APP_BASE_HREF } from '@angular/common'
 import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
-import express, { Request, Response } from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
@@ -19,11 +19,6 @@ function serveapp(): express.Application {
     handle API endpoints within your Express server. 
   */
   const AI: SyncAIapis = new SyncAIapis()
-
-  // const packageJson = existsSync(join(process.cwd(), 'proxy.conf.json')) ?
-  //   JSON.parse(readFileSync(join(process.cwd(), 'proxy.conf.json'), 'utf-8')) :
-  //   {}
-
 
   const serverDistFolder = dirname(fileURLToPath(import.meta.url))
   const browserDistFolder = resolve(serverDistFolder, '../browser')
@@ -47,10 +42,11 @@ function serveapp(): express.Application {
   // server.get('/api/**', (req, res, next ) => { next() })
 
   // *PWA Service Worker (if running in production)
-  server.use((req: any, res: any, next: any) => {
+  server.use((req: Request, res: Response, next: NextFunction) => {
     if (req.url.includes('ngsw')) {
       res.setHeader('Service-Worker-Allowed', '/')
     }
+    console.log('request', req.url, req.statusCode, req.protocol, req.originalUrl, req.baseUrl)
     next()
   })
 

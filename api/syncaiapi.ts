@@ -1,5 +1,9 @@
 import { NextFunction, Request, Response, Router } from "express"
-import { anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl, helloWorld } from "./handlers"
+import {
+    anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl,
+    helloWorld, arachnefly
+} from "./handlers"
+
 // import { auth } from "./security"
 
 
@@ -31,7 +35,7 @@ class SyncAIapis {
         try {
             const decodedToken = /* await auth.verifyIdToken(token) */ "decodedToken"
             if (decodedToken) {
-                // req.user = decodedToken; // Add user info to the request
+                req.app.locals["user"] = token; // Add user info to the request
                 next()
             } else {
                 throw new Error('Invalid token')
@@ -50,8 +54,15 @@ class SyncAIapis {
 
     private httpRoutesGets(): void {
 
+        /* Jina AI */
         this.router.get('/jina', helloWorld)
-        this.router.get('/jina/:url', this.isJwtAuth, jinaAICrawl)
+        this.router.get('/jina/:url', this.isJwtAuth,
+            jinaAICrawl)
+
+        /* Machines by Arachnefly */
+        // Check if the image is deployable
+        this.router.get('/machines/check-image', this.isJwtAuth,
+            arachnefly.checkImageDeployability)
     }
 
     /**
@@ -63,6 +74,12 @@ class SyncAIapis {
         this.router.post('/openai/chat/completions', openaiAICore)
         this.router.post('/groq/chat/completions', groqAICore)
         this.router.post('/crawl', crawl4aiCore)
+
+
+        /* Machines by Arachnefly */
+        // Deploy a new Machine
+        // this.router.post('/machines/deploy', arachnefly.deployMachine)
+
         // this.router.post('/api/machines/logs', receiveLogs)
     }
     /**

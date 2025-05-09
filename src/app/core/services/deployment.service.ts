@@ -6,9 +6,8 @@ import { catchError } from 'rxjs/internal/operators/catchError';
 import { tap } from 'rxjs/internal/operators/tap';
 import { DockerImageInfo } from '../types';
 import { Observable } from 'rxjs/internal/Observable';
-import { of } from 'rxjs/internal/observable/of';
 import { handleError } from '../functions';
-import { map } from 'rxjs';
+import { map } from 'rxjs/internal/operators/map';
 
 @Injectable({
   providedIn: 'root'
@@ -34,7 +33,8 @@ export class DeploymentService {
   checkImageDeployability(imageName: string): Observable<{ exists: boolean; info: DockerImageInfo }> {
     const url = `${API_DEPLOY4SCRAP}/check-image` // Replace with your API endpoint
     const headers = {
-      'Authorization': `Bearer ${this.authService.token}`
+      'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
+      'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
     }
     const params = new HttpParams().set('name', encodeURIComponent(imageName))
 

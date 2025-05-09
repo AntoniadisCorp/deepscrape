@@ -1,3 +1,3 @@
-import { environment } from '../../../environments/environment';
+import { environment } from 'src/environments/environment';
 
-export const API_DEPLOY4SCRAP = environment.production ? environment.API_DEPLOY4SCRAP + '/' : '/machines'
+export const API_DEPLOY4SCRAP = environment.production ? '/api/machines' : '/machines'

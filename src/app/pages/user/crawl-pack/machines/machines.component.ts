@@ -141,19 +141,20 @@ export class MachinesComponent {
 
     deploy() {
         this.isDeploying = true
-        this.deploySub = this.dockerStepper.deploy().subscribe({
-            next: (response) => {
-                this.currentStep.update(this.getCurrentStepByEvent)
-                this.isModalOpen.setValue(false)
-                console.log('Deployed:', response)
-                this.showSnackbar('Deployment successful', SnackBarType.success, '', 5000)
-            },
-            error: (error) => {
-                this.showSnackbar('Deployment failed', SnackBarType.error, '', 5000)
-                console.error('Deploy failed:', error)
-            },
-            complete: () => { this.isDeploying = false },
-        })
+        this.deploySub = this.dockerStepper.deploy()
+            .subscribe({
+                next: (response) => {
+                    this.currentStep.update(this.getCurrentStepByEvent)
+                    this.isModalOpen.setValue(false)
+                    console.log('Deployed:', response)
+                    this.showSnackbar('Deployment successful', SnackBarType.success, '', 5000)
+                },
+                error: (error) => {
+                    this.showSnackbar('Deployment failed', SnackBarType.error, '', 5000)
+                    console.error('Deploy failed:', error)
+                },
+                complete: () => { this.isDeploying = false },
+            })
     }
 
     themeIsDark() {

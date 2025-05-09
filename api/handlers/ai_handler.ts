@@ -100,7 +100,7 @@ export const crawl4aiCore = async (req: Request, res: Response) => {
 }
 
 export const jinaAICrawl = async (req: Request, res: Response) => {
-    const { url } = req.params
+    const { url, /* token */ } = req.params
     const apiKey = process.env["JINAAI_API_KEY"]
 
     let headers: JinaHeader = {

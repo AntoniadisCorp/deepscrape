@@ -149,7 +149,9 @@ export class AppDockerStepperComponent {
 
       ]],
       autoStart: [false],
-      autoStop: this.fb.control(this.autoContainerOptions[0], { validators: [Validators.required] }),
+      autoStop: this.fb.control(this.autoContainerOptions[0], {
+        nonNullable: true, validators: [Validators.required]
+      }),
       environmentVariables: this.fb.array([]),
     })
 

@@ -1,5 +1,5 @@
 export const environment = {
-  "production": false,
+  "production": true,
   "assetsUri": "https://deepscrape.web.app/assets/",
   "firebaseConfig": {
     "apiKey": "AIzaSyC7GSMBH9_61g7x5LI_hj3vvGOeuvUAXaI",
