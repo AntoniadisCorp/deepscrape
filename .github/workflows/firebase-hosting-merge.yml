@@ -74,7 +74,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
-        run: npm run build
+        run: npm run prbuild && npm run build
       - name: Install Functions Dependencies
         working-directory: ./functions
         run: npm ci
