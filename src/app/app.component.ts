@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router';
@@ -45,6 +45,7 @@ import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
   imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
     SizeDetectorComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ThemeToggleComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -57,7 +58,7 @@ export class AppComponent {
   protected snackbarDuration = 3000;
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent;
 
-  protected isLoading = false;
+  protected isLoading: boolean
 
   private routerEventSubscription: Subscription
 

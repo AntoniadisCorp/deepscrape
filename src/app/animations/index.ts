@@ -1,4 +1,4 @@
-import { animate, group, keyframes, query, style, transition, trigger } from "@angular/animations";
+import { animate, group, keyframes, query, state, style, transition, trigger } from "@angular/animations";
 export * from './sidebar'
 
 export const fadeInOutSlideAnimation =
@@ -63,3 +63,42 @@ export const bounceAnim = trigger('bounceAnimation', [
         )
     ])
 ]);
+
+export const startSuspendAnimation = trigger('startSuspendAnimation', [
+    state('started', style({
+        opacity: 1,
+        transform: 'scale(1)'
+    })),
+    state('suspended', style({
+        opacity: 1,
+        transform: 'scale(1)'
+    })),
+    transition('suspended => started', [
+        style({ opacity: 0, transform: 'scale(1.34)' }), // start state
+        animate('500ms ease-in', style({ opacity: 1, transform: 'scale(1)' }))
+    ]),
+    transition('started => suspended', [
+        style({ opacity: 1, transform: 'scale(1.34)' }), // start state
+        animate('500ms ease-out', style({ opacity: 1, transform: 'scale(1)' }))
+    ])
+])
+
+
+export const expandCollapseAnimation = trigger('expandCollapse', [
+    state('collapsed', style({
+
+        height: '0px',
+        opacity: '0'
+    })),
+    state('expanded', style({
+
+        height: '*',
+        opacity: '1'
+    })),
+    transition('collapsed => expanded', [
+        animate('300ms ease-in-out')
+    ]),
+    transition('expanded => collapsed', [
+        animate('300ms ease-in-out')
+    ])
+])

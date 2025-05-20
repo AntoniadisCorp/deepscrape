@@ -10,8 +10,7 @@
   [includeSpinner]="false"
   [height]="'4px'"
   [color]="'rgb(190 18 60)'"
-  class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
-></ngx-loading-bar>
+  class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></ngx-loading-bar>
 <!-- Application Screen Size Detector   -->
 <app-size-detector></app-size-detector>
 
@@ -19,11 +18,11 @@
   <!-- min-h-screen overflow-hidden -->
   @if(isLoading) {
 
-  <span class="flex h-screen w-full items-center justify-center"
-    ><mat-spinner [diameter]="40" class="stroke-blue-700"></mat-spinner>
+  <span class="flex h-screen w-full items-center justify-center">
+    <mat-spinner [diameter]="40" class="stroke-blue-700"></mat-spinner>
   </span>
   }
-  <router-outlet></router-outlet>
+  <router-outlet [hidden]="isLoading"></router-outlet>
 </div>
 
 <app-snackbar
@@ -32,5 +31,4 @@
   [action]="snackbarAction"
   [duration]="snackbarDuration"
   [type]="snackbarType"
-  (actionClick)="onSnackbarAction()"
-></app-snackbar>
+  (actionClick)="onSnackbarAction()"></app-snackbar>

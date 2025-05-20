@@ -148,7 +148,9 @@ export class AppDockerStepperComponent {
         this.memoryValidator()
 
       ]],
-      autoStart: [false],
+      autoStart: this.fb.control(false, {
+        nonNullable: true, validators: [Validators.required]
+      }),
       autoStop: this.fb.control(this.autoContainerOptions[0], {
         nonNullable: true, validators: [Validators.required]
       }),
@@ -333,7 +335,7 @@ export class AppDockerStepperComponent {
     if (!resourceType)
       return
 
-    let dockerHubUrl = this.formStep1.value.dockerHubUrl
+    let dockerHubUrl = encodeURIComponent(this.formStep1.value.dockerHubUrl)
 
     /* const { exists, info } = isImageDeployable(this.formStep1.value.dockerHubUrl)
     if (info) {
@@ -360,7 +362,6 @@ export class AppDockerStepperComponent {
       autoStop: this.formStep2.value.autoStop.code,
       environmentVariables: this.formStep2.value.environmentVariables,
       flyToml: this.formStep3.value.flyToml,
-      apiJson: this.formStep3.value.apiJson,
     }
   }
 
@@ -426,7 +427,7 @@ export class AppDockerStepperComponent {
 
   deploy() {
     const config = this.getConfiguration()
-    const formData = new FormData()
+    let formData = new FormData()
 
     // Loop through the config object and append each key-value pair to the formData object
     for (const key in config) {
@@ -435,6 +436,7 @@ export class AppDockerStepperComponent {
       } else if (key === 'environmentVariables') {
         formData.append('environmentVariables', JSON.stringify(config[key]))
       } else {
+        // Append all other key-value pairs as strings
         formData.append(key, String(config[key as keyof typeof config]))
       }
     }

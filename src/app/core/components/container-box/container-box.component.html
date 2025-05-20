@@ -1,0 +1,171 @@
+<div
+  class="bg-blend-darken pt-[.1rem] bg-gradient-to-br from-10% from-sky-600 to-teal-400 dark:from-[rgba(41,47,67,0.99)_14.74%] dark:to-[#181820_57.72%] to-60% rounded-lg shadow-md p-4 justify-between"
+>
+  <div class="max-h-20 flex flex-row items-center justify-between w-full">
+    <!-- circle -->
+    <div class="flex relative h-3 w-3">
+      <span
+        [class.bg-gray-300]="
+          machine.state === 'created' || machine.state === 'stopped'
+        "
+        [class.bg-green-300]="machine.state === 'started'"
+        [class.bg-sky-300]="machine.state === 'suspended'"
+        [class.bg-yellow-300]="machine.state === 'stopping'"
+        [class.bg-red-300]="machine.state === 'destroyed'"
+        [class.dark:bg-gray-500]="
+          machine.state === 'created' || machine.state === 'stopped'
+        "
+        [class.dark:bg-green-500]="machine.state === 'started'"
+        [class.dark:bg-sky-500]="machine.state === 'suspended'"
+        [class.dark:bg-yellow-500]="machine.state === 'stopping'"
+        [class.dark:bg-red-500]="machine.state === 'destroyed'"
+        class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+      ></span>
+      <span
+        [class.bg-gray-300]="
+          machine.state === 'created' || machine.state === 'stopped'
+        "
+        [class.bg-green-300]="machine.state === 'started'"
+        [class.bg-sky-300]="machine.state === 'suspended'"
+        [class.bg-yellow-300]="machine.state === 'stopping'"
+        [class.bg-red-300]="machine.state === 'destroyed'"
+        [class.dark:bg-gray-500]="
+          machine.state === 'created' || machine.state === 'stopped'
+        "
+        [class.dark:bg-green-500]="machine.state === 'started'"
+        [class.dark:bg-sky-500]="machine.state === 'suspended'"
+        [class.dark:bg-yellow-500]="machine.state === 'stopping'"
+        [class.dark:bg-red-500]="machine.state === 'destroyed'"
+        class="relative inline-flex rounded-full h-3 w-3"
+      ></span>
+    </div>
+
+    <div class="flex items-center lg:gap-4">
+      <!-- Date -->
+      <span class="text-sm mt-1 p-2 text-gray-400 dark:text-gray-400">{{
+        machine.state !== "destroyed"
+          ? (machine.created_at | date)
+          : (machine.updated_at | date : "medium")
+      }}</span>
+      <!-- Date Destroyed -->
+      <span *ngIf="machine.state === 'destroyed'"
+        ><p class="text-red-400 dark:text-red-200">destroyed</p>
+      </span>
+      <!-- Edit/Delete -->
+      <div class="flex gap-2" *ngIf="machine.state !== 'destroyed'">
+        <button
+          class="p-2 text-gray-300 dark:text-white rounded-full dark:hover:text-yellow-600"
+          title="Edit"
+        >
+          <mat-icon class="leading-9 !size-7">edit</mat-icon>
+        </button>
+        <button
+          class="p-2 text-gray-300 dark:text-white rounded-full dark:hover:text-red-600"
+          title="Delete"
+          (click)="destroy()"
+        >
+          <mat-icon class="leading-9 !size-7">delete</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="flex flex-row flex-wrap lg:flex-nowrap w-full gap-6 lg:gap-0">
+    <!-- SVG Section -->
+    <div class="flex relative grow items-center flex-col justify-center">
+      <mat-icon
+        aria-label="container"
+        svgIcon="container"
+        class="!size-40 !w-full sm:!w-60 mb-8 text-gray-800 dark:text-gray-200"
+      ></mat-icon>
+      <div class="ml-6 absolute bottom-0 left-0">
+        <!-- Title -->
+        <h2
+          class="text-lg font-mono font-bold text-gray-300 dark:text-gray-200"
+        >
+          {{ name || "Machine title" }}
+        </h2>
+        <!-- Subtitle -->
+        <p class="text-sm text-gray-400 dark:text-gray-400">
+          {{ description || "This is a machine subtitle." }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Actions && information -->
+    <!-- bg blur -->
+    <div
+      class="flex flex-col relative flex-grow items-center justify-center gap-4"
+    >
+      <!-- Buttons Section -->
+      <div
+        class="flex justify-start gap-4 backdrop-blur-content"
+        *ngIf="machine.state !== 'destroyed'"
+      >
+        <button
+          type="button"
+          (click)="start()"
+          class="flex items-center justify-center py-2 px-3 text-gray-100 dark:text-white rounded-full dark:hover:text-gray-300"
+          [@startSuspendAnimation]="machine.state"
+        >
+          <mat-icon class="text-3xl !size-7 leading-7">{{
+            startButton() ? "pause" : "play_arrow"
+          }}</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          (click)="stop()"
+          *ngIf="stopButton()"
+          class="py-2 px-3 text-gray-100 dark:text-white rounded-full dark:hover:text-gray-300"
+        >
+          <mat-icon class="text-3xl !size-7 leading-8">stop</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- Labels Section -->
+  <div class="flex justify-center items-center mt-4">
+    <div
+      class="flex gap-3 items-center justify-start rounded-lg shadow-md p-1 bg-gradient-to-r from-[#764dbc00] to-[#3557B3]"
+    >
+      <div class="flex items-center justify-center gap-1">
+        <mat-icon
+          class="text-gray-500 dark:text-[#c8cedd] text-3xl !size-7 leading-7"
+          >sd_card</mat-icon
+        >
+        <span class="text-xl text-gray-200 dark:text-gray-50">:</span>
+        <span
+          class="text-xl font-['Chocolate_Classical_Sans'] font-normal text-[11px] leading-[16px] bg-gradient-to-b from-[#FFFFFF] via-neutral-400 to-[#CCCCCC] bg-clip-text text-transparent"
+        >
+          {{ machine.config.guest.memory_mb | formatBytes }}
+        </span>
+      </div>
+      <div class="w-[3px] h-6 bg-[#638DD0] blur-[1px] rounded-[16px]"></div>
+      <div class="flex items-center justify-center gap-1">
+        <mat-icon
+          class="text-gray-500 dark:text-[#c8cedd] text-3xl !size-7 leading-7"
+          >memory</mat-icon
+        >
+        <span class="text-xl text-gray-200 dark:text-gray-50">:</span>
+        <span
+          class="text-xl font-['Chocolate_Classical_Sans'] font-normal text-[11px] leading-[16px] bg-gradient-to-b from-[#FFFFFF] via-neutral-400 to-[#CCCCCC] bg-clip-text text-transparent"
+          >{{ machine.config.guest.cpus }} vCU</span
+        >
+      </div>
+      <div class="w-[3px] h-6 bg-[#9b63d0] blur-[1px] rounded-[16px]"></div>
+      <div class="flex items-center justify-center gap-1">
+        <mat-icon
+          class="text-gray-500 dark:text-[#c8cedd] text-3xl !size-7 leading-7"
+          >speed</mat-icon
+        >
+        <span class="text-xl text-gray-200 dark:text-gray-50">:</span>
+        <span
+          class="text-xl font-['Chocolate_Classical_Sans'] font-normal text-[11px] leading-[16px] bg-gradient-to-b from-[#cdabd8] via-purple-300 to-[#c58787] bg-clip-text text-transparent whitespace-nowrap text-ellipsis"
+          >{{ machine.config.guest.cpu_kind }}</span
+        >
+      </div>
+    </div>
+
+    <div></div>
+  </div>
+</div>

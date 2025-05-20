@@ -14,9 +14,8 @@ import {
 } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { from } from 'rxjs/internal/observable/from';
-import { getErrorMessage, getUserData, storeUserData } from 'src/app/core/functions';
+import { getErrorMessage, storeUserData } from 'src/app/core/functions';
 import { FirestoreService } from 'src/app/core/services';
-import { doc, getDoc } from "firebase/firestore";
 
 @Component({
   selector: 'app-login',
@@ -73,7 +72,7 @@ export class LoginComponent {
       const userCredential = await signInWithEmailAndPassword(this.auth, this.f['email'].value, this.f['password'].value);
       console.log('User logged in:', userCredential.user.displayName)
 
-      from(getUserData(userCredential.user, this.firestore)).subscribe(
+      from(this.firestoreService.getUserData(userCredential.user)).subscribe(
         (userData: Users | null) => {
           if (userData) {
             this.isAuthorized = true
