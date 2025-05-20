@@ -1,5 +1,5 @@
 // src/middleware/rateLimit.ts
-import rateLimit from 'express-rate-limit'
+import { rateLimit } from 'express-rate-limit'
 // import { Redis } from 'ioredis'
 // import { RedisStore } from 'rate-limit-redis'
 
@@ -26,7 +26,7 @@ const limiter = rateLimit({
     message: 'Too many requests from this IP, please try again after 15 minutes',
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    //   trustProxy: true,     // Trust the reverse proxy
+    validate: { trustProxy: false }, // Trust the reverse proxy
     /* store: new RedisStore({
         prefix: 'rateLimit:', // Optional prefix for keys in Redis
         // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis

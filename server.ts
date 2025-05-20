@@ -1,11 +1,12 @@
-import { APP_BASE_HREF } from '@angular/common'
+// import { APP_BASE_HREF } from '@angular/common'
 import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
 import express, { NextFunction, Request, Response } from 'express'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
-import { existsSync, readFileSync } from 'node:fs'
+// import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
-import bootstrap from 'src/main.server'
+import { limiter } from 'api/handlers'
+// import bootstrap from 'src/main.server'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -22,7 +23,9 @@ function serveapp(): express.Application {
 
   const serverDistFolder = dirname(fileURLToPath(import.meta.url))
   const browserDistFolder = resolve(serverDistFolder, '../browser')
+  // const indexHtml = resolve(serverDistFolder, 'index.server.html')
   const indexHtml = join(serverDistFolder, 'index.server.html')
+  // console.log('indexHtml', indexHtml, browserDistFolder)
 
   // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
   const angularNodeAppEngine = new AngularNodeAppEngine()
@@ -37,9 +40,7 @@ function serveapp(): express.Application {
 
   // Use Routers for API
   server.use('/api', AI.isJwtAuth, AI.router)
-  // server.use(limiter)
-  // Example Express Rest API endpoints
-  // server.get('/api/**', (req, res, next ) => { next() })
+  server.use(limiter)
 
   // *PWA Service Worker (if running in production)
   server.use((req: Request, res: Response, next: NextFunction) => {
@@ -61,16 +62,16 @@ function serveapp(): express.Application {
     const { protocol, originalUrl, baseUrl, headers } = req
     // Yes, this is executed in devMode via the Vite DevServer
     console.log('request', req.url, res.statusCode, protocol, originalUrl, baseUrl)
-    /* commonEngine
-      .render({
-        bootstrap,
-        documentFilePath: indexHtml,
-        url: `${protocol}://${headers.host}${originalUrl}`,
-        publicPath: browserDistFolder,
-        providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
-      })
-      .then((html) => res.send(html))
-      .catch((err) => next(err)) */
+    // commonEngine
+    //   .render({
+    //     bootstrap,
+    //     documentFilePath: indexHtml,
+    //     url: `${protocol}://${headers.host}${originalUrl}`,
+    //     publicPath: browserDistFolder,
+    //     providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
+    //   })
+    //   .then((html) => res.send(html))
+    //   .catch((err) => next(err))
     angularNodeAppEngine
       .handle(req, { server: 'express' })
       .then((response) =>

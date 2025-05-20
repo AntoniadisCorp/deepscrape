@@ -3,7 +3,6 @@ import {
     anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl,
     helloWorld, arachnefly
 } from "./handlers"
-
 // import { auth } from "./security"
 
 
@@ -33,7 +32,7 @@ class SyncAIapis {
         const token = authHeader.split(' ')[1];
 
         try {
-            const decodedToken = /* await auth.verifyIdToken(token) */ "decodedToken"
+            const decodedToken = /* await auth.verifyIdToken(token)//  || */ "decodedToken"
             if (decodedToken) {
                 req.app.locals["user"] = token; // Add user info to the request
                 next()
