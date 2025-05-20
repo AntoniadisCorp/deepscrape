@@ -1,8 +1,7 @@
-import { addDoc, writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore";
+import { writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore";
 import { User } from "@angular/fire/auth";
-import { Users } from "../types/firestore.interface";
-import { throwError } from "rxjs";
-import { BrowserProfile, CrawlConfig } from "../types";
+import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types";
+import { MACHNINE_STATE } from "../enum";
 
 export async function storeUserData(user: User, firestore: Firestore) {
     try {
@@ -25,25 +24,6 @@ export async function storeUserData(user: User, firestore: Firestore) {
         console.error('Error storing user data:', error);
     }
 }
-
-
-export async function getUserData(user: User, firestore: Firestore) {
-    const userRef = doc(firestore, 'users', user.uid);
-    let err, docSnapshot = await getDoc(userRef)
-
-    if (err) {
-        console.error("Failed to get user's data:", err)
-        return null;
-    }
-
-    if (docSnapshot.exists()) {
-        const data = docSnapshot.data() as Users
-        return data
-    }
-
-    return null
-}
-
 
 export function getErrorMessage(error: any): string {
     switch (error.code) {
@@ -135,33 +115,6 @@ export async function deleteOperationDoc(userId: string, operationId: string, fi
 }
 
 
-/* store the cart data when goes the app goes online */
-export async function savePackToFirestore(userId: string, item: any, firestore: Firestore, merge: boolean = true) {
-    try {
-        const cartRef = doc(firestore, `users/${userId}/packs`, userId)
-        await setDoc(cartRef, item, { merge })
-        console.log('Pack data stored successfully in Firestore.')
-
-    } catch (error) {
-        console.error('Error storing user data:', error)
-    }
-}
-
-export async function deletePackFromFirestore(userId: string, firestore: Firestore) {
-
-    try {
-
-        // Create a reference to the "operations" subcollection of the user document
-        const cartRef = doc(firestore, `users/${userId}/packs`, userId)
-
-        await deleteDoc(cartRef)
-        console.log("Document deleted successfully")
-
-    } catch (error) {
-        console.error('Error removing user data:', error)
-    }
-}
-
 export async function storeBrowserProfile(userId: string, profile: BrowserProfile, firestore: Firestore) {
     try {
 
@@ -217,5 +170,25 @@ export async function storeCrawlResultsConfig(userId: string, config: any, fires
 
     } catch (error) {
         console.error('Error storing Crawl config data:', error)
+    }
+}
+
+
+export async function updateMachineState(userId: string, machine: FlyMachine, state: MACHNINE_STATE, firestore: Firestore) {
+
+    try {
+        const userRef = doc(firestore, 'users', userId)
+
+
+        const newMachine: FlyMachine = {
+            ...machine,
+            state,
+            updated_at: new Date().toISOString(),
+        }
+
+        await setDoc(userRef, newMachine, { merge: true })
+
+    } catch (error) {
+        console.error('Error updating machine state:', error)
     }
 }
