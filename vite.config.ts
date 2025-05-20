@@ -8,13 +8,13 @@ export default defineConfig({
     },
     ssr: {
         optimizeDeps: {
-            include: ['node-fetch']
+            include: ['node-fetch', 'firebase-admin',]
         },
         external: [
-            '@google-cloud/secret-manager',
-            'firebase-admin',
-            'firebase-functions/params',
-            'stripe'
+            /* '@google-cloud/secret-manager', */
+
+            /* 'firebase-functions/params',
+            'stripe' */
         ]
     },
     build: {

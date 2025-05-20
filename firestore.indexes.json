@@ -1,4 +1,32 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "operations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "created_At", "mode": "DESCENDING" },
+        { "fieldPath": "scheduled_At", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "apikeys",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "created_At", "mode": "DESCENDING" },
+        { "fieldPath": "type", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "machines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "created_at", "mode": "DESCENDING" },
+        { "fieldPath": "region", "mode": "DESCENDING" },
+        { "fieldPath": "state", "mode": "DESCENDING" },
+        { "fieldPath": "config.guest.memory_mb", "mode": "DESCENDING" },
+        { "fieldPath": "config.guest.cpu_kind", "mode": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

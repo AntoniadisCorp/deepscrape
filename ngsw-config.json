@@ -34,7 +34,7 @@
         "files": ["/assets/img/**", "/assets/menu/**"]
       },
       "cacheConfig": {
-        "strategy": "staleWhileRevalidate"
+        "strategy": "StaleWhileRevalidate"
       }
     }
   ],

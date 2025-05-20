@@ -1,3 +1,5 @@
+/* eslint-disable space-before-function-paren */
+/* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable indent */
 /* eslint-disable require-jsdoc */
 const fs = require("fs-extra")

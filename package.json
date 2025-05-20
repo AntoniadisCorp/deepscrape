@@ -11,6 +11,7 @@
     "watch": "ng build --watch --configuration development",
     "serve": "npm run build && cd functions && npm run serve",
     "deploy": "npm run build && cd functions && npm run deploy",
+    "deploy:indexes": "firebase deploy --only firestore:indexes",
     "test": "ng test",
     "bun:ssr:deepscrape": "bun --env-file=.env dist/deepscrape/server/server.mjs",
     "node:ssr:deepscrape": "node --env-file=.env dist/deepscrape/server/server.mjs"
@@ -57,6 +58,7 @@
     "rate-limit-redis": "^4.2.0",
     "rxjs": "~7.8.0",
     "stream-buffers": "^3.0.3",
+    "tailwindcss-motion": "^1.1.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
@@ -74,6 +76,7 @@
     "@types/stream-buffers": "^3.0.7",
     "autoprefixer": "^10.4.20",
     "dotenv": "^16.4.7",
+    "firebase-admin": "^13.3.0",
     "jasmine-core": "~5.1.0",
     "jest": "^29.7.0",
     "karma": "~6.4.0",

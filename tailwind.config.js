@@ -7,14 +7,14 @@ const tailwindcolors = require('tailwindcss/colors')
 module.exports = withMT({
 
   enabled: true,
-  // mode: 'layers', // or 'all' ☠️ be carefule process.env.NODE_ENV === 'production'
+  // mode: 'layers', // or 'all' ☠️ be carefule process.env.PRODUCTION === 'production'
   // preserveHtmlElements: true, // or false ⚠️ not generally recommended
   // layers: ['base', 'components', 'utilities'], // remove layers to ignore from purging
   content: ["./src/**/*.{html,ts}"],
   extract: {
     md: (content) => {
 
-      console.log(`process.env.NODE_ENV ${process.env.NODE_ENV}`)
+      console.log(`process.env.PRODUCTION ${process.env.PRODUCTION}`)
       // Capture as liberally as possible, including things like `h-(screen-1.5)`
       const broadMatches = content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || []
       // Capture classes within other delimiters like .block(class="w-1/2") in Pug
@@ -212,5 +212,6 @@ module.exports = withMT({
   plugins: [
     // require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
+    require('tailwindcss-motion'),
   ],
 })
