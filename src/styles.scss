@@ -1,9 +1,9 @@
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
-@use "@angular/material" as mat;
-@use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
 /* You can add global styles to this file, and also import other style files */
 @use "scss/main.scss" as core; // Reverted to include .scss extension
+@use "@angular/material" as mat;
+@use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
 
 // Forward prismjs styles
 // @forward "prismjs/themes/prism-okaidia.css";
@@ -178,6 +178,11 @@ html {
         max-width: 53rem;
         display: block;
         width: min-content;
+    }
+
+    // remove toolbar to fix standard copyclipboard
+    markdown > .toolbar {
+        display: flex;
     }
 
     // .prose :where(h1, h2, h3, h4, h5, h6, th):not(:where([class~="not-prose"], [class~="not-prose"] *)) {

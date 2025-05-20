@@ -1,10 +1,10 @@
 // Load Bootstrap variables (makes them available)
 // @import "bootstrap-variables";
+@forward "mat-theme";
 
 // Load Core variables (makes them available, potentially overriding Bootstrap ones if !default isn't used correctly)
-@import "core-variables";
-
-@import "mat-theme";
+@forward "core-variables";
 
 // Load core styles/mixins
-@import "core";
+@forward "core";
+// Load Bootstrap
