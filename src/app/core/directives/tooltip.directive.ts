@@ -1,26 +1,26 @@
-import { ApplicationRef, ComponentRef, Directive, ElementRef, EmbeddedViewRef, HostListener, Inject, Injector, Input, ViewContainerRef, inject } from '@angular/core';
+import { ApplicationRef, ComponentRef, Directive, ElementRef, EmbeddedViewRef, HostListener, Injector, Input, ViewContainerRef, inject } from '@angular/core';
 import { TooltipComponent } from '../components';
 import { TooltipPosition } from '../enum'
 import { WindowToken } from '../services'
 import { Subject } from 'rxjs/internal/Subject';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
+import { Subscription } from 'rxjs';
 
 
 
 
 @Directive({
-
-  selector: '[tooltip]',
-  standalone: true
+  selector: '[tooltip]'
 })
 export class TooltipDirective {
 
-  window = inject(WindowToken)
+  private window = inject(WindowToken)
   @Input() tooltip = '';
   @Input() position: string = TooltipPosition.DEFAULT;
 
+  private handleSubs: Subscription
   private componentRef: ComponentRef<any> = null as any
-  private handleMouseMove = new Subject<MouseEvent>();
+  private handleMouseMove = new Subject<MouseEvent>()
 
   hideTimeout: number;
   showTimeout: number | undefined
@@ -29,22 +29,27 @@ export class TooltipDirective {
 
   constructor(
 
-    private elementRef: ElementRef,
-    private appRef: ApplicationRef,
-    private injector: Injector,
+    // private elementRef: ElementRef,
+    // private appRef: ApplicationRef,
+    // private injector: Injector,
     private viewContainerRef: ViewContainerRef) {
   }
-
 
   @HostListener('mouseenter')
   onMouseEnter(event: MouseEvent): void {
     this.handleMouseMove.next(event) // Subject or observable
   }
 
+  @HostListener('mouseleave')
+  onMouseLeave(): void {
+    this.hideTimeout = this.window.setTimeout(this.destroy.bind(this), this.hideDelay)
+  }
+
+
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-    this.handleMouseMove.pipe(debounceTime(100)).subscribe(event => {
+    this.handleSubs = this.handleMouseMove.pipe(debounceTime(100)).subscribe(event => {
       // Handle the debounced event
       if (this.componentRef === null) {
         this.componentRef = this.viewContainerRef.createComponent(TooltipComponent)
@@ -102,16 +107,10 @@ export class TooltipDirective {
       // this.showTimeout = this.window.setTimeout(() => { this.showTooltip() }, this.showDelay)
     }
   }
-
-
-  @HostListener('mouseleave')
-  onMouseLeave(): void {
-    this.hideTimeout = this.window.setTimeout(this.destroy.bind(this), this.hideDelay)
-  }
-
   ngOnDestroy(): void {
     this.destroy()
     this.handleMouseMove?.unsubscribe()
+    this.handleSubs?.unsubscribe()
   }
 
   destroy(): void {

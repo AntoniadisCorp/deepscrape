@@ -195,7 +195,7 @@ export class BrowserConfigComponent {
             headersValidator(),
           ],
         },
-      ) as FormControl<Headers | null>,
+      ) as FormControl<Headers[] | null>,
 
       // Proxy Parameters
       proxy: this.fb.control(
@@ -241,7 +241,13 @@ export class BrowserConfigComponent {
   getAndFilterConfirmForm(): BrowserConfig {
     // get form values
     const config = this.configForm.getRawValue()
-    const newConfig = { ...config }; // Create a copy of the config object
+    /* const headers = config.headers?.reduce((acc: { [key: string]: string }, headers: Headers) => {
+      if (headers && headers.key && headers.value) {
+        acc[headers.key] = headers.value;
+      }
+      return acc;
+    }, {}); */
+    const newConfig = { ...config, /* ...headers */ }; // Create a copy of the config object
     delete newConfig.title; // Remove the 'title' attribute from the config object
 
 
@@ -374,7 +380,7 @@ export class BrowserConfigComponent {
     event.stopPropagation() // prevent default behavior of outer div
 
     // add crawler pacakage item,the configuration Browser Profile, to the cart system
-    this.cartService.addItemToCart({ browserProfile: profile })
+    this.cartService.addItemToCart({ browserProfile: profile }, 'crawl4ai')
 
     // on add to cart, update cart buttons
     this.packCart$ = this.cartService.getCart().pipe(

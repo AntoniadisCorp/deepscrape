@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 import { TooltipPosition } from '../../enum';
 
 @Component({
-    selector: 'tooltip',
-    imports: [CommonModule],
-    templateUrl: './tooltip.component.html',
-    styleUrl: './tooltip.component.scss'
+  selector: 'tooltip',
+  imports: [CommonModule],
+  templateUrl: './tooltip.component.html',
+  styleUrl: './tooltip.component.scss'
 })
 export class TooltipComponent {
   tooltip: string = '';

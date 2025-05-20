@@ -17,12 +17,12 @@ import { CartService, PackService, ScrollService, SnackbarService, WindowToken }
 import { CrawlResult } from 'src/app/core/types';
 
 @Component({
-    selector: 'app-crawl-results',
-    imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, AsyncPipe, NgIf,
-        DatePipe, NgForOf, MatProgressSpinner, StinputComponent, FormControlPipe,
-        RadioToggleComponent],
-    templateUrl: './crawl-results.component.html',
-    styleUrl: './crawl-results.component.scss'
+  selector: 'app-crawl-results',
+  imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, AsyncPipe, NgIf,
+    DatePipe, NgForOf, MatProgressSpinner, StinputComponent, FormControlPipe,
+    RadioToggleComponent],
+  templateUrl: './crawl-results.component.html',
+  styleUrl: './crawl-results.component.scss'
 })
 export class CrawlResultsComponent {
 
@@ -77,7 +77,7 @@ export class CrawlResultsComponent {
     this.crawlResults$ = of([])
 
     this.packCart$ = this.cartService.getCart().pipe(
-      map(cart => cart?.CrawlResultConfig)
+      map(cart => cart?.crawlResultConfig)
     )
 
     // set pack service with custom injectToken to be used on retrieving list of configurations by pagination
@@ -267,11 +267,11 @@ export class CrawlResultsComponent {
     event.stopPropagation() // prevent default behavior of outer div
 
     // add crawler pacakage item,the configuration Browser Profile, to the cart system
-    this.cartService.addItemToCart({ CrawlResultConfig: config })
+    this.cartService.addItemToCart({ crawlResultConfig: config }, 'crawl4ai')
 
     // on add to cart, update cart buttons
     this.packCart$ = this.cartService.getCart().pipe(
-      map(cart => cart?.CrawlResultConfig)
+      map(cart => cart?.crawlResultConfig)
     )
   }
 
@@ -279,11 +279,11 @@ export class CrawlResultsComponent {
     event.stopPropagation() // prevent default behavior of outer div
 
     // remove crawler pacakage item,the configuration Browser Profile, from the cart system
-    this.cartService.removeItemFromCart('CrawlResultConfig')
+    this.cartService.removeItemFromCart('crawlResultConfig')
 
     // one remove update cart buttons
     this.packCart$ = this.cartService.getCart().pipe(
-      map(cart => cart?.CrawlResultConfig)
+      map(cart => cart.crawlResultConfig)
     )
   }
 

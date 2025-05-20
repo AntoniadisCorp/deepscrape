@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core'
 import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots } from '@angular/fire/firestore'
 import { openDB } from 'idb'
-import { BehaviorSubject } from 'rxjs'
+import { BehaviorSubject, Observable } from 'rxjs'
 import { AuthService } from './auth.service'
-import { deletePackFromFirestore, savePackToFirestore } from '../functions'
 import { FirestoreService } from './firestore.service'
+import { BrowserConfig, BrowserProfile, CrawlConfig, CrawlPack, CrawlResult, CrawlResultConfig } from '../types'
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -15,11 +15,11 @@ export class CartService {
 
   constructor(
     private firestore: Firestore,
-    private auth: AuthService,
+    private authService: AuthService,
     private firestoreService: FirestoreService
   ) {
 
-    this.userId = this.auth.user?.uid || 'user_id'
+    this.userId = this.authService.user.uid
     // set the firestore instance
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 
@@ -76,17 +76,17 @@ export class CartService {
   // Save to Firestore
   private async saveToFirestore(item: any) {
     // Save to Firestore
-    await savePackToFirestore(this.userId, item, this.firestore)
+    await this.firestoreService.savePackToFirestore(this.userId, item)
   }
 
   private async updateToFirestore(item: any) {
     // Save to Firestore
-    await savePackToFirestore(this.userId, item, this.firestore, false)
+    await this.firestoreService.savePackToFirestore(this.userId, item, false)
   }
 
   private async deleteFromFirestore() {
     // Save to Firestore
-    await deletePackFromFirestore(this.userId, this.firestore)
+    await this.firestoreService.deletePackFromFirestore(this.userId)
   }
 
   // Listen for Firestore changes and update IndexedDB
@@ -94,7 +94,7 @@ export class CartService {
     try {
       console.log('Listening to Firestore changes...')
 
-      const cartRef = doc(this.firestore, `users/${this.userId}/packs/${this.userId}`)
+      const cartRef = this.firestoreService.doc(`users/${this.userId}/cartpack/${this.userId}`)
       onSnapshot(cartRef, async (docSnap) => {
         if (docSnap.exists()) {
           const item = docSnap.data()
@@ -109,19 +109,16 @@ export class CartService {
         }
       })
 
-
     } catch (error) {
       console.log('Listening to Firestore changes error', error)
     }
   }
 
   // Add item to cart
-  async addItemToCart(item: any) {
-    // Ensure unique ID
-    // const packRef = doc(collection(this.firestore, `users/${this.userId}/packs`))
+  async addItemToCart(item: any, scrapeType = 'crawl4ai') {
     const previousCart = this.cartItem$.value
     if (previousCart === null)
-      item = { ...item, uid: this.userId }
+      item = { ...item, type: scrapeType, uid: this.userId }
     else item = { ...previousCart, ...item }
 
     this.cartItem$.next(item)
@@ -156,6 +153,6 @@ export class CartService {
 
   // Get current cart as Observable
   getCart() {
-    return this.cartItem$.asObservable()
+    return this.cartItem$.asObservable() as Observable<any> // BrowserProfile | CrawlConfig | CrawlResultConfig
   }
 }

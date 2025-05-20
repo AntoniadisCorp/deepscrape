@@ -8,13 +8,14 @@ import { catchError, map, Observable, of, shareReplay, Subscription, tap } from 
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { Router } from '@angular/router';
 import { ReversePipe } from '../../pipes';
+import { switchPackageIcon } from '../../functions';
 
 @Component({
-    selector: 'app-dropdown-cart',
-    imports: [NgIf, Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
-    templateUrl: './dropdown-cart.component.html',
-    styleUrl: './dropdown-cart.component.scss',
-    animations: [PopupAnimation]
+  selector: 'app-dropdown-cart',
+  imports: [NgIf, Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
+  templateUrl: './dropdown-cart.component.html',
+  styleUrl: './dropdown-cart.component.scss',
+  animations: [PopupAnimation]
 })
 export class DropdownCartComponent {
 
@@ -86,6 +87,9 @@ export class DropdownCartComponent {
       case 'crawlConfig':
         this.router.navigate(['/crawlpack/configuration'], { fragment: 'controlling-each-crawl' })
         break
+      case 'crawlResultConfig':
+        this.router.navigate(['/crawlpack/results'], { fragment: 'controlling-each-crawl-result' })
+        break
       default:
         break
     }
@@ -94,15 +98,8 @@ export class DropdownCartComponent {
 
   }
 
-  switchIcon(key: string) {
-    switch (key) {
-      case 'browserProfile':
-        return 'playwright'
-      case 'crawlConfig':
-        return 'spider-crawl-config'
-      default:
-        return 'crawl_logo'
-    }
+  switchIcon(packKey: string, browserType?: string): string {
+    return switchPackageIcon(packKey, browserType)
   }
 
 

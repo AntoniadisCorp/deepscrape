@@ -1,4 +1,5 @@
 import { CrawlOperationStatus } from "../enum"
+import { convertKeysToSnakeCase } from "../functions"
 import { AIModel } from "./global.interface"
 import { Author } from "./user.interface"
 
@@ -178,6 +179,8 @@ export class BrowserConfigurationImpl implements BrowserConfig {
     extraArgs: string[] = []
 }
 
+export type ExtractionStrategy = NoExtractionStrategy | CosineStrategyStrategy | RegexExtractionStrategy | JsonCssExtractionStrategy
+    | JsonLxmlExtractionStrategy | JsonXPathExtractionStrategy | LLMExtractionStrategy
 
 export interface CrawlerRunConfig {
     // Content Processing Parameters
@@ -249,7 +252,7 @@ export interface CrawlerRunConfig {
 
 export class CrawlerRunConfigImpl implements CrawlerRunConfig {
     wordCountThreshold: number = 200
-    extractionStrategy: any | null = null // ExtractionStrategy
+    extractionStrategy: ExtractionStrategy | null = null // ExtractionStrategy
     chunkingStrategy: any = null // ChunkingStrategy
     markdownGenerator: any | null = null
     contentFilter: any | null = null
@@ -312,18 +315,11 @@ interface MediaType {
     [key: string]: { [key: string]: any }[] | string
 }
 
-type MarkdownGenerationResult = {
-    raw_markdown?: string
-    markdown_with_citations?: string
-    references_markdown?: string
-    fit_markdown?: string
-    fit_html?: string
-}
 
 /**
  * Represents an SSL certificate with key properties as defined in Crawl4AI's SSLCertificate.
  */
-interface SSLCertificate {
+export interface SSLCertificate {
     /**
      * The issuer's distinguished name (DN) as a dictionary of components.
      * Example: { "CN": "My Root CA", "O": "Organization" }
@@ -354,6 +350,15 @@ interface SSLCertificate {
      */
     fingerprint: string;
 }
+
+export type MarkdownGenerationResult = {
+    raw_markdown?: string
+    markdown_with_citations?: string
+    references_markdown?: string
+    fit_markdown?: string
+    fit_html?: string
+}
+
 
 export interface CrawlResult {
     id?: string
@@ -428,6 +433,15 @@ export type CrawlConfig = {
     updated_At?: number
 }
 
+export type CrawlResultConfig = {
+    id?: string,
+    uid?: string,
+    title: string,
+    config: CrawlResult,
+    created_At: number
+    updated_At?: number
+}
+
 export type CrawlStorageMetadata = {
     created_At: number
     updated_At?: number
@@ -443,7 +457,8 @@ export type CrawlStorage = {
     metadata: CrawlStorageMetadata
     url: string
 }
-export type CrawlPack = Record<string, CrawlerRunConfig | BrowserConfig>
+export type Serializable = string | number | boolean | null | undefined | Serializable[] | { [key: string]: Serializable }
+export type CrawlPackRef = Record<string, CrawlerRunConfig | BrowserConfig | CrawlResult /* | ExtractionStrategy */>
 export type CrawlOperation = {
 
     id?: string
@@ -463,3 +478,119 @@ export type CrawlOperation = {
     error?: string | null
     storage?: CrawlStorage[]
 }
+
+export type CrawlPackType = 'crawl4ai' | 'spider'
+
+export type CrawlPack = {
+    uid: string,
+    type: CrawlPackType,
+    crawlResultconfig: CrawlResult
+    crawlConfig: CrawlerRunConfig
+    browserProfile: BrowserProfile
+}
+
+/** #######################################################
+ *  # Chunking Strategy                                    #
+ *  #######################################################
+ */
+
+/**
+ * Initialize the RegexChunking object.
+ * 
+ * Args 
+ ** @patterns : list
+ * A list of regular expression patterns to split text.
+ */
+
+export type RegexChunking = {
+    pattern: any | null
+}
+
+/** #######################################################
+ *  # Strategies using clustering for text data extraction #
+ *  #######################################################
+ */
+
+export type LLMConfig = {
+    provider: string;
+    apiToken?: string;
+    baseUrl?: string;
+    modelName: string
+    temperature?: number
+    maxTokens?: number
+    topP?: number
+    frequencyPenalty?: number
+    presencePenalty?: number
+    stop?: string[]
+    toJson?(): Function
+}
+
+
+export interface NoExtractionStrategy {
+    inputFormat: "fit_html" | "html" | "markdown" | "text"
+    toJson?(): Function
+}
+
+/**
+ * Interface for the CosineStrategyConfig
+ */
+
+export interface CosineStrategyStrategy {
+    semanticFilter?: string;
+    wordCountThreshold?: number;
+    simThreshold?: number;
+    maxDist?: number;
+    linkageMethod?: 'ward' | 'single' | 'complete' | 'average';
+    topK?: number;
+    modelName?: string;
+    verbose?: boolean;
+
+    toJson?(): Function
+}
+
+/**
+ * #######################################################
+ * # Strategies using LLM-based extraction for text data #
+ * ####################################################### 
+ */
+export interface LLMExtractionStrategy {
+    llmConfig: LLMConfig; // The LLM configuration object.
+    instruction: string; // The instruction to use for the LLM model.
+    schema: any; // Pydantic model schema for structured data.
+    extractionType: "block" | "schema";
+    chunkTokenThreshold: number; // Maximum tokens per chunk.
+    overlapRate: number; // Overlap between chunks.
+    wordTokenRate: number; // Word to token conversion rate.
+    applyChunking: boolean; // Whether to apply chunking.
+    inputFormat: "markdown" | "html" | "fit_markdown"; // Content format to use for extraction. Options: "markdown" (default), "html", "fit_markdown"
+    forceJsonResponse: boolean; // Whether to force a JSON response from the LLM.
+    verbose: boolean; // Whether to print verbose output.
+    toJson?(): Function
+}
+
+
+
+
+export interface RegexExtractionStrategy {
+
+    pattern: any | null
+    custom?: { [x: string]: string }
+    inputFormat: "fit_html" | "html" | "markdown" | "text"
+    toJson?(): Function
+}
+
+export interface JsonCssExtractionStrategy {
+    schema: { [key: string]: any }
+
+}
+
+export interface JsonLxmlExtractionStrategy {
+    schema: { [key: string]: any }
+}
+
+export interface JsonXPathExtractionStrategy {
+    schema: { [key: string]: any }
+}
+
+
+export const interfaceAttrToJson = (inteface: any): any => convertKeysToSnakeCase(inteface)

@@ -7,7 +7,7 @@ import { WindowToken } from '../services'
 
 @Directive({
   selector: '[appTouchEvents]',
-  standalone: true
+
 })
 export class TouchEventsDirective {
 

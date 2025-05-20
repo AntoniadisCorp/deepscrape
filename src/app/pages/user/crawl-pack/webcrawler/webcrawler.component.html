@@ -1,0 +1,186 @@
+<div class="container mx-auto py-8">
+  <h1
+    class="text-3xl text-center font-bold mb-8 text-gray-800 dark:text-gray-200">
+    Crawler Pack
+  </h1>
+  <div
+    class="w-full h-56 text-center inline-flex items-center justify-center rounded">
+    <img
+      srcset="/assets/images/crawlerpackcloud.png 1x"
+      alt="Icon"
+      class="w-fit h-full object-contain" />
+  </div>
+  <!-- Current Cart Configuration -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mt-5 mb-2">
+      <h2 class="text-2xl dark:text-gray-100 text-gray4 font-normal">
+        Your Current Cart
+      </h2>
+
+      <h2 class="text-2xl font-semibold">
+        <button
+        (click)="saveCartItems()"
+          appRipple
+          rippleColor="dark"
+          type="button"
+          class="flex items-center leading-6 flex-row flex-nowrap text-lg gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+          aria-label="Create Key">
+          save
+        </button>
+      </h2>
+    </div>
+    <ng-container
+      class="border dark:border-gray-300/30 border-gray-100 rounded-lg p-4"
+      *ngIf="cartItems$ | async as items; else noCart">
+      <div>
+        <!-- Cart Details will be displayed here -->
+        <div role="container" id="container" class="w-full pr-2">
+          <ul class="py-1 min-w-[15rem]" id="sections">
+            @for (item of items | keyvalue | reverse; track item.key) { @if
+            (item.key === 'type') {
+            <div class="flex items-center gap-3 justify-start">
+              <span
+                class="text-xl text-gray-500 dark:text-gray2 font-normal font-mono">
+                Libray:
+              </span>
+              <h2
+                class="text-lg my-2 p-2 rounded-xl dark:text-pink-100 text-pink-300 bg-rose-600/10 border border-rose-400 w-fit font-normal">
+                {{ item.value }}
+              </h2>
+            </div>
+            }
+            <li *ngIf="item.key !== 'uid' && item.key !== 'type'">
+              <!-- content -->
+              <div
+                class="relative p-3 rounded-lg cursor-pointer text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white">
+                <a
+                  (click)="openCartItem($event, item.key)"
+                  routerLinkActive="Active"
+                  routerLink=""
+                  class="flex flex-row items-start justify-start text-center text-sm min-h-20">
+                  <!-- <div
+                    id="new"
+                    class="bg-blue-600 w-1 h-1 p-[3px] rounded-full m-[0_6px_0] place-self-center"></div> -->
+                  <div class="mr-4 flex items-center">
+                    <mat-icon
+                      [svgIcon]="
+                        switchIcon(
+                          item.key,
+                          item.value['config']['browserType']
+                        )
+                      "
+                      class="font-bold !size-10 text-gray-800 dark:text-gray-200 leading-7"></mat-icon>
+                  </div>
+                  <div
+                    class="flex flex-col grow gap-1 text-start item-center justify-start">
+                    <span
+                      class="text-base font-medium text-gray-700 dark:text-gray-200 text-wrap line-clamp-5">
+                      {{ item.value['title'] }}
+                    </span>
+
+                    <div class="mr-3">
+                      <span class="text-gray-700 dark:text-blue-200">
+                        {{ item.key }}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="text-gray-700 dark:text-gray4">
+                        {{ parseCartItemDate(item.value['created_At']) }}
+                      </span>
+                    </div>
+                    <div class="flex gap-3 my-2">
+                      <button
+                        title="JSONbtn"
+                        type="button"
+                        (click)="openJsonFormat($event, item.key, item.value)"
+                        class="text-sm px-2 py-1 rounded-xl dark:text-gray-100 hover:bg-green-400/80 text-gray-300 bg-gray-600/10 border border-gray-400/30 hover:border-green-400/30 w-fit font-normal">
+                        JSON
+                      </button>
+                      <!-- <button
+                        title="Pythonbtn"
+                        (click)="openPythonFormat($event, item.key, item.value)"
+                        type="button"
+                        class="text-sm px-2 py-1 rounded-xl dark:text-gray-100 hover:bg-green-400/80 text-gray-300 bg-gray-600/10 border border-gray-400/30 hover:border-green-400/30 w-fit font-normal">
+                        Python
+                      </button> -->
+                    </div>
+                  </div>
+                </a>
+                <div class="absolute right-0 top-2">
+                  <button
+                    type="button"
+                    class="inline-flex items-center text-center font-medium h-full leading-6 transform flex-row flex-nowrap duration-300 rounded-full transition-colors hover:bg-gray-400/[0.5] dark:hover:bg-gray-700/20 dark:focus:bg-gray-700/[0.8] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300">
+                    <mat-icon
+                      fontSet="material-icons-outlined"
+                      class="text-2xl text-gray-600 dark:text-gray-300/80 !size-10 !leading-10">
+                      more_vert
+                    </mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div
+                [hidden]="!itemVisibility[item.key]()"
+                [@expandCollapse]="
+                  itemVisibility[item.key]() ? 'expanded' : 'collapsed'
+                "
+                class="gap-4 px-4 py-2 my-2 block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+                <markdown
+                  *ngIf="item.key !== 'uid' && item.key !== 'type'"
+                  clipboard
+                  [clipboardButtonComponent]="clipboardButton"
+                  [data]="
+                    this.itemToJson[item.key] | json | language : 'toml'
+                  "></markdown>
+              </div>
+            </li>
+
+            }
+          </ul>
+
+          <div class="footer"></div>
+        </div>
+      </div>
+    </ng-container>
+    <ng-template #noCart>
+      <div class="min-h-64">
+        <div class="cart-content">
+          <section class="mb-0 -mx-3 empty-cart">
+            <h1
+              class="text-center my-[calc(2*40px)] text-xl font-bold text-gray-700 dark:text-gray-400">
+              Your cart is empty
+            </h1>
+          </section>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Previous Crawl Packages -->
+  <div>
+    <h2 class="text-2xl mt-5 mb-2 dark:text-gray-100 text-gray4 font-normal">
+      Recent Crawl Packages
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- List of previous crawl packages will be displayed here -->
+      <div *ngFor="let pack of previousPacks" class="rounded-md p-4 m-2">
+        <div>
+          <p class="text-lg font-semibold text-gray-800">
+            Pack ID: {{ pack?.uid }}
+          </p>
+        </div>
+        <div>
+          <div>
+            <!-- Display other pack properties here -->
+            <div *ngFor="let key of getObjectKeys(pack)" class="py-1">
+              <ng-container *ngIf="key !== 'uid' && key !== 'created_at'">
+                <strong class="font-medium">{{ key }}:</strong>
+                {{ pack[key] | json }}
+              </ng-container>
+            </div>
+            <div class="py-1">Created At: {{ pack?.created_at }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

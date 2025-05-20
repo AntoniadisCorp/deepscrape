@@ -4,7 +4,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { API_DEPLOY4SCRAP } from '../variables';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { tap } from 'rxjs/internal/operators/tap';
-import { DockerImageInfo } from '../types';
+import { DockerImageInfo, FlyMachine, MachineResponse } from '../types';
 import { Observable } from 'rxjs/internal/Observable';
 import { handleError } from '../functions';
 import { map } from 'rxjs/internal/operators/map';
@@ -59,7 +59,7 @@ export class DeploymentService {
    * authorization token, sets parameters including the region and clone values, and then makes the
    * POST request with the deployment data, headers, and parameters.
    */
-  createMachine(deploymentData: FormData) {
+  createMachine(deploymentData: FormData): Observable<MachineResponse> {
 
     // set headers
     const headers = {
@@ -75,17 +75,151 @@ export class DeploymentService {
     const url = `${API_DEPLOY4SCRAP}/deploy` // Replace with your API endpoint
 
     return this.http.post(url, deploymentData, { headers, params }).pipe(
-
       tap((response: any) => {
-
         console.log('Deployment successful:', response)
       }),
+      map((response: any) => response?.data),
       catchError(error => {
-        console.error('Error in Jina AI API call:', error)
+        console.error('Error in Deployment API call:', error)
         throw error
       })
-
-    )
+    );
   }
 
+  startMachine(machineId: string): Observable<any> {
+    // set headers
+    const headers = {
+      'Authorization': `Bearer ${this.authService.token}`
+    }
+    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}/start`  // Replace with your API endpoint
+
+    return this.http.put(url, {}, { headers }).pipe(
+      tap((response: any) => {
+        console.log('Machine started:', response)
+      }),
+      map((response: any) => response.data),
+      catchError(error => {
+        console.error('Error in Machine Start API call:', error)
+        throw error
+      })
+    );
+  }
+
+  suspendMachine(machineId: string): Observable<any> {
+    // set headers
+    const headers = {
+      'Authorization': `Bearer ${this.authService.token}`
+    }
+    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}/suspend`  // Replace with your API endpoint
+
+    return this.http.put(url, {}, { headers }).pipe(
+      tap((response: any) => {
+        console.log('Machine suspended:', response)
+      }),
+      map((response: any) => response.data),
+      catchError(error => {
+        console.error('Error in Machine Suspend API call:', error)
+        throw error
+      })
+    );
+  }
+
+  stopMachine(machineId: string): Observable<any> {
+    // set headers
+    const headers = {
+      'Authorization': `Bearer ${this.authService.token}`
+    }
+    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}/stop`  // Replace with your API endpoint
+
+    return this.http.put(url, {}, { headers }).pipe(
+      tap((response: any) => {
+        console.log('Machine stopped:', response)
+      }),
+      map((response: any) => response.data),
+      catchError(error => {
+        console.error('Error in Machine Stop API call:', error)
+        throw error
+      })
+    );
+  }
+
+  waitforState(machineId: string, instance_id: string, state: string, timeout?: number): Observable<any> {
+    // set headers
+    const headers = {
+      'Authorization': `Bearer ${this.authService.token}`
+    }
+    const url = `${API_DEPLOY4SCRAP}/machine/waitforstate/${machineId}`  // Replace with your API endpoint
+
+    // set params
+    const params = new HttpParams()
+      .set('state', state)
+      .set('timeout', timeout?.toString() || '')
+      .set('instance_id', instance_id)
+
+    return this.http.get(url, { headers, params }).pipe(
+      tap((response: any) => {
+        console.log('waitfor machine State:', response)
+      }),
+      catchError(error => {
+        console.error('Error WaitForState API call:', error)
+        throw error
+      })
+    );
+
+  }
+
+  /* private saveMachineData(machineDetails: any, machineSchema: any, machineId: string) {
+    const machineData = {
+      id: machineDetails.id,
+      name: machineDetails.name,
+      state: machineDetails.state,
+      region: machineDetails.region,
+      instance_id: machineDetails.instance_id,
+      private_ip: machineDetails.private_ip,
+      created_at: machineDetails.created_at,
+      updated_at: machineDetails.updated_at,
+      host_status: machineDetails.host_status,
+      config: machineDetails.config,
+      image_ref: machineDetails.image_ref,
+      events: machineDetails.events,
+    };
+
+    this.firestore.collection('machines').doc(machineId).set(machineData)
+      .then(() => console.log('Machine data saved to Firebase'))
+      .catch(error => console.error('Error saving machine data to Firebase:', error));
+
+    // Create stats metrics collection
+    const statsMetrics = {
+      cpu: machineDetails.config.guest.cpus,
+      memory: machineDetails.config.guest.memory_mb,
+      image: machineDetails.config.image,
+      region: machineDetails.region,
+      createdAt: machineDetails.created_at,
+      schemaVersion: machineSchema.schema.type,
+    };
+
+    this.firestore.collection('statsMetrics').doc(machineId).set(statsMetrics)
+      .then(() => console.log('Stats metrics saved to Firebase'))
+      .catch(error => console.error('Error saving stats metrics to Firebase:', error));
+  } */
+
+  destroy(machineId: string, force: boolean = false): Observable<any> {
+    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}`; // Replace with your API endpoint
+    const headers = {
+      'Authorization': `Bearer ${this.authService.token}`
+    }
+
+    const params = new HttpParams().set('force', force.toString())
+
+    return this.http.delete(url, { headers, params }).pipe(
+      tap((response: any) => {
+        console.log('Machine deletion successful:', response);
+      }),
+      map((response: any) => response.data),
+      catchError(error => {
+        console.error('Error in Machine deletion API call:', error);
+        throw error;
+      })
+    );
+  }
 }

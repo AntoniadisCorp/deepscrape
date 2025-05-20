@@ -3,7 +3,7 @@ import { Directive, ElementRef, Input, OnChanges, Renderer2 } from '@angular/cor
 @Directive({
 
   selector: '[appRemoveClass]',
-  standalone: true
+
 })
 export class RemoveClassDirective implements OnChanges {
   @Input() appRemoveClass: string = '';

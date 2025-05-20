@@ -2,7 +2,7 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, Inject, PLATFORM_ID, WritableSignal, inject, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { AppTheme } from 'src/app/core/enum';
-import { LocalStorage, WindowToken } from 'src/app/core/services';
+import { browserProvider, BrowserToken, LocalStorage, STORAGE_PROVIDERS, windowProvider, WindowToken } from 'src/app/core/services';
 
 export const themeStorageKey = 'app-theme-dark';
 
@@ -19,16 +19,21 @@ export const themeStorageKey = 'app-theme-dark';
     </button>
     </div>
   `,
-    imports: [MatIcon]
+    imports: [MatIcon],
+    providers: [{ provide: WindowToken, useFactory: windowProvider },
+    { provide: BrowserToken, useFactory: browserProvider },
+        STORAGE_PROVIDERS
+    ]
 })
 export class ThemeToggleComponent {
+
+    private window = inject(WindowToken)
+    private storage = inject(LocalStorage)
+
+
     isDark = false;
     system = false;
     private storedPreference: AppTheme | undefined = undefined;
-    private window = inject(WindowToken)
-
-    private storage = inject(LocalStorage)
-
     private currentTheme: WritableSignal<AppTheme | undefined>
 
     constructor(@Inject(DOCUMENT) private document: Document,

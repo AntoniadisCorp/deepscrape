@@ -2,8 +2,7 @@
 import { Directive, ElementRef, Input, OnDestroy, OnInit } from '@angular/core';
 
 @Directive({
-  selector: 'img[srcset], img[data-srcset]',
-  standalone: true,
+  selector: 'img[srcset], img[data-srcset]'
 })
 export class ImageSrcsetDirective implements OnInit, OnDestroy {
   @Input() dataSrcset: string;

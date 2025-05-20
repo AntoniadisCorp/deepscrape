@@ -2,7 +2,7 @@ import { Directive, ElementRef, EventEmitter, HostListener, Output } from '@angu
 
 @Directive({
   selector: '[appOutsideClick]',
-  standalone: true
+
 })
 export class Outsideclick {
 

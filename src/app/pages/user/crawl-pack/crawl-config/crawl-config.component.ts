@@ -281,7 +281,7 @@ export class CrawlConfigComponent {
         {
           nonNullable: false,
           validators: [
-            includesStrings(['facebook', 'x', 'instagram', 'youtube', 'linkedin', 'tiktok', 'reddit', 'pinterest']) // 3 - 60 characters
+            includesStrings(['facebook', 'x', 'instagram', 'youtube', 'linkedin', 'tiktok', 'reddit', 'pinterest', "snapchat"]) // 3 - 60 characters
           ]
         }), //
       excludeExternalLinks: this.fb.control(false, { nonNullable: true, validators: [] }),
@@ -445,7 +445,7 @@ export class CrawlConfigComponent {
     event.stopPropagation() // prevent default behavior of outer div
 
     // add crawler pacakage item,the configuration Browser Profile, to the cart system
-    this.cartService.addItemToCart({ crawlConfig: crawl })
+    this.cartService.addItemToCart({ crawlConfig: crawl }, 'crawl4ai')
 
     // on add to cart, update cart buttons
     this.packCart$ = this.cartService.getCart().pipe(
