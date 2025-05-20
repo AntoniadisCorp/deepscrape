@@ -57,3 +57,7 @@ export const getCrawlResultConfigsPaging = auth.getCrawlResultConfigsPaging
 
 // MACHINE LOGGERS - Function TRIGGERS
 // export const receiveLogs = auth.receiveLogs
+
+
+// MACHINES - Function TRIGGERS
+export const getMachinesPaging = auth.getMachinesPaging

@@ -629,3 +629,69 @@ export const receiveLogs = onRequest(async (request, response) => {
     }
 })
  */
+
+export const getMachinesPaging = onCallv2(
+    async (req) => {
+        const { currPage = 1, pageSize = 10, state = null } = req.data
+
+        try {
+            const userId = req.auth?.uid
+            if (!userId) {
+                throw new HttpsError("unauthenticated", "User must be authenticated.")
+            }
+
+            const machinesRef = db.collection(`users/${userId}/machines`).orderBy("created_at", "desc")
+            const filteredQuery = state && typeof state == "string" ? machinesRef.where("state", "==", state) : machinesRef.where("state", "!=", "destroyed")
+            // Check if collection exists
+            const snapshot = await filteredQuery.get()
+            if (snapshot.empty) {
+                return {
+                    error: null,
+                    machines: [],
+                    totalPages: 1,
+                    inTotal: 0,
+                    message: "Machines retrieved successfully",
+                }
+            }
+
+            // Get total count of operations
+            const totalMachinesQuery = await filteredQuery.count().get()
+            const inTotal = totalMachinesQuery.data().count || 0
+
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
+            if (currPage > totalPages && totalPages > 0) {
+                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+            }
+
+
+            let query = filteredQuery.limit(pageSize)
+
+            // Handle pagination using startAfter()
+            if (currPage > 1) {
+                const previousPageSnapshot = await filteredQuery.limit((currPage - 1) * pageSize).get()
+                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
+                if (lastDocument) {
+                    query = query.startAfter(lastDocument)
+                }
+            }
+
+            // Fetch operations for the current page
+            const machinesSnapshot = await query.get()
+            const machines = machinesSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+
+            return {
+                error: null,
+                machines,
+                totalPages,
+                inTotal,
+                message: "Machines retrieved successfully",
+            }
+        } catch (error) {
+            console.error("Error retrieving the machines:", error)
+            throw new HttpsError("internal", "Error retrieving the machines", error)
+        }
+    })
