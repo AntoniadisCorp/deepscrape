@@ -1,0 +1,38 @@
+<div class="modal-overlay bg-gray-900/[.5]">
+  <div
+    class="modal-content relative bg-gray-100 dark:bg-gray6 dark:text-gray-100 text-gray5 p-12 py-6">
+    <h2 class="mb-4 text-2xl font-bold text-gray-800 dark:text-gray-300">
+      {{ title() }}
+    </h2>
+    <!-- <div>
+      <p>
+        ⚠️ By proceeding, you are giving us permission to fetch cookies and
+        other data from your browser to improve your experience.
+        <br />
+        We take your privacy seriously and will only use the data for this
+        purpose. We do not save your privacy information on cloud
+      </p>
+    </div>
+   
+    <div>
+      <h2>Download The Extension</h2>
+      <p>you will redirect to chrome web store</p>
+    </div> -->
+    <ng-content></ng-content>
+
+    <button
+      title="close"
+      appRipple
+      ripplColor="dark"
+      class="!absolute top-2 right-2 flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 p-1 rounded-full transition-[colors,border]"
+      (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+    <div class="buttons flex gap-8 items-center justify-center">
+      <app-dialog-actions label="Cancel"></app-dialog-actions>
+      <app-dialog-actions
+        label="Delete"
+        [isConfirm]="true"></app-dialog-actions>
+    </div>
+  </div>
+</div>
