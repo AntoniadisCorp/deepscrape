@@ -180,11 +180,6 @@ html {
         width: min-content;
     }
 
-    // remove toolbar to fix standard copyclipboard
-    markdown > .toolbar {
-        display: flex;
-    }
-
     // .prose :where(h1, h2, h3, h4, h5, h6, th):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     //     @apply no-underline;
     // }
@@ -196,6 +191,19 @@ input:-webkit-autofill:focus {
         background-color 0s 600000s,
         color 0s 600000s !important;
 }
+// remove toolbar to fix standard copyclipboard
+markdown > .toolbar {
+    display: flex;
+}
+
+.tomltable {
+    code {
+        span.table {
+            display: inline !important;
+        }
+    }
+}
+
 /* @font-face {
     font-family: "icomoon";
     src:

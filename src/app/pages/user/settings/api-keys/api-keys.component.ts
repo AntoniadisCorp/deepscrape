@@ -10,12 +10,13 @@ import { Outsideclick, RippleDirective, TooltipDirective } from 'src/app/core/di
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { themeStorageKey } from 'src/app/shared';
+import { FormControlPipe } from 'src/app/core/pipes';
 
 @Component({
   selector: 'app-api-keys',
   imports: [NgFor, NgIf, DatePipe, AsyncPipe, ClipboardbuttonComponent, TooltipDirective,
     MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule,
-    CheckboxComponent],
+    CheckboxComponent, FormControlPipe],
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.scss'
 })
@@ -115,7 +116,8 @@ export class ApiKeysComponent implements OnInit {
   addApiKey(type: string) {
     this.closePopupNewKey()
     this.keyModalTitle = type
-    this.isKeyModalOpen.setValue(true)
+    this.isKeyModalOpen.setValue(true, { emitEvent: true })
+    console.log(this.isKeyModalOpen.value)
   }
 
   clearKeysInput() {

@@ -1,5 +1,5 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, Inject, PLATFORM_ID, WritableSignal, inject, signal } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
+import { Component, Inject, PLATFORM_ID, WritableSignal, inject, input, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { AppTheme } from 'src/app/core/enum';
 import { browserProvider, BrowserToken, LocalStorage, STORAGE_PROVIDERS, windowProvider, WindowToken } from 'src/app/core/services';
@@ -9,10 +9,11 @@ export const themeStorageKey = 'app-theme-dark';
 @Component({
     selector: 'app-theme-toggle',
     template: `
-    <div (click)="toggleTheme()" class="flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border-none text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-full transition-colors">
-    <button mat-icon-button type="button" class="w-7 h-7 block xl:w-6 xl:h-6" 
+    <div (click)="toggleTheme()" class="flex flex-col items-center cursor-pointer justify-center  border-none text-center bg-transparent 
+    hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-full transition-colors">
+    <button mat-icon-button type="button" class="size-6 block xl:w-6 xl:h-6" 
             [title]="getToggleLabel()" [attr.aria-label]="getToggleLabel()">
-      <mat-icon>
+      <mat-icon [style]="getIconColorClass()"  class=" !size-6 !leading-6 !text-[var(--icon-color)] dark:!text-[var(--icon-color-dark)]">
         {{  isDark ? 'light' : 'dark'  }}_mode
       </mat-icon>
 
@@ -30,6 +31,8 @@ export class ThemeToggleComponent {
     private window = inject(WindowToken)
     private storage = inject(LocalStorage)
 
+    color = input<{ dark: string, light: string } | undefined>()
+
 
     isDark = false;
     system = false;
@@ -39,6 +42,15 @@ export class ThemeToggleComponent {
     constructor(@Inject(DOCUMENT) private document: Document,
         @Inject(PLATFORM_ID) private platformId: object) {
         this.initializeThemeFromPreferences();
+    }
+
+    getIconColorClass(): string {
+        const color = this.color();
+        if (color) {
+            return `--icon-color: ${color.dark}; --icon-color-dark: ${color.light}`;
+        } else {
+            return '--icon-color: #000000bd; --icon-color-dark: #ffffffbd;';
+        }
     }
 
     toggleTheme(): void {
