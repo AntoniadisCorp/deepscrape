@@ -3,7 +3,6 @@
 /* eslint-disable max-len */
 // src/middleware/rateLimit.ts
 import { rateLimit } from "express-rate-limit"
-// import { Redis } from 'ioredis'
 // import { RedisStore } from 'rate-limit-redis'
 
 /* const host = process.env['REDIS_HOST']
