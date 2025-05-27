@@ -481,7 +481,12 @@ export type CrawlOperation = {
 
 export type CrawlPackType = 'crawl4ai' | 'spider'
 
-export type CrawlPack = {
+export type CrawlPackConfigs = {
+    crawlResultconfig?: CrawlResult
+    crawlConfig?: CrawlerRunConfig
+    browserProfile?: BrowserProfile
+}
+export type CartPack = {
     uid: string,
     type: CrawlPackType,
     crawlResultconfig: CrawlResult
@@ -489,6 +494,17 @@ export type CrawlPack = {
     browserProfile: BrowserProfile
 }
 
+export type CrawlPack = {
+    id: string
+    uid: string,
+    type: CrawlPackType,
+    created_at: Date
+    updated_at?: Date
+    config: {
+        type: string[]
+        value: any // this is the main json object where request to api server 
+    }
+}
 /** #######################################################
  *  # Chunking Strategy                                    #
  *  #######################################################

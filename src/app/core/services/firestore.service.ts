@@ -1,12 +1,14 @@
 import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core';
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database';
-import { Auth, User } from '@angular/fire/auth';
+import { Auth, authState, User } from '@angular/fire/auth';
 import {
+  addDoc,
   collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference,
   Firestore, getDoc, getDocs, getFirestore, limit, query, Query,
   QueryConstraint, QuerySnapshot, setDoc, SetOptions
 } from '@angular/fire/firestore';
-import { CrawlPack, Users } from '../types';
+import { CartPack, CrawlPack, Users } from '../types';
+import { map, Observable, of, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -47,10 +49,10 @@ export class FirestoreService {
         throw new Error('Invalid database name');
     }
   }
-  async getUserData(user: User): Promise<Users | null> {
+  async getUserData(userId: string): Promise<Users | null> {
 
 
-    const userRef = this.doc('users', user.uid)
+    const userRef = this.doc('users', userId)
     let err, docSnapshot = await this.getDoc(userRef)
 
     if (err) {
@@ -79,6 +81,22 @@ export class FirestoreService {
     }
   }
 
+  /* store the cart data when goes the app goes online */
+  async saveCrawlPackToFirestore(userId: string, item: CrawlPack, merge: boolean = true) {
+    try {
+      if (!userId)
+        throw new Error('User ID is required')
+
+      const cartRef = this.collection(this.firestore, `users/${userId}/crawlpack`)
+
+      await this.addDoc(cartRef, item)
+      console.log('Crawler Pack data stored successfully in Firestore.')
+      return true
+    } catch (error) {
+      return error as any
+    }
+  }
+
   async deletePackFromFirestore(userId: string) {
 
     try {
@@ -95,19 +113,25 @@ export class FirestoreService {
   }
 
   async loadPreviousPacks(userId: string, limit = 10): Promise<CrawlPack[] | null> {
-    const packsCollection = this.collection(this.firestore, `users/${userId}/crawlpacks`)
+    const packsCollection = this.collection(this.firestore, `users/${userId}/crawlpack`)
     const q = this.query(packsCollection, this.limit(limit)); // Adjust limit as needed
     let err, querySnapshot = await this.getDocs(q)
     if (err) {
       console.error("Failed to get user's data:", err)
-      return null;
+      return null
     }
 
-    if (!querySnapshot.empty) {
-      return querySnapshot.docs.map(doc => doc.data() as CrawlPack)
-    }
+    if (!querySnapshot.empty)
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as CrawlPack)
 
-    return null
+    return [] // Return an empty array if no documents found
+  }
+
+  public authState(): Observable<boolean> {
+    return runInInjectionContext(
+      this._injector,
+      (): Observable<boolean> => authState(this.afAuth).pipe(map((user: User | null) => !!user)),
+    )
   }
 
   /**
@@ -138,6 +162,16 @@ export class FirestoreService {
       this._injector,
       async (): Promise<DocumentData> => {
         return await getDoc(userRef)
+      },
+    );
+  }
+
+  public async addDoc(collectionRef: CollectionReference, data: unknown): Promise<DocumentData> {
+
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<DocumentData> => {
+        return await addDoc(collectionRef, data)
       },
     );
   }

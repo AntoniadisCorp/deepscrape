@@ -1,5 +1,7 @@
 export type FlyMachine = {
     id: string
+    deploymentId: string,
+    default: boolean,
     name: string
     description?: string
     state: string

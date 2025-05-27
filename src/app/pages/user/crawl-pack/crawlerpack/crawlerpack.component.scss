@@ -1,0 +1,10 @@
+.empty-cart h1::after {
+    content: "";
+    display: block;
+    margin: 0 auto 30px;
+    width: 86px;
+    height: 82px;
+    background: url(//a.scdn.gr/assets/schwartz/ecommerce/image_cart_empty-c3e89316577ed222ac0899606616259e.svg) center
+        center no-repeat;
+    background-size: contain;
+}

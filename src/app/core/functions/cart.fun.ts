@@ -48,7 +48,7 @@ export const convertHeaders = (input: any): any => {
 }
 
 export const convertExcludeSocialMediaDomains = (input: any) => {
-    console.log(input)
+    // console.log(input)
     if (input?.excludeSocialMediaDomains && typeof input?.excludeSocialMediaDomains === 'string') {
         input.excludeSocialMediaDomains = (input.excludeSocialMediaDomains as string).split(',') as string[]
         return input
@@ -59,6 +59,15 @@ export const convertExcludeDomains = (input: any) => {
 
     if (input?.excludeDomains && typeof input?.excludeDomains === 'string') {
         input.excludeDomains = (input.excludeDomains as string).split(',')
+        return input
+    }
+    return
+}
+
+export const convertExtraArgs = (input: any) => {
+
+    if (input?.extraArgs && typeof input?.extraArgs === 'string') {
+        input.extraArgs = (input.extraArgs as string).split(',')
         return input
     }
     return
@@ -81,7 +90,7 @@ export const switchPackKey = (packKey: string, packValue: any) => {
                 browser_config: {
                     "type": "BrowserConfig",
                     "params": {
-                        ...packValue, ...convertHeaders(packValue), ...convertCookies(packValue)
+                        ...packValue, ...convertExtraArgs(packValue), ...convertHeaders(packValue), ...convertCookies(packValue)
                     }
                 }
             }

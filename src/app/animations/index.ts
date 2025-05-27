@@ -30,11 +30,11 @@ export const fadeInOutSlideAnimation =
 
 export const slideInModalAnimation = trigger('slideInOut', [
     transition(':enter', [
-        style({ transform: 'translate(100%,-50%)' }),
-        animate('300ms ease-out', style({ transform: 'translate(-50%,-50%)' }))
+        style({ transform: 'translate(50%,0%)' }),
+        animate('300ms ease-out', style({ transform: 'translate(0%,0%)' }))
     ]),
     transition(':leave', [
-        animate('300ms ease-in', style({ transform: 'translate(100%,-50%)' }))
+        animate('300ms ease-in', style({ transform: 'translate(100%,0%)' }))
     ])
 ])
 
@@ -100,5 +100,16 @@ export const expandCollapseAnimation = trigger('expandCollapse', [
     ]),
     transition('expanded => collapsed', [
         animate('300ms ease-in-out')
+    ])
+])
+
+export const fadeinCartItems = trigger('fadeinCartItems', [
+    state('void', style({ opacity: 0, transform: 'translateY(-20px)' })),
+    state('*', style({ opacity: 1, transform: 'translateY(0)' })),
+    transition('void => *', [
+        animate('300ms ease-in')
+    ]),
+    transition('* => void', [
+        animate('300ms ease-out')
     ])
 ])

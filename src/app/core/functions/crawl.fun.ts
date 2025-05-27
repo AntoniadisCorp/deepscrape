@@ -244,20 +244,20 @@ function isEmptyValue(value: any): boolean {
 }
 
 
-export function convertKeysToSnakeCase(obj: any): any {
+export function convertKeysToSnakeCase(obj: any, exceptFromKeys: string[] = []): any {
     if (typeof obj !== 'object' || obj === null) {
         return obj;
     }
 
     if (Array.isArray(obj)) {
-        return obj.map(item => convertKeysToSnakeCase(item));
+        return obj.map(item => convertKeysToSnakeCase(item, exceptFromKeys));
     }
 
     const newObj: any = {};
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
-            const newKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-            newObj[newKey] = convertKeysToSnakeCase(obj[key]);
+            const newKey = exceptFromKeys.includes(key) ? key : key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            newObj[newKey] = exceptFromKeys.includes(key) ? obj[key] : convertKeysToSnakeCase(obj[key], exceptFromKeys);
         }
     }
     return newObj;
