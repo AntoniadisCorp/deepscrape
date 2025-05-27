@@ -1,18 +1,19 @@
 import { NgClass, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, HostListener, Input, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, input, Input, model, output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { slideInModalAnimation } from 'src/app/animations';
 import { SCREEN_SIZE } from '../../enum';
 import { ScreenResizeService } from '../../services';
+import { delay, map, of, Subject, take, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-slideinmodal',
-  imports: [NgClass, NgIf, MatProgressBarModule],
+  imports: [NgIf, MatProgressBarModule],
   templateUrl: './slide-in-modal.component.html',
   styleUrl: './slide-in-modal.component.scss',
-  animations: [slideInModalAnimation]
+  animations: [slideInModalAnimation],
 })
 export class SlideInModalComponent {
 
@@ -23,21 +24,26 @@ export class SlideInModalComponent {
   onClick(event: MouseEvent): void {
 
     // console.log(`Modal mouse down ${this.modal?.nativeElement}`, event.target)
-    if (this.modal && !this.modal.nativeElement.contains(event.target) && this.isOpen) {
+    if (this.modal && !this.modal.nativeElement.contains(event.target) && this.isOpen.value) {
       this.close()
     }
   }
 
   private screenSub: Subscription
+  private destroy$ = new Subject<void>()
   private size!: SCREEN_SIZE
   private windowWidth: number
   protected fixedPosition: string = ''
 
-  constructor(private resizeSvc: ScreenResizeService,) {
+  protected opened: boolean = false
+
+  constructor(private resizeSvc: ScreenResizeService, private cdr: ChangeDetectorRef) {
   }
 
   @Input() maxWidth?: string = 'max-w-lg'
   @Input() isOpen: FormControl<boolean>
+
+
   @Input() title: string = 'Add Menu item'
   @Input() position?: string = 'right'
 
@@ -50,7 +56,7 @@ export class SlideInModalComponent {
     //Add 'implements OnInit' to the class.
     // this.fixedPosition = this.getPosition()
     // Subscribe to the Screen Resize event
-    this.screenSub = this.resizeSvc.onResize$.subscribe((x: SCREEN_SIZE) => {
+    /* this.screenSub = this.resizeSvc.onResize$.subscribe((x: SCREEN_SIZE) => {
 
       const elementRef = this.modal.nativeElement as HTMLElement
       this.windowWidth = elementRef.offsetWidth / 2
@@ -59,18 +65,22 @@ export class SlideInModalComponent {
       console.log(this.size)
 
       if (this.size >= SCREEN_SIZE.SM) {
-        this.setStyle()
+        // this.setStyle()
       } else this.modal.nativeElement.style.left = "none"
+    }) */
+    this.screenSub = this.isOpen.valueChanges.subscribe((value) => {
+      this.opened = value
     })
+
   }
 
   ngAfterViewInit(): void {
     //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
     //Add 'implements AfterViewInit' to the class.
-    this.setStyle()
+    // this.setStyle()
   }
 
-  private setStyle() {
+  /* private setStyle() {
 
     const { screenWidth } = this.resizeSvc.updateScreenSize()
     if (screenWidth < 480)
@@ -83,7 +93,7 @@ export class SlideInModalComponent {
     const leftCalculation = `50%`// `calc(50% - ${this.windowWidth / rootFontSize}rem)`
     // console.log(`Modal ${elementRef.offsetWidth}`, screenWidth, this.windowWidth)
     this.modal.nativeElement.style.left = `${leftCalculation}`
-  }
+  } */
 
   protected getPosition() {
 
@@ -105,13 +115,35 @@ export class SlideInModalComponent {
   }
 
   close() {
-    this.isOpen.setValue(false);
+    of(false).pipe(
+      takeUntil(this.destroy$),
+      map((value) => this.opened = value),
+      // Emit false after a delay of 300ms
+      delay(300), // Delay for the animation to finish
+      take(1) // Take only the first emission
+    ).subscribe(
+      {
+        next: (value: boolean) => {
+          this.isOpen.setValue(value, { emitModelToViewChange: false })
+        },
+        error: (err) => {
+          this.isOpen.setValue(false, { emitModelToViewChange: false })
+          this.opened = false
+          console.error(err)
+        },
+        complete: () => {
+          this.cdr.detectChanges()
+        }
+      }
+    )
   }
 
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.hasBackdropBlur = false
+    this.destroy$.next()
+    this.destroy$.complete()
     this.screenSub?.unsubscribe()
   }
 }

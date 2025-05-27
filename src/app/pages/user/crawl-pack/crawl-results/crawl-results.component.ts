@@ -76,7 +76,7 @@ export class CrawlResultsComponent {
 
     this.crawlResults$ = of([])
 
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.crawlResultConfig)
     )
 
@@ -270,7 +270,7 @@ export class CrawlResultsComponent {
     this.cartService.addItemToCart({ crawlResultConfig: config }, 'crawl4ai')
 
     // on add to cart, update cart buttons
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.crawlResultConfig)
     )
   }
@@ -282,7 +282,7 @@ export class CrawlResultsComponent {
     this.cartService.removeItemFromCart('crawlResultConfig')
 
     // one remove update cart buttons
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart.crawlResultConfig)
     )
   }

@@ -5,15 +5,14 @@ import { AppSidebarNavItemComponent } from '../app-sidebar-nav-item/app-sidebar-
 import { LoadingService } from 'src/app/core/services';
 
 @Component({
-    selector: 'app-sidebar-nav',
-    imports: [NgIf, NgFor, AppSidebarNavItemComponent, NgTemplateOutlet,],
-    templateUrl: './app-sidebar-nav.component.html',
-    styleUrl: './app-sidebar-nav.component.scss'
+  selector: 'app-sidebar-nav',
+  imports: [NgIf, NgFor, AppSidebarNavItemComponent, NgTemplateOutlet,],
+  templateUrl: './app-sidebar-nav.component.html',
+  styleUrl: './app-sidebar-nav.component.scss'
 })
 export class AppSidebarNavComponent {
 
   @ViewChild('sidebarNavTemplate') sidebarNavTemplate: TemplateRef<any>
-  @Output() sidebarClosed = new EventEmitter<boolean>()
 
   constructor(private loadingService: LoadingService) { this.loadingService.startLoading(); }
 
@@ -35,12 +34,6 @@ export class AppSidebarNavComponent {
     // console.log(item)
     return item.divider ? true : false
   }
-
-
-  onSidebarClose(event: boolean) {
-    this.sidebarClosed.emit(event)
-  }
-
   public isTitle(item: any) {
     return item.title ? true : false
   }

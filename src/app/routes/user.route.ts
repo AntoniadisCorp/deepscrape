@@ -12,6 +12,7 @@ export const UserRoutes: Routes = [{
     loadComponent: () => import('../layout/full').then(c => c.AppUserLayoutComponent),
     loadChildren: () => import('./user/main.route').then(m => m.MainRoutes),
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     data: { /* authGuardPipe: redirectUnauthorizedToLogin, */ title: 'user', animation: 'user' }, // Apply the redirection
 
 }]

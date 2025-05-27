@@ -6,10 +6,10 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { RippleDirective } from '../../directives';
 
 @Component({
-    selector: 'app-promptarea',
-    imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
-    templateUrl: './promptarea.component.html',
-    styleUrl: './promptarea.component.scss'
+  selector: 'app-promptarea',
+  imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
+  templateUrl: './promptarea.component.html',
+  styleUrl: './promptarea.component.scss'
 })
 export class PromptareaComponent {
 
@@ -30,12 +30,12 @@ export class PromptareaComponent {
 
   constructor() {
 
-    this.userPrompt = new FormControl('', { nonNullable: true })
-    this.submitControl = new FormControl(false, { nonNullable: true })
   }
 
   ngOnInit(): void {
 
+    this.userPrompt = new FormControl('', { nonNullable: true });
+    this.submitControl = new FormControl(false, { nonNullable: true });
     /*  this.userPrompt.valueChanges.subscribe({
        next: (value) => {
          this.characterCount = value.length;
@@ -67,17 +67,9 @@ export class PromptareaComponent {
       return;
     }
 
-    try {
-      // Logic to submit the prompt to the AI model goes here
-      // For demonstration purposes, we'll simulate a successful submission
-      setTimeout(() => {
-        this.submited.emit(this.userPrompt.value)
-        this.submissionStatus = 'success'
-      }, 30);
-    } catch (error: any) {
-      this.submissionStatus = 'error';
-      this.errors.push('An error occurred during submission: ' + error.message);
-    }
+    // Emit the prompt value and set submission status
+    this.submited.emit(this.userPrompt.value);
+    this.submissionStatus = 'success';
   }
 
   protected clearPrompt(): void {

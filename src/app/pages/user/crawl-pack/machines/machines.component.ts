@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs/internal/Subscription';
 import { AppDockerStepperComponent, ContainerBoxComponent, RadioButtonComponent, SlideInModalComponent, SnackBarType } from 'src/app/core/components';
 import { RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { MACHNINE_STATE } from 'src/app/core/enum';
+import { FormControlPipe } from 'src/app/core/pipes';
 import { DeploymentService, FirestoreService, LocalStorage, MachineStoreService, SnackbarService } from 'src/app/core/services';
 import { FlyMachine, MachineResponse } from 'src/app/core/types';
 import { themeStorageKey } from 'src/app/shared';
@@ -20,7 +21,7 @@ import { themeStorageKey } from 'src/app/shared';
 @Component({
     selector: 'app-machines',
     imports: [ContainerBoxComponent, NgClass, NgIf, NgFor, ReactiveFormsModule, MatIcon, SlideInModalComponent,
-        RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe
+        RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe, FormControlPipe
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './machines.component.html',
@@ -76,7 +77,7 @@ export class MachinesComponent {
 
     private initMachineForm(): void {
         this.isModalLoading = { modal: false, visibility: {} }
-        this.isModalOpen = new FormControl(false, { nonNullable: true })
+        this.isModalOpen = new FormControl<boolean>(false, { nonNullable: true })
 
         this.createMachineForm = this.formBuilder.group({
             name: [''],

@@ -1,11 +1,10 @@
 <label
-  class="relative z-10 inline-flex cursor-pointer select-none items-center pr-3"
-  ><input
+  class="relative z-10 inline-flex cursor-pointer select-none items-center pr-3">
+  <input
+    id="{{ title }}"
     [formControl]="control"
-    id="customCheckLogin"
     type="checkbox"
-    class="ml-1 h-0 w-0 rounded border-0 text-gray-800 opacity-0 transition-all duration-150 ease-linear dark:text-gray6"
-  />
+    class="ml-1 h-0 w-0 rounded border-0 text-gray-800 opacity-0 transition-all duration-150 ease-linear dark:text-gray6" />
 
   <div
     [ngClass]="
@@ -13,8 +12,7 @@
         ? 'border-transparent bg-[#3d77f3] hover:border-gray-100 before:hover:bg-[#3d77f3]'
         : 'border-gray-50 before:hover:bg-[#a4a0a5]'
     "
-    class="relative z-20 flex h-5 w-5 items-center justify-center rounded-md border-2 before:pointer-events-none before:absolute before:bottom-[-9999px] before:left-[-9999px] before:right-[-9999px] before:top-[-9999px] before:z-[-1] before:m-auto before:h-[32px] before:w-[32px] before:rounded-[10px] before:opacity-20 before:transition-[background-color_.1s_linear,_opacity_.1s_linear]"
-  >
+    class="relative z-20 flex h-5 w-5 items-center justify-center rounded-md border-2 before:pointer-events-none before:absolute before:bottom-[-9999px] before:left-[-9999px] before:right-[-9999px] before:top-[-9999px] before:z-[-1] before:m-auto before:h-[32px] before:w-[32px] before:rounded-[10px] before:opacity-20 before:transition-[background-color_.1s_linear,_opacity_.1s_linear]">
     <svg
       width="1em"
       height="1em"
@@ -23,16 +21,17 @@
       [ngClass]="control.value ? 'text-gray-100 opacity-100' : 'opacity-0'"
       class="pointer-events-none h-5 w-5 transition-opacity duration-150 ease-linear"
       aria-hidden="true"
-      role="presentation"
-    >
+      role="presentation">
       <path
         d="M9.756 17.5l-.117-.008-.049-.01-.066-.017-.136-.058-.1-.066-.068-.06-5-5a.75.75 0 01.976-1.134l.084.073 4.47 4.469 8.97-8.97.084-.072a.75.75 0 011.049 1.05l-.073.083-9.5 9.5-.068.06-.1.067-.048.024-.107.04-.047.012-.067.011a.752.752 0 01-.087.006z"
         fill="currentcolor"
-        fill-rule="evenodd"
-      ></path>
+        fill-rule="evenodd"></path>
     </svg>
   </div>
-  <span class="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-400">{{
-    title
-  }}</span></label
->
+  <span class="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-400">
+    {{ title }}
+  </span>
+  <span class="ml-3 font-light text-gray-700 dark:text-gray5 text-sm">
+    {{ description }}
+  </span>
+</label>

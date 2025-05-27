@@ -83,7 +83,7 @@ export class AppUserLayoutComponent {
     this.showProfileMenu = false
 
     this.user$ = of(null)
-    this.cartPackager$ = this.cartService.getCart()
+    this.cartPackager$ = this.cartService.getCart$
 
 
   }
@@ -141,7 +141,7 @@ export class AppUserLayoutComponent {
           this.authorized = true
           this.userLoading = false
 
-          return from(this.firestoreService.getUserData(user)).pipe(
+          return from(this.firestoreService.getUserData(user.uid)).pipe(
             catchError((err) => {
               console.log(err)
               return throwError(() => err)

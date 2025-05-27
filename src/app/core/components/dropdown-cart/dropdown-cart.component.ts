@@ -34,7 +34,7 @@ export class DropdownCartComponent {
 
   constructor(private router: Router) {
 
-    this.cartItems$ = this.cartService.getCart()/* .pipe(
+    this.cartItems$ = this.cartService.getCart$/* .pipe(
       // FIXME: this.cartItems$ is not working properly
       map((items: { [key: string]: any }) => Object.entries(items).map(([key, value]) => ({ key, value }))),
       map(items => items.sort((a, b) => {

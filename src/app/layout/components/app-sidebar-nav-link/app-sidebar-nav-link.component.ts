@@ -8,6 +8,7 @@ import { cleanAndParseJSON } from 'src/app/core/functions';
 import { LocalStorage, ScreenResizeService } from 'src/app/core/services';
 import { Session } from 'src/app/core/types';
 import { themeStorageKey } from 'src/app/shared';
+import { AppUserLayoutComponent } from '../../full';
 
 @Component({
   selector: 'app-sidebar-nav-link',
@@ -17,8 +18,8 @@ import { themeStorageKey } from 'src/app/shared';
   styleUrl: './app-sidebar-nav-link.component.scss'
 })
 export class AppSidebarNavLinkComponent {
+  private userLayout = inject(AppUserLayoutComponent)
   @Input() link: any
-  @Output() sidebarClosed = new EventEmitter<boolean>()
   private localStorage: Storage
 
   private routeSub: Subscription
@@ -89,11 +90,11 @@ export class AppSidebarNavLinkComponent {
     this.routeSub = this.router.events.subscribe((event: any) => {
 
       if ((event instanceof NavigationEnd) && event.urlAfterRedirects === this.link.url) {
-        this.link.active = true
-        // this.cdr.detectChanges() // Call detectChanges here
+        this.link.active = this.isParentActive()
+        this.cdr.detectChanges() // Call detectChanges here
       } else {
         if (!event.url && this.link.url) {
-          this.link.active = false
+          this.link.active = this.isParentActive(event.urlAfterRedirects)
           this.cdr.detectChanges() // Call detectChanges here
         }
       }
@@ -106,16 +107,21 @@ export class AppSidebarNavLinkComponent {
   }
 
   private InitLinkActive() {
-    this.link.active = this.router.isActive(this.link.url, true)
+    // this.link.active = this.router.isActive(this.link.url, true)
+    this.link.active = this.isParentActive()
   }
 
+  private isParentActive(url: string = this.link.url) {
+    return this.router.url.startsWith(url)
+  }
   protected closeSideBar() {
     const { screenWidth } = this.resizeSvc.updateScreenSize()
 
     if (screenWidth >= 992)
       return
 
-    this.sidebarClosed.emit(true)
+
+    this.userLayout.onCloseAsideBar(true)
   }
 
 

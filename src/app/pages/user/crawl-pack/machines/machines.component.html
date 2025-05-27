@@ -31,9 +31,8 @@
 
   <!-- Slide in Modal -->
   <app-slideinmodal
-    *ngIf="isModalOpen.value"
     [maxWidth]="'max-w-3xl'"
-    [isOpen]="isModalOpen"
+    [isOpen]="isModalOpen | formControl"
     [loading]="isModalLoading.modal"
     position="center"
     [hasBlur]="true"

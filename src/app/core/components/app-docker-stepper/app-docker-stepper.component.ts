@@ -129,6 +129,9 @@ export class AppDockerStepperComponent {
 
     /* Set Step 2 */
     this.formStep2 = this.fb.group({
+      default: this.fb.control(false, {
+        nonNullable: true, validators: [Validators.required]
+      }),
       machineName: ['', Validators.required],
       region: this.fb.control(this.regions[0], {
         nonNullable: true,
@@ -346,6 +349,7 @@ export class AppDockerStepperComponent {
     console.log(exists, info) */
 
     return {
+      default: this.formStep2.value.default,
       imageOption: this.formStep1.value.imageOption,
       defaultImage: this.formStep1.value.defaultImage.name,
       cloneMachine: this.formStep1.value.cloneMachine.code,
