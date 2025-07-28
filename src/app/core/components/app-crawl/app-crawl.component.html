@@ -1,0 +1,148 @@
+<div class="flex flex-col max-w-3xl w-full gap-3 mt-8">
+  <!-- select CrawlPack or press the link to create one -->
+  <div class="flex flex-row flex-wrap items-center justify-end gap-4 mb-2">
+    @if(!crawlConfigPack.length) {
+    <a
+      [routerLink]="['/crawlpack']"
+      class="text-lg gap-1 hover:bg-blue-600/[0.5] focus:bg-blue-900/[0.8] bg-blue-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors">
+      setup configuration
+      <span class="text-red-400">*</span>
+    </a>
+    }@else {
+    <app-radiotoggle class="flex-grow" [control]="stream | formControl" title="stream On / stream Off"></app-radiotoggle>
+    <div class="flex gap-3 my-2">
+
+      <button
+        *ngIf="crawlpack"
+        title="show json config file"
+        type="button"
+        (click)="openJsonFormat($event, crawlPackSelector.value?.code)"
+        class="text-sm px-2 py-1 rounded-xl dark:text-gray-100 hover:bg-green-400/80 text-gray-300 bg-gray-600/10 border border-gray-400/30 hover:border-green-400/30 w-fit font-normal">
+        JSON
+      </button>
+    </div>
+
+    <app-dropdown
+      class="md:min-w-60"
+      [options]="crawlConfigPack"
+      [control]="crawlPackSelector | formControl"
+      [padding]="'p-2'"
+      dropDownName="choose your Crawl Pack"
+      (select)="onDropDownSelected($event)"></app-dropdown>
+    }
+  </div>
+  <!-- Show Json File -->
+  @if(crawlpack && crawlConfigPack.length) {
+  <div
+    appRemoveToolbar
+    [hidden]="!itemVisibility[crawlpack.id]()"
+    [@expandCollapse]="
+      itemVisibility[crawlpack.id]() ? 'expanded' : 'collapsed'
+    "
+    class="gap-4 px-4 py-2 my-2 block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+    <markdown
+      clipboard
+      emoji
+      class="tomltable"
+      [clipboardButtonComponent]="clipboardButton"
+      [data]="this.crawlpack.config.value | json | language : 'toml'"></markdown>
+  </div>
+  }
+
+  <!-- Urls Input Section and Action Area -->
+  <div class="relative">
+    <div class="absolute right-3 top-4 z-10 h-5 w-5">
+      <mat-spinner
+        *ngIf="isCrawlProcessing"
+        [diameter]="20"
+        class="stroke-gray-200"></mat-spinner>
+    </div>
+
+    <!-- input component -->
+    <app-ginput
+      class="min-w-full"
+      [control]="urls"
+      bgColor="dark:bg-gray6 bg-white"
+      label="URLs"></app-ginput>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex items-center justify-end">
+    <button
+      type="button"
+      aria-label="clear"
+      [disabled]="urls.value.length === 0 && !enableClearBtn"
+      *ngIf="!submitButton.value"
+      (click)="clearText()"
+      class="inline-flex h-10 w-10 items-center justify-center gap-1 disabled:bg-transparent bg-orange-200/20 dark:bg-gray-100/[0.08] rounded-full text-orange-500 transition-colors duration-200 hover:bg-orange-400/60 hover:text-orange-900 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-orange-500 dark:hover:bg-orange-200/20 dark:hover:text-orange-700 dark:focus:ring-gray4/60 font-roboto mr-2">
+      <mat-icon
+        svgIcon="clear"
+        faria-hidden="false"
+        aria-label="clear"
+        class="!w-5 !h-5 text-lg"></mat-icon>
+    </button>
+    <button
+      appRipple
+      rippleColor="dark"
+      *ngIf="submitButton.value"
+      (click)="abortRequests()"
+      class="flex flex-row w-auto flex-nowrap gap-1 pr-[7px] pl-[5px] justify-center h-10 items-center disabled:bg-transparent hover:bg-dark-400/20 dark:bg-gray-100/[0.08] rounded-full text-gray-600 transition-colors duration-200 bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-gray-100 dark:hover:bg-gray5/60 dark:hover:text-gray-400 dark:focus:ring-gray4/60 font-roboto py-0 mr-2">
+      <mat-icon
+        faria-hidden="false"
+        aria-label="abort"
+        class="!w-7 !h-8 text-3xl leading-8">
+        stop_circle
+      </mat-icon>
+    </button>
+    <div class="relative">
+      <div
+        *ngIf="submitButton.value"
+        class="absolute right-[.8rem] top-[.6rem] z-10 h-5 w-5">
+        <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
+      </div>
+      <button
+        appRipple
+        rippleColor="dark"
+        [disabled]="urls.invalid || submitButton.value"
+        (click)="submitCrawlJob()"
+        class="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-medium text-blue-600 ring-offset-2 transition-colors hover:bg-blue-300/[.18] focus-visible:outline-none focus-visible:ring-1 active:scale-95 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none dark:text-blue-600">
+        <span
+          [ngClass]="{ 'text-transparent': submitButton.value }"
+          class="h-6">
+          <mat-icon>send</mat-icon>
+        </span>
+      </button>
+    </div>
+  </div>
+  <!-- Results Display Area -->
+<div class="flex flex-col w-full gap-3 mt-4">
+  <h2 class="text-xl font-bold text-gray-900 dark:text-gray1">Crawl Results:</h2>
+  <div *ngFor="let result of crawlResults; trackBy: trackByCrawlResult"
+       class="result-item bg-gray-100 dark:bg-gray6 rounded-lg p-4 mb-4 shadow-md">
+    <div class="flex justify-between items-center cursor-pointer" (click)="toggleResultVisibility(result)">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray1">
+        Status: {{ result.status }} - Message: {{ result.message }}
+        @if (result.url) {
+          - URL: {{ result.url }}
+        }
+      </h3>
+      <mat-icon>{{ result.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </div>
+    <div *ngIf="result.expanded" class="mt-4">
+      <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">Dump Content:</h4>
+      <div class="prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+        <markdown
+          clipboard
+          emoji
+          class="tomltable"
+          [clipboardButtonComponent]="clipboardButton"
+          [data]="result.dump?.markdown || 'No markdown content available.'"></markdown>
+      </div>
+    </div>
+  </div>
+  @if (!crawlResults.length) {
+    <p class="text-gray-600 dark:text-gray-400">No crawl results yet.</p>
+  }
+</div>
+  
+</div>

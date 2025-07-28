@@ -1,8 +1,9 @@
 <div
-  class="p-x-2 sticky z-20 block h-full bg-gray-100 dark:bg-gray-900 lg:pl-0 xs:mr-0 xs:h-auto">
+  class="p-x-2 sticky z-20 flex flex-col h-max justify-between bg-gray-100 dark:bg-gray-900 lg:pl-0 xs:mr-0 xs:h-max">
   <ul class="w-56 space-y-4 font-medium">
+    <li>
     <ng-template #sidebarNavTemplate let-navitems>
-      <div class="mr-2" *ngFor="let navitem of navitems">
+      <div class="mr-2 my-1" *ngFor="let navitem of navitems; let index = index">
         <div
           *ngIf="isDivider(navitem)"
           class="border-t border-gray-200 dark:border-gray5/[.2] dark:shadow-md dark:shadow-blue-700"></div>
@@ -12,17 +13,50 @@
             {{ navitem.name }}
           </h3>
         </div>
-        <div *ngIf="!isDivider(navitem) && !isTitle(navitem)">
+        <div
+          *ngIf="!isDivider(navitem) && !isTitle(navitem)"
+          [ngClass]="{ 'mb-10': index === navitems.length - 1 }">
           <app-sidebar-nav-item
             [item]="navitem"
             [sidebarTemp]="sidebarNavTemplate"></app-sidebar-nav-item>
         </div>
       </div>
     </ng-template>
-    <ng-container
-      *ngTemplateOutlet="
-        sidebarNavTemplate;
-        context: { $implicit: navigation }
-      "></ng-container>
+    
+      <ng-container
+        *ngTemplateOutlet="
+          sidebarNavTemplate;
+          context: { $implicit: navigation }
+        "></ng-container>
+    </li>
   </ul>
+  <div
+    class="sticky group max-w-[13.5rem] z-[100] mt-auto top-0 flex bg-blue-gray-100 dark:bg-gray6 bottom-4 group h-14 w-full cursor-pointer flex-row items-center justify-between rounded-lg p-2 text-base text-gray-900 hover:bg-gray-300 dark:text-white dark:hover:bg-gray5">
+    <div class="flex items-center justify-start w-full">
+      <mat-icon
+        svgIcon="package_2"
+        class="inline-flex !h-8 !max-w-8 flex-shrink-0 justify-center self-center text-2xl dark:group-hover:text-blue-600 transition-colors ease-out duration-150 group-hover:text-blue-900"></mat-icon>
+      <span
+        class="ml-3 flex-1 flex flex-wrap whitespace-nowrap font-mono text-left">
+        <!-- <span class="ml-1">machine</span> -->
+
+        <span
+          class="inline-flex gap-1 items-center rounded-full shadow-sm bg-gray5/40 px-2.5 py-0.5 text-xs font-medium text-gray-50 dark:bg-gray-900 dark:text-gray-300">
+          1 Mem
+          <svg class="h-1 w-1" fill="currentColor" viewBox="0 0 8 8">
+            <circle cx="4" cy="4" r="3" />
+          </svg>
+          4 vCU
+          <svg class="h-1 w-1" fill="currentColor" viewBox="0 0 8 8">
+            <circle cx="4" cy="4" r="3" />
+          </svg>
+          shared
+        </span>
+      </span>
+      <button
+        class="ml-auto flex items-center dark:group-hover:text-blue-600 transition-colors ease-out duration-150 group-hover:text-blue-900">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  </div>
 </div>

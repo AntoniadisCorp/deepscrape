@@ -1,6 +1,6 @@
 import { FormGroup } from "@angular/forms"
 import { BrowserType, CrawlCachingMode, CrawlOperationStatus } from "../enum"
-import { DropDownOption, Serializable } from "../types"
+import { CrawlPack, DropDownOption, Serializable } from "../types"
 
 export function crawlOperationStatusColor(status: CrawlOperationStatus) {
     let color = 'gray'
@@ -64,6 +64,11 @@ export function setBrowserTypeList(browserTypeList: DropDownOption[]) {
     ]
 
     browserTypeList.push(...list)
+}
+
+export function setCrawlPackList(pack: CrawlPack[], crawlConfigPackList: DropDownOption[]) {
+    const list = pack.map(config => ({ name: config.name, code: config.id }));
+    crawlConfigPackList.push(...list);
 }
 
 export function validateForm(configForm: FormGroup<any>): boolean {

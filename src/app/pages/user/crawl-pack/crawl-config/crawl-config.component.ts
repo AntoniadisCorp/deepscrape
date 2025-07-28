@@ -89,7 +89,8 @@ export class CrawlConfigComponent {
     { id: 'page-interaction', label: 'Page Interaction' },
     { id: 'media-handling', label: 'Media Handling' },
     { id: 'link-domain-handling', label: 'Link/Domain Handling' },
-    { id: 'debug-logging', label: 'Debug & Logging' },
+    { id: 'debug-logging', label: 'Debug & Logging', },
+    { id: 'other', label: 'other' },
     ]
 
     this.crawlConfigs$ = of([])
@@ -299,6 +300,7 @@ export class CrawlConfigComponent {
       logConsole: this.fb.control(false, { nonNullable: true, validators: [] }),
 
       // Other parameters with default values
+      stream: this.fb.control(true, { nonNullable: true, validators: [] }),
     }
     )
 
@@ -486,7 +488,7 @@ export class CrawlConfigComponent {
 
     links.forEach((link) => {
       const element = this.document.getElementById(link.id)
-      const extraFixedDistance = (link.id === 'controlling-each-crawl' || link.id === 'content-processing' ? -50 : link.id === 'debug-logging' ? -100 : 200)
+      const extraFixedDistance = (link.id === 'controlling-each-crawl' || link.id === 'content-processing' ? -50 : link.id === 'debug-logging' || link.id === 'other' ? -100 : 200)
       if (element) {
         const distance = Math.abs(scrollPosition - getOffsetTop(element) - extraFixedDistance)
 

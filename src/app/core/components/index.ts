@@ -1,5 +1,6 @@
 export * from './consent-modal/consent-modal.component'
-export * from './app-scrape/app-scrape.component'
+export * from './app-llm-scrape/app-llm-scrape.component'
+export * from './app-crawl/app-crawl.component'
 export * from './clipboardbutton/clipboardbutton.component'
 export * from './ginput/ginput.component'
 export * from './promptarea/promptarea.component'

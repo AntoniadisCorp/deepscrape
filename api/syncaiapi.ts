@@ -62,6 +62,10 @@ class SyncAIapis {
         // Check if the image is deployable
         this.router.get('/machines/check-image', this.isJwtAuth,
             arachnefly.checkImageDeployability)
+
+
+        /* Crawl Agent */
+        // this.router.get('/crawl', this.isJwtAuth, crawl4aiCore)
     }
 
     /**

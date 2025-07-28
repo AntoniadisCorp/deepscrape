@@ -74,6 +74,8 @@ class SyncAIapis {
         this.router.post("/anthropic/messages", anthropicAICore) // Search for Markets
         this.router.post("/openai/chat/completions", openaiAICore)
         this.router.post("/groq/chat/completions", groqAICore)
+
+        /* Crawl4AI */
         this.router.post("/crawl", crawl4aiCore)
 
 

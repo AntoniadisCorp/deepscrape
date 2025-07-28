@@ -10,7 +10,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 })
 export class WebSocketService {
   private socket$: WebSocketSubject<any>;
-  private serverUrl = 'ws://localhost:8080'; // Replace with your WebSocket server URL
+  private serverUrl = 'ws://localhost:8000/ws/events';
   private messagesSubject$ = new Subject<any>();
   public messages$ = this.messagesSubject$.asObservable();
 

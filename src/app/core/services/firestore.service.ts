@@ -49,6 +49,16 @@ export class FirestoreService {
         throw new Error('Invalid database name');
     }
   }
+
+  
+  /**
+   * This TypeScript function asynchronously retrieves user data based on a provided user ID.
+   * @param {string} userId - The `userId` parameter is a string that represents the unique identifier
+   * of the user whose data you want to retrieve.
+   * @returns The `getUserData` function returns a Promise that resolves to either a `Users` object if
+   * the user data exists in the database, or `null` if the user data does not exist or if there was an
+   * error retrieving the data.
+   */
   async getUserData(userId: string): Promise<Users | null> {
 
 
@@ -68,6 +78,9 @@ export class FirestoreService {
     return null
 
   }
+
+  /* get last 10 crawl pack config items by sorted date from the store  */
+  // async getPack
 
   /* store the cart data when goes the app goes online */
   async savePackToFirestore(userId: string, item: any, merge: boolean = true) {

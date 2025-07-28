@@ -1,12 +1,13 @@
-import { NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
+import { NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Output, TemplateRef, ViewChild } from '@angular/core';
 import { navigation } from 'src/app/_nav';
 import { AppSidebarNavItemComponent } from '../app-sidebar-nav-item/app-sidebar-nav-item.component';
 import { LoadingService } from 'src/app/core/services';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-sidebar-nav',
-  imports: [NgIf, NgFor, AppSidebarNavItemComponent, NgTemplateOutlet,],
+  imports: [NgIf, NgFor, AppSidebarNavItemComponent, NgTemplateOutlet, MatIcon, NgClass],
   templateUrl: './app-sidebar-nav.component.html',
   styleUrl: './app-sidebar-nav.component.scss'
 })

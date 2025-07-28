@@ -12,9 +12,9 @@ import {
   extractDomain, formatBytes, sanitizeJSON,
   setAIModel
 } from 'src/app/core/functions';
-import { aichunk, AIModel, BrowserConfigurationImpl, CrawlConfig, CrawlerRunConfigImpl, CrawlOperation, OpenAITokenDetails } from '../../types';
+import { aichunk, AIModel, BrowserConfigurationImpl, CrawlConfig, CrawlerRunConfigImpl, CrawlOperation, CrawlPack, CrawlTask, OpenAITokenDetails } from '../../types';
 import { GinputComponent } from '../ginput/ginput.component';
-import { AiAPIService, AuthService, CrawlStoreService, LocalStorage, SnackbarService } from '../../services';
+import { AiAPIService, CrawlAPIService, LocalStorage, SnackbarService } from '../../services';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { NgIf } from '@angular/common';
@@ -29,18 +29,20 @@ import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
 import { takeUntil } from 'rxjs/internal/operators/takeUntil';
 import { Subject } from 'rxjs/internal/Subject';
 import { CrawlOperationStatus } from '../../enum';
+import { concatMap } from 'rxjs/internal/operators/concatMap';
+import { map } from 'rxjs/internal/operators/map';
 
 @Component({
-  selector: 'app-scrape',
+  selector: 'app-llm-scrape',
   imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
     GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
     RadioToggleComponent,
     BrowserCookiesComponent
   ],
-  templateUrl: './app-scrape.component.html',
-  styleUrl: './app-scrape.component.scss'
+  templateUrl: './app-llm-scrape.component.html',
+  styleUrl: './app-llm-scrape.component.scss'
 })
-export class AppScrapeComponent {
+export class AppLLMScrapeComponent {
   @HostBinding('class') classes = 'flex items-center flex-col relative';
 
   readonly clipboardButton = ClipboardbuttonComponent;
@@ -74,6 +76,7 @@ export class AppScrapeComponent {
 
   constructor(
     private aiapi: AiAPIService,
+    private crawlService: CrawlAPIService,
     private snackbarService: SnackbarService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef
@@ -102,6 +105,8 @@ export class AppScrapeComponent {
       nonNullable: true,
       validators: [
         Validators.required,
+        Validators.minLength(5),
+        Validators.maxLength(4000) // Set the maximum length to 4000 characters
       ]
     })
 
@@ -159,11 +164,12 @@ export class AppScrapeComponent {
 
   protected onDataLinkChange(event: Event) {
     // const input = event.target as EventTarget & HTMLInputElement
-
     // go to the focus to the next text input, textarea
   }
 
   protected onPromptSubmited(prompt: string) {
+
+    console.log('Crawl Operation Started', this.url.value, this.userprompt.value, this.modelAI.value.code, prompt, this.modelAI.valid, this.url.valid, this.userprompt.valid)
 
     // return an error message if url or userpormpt is invalid
     if (!this.url.valid || !this.userprompt.valid || !this.modelAI.valid)
@@ -183,6 +189,10 @@ export class AppScrapeComponent {
 
     // live processing
     this.processData(this.url.value, this.modelAI.value.code)
+
+    // send background request to the python server api
+    // this.crawlEnqueue(this.url.value)
+    
   }
 
 
@@ -198,11 +208,14 @@ export class AppScrapeComponent {
 
 
     const tasks = urls.map((url, index) => {
-      return of(null).pipe(
+      
+      return of(null)
+      
+      .pipe(
         delay(index * 200), // Increasing delay for each request
         mergeMap(() => (this.forwardCookies?.value ? this.fetchCookiesFromExtension(url) : of(undefined))),
         mergeMap((cookies) =>
-          this.aiapi.sendToCrawl4AI(url, { iframe: "true", forwardCookies: this.forwardCookies?.value },
+          this.crawlService.sendToCrawl4AI(url, { iframe: "true", forwardCookies: this.forwardCookies?.value },
             Array.isArray(cookies) ? constructCookiesforJina(cookies)
               : undefined
           ))
@@ -216,7 +229,7 @@ export class AppScrapeComponent {
         next: async (results) => {
           const subsequentContent = results.map((result: string) => {
             // const strlen = result.length
-            const encoder = new TextEncoder();
+            const encoder = new TextEncoder()
             const bytesLength = encoder.encode(result).length;
             // const spitlen = strlen / 400 / 5
             console.log(formatBytes(bytesLength))

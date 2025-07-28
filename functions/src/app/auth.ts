@@ -7,6 +7,7 @@ import { createCustomer } from "./stripe"
 import { auth, firestore } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { redis } from "./cacheConfig"
+import { QueryDocumentSnapshot } from "firebase-functions/v1/firestore"
 
 export const createStripeCustomer = auth
     .user().onCreate(async (user: auth.UserRecord) => {
@@ -132,7 +133,7 @@ export const startSubscription = onCall(
 export const updateUsage = firestore
     .database(dbName)
     .document("projects/{projectId}")
-    .onCreate(async (snap: any) => {
+    .onCreate(async (snap:QueryDocumentSnapshot) => {
         const userRef = db.doc(`users/${snap.data().userId}`)
 
         const userDoc = await userRef.get()
@@ -145,7 +146,7 @@ export const updateUsage = firestore
                     "stripe_customer_id": user?.stripeId,
                     "value": "1",
                 },
-                timestamp: (Date.parse(snap.createTime) / 1000) | 0,
+                timestamp: Math.floor(snap.createTime.toDate().getTime() / 1000),
             },
             {
                 idempotencyKey: snap.id,
@@ -156,7 +157,7 @@ export const updateUsage = firestore
             {
                 quantity: 1,
                 action: "increment",
-                timestamp: (Date.parse(snap.createTime) / 1000) | 0,
+                timestamp: Math.floor(snap.createTime.toDate().getTime() / 1000),
             },
             {
                 idempotencyKey: snap.id,

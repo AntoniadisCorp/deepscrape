@@ -496,8 +496,9 @@ export type CartPack = {
 
 export type CrawlPack = {
     id: string
-    uid: string,
-    type: CrawlPackType,
+    uid: string
+    name: string
+    type: CrawlPackType
     created_at: Date
     updated_at?: Date
     config: {
@@ -505,6 +506,16 @@ export type CrawlPack = {
         value: any // this is the main json object where request to api server 
     }
 }
+
+export type CrawlTask = {
+    id: string, 
+    status: CrawlOperationStatus,
+    _links: {
+        self: { href: string },
+        status: { href: string },
+    },
+
+ }
 /** #######################################################
  *  # Chunking Strategy                                    #
  *  #######################################################

@@ -77,8 +77,8 @@ export const switchPackKey = (packKey: string, packValue: any) => {
     switch (packKey) {
         case 'crawlConfig':
             return {
-                crawl_config: {
-                    "type": "CrawlRunConfig",
+                crawler_config: {
+                    "type": "CrawlerRunConfig",
                     "params": {
                         ...packValue, ...convertExcludeDomains(packValue), ...convertExcludeSocialMediaDomains(packValue)
                     }

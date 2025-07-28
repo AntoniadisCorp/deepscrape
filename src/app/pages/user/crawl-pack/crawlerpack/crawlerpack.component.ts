@@ -87,7 +87,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
             }),
         )
 
-        // load most recent crawl packs
+        // load most 10 recent crawl packs
         if (this.authService.user?.uid)
             this.crawlPackages$ = from(this.fireService.loadPreviousPacks(this.authService.user.uid))
                 .pipe(startWith(undefined)) // Emit undefined initially to avoid flickering in the UI

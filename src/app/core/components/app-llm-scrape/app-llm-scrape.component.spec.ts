@@ -5,7 +5,7 @@ import { Auth } from '@angular/fire/auth';
 import { InjectionToken } from '@angular/core';
 import { SnackBarType } from '../snackbar/snackbar.component';
 
-import { AppScrapeComponent } from './app-scrape.component';
+import { AppLLMScrapeComponent } from './app-llm-scrape.component';
 import { browserProvider, BrowserToken, STORAGE_PROVIDERS, windowProvider, WindowToken } from '../../services';
 import { Subscription } from 'rxjs';
 
@@ -13,9 +13,9 @@ class FirestoreMock { }
 class AuthMock { }
 
 
-describe('AppScrapeComponent', () => {
-  let component: AppScrapeComponent;
-  let fixture: ComponentFixture<AppScrapeComponent>;
+describe('AppLLMScrapeComponent', () => {
+  let component: AppLLMScrapeComponent;
+  let fixture: ComponentFixture<AppLLMScrapeComponent>;
   let windowMock = {
     localStorage: {
       getItem: jasmine.createSpy('getItem'),
@@ -41,7 +41,7 @@ describe('AppScrapeComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppScrapeComponent],
+      imports: [AppLLMScrapeComponent],
       providers: [
         provideHttpClient(),
         { provide: Firestore, useClass: FirestoreMock },
@@ -54,7 +54,7 @@ describe('AppScrapeComponent', () => {
     })
       .compileComponents();
 
-    fixture = TestBed.createComponent(AppScrapeComponent);
+    fixture = TestBed.createComponent(AppLLMScrapeComponent);
     component = fixture.componentInstance;
     aiResultsSub = new Subscription();
     forkJoinSubscription = new Subscription();

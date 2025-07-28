@@ -2,8 +2,17 @@
   <textarea
     id="prompt"
     [formControl]="userPrompt"
-    (keyup.enter)="submitPrompt()"
-    class="mt-2 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
+    (input)="doValidation()"
+    (blur)="doValidation()"
+    [ngClass]="(
+      userPrompt!.valid
+        ? 'border-green-600 focus:border-green-600 dark:border-green-500 dark:focus:border-green-500'
+        : userPrompt!.invalid && (userPrompt!.dirty || userPrompt!.touched)
+        ? 'border-red-600 focus:border-red-600 dark:border-red-500 dark:focus:border-red-500'
+        : 'focus:border-blue-600 dark:focus:border-blue-500')
+
+   "
+    class="mt-2 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white  dark:bg-gray6 bg-white"
     placeholder="Type your prompt here..."
   ></textarea>
   <div class="flex justify-between h-16 mt-2">
@@ -51,8 +60,7 @@
           appRipple
           rippleColor="dark"
           [disabled]="
-            userPrompt.value.length >= maxCharacters ||
-            userPrompt.value.length === 0 ||
+            userPrompt.invalid ||
             submitControl.value
           "
           (click)="submitPrompt()"
@@ -67,9 +75,9 @@
       </div>
     </div>
   </div>
-  <div *ngIf="errors.length > 0" class="mt-2">
+  <div *ngIf="userPrompt!.invalid && (userPrompt!.dirty || userPrompt!.touched)" class="mt-2">
     <p class="text-red-500 font-bold">Errors:</p>
-    <ul>
+    <ul *ngIf="errors">
       <li *ngFor="let error of errors" class="text-red-500">{{ error }}</li>
     </ul>
   </div>
