@@ -17,7 +17,7 @@ export const environment = {
   "JINAAI_API_KEY": "",
   "GROQ_API_KEY": "",
   "CRAWL4AI_API_KEY": "",
-  "API_CRAWL4AI": "https://deepcrawl4ai.fly.dev",
+  "API_CRAWL4AI": "https://crawlagent.fly.dev",
   "API_DEPLOY4SCRAP": "https://arachnefly.fly.dev",
   "API_ANTHROPIC": "https://api.anthropic.com",
   "API_OPENAI": "https://api.openai.com",
