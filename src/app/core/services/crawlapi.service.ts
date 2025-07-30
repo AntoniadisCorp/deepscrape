@@ -162,20 +162,9 @@ export class CrawlAPIService {
             // Adjust the concatenatedText to remove the complete segment if needed
             previousText = previousText.replace(completeString, '');
         }
-
-        // console.log(completeString)
         
-        return completeString; // Return the last matched complete JSON string
-        /* try {
-            return JSON.parse(line);
-        } catch (e) {
-            console.error('Failed to parse JSON chunk:', e, 'Line content:', line);
-            return null; // Skipping invalid lines
-        } */      
+        return completeString; // Return the last matched complete JSON string    
       }),
-      // mergeMap((text: string) => from(text.split('\n'))),
-      // map((line) => line.trim()),
-      // tap( line => console.log(line)),
       map(line => {
           if (!line) return null; // Skip empty lines
           let jsonObject = null;
@@ -186,6 +175,8 @@ export class CrawlAPIService {
           }
           return jsonObject;
       }),
+      filter(line => line !== null), // Filter out null values
+      // tap( line => console.log(line)),
       catchError(error => {
         console.error('Error in Crawl4 AI API call:', error)
         throw error

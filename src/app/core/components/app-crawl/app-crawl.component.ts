@@ -10,7 +10,7 @@ import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, SnackbarS
 import { Subject } from 'rxjs/internal/Subject';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { delay } from 'rxjs/internal/operators/delay';
-import { CrawlPack, CrawlTask, DropDownOption } from '../../types';
+import { CrawlPack, CrawlTask, DropDownOption } from '../../types'; // Removed CrawlResult from here
 import { arrayBufferToString, setCrawlPackList } from '../../functions';
 import { SnackBarType } from '../snackbar/snackbar.component';
 import { MatIcon } from '@angular/material/icon';
@@ -25,12 +25,15 @@ import { expandCollapseAnimation } from 'src/app/animations';
 import { MarkdownModule } from 'ngx-markdown';
 import { Subscription } from 'rxjs';
 import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
+import { CrawlResult } from '../../types/crawl-result.type'; // Import the CrawlResult interface
+import { CrawlResultItemComponent } from '../crawl-result-item/crawl-result-item.component';
 
+const DEFAULT_CRAWL_PACK_SELECTION = {name: "select a crawlpack", code: "default"}
 @Component({
   selector: 'app-crawl',
   imports: [MatProgressSpinner, GinputComponent, NgFor, NgIf, MatIcon, NgClass, RippleDirective,
     DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe,
-    RadioToggleComponent
+    RadioToggleComponent, CrawlResultItemComponent // Add the new component to imports
   ],
   animations: [expandCollapseAnimation],
   templateUrl: './app-crawl.component.html',
@@ -40,7 +43,11 @@ export class AppCrawlComponent {
 
   private localStorage = inject(LocalStorage)
   readonly clipboardButton = ClipboardbuttonComponent
-  private destroy$ = new Subject<void>();
+  private destroy$ = new Subject<void>()
+
+  // clear the timeout when the component is destroyed.
+  private timeoutId: any;
+
   @HostBinding('class') classes = 'flex items-center flex-col relative';
 
   crawlOptions: FormGroup
@@ -64,7 +71,7 @@ export class AppCrawlComponent {
   protected errorMessage = ''
 
   // Results Area
-  crawlResults: any[] = []; // Array to hold results
+  crawlResults: any[] = []; // Array to hold results (keeping as any[] as per instruction)
 
   // Data Lists
   crawlConfigPack: DropDownOption[] = []
@@ -123,7 +130,7 @@ export class AppCrawlComponent {
       ]
     })
 
-    this.crawlPackSelector = new FormControl< DropDownOption | null>({name: "select a crawlpack", code: "default"}, {
+    this.crawlPackSelector = new FormControl< DropDownOption | null>(DEFAULT_CRAWL_PACK_SELECTION, {
       // updateOn: 'blur', //default will be change
       nonNullable: false,
       validators: [
@@ -178,7 +185,7 @@ export class AppCrawlComponent {
     console.log('Crawl Operation Started', this.urls.value)
 
     // return an error message if url or userpormpt is invalid
-    if (!this.urls.valid)
+    if (!this.urls.valid || this.crawlPackSelector.value?.code === 'default')
       return
 
     // reset the results
@@ -190,17 +197,14 @@ export class AppCrawlComponent {
     // start the crawl operation
     this.isCrawlProcessing = true
 
-    // send background request to the python server api
+    // enqueue crawl request to the python server api celery app
     this.crawlEnqueue(this.urls.value)
-
   }
 
   crawlEnqueue(formInput: string) {
-
-    if (this.crawlPackSelector.value?.code === 'default')
-      return
   
     let urls = formInput.trim().split(',')
+
     // Create a new CrawlConfig object
     this.crawlSubscription = of(urls)
     .pipe(
@@ -221,10 +225,11 @@ export class AppCrawlComponent {
         })
       ).subscribe({
         next: (data: any) => {
-          
-          if (data)
-            console.log(data)
-            this.addCrawlResult(data)
+
+          if (data === null )
+            return
+        
+          this.addCrawlResult(data)
         },
         complete: () => {
           // reset the processing status
@@ -238,7 +243,7 @@ export class AppCrawlComponent {
         error: (error: any) => {
 
           // print the error
-          console.error('Error processing data:', error, arrayBufferToString(error.error));
+          console.error('Error processing data:', error, error.message);
           // set the error message to show on the screen by snackbar popup
           this.errorMessage = 'Error processing data. Please check console for details.';
 
@@ -267,8 +272,9 @@ export class AppCrawlComponent {
     if (!pack)
       return
 
-
     this.itemVisibility[packId] = signal(false)
+    this.itemVisibility['markdown'] = signal(this.itemVisibility[packId]())
+
     this.crawlpack = pack
 
     // This code snippet is checking if the `crawler_config` property exists in the `config` object of
@@ -298,16 +304,9 @@ export class AppCrawlComponent {
             return true
         })
 
-        // reset all boolean signal values in itemVisibility to false except packValue
-        // Object.keys(this.itemVisibility).forEach(key => {
-        //     if (key !== packKey) {
-        //         this.itemVisibility[key]?.set(false)
-        //     }
-        // })
-        // set itemToJson to packValue
-        // this.itemToJson[packKey] = convertKeysToSnakeCase(switchPackKey(packKey, packValue?.config))
-        // console.log(packKey, switchPackKey(packKey, snakeFormat))
-
+        this.timeoutId = setTimeout(() => {
+          this.itemVisibility['markdown'].set(this.itemVisibility[packKey]())
+        }, 300) // Adjust the timeout duration as needed
 
     }
 
@@ -318,21 +317,23 @@ export class AppCrawlComponent {
 
   // Method to add new results (this would be called when a new streaming event arrives)
   addCrawlResult(line: any) {
-    let jsonLine = null
-    jsonLine = { ... line}
    
-    if (!jsonLine)
+    if (!line)
       return
 
-
-    if (jsonLine?.dump && typeof jsonLine?.dump === 'string') {
+    if (line?.dump && typeof line?.dump === 'string') {
       try {
-        jsonLine.dump = JSON.parse(jsonLine.dump);
+        const dump: CrawlResult = JSON.parse(line.dump);
+        console.log(dump);
+        // Ensure the object conforms to CrawlResult structure and add necessary UI properties
+        this.crawlResults.push({
+          ...dump,
+          message: line.message || "processing", // Use line.message if available, otherwise "processing"
+          expanded: true // Initialize as expanded for the new item
+        });
       } catch (e) {
         console.error('Failed to parse dump JSON:', e);
       }
-      jsonLine.expanded = false; // Initialize as collapsed
-      this.crawlResults.push(jsonLine);
     }
   }
 
@@ -351,8 +352,6 @@ export class AppCrawlComponent {
   /**
    * Important Functions
    */
-
-
   // 'info' | 'success' | 'warning' | 'error'
   showSnackbar(
     message: string,
@@ -362,13 +361,18 @@ export class AppCrawlComponent {
 
     this.snackbarService.showSnackbar(message, type, action, duration)
   }
-  clearText() {
+  clearForm() {
+    // reset url
     this.urls.setValue('')
+    
+    // reset crawlpack dropdown 
+    this.crawlPackSelector.setValue(DEFAULT_CRAWL_PACK_SELECTION)
   }
 
   enableForm() {
 
     this.urls.enable()
+    this.stream?.enable()
     // this.userprompt.enable()
     this.submitButton.setValue(false)
     // this.modelAI.enable()
@@ -376,7 +380,8 @@ export class AppCrawlComponent {
 
   private disableForm() {
     this.urls.disable()
-    this.userprompt.disable()
+    this.stream?.disable()
+    // this.userprompt.disable()
     this.submitButton.setValue(true)
     // this.modelAI.disable()
   }
@@ -387,7 +392,8 @@ export class AppCrawlComponent {
     this.isGetResults = false
     // this.jsonChunk['usage'] = null
     // this.jsonChunk['content'] = ''
-    // this.aiResultsSub?.unsubscribe()
+    this.loadPackSubscription?.unsubscribe()
+    this.crawlSubscription?.unsubscribe()
     // this.forkJoinSubscription?.unsubscribe()
   }
 
@@ -408,6 +414,8 @@ export class AppCrawlComponent {
     this.destroy$.complete();
     this.loadPackSubscription?.unsubscribe()
     this.crawlSubscription?.unsubscribe()
+    if (this.timeoutId)
+            clearTimeout(this.timeoutId)
   }
 
 }

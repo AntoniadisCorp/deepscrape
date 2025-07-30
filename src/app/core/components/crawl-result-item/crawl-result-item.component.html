@@ -1,0 +1,316 @@
+<div class="group bg-gray-100 dark:bg-gray6 rounded-lg p-4 mb-4 shadow-md">
+  <button
+    title="accordion tabs"
+    class="flex justify-between w-full items-center cursor-pointer"
+    (click)="toggleExpand.emit(crawlResult)">
+    <div class="text-lg font-semibold text-purple-500 dark:text-gray-300">
+      <div class="flex w-fit items-center justify-between space-x-3">
+        <lucide-angular
+          [img]="icons['globe']"
+          class="h-6 w-6 text-blue-400 fill-none"></lucide-angular>
+        <h3 class="text-lg font-medium w-full max-w-[600px] truncate">
+          {{ crawlResult.url }}
+        </h3>
+      </div>
+    </div>
+    <mat-icon
+      class="text-dark-500 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-100 transition-colors duration-100">
+      {{ crawlResult.expanded ? 'expand_less' : 'expand_more' }}
+    </mat-icon>
+  </button>
+
+  <div
+    [hidden]="!crawlResult.expanded"
+    [@expandCollapse]="crawlResult.expanded ? 'expanded' : 'collapsed'"
+    class="mt-4">
+    <!-- Sub-tab Navigation -->
+    <div
+      class="flex flex-wrap gap-2 mb-4 border-b border-gray-300 dark:border-gray-700">
+      <button
+        *ngFor="let tab of subTabs"
+        (click)="selectSubTab(tab.key)"
+        [ngClass]="{
+          'bg-cyan-300/[0.6] text-white': activeSubTab === tab.key,
+          'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-600/10 dark:text-gray-200 dark:hover:bg-gray-600':
+            activeSubTab !== tab.key
+        }"
+        class="px-4 py-2 rounded-t-lg font-medium transition-colors duration-200">
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- Sub-tab Content -->
+    <div class="sub-tab-content">
+      <ng-container [ngSwitch]="activeSubTab">
+        <div *ngSwitchCase="'overview'">
+          <div
+            class="gap-4 px-4 py-2 my-2 block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+            <markdown
+              clipboard
+              emoji
+              class="tomltable"
+              [clipboardButtonComponent]="clipboardButton"
+              [data]="getOverviewData() | json | language : 'toml'"></markdown>
+          </div>
+        </div>
+        <div *ngSwitchCase="'metadata'">
+          <div
+            class="gap-4 px-4 py-2 my-2 block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+            <markdown
+              clipboard
+              emoji
+              class="tomltable"
+              [clipboardButtonComponent]="clipboardButton"
+              [data]="
+                crawlResult.metadata | json | language : 'toml'
+              "></markdown>
+          </div>
+        </div>
+        <div *ngSwitchCase="'media'">
+          <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+            Media:
+          </h4>
+          <div
+            *ngIf="
+              crawlResult.media?.images && crawlResult.media.images.length > 0
+            ">
+            <h5 class="font-semibold text-gray-700 dark:text-gray-300">
+              Images:
+            </h5>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+              <div *ngFor="let image of crawlResult.media.images">
+                <img
+                  title="{{ image.desc || 'Image' }}"
+                  [src]="getFullImageUrl(image.src, crawlResult.url)"
+                  [alt]="image.alt || image.desc"
+                  class="w-full h-auto rounded-md shadow-sm" />
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {{ image.desc }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            *ngIf="
+              crawlResult.media?.videos && crawlResult.media.videos.length > 0
+            "
+            class="mt-4">
+            <h5 class="font-semibold text-gray-700 dark:text-gray-300">
+              Videos:
+            </h5>
+            <div *ngFor="let video of crawlResult.media.videos">
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {{ video.desc || 'No description' }}
+              </p>
+              <!-- Add video player if src is available -->
+            </div>
+          </div>
+          <p
+            *ngIf="
+              (!crawlResult.media?.images ||
+                crawlResult.media.images.length === 0) &&
+              (!crawlResult.media?.videos ||
+                crawlResult.media.videos.length === 0)
+            "
+            class="text-gray-600 dark:text-gray-400">
+            No media content available.
+          </p>
+        </div>
+        <div *ngSwitchCase="'links'">
+          <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+            Links:
+          </h4>
+          <div
+            *ngIf="
+              crawlResult.links?.internal &&
+              crawlResult.links.internal.length > 0
+            ">
+            <h5 class="font-semibold text-gray-700 dark:text-gray-300">
+              Internal Links:
+            </h5>
+            <ul class="list-disc list-inside ml-4">
+              <li *ngFor="let link of crawlResult.links.internal">
+                <a
+                  [href]="link.href"
+                  target="_blank"
+                  class="bg-cyan-300/[0.6] hover:underline">
+                  {{ link.text || link.href }}
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div
+            *ngIf="
+              crawlResult.links?.external &&
+              crawlResult.links.external.length > 0
+            "
+            class="mt-4">
+            <h5 class="font-semibold text-gray-700 dark:text-gray-300">
+              External Links:
+            </h5>
+            <ul class="list-disc list-inside ml-4">
+              <li *ngFor="let link of crawlResult.links.external">
+                <a
+                  [href]="link.href"
+                  target="_blank"
+                  class="bg-cyan-300/[0.6] hover:underline">
+                  {{ link.text || link.href }}
+                </a>
+              </li>
+            </ul>
+          </div>
+          <p
+            *ngIf="
+              (!crawlResult.links?.internal ||
+                crawlResult.links.internal.length === 0) &&
+              (!crawlResult.links?.external ||
+                crawlResult.links.external.length === 0)
+            "
+            class="text-gray-600 dark:text-gray-400">
+            No link content available.
+          </p>
+        </div>
+        <div *ngSwitchCase="'tables'">
+          
+          <div *ngIf="crawlResult.tables && crawlResult.tables.length > 0">
+            <div
+              *ngFor="let table of crawlResult.tables"
+              class="mb-4 overflow-auto">
+              <table
+                class="min-w-full bg-white dark:bg-[#272822] shadow-lg rounded-lg">
+                <caption
+                  *ngIf="table.caption"
+                  class="caption-top text-left text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  {{ table.caption }}
+                </caption>
+                <thead>
+                  <tr>
+                    <th
+                      *ngFor="let header of table.headers"
+                      class="py-2 px-4 bg-gray-200 dark:bg-gray-600/10 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">
+                      {{ header }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="shadow-lg rounded-lg">
+                  <tr
+                    *ngFor="let row of table.rows"
+                    class="border-b border-gray-200 dark:border-gray-700">
+                    <td
+                      *ngFor="let cell of row"
+                      class="py-2 px-4 text-sm text-gray-900 dark:text-gray-100">
+                      {{ cell }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p
+            *ngIf="!crawlResult.tables || crawlResult.tables.length === 0"
+            class="text-gray-600 dark:text-gray-400">
+            No table content available.
+          </p>
+        </div>
+        <div *ngSwitchCase="'raw_markdown'">
+          <div
+            class="prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+            <markdown
+              clipboard
+              emoji
+              class="tomltable"
+              [clipboardButtonComponent]="clipboardButton"
+              [data]="
+                crawlResult.markdown.raw_markdown ||
+                'No markdown content available.'
+              "></markdown>
+          </div>
+        </div>
+        <div *ngSwitchCase="'raw_html'">
+          <markdown
+            clipboard
+            emoji
+            [clipboardButtonComponent]="clipboardButton"
+            [data]="crawlResult.html | json | language : 'html'"></markdown>
+          <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
+            Cleaned HTML:
+          </h5>
+          <markdown
+            clipboard
+            emoji
+            [clipboardButtonComponent]="clipboardButton"
+            [data]="
+              crawlResult.cleaned_html | json | language : 'html'
+            "></markdown>
+          <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
+            Fit HTML:
+          </h5>
+          <markdown
+            clipboard
+            emoji
+            [clipboardButtonComponent]="clipboardButton"
+            [data]="crawlResult.fit_html | json | language : 'html'"></markdown>
+        </div>
+        <div *ngSwitchCase="'technical_details'">
+          <div
+            class="gap-4 px-4 py-2 my-2 block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">
+            <markdown
+              clipboard
+              emoji
+              class="tomltable"
+              [clipboardButtonComponent]="clipboardButton"
+              [data]="
+                getTechnicalDetails() | json | language : 'toml'
+              "></markdown>
+          </div>
+        </div>
+        <div *ngSwitchCase="'files'">
+          <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+            Files:
+          </h4>
+          <pre
+            class="bg-gray-200 dark:bg-gray-600/10 p-2 rounded text-sm overflow-auto"><code>{{ crawlResult.downloaded_files | json }}</code></pre>
+          <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
+            Screenshot:
+          </h5>
+          <div *ngIf="crawlResult.screenshot">
+            <img
+              [src]="'data:image/png;base64,' + crawlResult.screenshot"
+              alt="Screenshot"
+              class="w-full h-auto rounded-md shadow-sm" />
+          </div>
+          <p
+            *ngIf="!crawlResult.screenshot"
+            class="text-gray-600 dark:text-gray-400">
+            No screenshot available.
+          </p>
+          <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
+            PDF:
+          </h5>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{
+              crawlResult.pdf
+                ? 'PDF content available (not rendered).'
+                : 'No PDF available.'
+            }}
+          </p>
+          <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
+            MHTML:
+          </h5>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{
+              crawlResult.mhtml
+                ? 'MHTML content available (not rendered).'
+                : 'No MHTML available.'
+            }}
+          </p>
+        </div>
+        <div *ngSwitchDefault>
+          <p class="text-gray-600 dark:text-gray-400">
+            Select a tab to view content.
+          </p>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
