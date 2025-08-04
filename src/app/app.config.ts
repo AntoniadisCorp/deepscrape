@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, isDevMode, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -24,6 +24,8 @@ import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
 import { LogLevel, setLogLevel } from '@angular/fire';
+import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import { myIcons } from './shared';
 
 setLogLevel(LogLevel.VERBOSE)
 // const analytics = getAnalytics(app);
@@ -33,10 +35,10 @@ export const appConfig: ApplicationConfig = {
     STORAGE_PROVIDERS,
     { provide: WindowToken, useFactory: windowProvider },
     { provide: BrowserToken, useFactory: browserProvider },
-
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider(myIcons) }, // Register the LucideIconProvider
     importProvidersFrom(LoadingBarHttpClientModule),
     provideMarkdown({
-      loader: HttpClient,
+      // loader: HttpClient,
     }),
     provideHttpClient(
       withInterceptorsFromDi(),

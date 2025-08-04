@@ -1,50 +1,41 @@
 import { Injectable } from '@angular/core';
-import { Auth, AuthProvider, authState, FacebookAuthProvider, getAuth, GoogleAuthProvider, linkWithPopup, signInWithEmailAndPassword, signInWithPopup, User } from '@angular/fire/auth';
-import { Firestore } from '@angular/fire/firestore';
-import { catchError, from, map, Observable, of, Subscription, take } from 'rxjs';
-import { Users } from '../types';
-
+import {
+  Auth, AuthProvider, authState, browserLocalPersistence, FacebookAuthProvider,
+  getAuth,
+  GoogleAuthProvider, indexedDBLocalPersistence, linkWithPopup, setPersistence, signInWithEmailAndPassword,
+  signInWithPopup,
+  User
+} from '@angular/fire/auth';
+import { Observable } from 'rxjs/internal/Observable';
+import { map } from 'rxjs/internal/operators/map';
+import { Subscription } from 'rxjs/internal/Subscription';
+import { FireUser } from '../types';
+import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
+import { FirestoreService } from './firestore.service';
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  token: string | undefined
 
-  get getToken(): string | undefined {
-    return this.token;
-  }
+  token: string | undefined = ''
 
-  user: { uid?: string, displayName?: string | null } | null
+  private authStateResolved = new BehaviorSubject<boolean>(false);
+  user: FireUser | null = null;
 
   private userSubs: Subscription
+  private authSubs: Subscription
 
-  constructor(private firestore: Firestore, private auth: Auth) {
+  constructor(private auth: Auth, private fireService: FirestoreService) {
     this.initAuth()
+  }
 
-    this.initUser()
-    /*  this.userSubs = from(this.getUser()).pipe(
-       take(1),
-       map((currentUser) => {
-         const { error, user } = currentUser
-         if (error) {
-           return user
-         }
-         return { ...user }
-       }),
-       catchError(error => {
-         console.log(error)
-         return of(null)
-       })
-     ).subscribe({
-       next: (user) => {
-         this.user = user
-       },
-       error: (error) => {
-         console.log(error)
-         this.user = null
-       }
-     }) */
+  isAuthenticated(): Observable<boolean> {
+    return this.fireService.authState()
+  }
+
+  get isAuthStateResolved() {
+    return this.authStateResolved.asObservable();
   }
 
   // Sign in with Google
@@ -79,46 +70,50 @@ export class AuthService {
    * @description Inits auth
    */
   async initAuth() {
-    try {
-      const auth = getAuth();
-      const token = await auth.currentUser?.getIdToken()
-      this.token = token || undefined
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-    }
-  }
 
-  initUser() {
-    const { error, user } = this.getUser()
-    this.user = user
-    if (error) {
+    this.auth.onAuthStateChanged({
+      next: async user => {
 
-      return
-    }
-  }
+        if (!user) {
+          this.user = null;
+          this.token = undefined;
+          this.authStateResolved.next(false)
+          return
+        }
 
-  getUser() {
+        this.user = user;
+        this.authStateResolved.next(true)
 
-    try {
-      const user = this.auth.currentUser;
-      if (user) {
-        return { error: null, user: { uid: user.uid, displayName: user.displayName } }
-      } else {
-        throw new Error('No user is currently signed in.');
+        try {
+          if (user) {
+            const token = await user.getIdToken()
+            this.user = this.getUser(user) as FireUser
+            this.token = token || undefined
+          } else {
+            this.token = undefined;
+          }
+        } catch (error) {
+          console.error('Error initializing auth:', error);
+          this.token = undefined;
+        }
+      },
+      error: (error) => {
+        console.error('Error in auth state change:', error);
+      },
+      complete: () => {
+        console.log('Auth state change completed.');
       }
-    } catch (error) {
-      return { error, user: null }
-    }
-
+    })
   }
 
-  isAuthenticated(): Observable<boolean> {
+  getUser(user: User): FireUser {
 
-    return authState(this.auth).pipe(map(user => !!user))
-    // return this.getUser().user !== null ? of(true) : of(false)
+    const { uid, email, displayName, phoneNumber, photoURL, providerId, providerData, emailVerified } = user
+    return { uid, displayName, email, photoURL, phoneNumber, providerId, providerData, emailVerified }
   }
 
   ngOnDestroy() {
+    this.authSubs?.unsubscribe()
     this.userSubs?.unsubscribe()
   }
 }

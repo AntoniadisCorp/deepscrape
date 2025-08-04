@@ -16,20 +16,11 @@ import * as auth from "./app/auth"
 // const __filename = fileURLToPath(import.meta.url)
 // const __dirname = dirname(__filename)
 
-// Dynamically resolve the server path using a file URL
-// const serverFile = `file:///${join(__dirname, "..", "..", "dist", "deepscrape", "server", "server.mjs")}`
-// const serverPath = `file://${join(__dirname, "..", "..", "dist", "deepscrape", "server")}`
-// console.log(__filename, serverPath, __dirname)
-// const absolutePath = path.resolve(serverFile);
-// const moduleUrl = `file://${fileURLToPath(`file:///${absolutePath}`)}`
-// console.log(moduleUrl)
 
 // Export the Firebase deepscrape SSR app
 // https://firebase.google.com/docs/functions/networking
 export const deepscrape = app.deepscrape
 
-// const __filename = fileURLToPath(import.meta.url)
-// const __dirname = dirname(__filename)
 
 /* Auth - Functions */
 // STRIPE Functions
@@ -57,3 +48,7 @@ export const getCrawlResultConfigsPaging = auth.getCrawlResultConfigsPaging
 
 // MACHINE LOGGERS - Function TRIGGERS
 // export const receiveLogs = auth.receiveLogs
+
+
+// MACHINES - Function TRIGGERS
+export const getMachinesPaging = auth.getMachinesPaging

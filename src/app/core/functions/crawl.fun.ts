@@ -1,6 +1,6 @@
 import { FormGroup } from "@angular/forms"
 import { BrowserType, CrawlCachingMode, CrawlOperationStatus } from "../enum"
-import { DropDownOption } from "../types"
+import { CrawlPack, DropDownOption, Serializable } from "../types"
 
 export function crawlOperationStatusColor(status: CrawlOperationStatus) {
     let color = 'gray'
@@ -66,6 +66,11 @@ export function setBrowserTypeList(browserTypeList: DropDownOption[]) {
     browserTypeList.push(...list)
 }
 
+export function setCrawlPackList(pack: CrawlPack[], crawlConfigPackList: DropDownOption[]) {
+    const list = pack.map(config => ({ name: config.name, code: config.id }));
+    crawlConfigPackList.push(...list);
+}
+
 export function validateForm(configForm: FormGroup<any>): boolean {
     if (configForm.invalid) {
         Object.keys(configForm.controls).forEach(key => {
@@ -115,4 +120,150 @@ export function getErrorLabel(configForm: FormGroup<any>, controlName: string): 
         return configForm.get(controlName)?.errors?.[controlName]
     }
     return 'invalid input'
+}
+
+
+export function switchPackageIcon(packKey: string, browserType: string = 'playwright') {
+    switch (packKey) {
+        case 'browserProfile':
+            return browserType
+        case 'crawlConfig':
+            return 'spider-crawl-config'
+        case 'crawlResultConfig':
+            return 'crawl_logo'
+        default:
+            return 'crawl_logo'
+    }
+
+}
+
+export function toSerializableDict(obj: any, ignoreDefaultValue: boolean = false): Serializable {
+    if (obj === null || obj === undefined) {
+        return null;
+    }
+
+    // Handle basic types
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") {
+        return obj;
+    }
+
+    // Handle Enum (assuming enums are represented as objects with `name` and `value`)
+    if (obj.constructor && obj.constructor.name === "Object" && "name" in obj && "value" in obj) {
+        return { type: obj.constructor.name, params: obj.value };
+    }
+
+    // Handle Date objects
+    if (obj instanceof Date) {
+        return obj.toISOString();
+    }
+
+    // Handle arrays
+    if (Array.isArray(obj)) {
+        return obj.map(item => toSerializableDict(item));
+    }
+
+    // Handle plain objects
+    if (typeof obj === "object" && obj.constructor === Object) {
+        const result: { [key: string]: Serializable } = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                result[key] = toSerializableDict(obj[key]);
+            }
+        }
+        return { type: "dict", value: result };
+    }
+
+    // Handle class instances
+    if (obj.constructor && obj.constructor.name) {
+        const currentValues: { [key: string]: Serializable } = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+                if (!ignoreDefaultValue || value !== undefined) {
+                    currentValues[key] = toSerializableDict(value);
+                }
+            }
+        }
+        return { type: obj.constructor.name, params: currentValues };
+    }
+
+    return String(obj);
+}
+
+export function fromSerializableDict(data: Serializable): any {
+    if (data === null || data === undefined) {
+        return null;
+    }
+
+    // Handle basic types
+    if (typeof data === "string" || typeof data === "number" || typeof data === "boolean") {
+        return data;
+    }
+
+    // Handle typed data
+    if (typeof data === "object" && data !== null && "type" in data) {
+        const typedData = data as { type: string; params?: any; value?: any };
+
+        // Handle plain dictionaries
+        if (typedData.type === "dict" && typedData.value) {
+            const result: { [key: string]: any } = {};
+            for (const key in typedData.value) {
+                if (typedData.value.hasOwnProperty(key)) {
+                    result[key] = fromSerializableDict(typedData.value[key]);
+                }
+            }
+            return result;
+        }
+
+        // Handle class instances (assuming classes are globally available)
+        if (typedData.params) {
+            const cls = (globalThis as any)[typedData.type];
+            if (cls) {
+                return new cls(...Object.values(typedData.params));
+            }
+        }
+    }
+
+    // Handle arrays
+    if (Array.isArray(data)) {
+        return data.map(item => fromSerializableDict(item));
+    }
+
+    return data;
+}
+
+function isEmptyValue(value: any): boolean {
+    if (value === null || value === undefined) {
+        return true;
+    }
+    if (typeof value === "string" && value.trim().length === 0) {
+        return true;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+        return true;
+    }
+    if (typeof value === "object" && Object.keys(value).length === 0) {
+        return true;
+    }
+    return false;
+}
+
+
+export function convertKeysToSnakeCase(obj: any, exceptFromKeys: string[] = []): any {
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(item => convertKeysToSnakeCase(item, exceptFromKeys));
+    }
+
+    const newObj: any = {};
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            const newKey = exceptFromKeys.includes(key) ? key : key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            newObj[newKey] = exceptFromKeys.includes(key) ? obj[key] : convertKeysToSnakeCase(obj[key], exceptFromKeys);
+        }
+    }
+    return newObj;
 }

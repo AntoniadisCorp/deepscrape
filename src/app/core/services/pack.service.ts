@@ -352,6 +352,15 @@ export class PackService {
     //Add 'implements OnDestroy' to the class.
     // this.operationSubject?.unsubscribe()
     this.fireSaveSub?.unsubscribe()
+    this.browserSubject?.unsubscribe()
+    this.configSubject?.unsubscribe()
+    this.crawlResultsSubject?.unsubscribe()
+    this.totalPagesBrowserSubject?.unsubscribe()
+    this.totalPagesConfigSubject?.unsubscribe()
+    this.totalPagesResultsSubject?.unsubscribe()
+    this.inTotalConfigSubject?.unsubscribe()
+    this.inTotalResultsSubject?.unsubscribe()
+    this.inTotalBrowserSubject?.unsubscribe()
   }
 
 }

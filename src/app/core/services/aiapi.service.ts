@@ -9,13 +9,12 @@ import { environment } from 'src/environments/environment';
 import { arrayBufferToString, customUrlEncoder, sanitizeJSON, switchModelApiEndpoint } from '../functions';
 import { API_ANTHROPIC, API_CRAWL4AI, API_GROQAI, API_JINAAI, API_OPENAI } from '../variables';
 import { scan } from 'rxjs/internal/operators/scan';
-import { claudeAiApiStreamData, JinaOptions } from '../types';
+import { claudeAiApiStreamData, CrawlPack, CrawlTask, JinaOptions } from '../types';
 import { filter } from 'rxjs/internal/operators/filter';
 import { Subject } from 'rxjs/internal/Subject';
 import { from } from 'rxjs/internal/observable/from';
 import { mergeMap } from 'rxjs/internal/operators/mergeMap';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-// import { Auth, authState, getAuth } from '@angular/fire/auth';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -34,7 +33,6 @@ export class AiAPIService {
 
   private jinaAiEndpoint: string
 
-  private crawl4AiEndpoint: string
 
   private subjectClaudeAI = new Subject<claudeAiApiStreamData>()
   private subjectOpenAI = new Subject<{ content: string, usage: any | null, role: any | null }>()
@@ -46,7 +44,6 @@ export class AiAPIService {
     this.openAiEndpoint = API_OPENAI + '/chat/completions' // Updated URL
     this.groqAiEndpoint = API_GROQAI + '/chat/completions' // Updated URL
     this.jinaAiEndpoint = API_JINAAI + '/'// Updated URL
-    this.crawl4AiEndpoint = API_CRAWL4AI + '/crawl' // Updated URL
 
     // initialize auth state
     this.authService.initAuth()
@@ -86,53 +83,6 @@ export class AiAPIService {
         map((response: any) => response.data.content),
         catchError(error => {
           console.error('Error in Jina AI API call:', error)
-          throw error
-        })
-
-      )
-  }
-
-  sendToCrawl4AI(url: string, options: JinaOptions, cookies?: string,
-    content_type: "application/octet-stream" | "text/plain" | "application/json" | "text/event-stream" = "application/octet-stream"): Observable<string> {
-
-    const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url// customUrlEncoder(url);
-    // console.log("encodedUrl: ", encodedUrl, environment?.CRAWL4AI_API_KEY)
-    const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint
-    // const cookie = options.forwardCookies && cookies && cookies?.length ? { "X-Set-Cookie": cookies } : null // If cookies are provided, append them to the headers, )
-    const headers = new HttpHeaders({
-      'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
-      'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
-      'Accept': content_type as string,
-      // "X-With-Links-Summary": "true",
-      // "X-With-Iframe": options.iframe,
-      // "X-Return-Format": "markdown",
-      // "X-Target-Selector": "body",
-      // "X-With-Generated-Alt": "true",
-      // ...cookie
-    })
-
-    const body = {
-      "urls": encodedUrl,
-      "priority": 10,
-    }
-
-    return this.http.post(crawl4AiReaderEndpoint, body, { headers/* , transferCache: true */, responseType: 'arraybuffer' })
-      .pipe(
-        map((response: ArrayBuffer) => JSON.parse(arrayBufferToString(response))),
-        tap((response: any) => {
-
-          const data = {
-            code: response.code,
-            title: response.data.title,
-            status: response.status,
-            url: response.data.url,
-            tokens: response.data.usage?.tokens
-          }
-          console.log('Response data:', data)
-        }),
-        map((response: any) => response.data.content),
-        catchError(error => {
-          console.error('Error in Crawl4 AI API call:', error)
           throw error
         })
 

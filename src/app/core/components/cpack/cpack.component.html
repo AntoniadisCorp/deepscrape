@@ -1,0 +1,50 @@
+<div
+  class="relative flex flex-col rounded-xl shadow-md overflow-hidden transition-transform transform hover:scale-105 duration-300 bg-[#dce7ec] dark:bg-[#1b1d1e]">
+  @if(user$ | async; as user) {
+  <div class="absolute inset-0 h-32 bg-[#dce7ec] dark:bg-[#1b1d1e]">
+    <img
+      class="rounded-full object-contain"
+      priority=""
+      loading="eager"
+      ng-img="true"
+      decoding="sync"
+      [srcset]="user | provider : user.providerId : 'photoURL'"
+      [name]="user | provider : user.providerId : 'displayName'"
+      alt="user photo"
+      alt="User Avatar"
+      class="relative rounded-full w-20 h-20 mx-auto mt-8 border-4 border-white shadow-md dark:border-gray-800" />
+  </div>
+  }
+
+  <div class="relative mt-24 px-6 py-4">
+    @if(user$ | async; as user) {
+    <h2 class="text-lg font-semibold text-gray-800 text-center dark:text-white">
+      {{ user.providerData[0].displayName }}
+    </h2>
+    }
+
+    <div class="flex items-center justify-center mt-2">
+      <span
+        class="bg-purple-100 text-purple-800 rounded-full px-2 py-1 text-xs font-medium dark:bg-purple-800 dark:text-purple-100">
+        {{ pack().type || 'crawl4ai' }}
+      </span>
+    </div>
+    <p
+      class="text-base font-roboto text-gray-500 mt-2 text-center dark:text-[#6faf44]">
+      {{ createdAt | date }}
+    </p>
+  </div>
+  <div class="px-6 py-4 bg-gray-50 dark:bg-gray7">
+    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+      Configuration:
+    </h3>
+    <div class="flex flex-wrap mt-2">
+      <ng-container *ngFor="let type of pack().config.type">
+        <span
+          class="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs font-code mr-2 mb-2 hover:bg-blue-200 transition-colors duration-200 dark:bg-blue-800 dark:text-blue-100">
+          #{{ type }}
+        </span>
+      </ng-container>
+    </div>
+  </div>
+</div>

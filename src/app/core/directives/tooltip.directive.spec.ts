@@ -48,12 +48,12 @@ describe('TooltipDirective', () => {
   });
 
   it('should create an instance', () => {
-    const directive = new TooltipDirective(elementRef, applicationRef, injector, viewContainerRef);
+    const directive = new TooltipDirective(viewContainerRef);
     expect(directive).toBeTruthy();
   });
 
   it('should create tooltip component on mouseenter', () => {
-    const directive = new TooltipDirective(elementRef, applicationRef, injector, viewContainerRef);
+    const directive = new TooltipDirective(viewContainerRef);
     const createComponentSpy = viewContainerRef.createComponent as jasmine.Spy;
 
     directive.ngOnInit()
@@ -67,7 +67,7 @@ describe('TooltipDirective', () => {
   });
 
   it('should destroy tooltip component on mouseleave', () => {
-    const directive = new TooltipDirective(elementRef, applicationRef, injector, viewContainerRef);
+    const directive = new TooltipDirective(viewContainerRef);
     const destroySpy = jasmine.createSpy('destroy');
     const clearTimeoutSpy = windowMock.clearTimeout as jasmine.Spy;
 
@@ -87,7 +87,7 @@ describe('TooltipDirective', () => {
   });
 
   it('should set tooltip text and position to tooltip component', () => {
-    const directive = new TooltipDirective(elementRef, applicationRef, injector, viewContainerRef);
+    const directive = new TooltipDirective(viewContainerRef);
     const tooltipText = 'Test tooltip text';
     const tooltipPosition = 'right';
     directive.tooltip = tooltipText
@@ -113,7 +113,7 @@ describe('TooltipDirective', () => {
   });
 
   it('should destroy the component on ngOnDestroy', () => {
-    const directive = new TooltipDirective(elementRef, applicationRef, injector, viewContainerRef);
+    const directive = new TooltipDirective(viewContainerRef);
     const destroySpy = jasmine.createSpy('destroy');
 
     // Mock componentRef and its methods

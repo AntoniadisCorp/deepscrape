@@ -121,7 +121,7 @@ export function generateRandomString(length: number): string {
 
 export function setDefaultImages(array: DropDownOption[]): void {
     const defaultImages = [
-        { name: 'registry.fly.io/deepcrawl4ai:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+        { name: 'registry.fly.io/crawlagent:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
     ]
 
     array.push(...defaultImages)

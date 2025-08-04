@@ -1,25 +1,40 @@
-import { Component, HostBinding, inject } from '@angular/core';
-import { AppScrapeComponent, PaymentComponent } from 'src/app/core/components';
+import { Component, HostBinding, inject, OnInit } from '@angular/core';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { CommonModule, NgClass, NgIf } from '@angular/common';
+import { AppCrawlComponent, AppLLMScrapeComponent, PaymentComponent } from 'src/app/core/components';
 import { LocalStorage } from 'src/app/core/services';
+import { fadeinCartItems } from 'src/app/animations';
 
 @Component({
   selector: 'app-playground',
-  imports: [AppScrapeComponent, /* PaymentComponent */],
+  imports: [AppLLMScrapeComponent, AppCrawlComponent, CommonModule, RouterModule, NgClass, NgIf /* PaymentComponent */],
   templateUrl: './playground.component.html',
-  styleUrl: './playground.component.scss'
+  styleUrl: './playground.component.scss',
+  animations: [
+    fadeinCartItems
+  ]
 })
-export class PlaygroundComponent {
+export class PlaygroundComponent implements OnInit {
   @HostBinding('class') classes = 'grow';
-  private localStorage: Storage
-  constructor() {
+  currentMode: 'llm-scrape' | 'crawl' = 'llm-scrape'; // Default mode
 
-    this.localStorage = inject(LocalStorage)
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
   }
 
-
   ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
+    this.route.queryParams.subscribe(params => {
+      this.currentMode = params['mode'] === 'crawl' ? 'crawl' : 'llm-scrape';
+    });
+  }
 
+  changeMode(mode: 'llm-scrape' | 'crawl'): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { mode: mode },
+      queryParamsHandling: 'merge'
+    });
   }
 }

@@ -20,6 +20,8 @@ export class GinputComponent {
   @Input() control: FormControl<any>
   @Input() bgColor?: string = `bg-gray-50 dark:bg-gray-700`
 
+  @Input() label?: string = 'URL'
+
   constructor() { }
 
   ngOnInit(): void {

@@ -1,37 +1,50 @@
 // src/middleware/rateLimit.ts
-import rateLimit from 'express-rate-limit'
-// import { Redis } from 'ioredis'
-// import { RedisStore } from 'rate-limit-redis'
+import { redisClient } from 'api/config'
+import { Options, rateLimit, RateLimitRequestHandler } from 'express-rate-limit'
+import { RedisStore } from 'rate-limit-redis'
 
-/* const host = process.env['REDIS_HOST']
-const port = process.env['REDIS_PORT']
-const p4ss = process.env['REDIS_PASSWORD']
-// Configure your Redis client.  IMPORTANT: Use environment variables
-// for sensitive information like host, port, password.
-const redisClient = new Redis({
-    host: host || 'localhost', // Read from env
-    port: parseInt(port || '6379'), // Read from env
-    password: p4ss // Add password if you have one
-})
+let redis_store = undefined
+let redis_store_api = undefined
 
-if (host?.length && port?.length && p4ss?.length) {
-    redisClient.connect().catch(console.error)
-    console.log('Redis client connected')
-} */
+if (redisClient) {
+    redis_store = new RedisStore({
+        prefix: 'rateLimit:', // Optional prefix for keys in Redis
+        // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
+        sendCommand: (...args: string[]) => redisClient.call(...args),
+        resetExpiryOnChange: true, // Reset the rate limit when the IP changes
+    })
+    redis_store_api = new RedisStore({
+        prefix: 'apiRateLimit:', // Optional prefix for keys in Redis
+        // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
+        sendCommand: (...args: string[]) => redisClient.call(...args),
+        resetExpiryOnChange: true, // Reset the rate limit when the IP changes
+    })
+}
 
-
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+const limmitOptions: Partial<Options> = {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 1000, // Limit each IP to 1000 requests per windowMs
+    limit: 100, // Limit each IP to 100 requests per windowMs
     message: 'Too many requests from this IP, please try again after 15 minutes',
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    //   trustProxy: true,     // Trust the reverse proxy
-    /* store: new RedisStore({
-        prefix: 'rateLimit:', // Optional prefix for keys in Redis
-        // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
-        sendCommand: async (...args: string[]) => redisClient.call(...args)
-    }), */
-})
+    validate: { trustProxy: false }, // Trust the reverse proxy
+    store: redis_store, // Use Redis as the store for rate limiting
+}
 
-export { limiter }
+// Create a rate limiter middleware for api routes
+const apiLimmitOptions: Partial<Options> = {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 1000 requests per windowMs
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+    limit: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    validate: { trustProxy: false }, // Trust the reverse proxy
+    store: redis_store_api, // Use Redis as the store for rate limiting
+}
+
+const limiter: RateLimitRequestHandler = rateLimit(limmitOptions)
+const apiLimiter: RateLimitRequestHandler = rateLimit(apiLimmitOptions)
+
+export { limiter, apiLimiter }

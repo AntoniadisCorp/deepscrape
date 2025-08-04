@@ -31,11 +31,11 @@
     "
     for="floating_filled"
     class="absolute start-2 top-4 z-10 origin-[0] -translate-y-4 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-4 peer-focus:scale-75 dark:text-gray-400 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
-    >URL</label
+    >{{label}}</label
   >
 </div>
+@if(control!.invalid && (control!.dirty || control!.touched)) {
 <p
-  *ngIf="control!.invalid && (control!.dirty || control!.touched)"
   id="filled_success_help"
   class="mt-2 text-xs text-red-600 dark:text-red-400"
 >
@@ -49,3 +49,13 @@
     The text input format must be as any url validated format.
   </span>
 </p>
+} @else {
+  <p
+  id="empty_div"
+  class="mt-6 text-xs w-full bg-transparent"
+>
+  <span class="font-medium" 
+    ></span
+  >
+}
+

@@ -1,25 +1,25 @@
-import { Injectable } from '@angular/core'
+import { Injectable, OnInit } from '@angular/core'
 import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots } from '@angular/fire/firestore'
 import { openDB } from 'idb'
-import { BehaviorSubject } from 'rxjs'
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs'
 import { AuthService } from './auth.service'
-import { deletePackFromFirestore, savePackToFirestore } from '../functions'
 import { FirestoreService } from './firestore.service'
+import { BrowserConfig, BrowserProfile, CrawlConfig, CrawlPack, CrawlResult, CrawlResultConfig } from '../types'
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private cartItem$ = new BehaviorSubject<any>(null)
+  private cartItemSubject = new BehaviorSubject<any>(null)
   private dbName = 'PackDB'
   private storeName = 'pack'
   private userId: string
 
   constructor(
     private firestore: Firestore,
-    private auth: AuthService,
+    private authService: AuthService,
     private firestoreService: FirestoreService
   ) {
 
-    this.userId = this.auth.user?.uid || 'user_id'
+    this.userId = this.authService.user?.uid ?? ''
     // set the firestore instance
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 
@@ -27,20 +27,28 @@ export class CartService {
     this.loadCartFromIndexedDB()
     this.listenToFirestoreChanges()
   }
-
   // Initialize IndexedDB
   private async initDB() {
 
     const storeName = this.storeName
 
-    // Create the database if it doesn't exist
-    await openDB(this.dbName, 1, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName, { keyPath: 'uid' })
-        }
-      },
-    })
+    try {
+      // Create the database if it doesn't exist
+      await openDB(this.dbName, 1, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName, { keyPath: 'uid' })
+          }
+        },
+      })
+    } catch (error) {
+      console.error('Error initializing IndexedDB:', error)
+    }
+  }
+
+  // Get current cart as Observable
+  get getCart$(): Observable<any> {
+    return this.cartItemSubject.asObservable() // BrowserProfile | CrawlConfig | CrawlResultConfig
   }
 
   // Save cart item to IndexedDB
@@ -61,54 +69,59 @@ export class CartService {
     await tx.store.delete(id)
     await tx.done
 
-    this.cartItem$.next(null)
+    this.cartItemSubject.next(null)
   }
 
   // Load cart from IndexedDB
   async loadCartFromIndexedDB(id: string = this.userId) {
-    const db = await openDB(this.dbName)
-    const item = await db.get(this.storeName, id)
-    if (item) this.cartItem$.next(item)
-    // console.log('Loaded from IndexedDB:', item, this.storeName, this.userId, this.cartItem$.value)
-
+    try {
+      const db = await openDB(this.dbName)
+      const item = await db.get(this.storeName, id)
+      if (item) this.cartItemSubject.next(item)
+    } catch (error) {
+      console.error('Error loading cart from IndexedDB:', error)
+    }
   }
 
   // Save to Firestore
   private async saveToFirestore(item: any) {
     // Save to Firestore
-    await savePackToFirestore(this.userId, item, this.firestore)
+    await this.firestoreService.savePackToFirestore(this.userId, item, false)
   }
 
   private async updateToFirestore(item: any) {
     // Save to Firestore
-    await savePackToFirestore(this.userId, item, this.firestore, false)
+    await this.firestoreService.savePackToFirestore(this.userId, item, false)
   }
 
   private async deleteFromFirestore() {
     // Save to Firestore
-    await deletePackFromFirestore(this.userId, this.firestore)
+    await this.firestoreService.deletePackFromFirestore(this.userId)
   }
 
   // Listen for Firestore changes and update IndexedDB
   private listenToFirestoreChanges() {
     try {
       console.log('Listening to Firestore changes...')
-
-      const cartRef = doc(this.firestore, `users/${this.userId}/packs/${this.userId}`)
+      if (!this.userId) return
+      const cartRef = this.firestoreService.doc(`users/${this.userId}/cartpack/${this.userId}`)
       onSnapshot(cartRef, async (docSnap) => {
         if (docSnap.exists()) {
-          const item = docSnap.data()
+          const item = docSnap.data();
 
+          // Compare Firestore data with current cart item
+          // if (JSON.stringify(item) !== JSON.stringify(this.cartItemSubject.value)) {
           if (Object.keys(item).length === 1 && item?.['uid']) {
-            this.cartItem$.next(null)
+            this.cartItemSubject.next(null)
             this.deletFromIndexedDB(this.userId)
             return
           }
-          this.cartItem$.next(item)
+          console.log('Firestore data changed:', item)
+          this.cartItemSubject.next(item)
           await this.saveToIndexedDB(item)
+          // }
         }
       })
-
 
     } catch (error) {
       console.log('Listening to Firestore changes error', error)
@@ -116,15 +129,13 @@ export class CartService {
   }
 
   // Add item to cart
-  async addItemToCart(item: any) {
-    // Ensure unique ID
-    // const packRef = doc(collection(this.firestore, `users/${this.userId}/packs`))
-    const previousCart = this.cartItem$.value
+  async addItemToCart(item: any, scrapeType = 'crawl4ai') {
+    const previousCart = this.cartItemSubject.value
     if (previousCart === null)
-      item = { ...item, uid: this.userId }
+      item = { ...item, type: scrapeType, uid: this.userId }
     else item = { ...previousCart, ...item }
 
-    this.cartItem$.next(item)
+    this.cartItemSubject.next(item)
     await this.saveToIndexedDB(item)
     await this.saveToFirestore(item)
   }
@@ -132,7 +143,7 @@ export class CartService {
   // Remove crawlpack item from cart
   async removeItemFromCart(attributeName: string) {
     // Get the current cart item
-    const currentCartItem = this.cartItem$.value
+    const currentCartItem = this.cartItemSubject.value
     const hasAttribute = attributeName in currentCartItem
 
     // If the item inlucded in the current cart, remove the item from the cart
@@ -141,7 +152,7 @@ export class CartService {
       delete currentCartItem[attributeName]
 
       // update indexedDB
-      this.cartItem$.next(currentCartItem)
+      this.cartItemSubject.next(currentCartItem)
       await this.saveToIndexedDB(currentCartItem)
 
       // update to firestore
@@ -154,8 +165,24 @@ export class CartService {
     }
   }
 
-  // Get current cart as Observable
-  getCart() {
-    return this.cartItem$.asObservable()
+  deleteCart(): Observable<boolean> {
+
+    try {
+      this.deletFromIndexedDB(this.userId)
+      this.deleteFromFirestore()
+      return of(true)
+    } catch (error) {
+      console.log('Error deleting cart:', error)
+      return throwError(() => new Error('Failed to delete cart'))
+    }
+
+  }
+
+  ngOnDestroy(): void {
+    //Called once, before the instance is destroyed.
+    //Add 'implements OnDestroy' to the class.
+
+    this.cartItemSubject?.unsubscribe()
+    this.cartItemSubject?.complete()
   }
 }

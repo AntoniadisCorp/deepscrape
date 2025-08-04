@@ -12,7 +12,7 @@ import { Cookies, DropDownOption, Headers } from '../types'
       multi: true,
     },
   ],
-  standalone: true,
+
 })
 export class ForbiddenValidatorDirective implements Validator {
   @Input('appForbiddenName') forbiddenName = ''
@@ -412,11 +412,13 @@ export function includesStrings(strings: string[]): ValidatorFn {
 
     if (excludeSocialMediaDomains.endsWith(','))
       return { excludeSocialMediaDomains: 'Exclude Social Media Domains must not end with a comma' }
-    else if (!/^[a-zA-Z0-9]+(,[a-zA-Z0-9]+)*$/.test(excludeSocialMediaDomains)) {
+    else if (/\s/.test(excludeSocialMediaDomains)) { // /^[a-zA-Z0-9]+(,[a-zA-Z0-9]+)*$/
       return { excludeSocialMediaDomains: 'Exclude Social Media Domains must not include spaces' }
+    } else if (!/^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)(,[a-zA-Z0-9]+(\.[a-zA-Z0-9]+))*$/.test(excludeSocialMediaDomains)) {
+      return { excludeDomains: 'Exclude Domains must include top-level domains (e.g. .com, .io)' }
     }
 
-    const mediaDomains = excludeSocialMediaDomains.split(',').map(domain => domain.toLowerCase())
+    const mediaDomains = excludeSocialMediaDomains.split(',').map(domain => domain.replace('.com', '').trim().toLowerCase())
     const containsAtLeastOne = strings.some(str => mediaDomains.includes(str))
 
     return containsAtLeastOne ? null : {

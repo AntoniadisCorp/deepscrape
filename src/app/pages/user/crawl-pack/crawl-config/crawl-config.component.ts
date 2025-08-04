@@ -89,12 +89,13 @@ export class CrawlConfigComponent {
     { id: 'page-interaction', label: 'Page Interaction' },
     { id: 'media-handling', label: 'Media Handling' },
     { id: 'link-domain-handling', label: 'Link/Domain Handling' },
-    { id: 'debug-logging', label: 'Debug & Logging' },
+    { id: 'debug-logging', label: 'Debug & Logging', },
+    { id: 'other', label: 'other' },
     ]
 
     this.crawlConfigs$ = of([])
 
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.crawlConfig)
     )
 
@@ -281,7 +282,7 @@ export class CrawlConfigComponent {
         {
           nonNullable: false,
           validators: [
-            includesStrings(['facebook', 'x', 'instagram', 'youtube', 'linkedin', 'tiktok', 'reddit', 'pinterest']) // 3 - 60 characters
+            includesStrings(['facebook', 'x', 'instagram', 'youtube', 'linkedin', 'tiktok', 'reddit', 'pinterest', "snapchat"]) // 3 - 60 characters
           ]
         }), //
       excludeExternalLinks: this.fb.control(false, { nonNullable: true, validators: [] }),
@@ -299,6 +300,7 @@ export class CrawlConfigComponent {
       logConsole: this.fb.control(false, { nonNullable: true, validators: [] }),
 
       // Other parameters with default values
+      stream: this.fb.control(true, { nonNullable: true, validators: [] }),
     }
     )
 
@@ -445,10 +447,10 @@ export class CrawlConfigComponent {
     event.stopPropagation() // prevent default behavior of outer div
 
     // add crawler pacakage item,the configuration Browser Profile, to the cart system
-    this.cartService.addItemToCart({ crawlConfig: crawl })
+    this.cartService.addItemToCart({ crawlConfig: crawl }, 'crawl4ai')
 
     // on add to cart, update cart buttons
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.crawlConfig)
     )
   }
@@ -460,7 +462,7 @@ export class CrawlConfigComponent {
     this.cartService.removeItemFromCart('crawlConfig')
 
     // one remove update cart buttons
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.crawlConfig)
     )
   }
@@ -486,7 +488,7 @@ export class CrawlConfigComponent {
 
     links.forEach((link) => {
       const element = this.document.getElementById(link.id)
-      const extraFixedDistance = (link.id === 'controlling-each-crawl' || link.id === 'content-processing' ? -50 : link.id === 'debug-logging' ? -100 : 200)
+      const extraFixedDistance = (link.id === 'controlling-each-crawl' || link.id === 'content-processing' ? -50 : link.id === 'debug-logging' || link.id === 'other' ? -100 : 200)
       if (element) {
         const distance = Math.abs(scrollPosition - getOffsetTop(element) - extraFixedDistance)
 

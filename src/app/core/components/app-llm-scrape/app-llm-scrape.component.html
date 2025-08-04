@@ -1,0 +1,106 @@
+<app-cookies
+  [forwardCookiesBtnEnabled]="forwardCookies?.value"
+  (cookiesDisabled)="forwardCookies?.setValue($event)"
+></app-cookies>
+<div class="flex flex-col max-w-3xl w-full gap-3">
+  <div class="text-left text-gray-500 dark:text-gray-100">
+    <span>Forward Cookies</span>
+  </div>
+  <div class="flex flex-row flex-wrap items-center justify-between gap-4 mb-2">
+    <!-- Set a radio button On/Off MFA-->
+    <app-radiotoggle [control]="forwardCookies | formControl"></app-radiotoggle>
+
+    <app-dropdown
+      [options]="model"
+      [control]="modelAI | formControl"
+      [padding]="'p-2'"
+      dropDownName="choose your model"
+      (select)="onDropDownSelected($event)"
+    >
+    </app-dropdown>
+  </div>
+  <div class="relative">
+    <div class="absolute right-3 top-4 z-10 h-5 w-5">
+      <mat-spinner
+        *ngIf="isCrawlProcessing"
+        [diameter]="20"
+        class="stroke-gray-200"
+      ></mat-spinner>
+    </div>
+
+    <!-- input component -->
+    <app-ginput
+      class="min-w-full"
+      [control]="url"
+      (keyup)="onDataLinkChange($event)"
+      bgColor="dark:bg-gray6 bg-white"
+    ></app-ginput>
+  </div>
+  <div>
+    <app-promptarea
+      [submitControl]="submitButton | formControl"
+      [userPrompt]="userprompt"
+      [enableClearBtn]="!!url.value"
+      (submited)="onPromptSubmited($event)"
+      (clear)="onClearText()"
+      (abort)="abortRequests()"
+    ></app-promptarea>
+  </div>
+</div>
+@if (isGetResults) {
+<div
+  class="relative max-w-[80%] mt-4 flex w-full items-center justify-start gap-4 rounded-md bg-gray-100 p-4 pt-10 pb-10 shadow-md dark:bg-gray6"
+>
+  <button
+    type="button"
+    title="close results"
+    class="absolute right-2 top-[5px] z-10 h-8 w-8 rounded-full border border-blue-200/5 font-medium text-pink-400 transition-colors duration-200 hover:bg-gray-100/60 hover:text-pink-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-transparent dark:text-pink-500 dark:hover:bg-gray5/60 dark:hover:text-pink-700 dark:focus:ring-gray4/60"
+    (click)="closeResults()"
+  >
+    <mat-icon fontSet="material-icons-outlined" class="!h-5 !w-5 text-lg">
+      close
+    </mat-icon>
+  </button>
+  @if(isResultsProcessing && !jsonChunk['content']) {
+  <div class="w-full flex justify-center text-gray4 dark:text-gray-100">
+    <div class="flex flex-col items-center gap-6">
+      waiting for results..
+      <mat-spinner
+        *ngIf="isResultsProcessing"
+        [diameter]="40"
+        class="stroke-gray-200 dark:stroke-violet-400"
+      ></mat-spinner>
+    </div>
+  </div>
+  } @else if (!isResultsProcessing && !jsonChunk['content'] &&
+  isCrawlProcessing) { } @else {
+  <div
+    *ngIf="!jsonChunk['content']"
+    class="w-full text-center text-gray4 dark:text-gray-100"
+  >
+    no results
+  </div>
+  }
+
+  <div
+    *ngIf="jsonChunk['content']?.length > 0"
+    class="block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 px-4 py-2 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1"
+  >
+    <p
+      *ngIf="jsonChunk['usage']"
+      class="inline-flex items-center w-full justify-end mt-1 text-sm text-red-500 dark:text-red-300 font-medium self-center gap-2 text-[12px] lg:text-xs italic"
+    >
+      Cost: {{ jsonChunk["usage"]?.total_cost || 0 }} $
+      <mat-icon>bolt</mat-icon>
+      Tokens/s: {{ jsonChunk["usage"]?.total_tokens || 0 }}
+    </p>
+    <markdown
+      class="text-base"
+      clipboard
+      emoji
+      [clipboardButtonComponent]="clipboardButton"
+      [data]="jsonChunk['content']"
+    ></markdown>
+  </div>
+</div>
+}

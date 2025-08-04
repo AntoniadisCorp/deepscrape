@@ -1,0 +1,9 @@
+.backdrop-blur-content::before {
+    background: linear-gradient(311deg, #50ca38 2.35%, #68f768 76.99%);
+    @apply absolute bottom-0 top-5 left-[-2%] right-[-3%] h-[120px]  opacity-30 pointer-events-none;
+    filter: blur(25px);
+    content: "";
+    @media (prefers-color-scheme: dark) {
+        background: linear-gradient(311deg, #673ab7 2.35%, #7d47cb 76.99%); /* Dark mode gradient */
+    }
+}

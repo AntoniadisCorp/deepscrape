@@ -1,13 +1,19 @@
 import serviceAccount from "functions/src/credentials.json"
-// import * as admin from "firebase-admin"
+import * as admin from "firebase-admin"
 
-const dbName = serviceAccount.dbName
-// Initialize Firebase
-// admin.initializeApp(serviceAccount.firebaseConfig)
 
-// const db = admin.firestore()
-// db.settings({ databaseId: dbName })
+// if (process.env["PRODUCTION"] === "true") {
 
-// const auth = admin.auth()
+
+//     const dbName = serviceAccount.dbName
+//     // Initialize Firebase
+//     admin.initializeApp(serviceAccount.firebaseConfig)
+
+//     const db = admin.firestore()
+//     db.settings({ databaseId: dbName })
+
+//     const auth = admin.auth()
+// }
+
 
 // export { auth, db, dbName }

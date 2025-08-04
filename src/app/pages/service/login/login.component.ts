@@ -14,9 +14,9 @@ import {
 } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { from } from 'rxjs/internal/observable/from';
-import { getErrorMessage, getUserData, storeUserData } from 'src/app/core/functions';
-import { FirestoreService } from 'src/app/core/services';
-import { doc, getDoc } from "firebase/firestore";
+import { getErrorMessage, storeUserData } from 'src/app/core/functions';
+import { AuthService, FirestoreService } from 'src/app/core/services';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -31,7 +31,8 @@ export class LoginComponent {
 
   protected errorMessage = '';
 
-  private isAuthorized: boolean
+  protected isAuthenticated: boolean
+  private authSubs: Subscription
 
   constructor(
     private formBuilder: FormBuilder,
@@ -42,18 +43,34 @@ export class LoginComponent {
     private firestoreService: FirestoreService,
 
     private auth: Auth,
+
+    private authService: AuthService,
   ) {
     this.loading = {
       github: false,
       google: false
     }
-    this.isAuthorized = false
+
+
+    this.authSubs = this.authService.isAuthenticated().subscribe(
+      (authenticated: boolean) => {
+        /* if (authenticated) {
+          
+          this.router.navigate(['/dashboard'])
+        } */
+
+        this.isAuthenticated = authenticated
+      }
+    )
 
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
   }
 
 
-  get f() { return this.loginForm.controls; }
+  get f() {
+    return this.loginForm.controls
+
+  }
 
 
   ngOnInit(): void {
@@ -73,13 +90,13 @@ export class LoginComponent {
       const userCredential = await signInWithEmailAndPassword(this.auth, this.f['email'].value, this.f['password'].value);
       console.log('User logged in:', userCredential.user.displayName)
 
-      from(getUserData(userCredential.user, this.firestore)).subscribe(
+      from(this.firestoreService.getUserData(userCredential.user.uid)).subscribe(
         (userData: Users | null) => {
           if (userData) {
-            this.isAuthorized = true
+            this.isAuthenticated = true
             this.router.navigate(['/dashboard'])
           } else {
-            this.router.navigate(['/signup'])
+            this.router.navigate(['/service/login'])
           }
         }
       )
@@ -147,6 +164,6 @@ export class LoginComponent {
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
-
+    this.authSubs?.unsubscribe()
   }
 }

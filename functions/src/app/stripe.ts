@@ -1,3 +1,4 @@
+/* eslint-disable object-curly-spacing */
 /* eslint-disable require-jsdoc */
 // Takes a Firebase user and creates a Stripe customer account
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

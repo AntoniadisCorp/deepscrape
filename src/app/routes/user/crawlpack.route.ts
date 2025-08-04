@@ -4,7 +4,7 @@ export const crawlerPackRoutes: Routes = [
     {
         path: '',
         pathMatch: 'full',
-        loadComponent: () => import('../../pages').then(m => m.WebCrawlerComponent),
+        loadComponent: () => import('../../pages').then(m => m.CrawlerPackComponent),
         // redirectTo: 'keys'
     },
     {

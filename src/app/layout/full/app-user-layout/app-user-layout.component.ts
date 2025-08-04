@@ -1,10 +1,10 @@
 import { AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage } from '@angular/common'
 import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
 import { Auth, signOut, User } from '@angular/fire/auth'
-import { Firestore } from '@angular/fire/firestore'
+import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
-import { ChildrenOutletContexts, NavigationEnd, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
+import { ChildrenOutletContexts, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router'
 import { catchError, delay, finalize, from, map, switchMap, throwError, timer } from 'rxjs'
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
@@ -12,7 +12,6 @@ import { take } from 'rxjs/internal/operators/take'
 import { Subscription } from 'rxjs/internal/Subscription'
 import { asideBarAnimation, fadeInOutSlideAnimation, PopupAnimation } from 'src/app/animations'
 import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
-import { getUserData } from 'src/app/core/functions'
 import { ProviderPipe } from 'src/app/core/pipes'
 import { CartService, FirestoreService, ScreenResizeService } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
@@ -21,7 +20,6 @@ import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
 import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
-import { doc, getDoc } from 'firebase/firestore'
 
 @Component({
   selector: 'app-user-layout',
@@ -35,7 +33,7 @@ import { doc, getDoc } from 'firebase/firestore'
 export class AppUserLayoutComponent {
 
   @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900 min-h-svh'
-
+  private firestoreService = inject(FirestoreService)
   size!: SCREEN_SIZE;
 
   sizeSub: Subscription;
@@ -55,9 +53,6 @@ export class AppUserLayoutComponent {
   authorized: boolean
   logoutSubscription: Subscription
   userSubscription: Subscription
-
-  private btnSubs: Subscription
-
   private routerEventSubscription: Subscription
   protected compIsLoading = true;
   /* animations */
@@ -70,10 +65,6 @@ export class AppUserLayoutComponent {
     private resizeSvc: ScreenResizeService,
     private router: Router,
     private auth: Auth,
-
-    private firestore: Firestore,
-
-    private firestoreService: FirestoreService,
     private cartService: CartService,
   ) {
 
@@ -86,14 +77,13 @@ export class AppUserLayoutComponent {
     this.closeAsideBar = false
     this.viewSmallDevices = false
 
-    this.firestore = this.firestoreService.getInstanceDB('easyscrape')
     // Set the initial values
     this.authorized = this.loading = false
 
     this.showProfileMenu = false
 
     this.user$ = of(null)
-    this.cartPackager$ = this.cartService.getCart()
+    this.cartPackager$ = this.cartService.getCart$
 
 
   }
@@ -144,14 +134,14 @@ export class AppUserLayoutComponent {
 
     // Create an Http request to get the user profile data
     this.userLoading = true
-    /* this.user$ = of(this.auth.currentUser).pipe(
+    this.user$ = of(this.auth.currentUser).pipe(
       take(1),
       switchMap(user => {
         if (user) {
           this.authorized = true
           this.userLoading = false
 
-          return from(getUserData(user, this.firestore)).pipe(
+          return from(this.firestoreService.getUserData(user.uid)).pipe(
             catchError((err) => {
               console.log(err)
               return throwError(() => err)
@@ -169,10 +159,9 @@ export class AppUserLayoutComponent {
         this.userLoading = false
         return of(null)
       })
-    ) */
+    )
 
   }
-
 
   openProfileMenu(event?: any): void {
     // if user press profile button

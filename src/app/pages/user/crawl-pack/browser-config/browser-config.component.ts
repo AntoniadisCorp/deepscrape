@@ -4,7 +4,7 @@ import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModu
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
-import { map, Observable, of, Subscription } from 'rxjs';
+import { map, Observable, of, Subject, Subscription, takeUntil, tap } from 'rxjs';
 import { DropdownComponent, RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
 import { browserTitleValidator, browserTypeValidator, cookieValidator, extraArgsValidator, headersValidator, proxyValidator, userAgentValidator, viewportDimensionValidator } from 'src/app/core/directives';
 import { BrowserType } from 'src/app/core/enum';
@@ -56,6 +56,8 @@ export class BrowserConfigComponent {
 
   private browseSubs: Subscription
   private packService: PackService
+
+  private destroy$ = new Subject<void>()
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -73,7 +75,7 @@ export class BrowserConfigComponent {
     { id: 'browser-userdata', label: 'Browser Storage Settings' },
     ]
     this.browserProfiles$ = of([])
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.browserProfile)
     )
 
@@ -157,7 +159,7 @@ export class BrowserConfigComponent {
       textMode: this.fb.control(false, { nonNullable: true, validators: [] }),
       userManagedBrowser: this.fb.control(false, { nonNullable: true, validators: [] }),
       javaScriptEnabled: this.fb.control(true, { nonNullable: true, validators: [] }),
-      ignoreΗttpsΕrrors: this.fb.control(true, { nonNullable: true, validators: [] }),
+      ignoreHttpsErrors: this.fb.control(true, { nonNullable: true, validators: [] }),
 
       // Directory to store user data (profiles, cookies, sessions, etc.)
       usePersistentContext: this.fb.control(false, { nonNullable: true, validators: [] }),
@@ -195,7 +197,7 @@ export class BrowserConfigComponent {
             headersValidator(),
           ],
         },
-      ) as FormControl<Headers | null>,
+      ) as FormControl<Headers[] | null>,
 
       // Proxy Parameters
       proxy: this.fb.control(
@@ -236,20 +238,51 @@ export class BrowserConfigComponent {
         storage_state (str or dict or None): Path or object describing storage state (cookies, localStorage).
                 Default: None.*/
     })
+
+
+    this.configForm.get('viewportWidth')?.statusChanges.pipe(
+      takeUntil(this.destroy$),
+      tap(status => {
+        if (status === 'VALID') {
+          const viewportWidth = parseInt(this.configForm.get('viewportWidth')?.value)
+          this.configForm.get('viewportWidth')?.setValue(viewportWidth, { emitEvent: false })
+        }
+      })
+    ).subscribe()
+
+    this.configForm.get('viewportHeight')?.statusChanges.pipe(
+      takeUntil(this.destroy$),
+      tap(status => {
+        if (status === 'VALID') {
+          const viewportHeight = parseInt(this.configForm.get('viewportHeight')?.value)
+          this.configForm.get('viewportHeight')?.setValue(viewportHeight, { emitEvent: false })
+        }
+      })
+    ).subscribe()
   }
 
   getAndFilterConfirmForm(): BrowserConfig {
     // get form values
     const config = this.configForm.getRawValue()
-    const newConfig = { ...config }; // Create a copy of the config object
-    delete newConfig.title; // Remove the 'title' attribute from the config object
+    /* const headers = config.headers?.reduce((acc: { [key: string]: string }, headers: Headers) => {
+      if (headers && headers.key && headers.value) {
+        acc[headers.key] = headers.value;
+      }
+      return acc;
+    }, {}); */
 
+    const newConfig = { ...config, /* ...headers */ }; // Create a copy of the config object
+    delete newConfig.title; // Remove the 'title' attribute from the config object
 
     // Filter out null, unchanged, or default values
     const filteredConfig: BrowserConfig = Object.keys(newConfig).reduce((acc: any, key) => {
       const formControl = this.configForm.get(key)
 
       if (formControl && (formControl.dirty || !formControl.pristine) && newConfig[key] !== null && newConfig[key] !== '') {
+        if (key === 'viewportWidth' || key === 'viewportHeight') {
+          acc['viewportWidth'] = newConfig['viewportWidth']
+          acc['viewportHeight'] = newConfig['viewportHeight']
+        }
         if (key === 'browserType')
           acc[key] = newConfig[key]?.code
         else acc[key] = newConfig[key]
@@ -258,10 +291,11 @@ export class BrowserConfigComponent {
           acc[key] = newConfig[key]?.code
         else acc[key] = newConfig[key]
       }
-      // console.log(acc, key)
-      return acc
-    }, {})
 
+      return acc
+    }, { browserType: newConfig.browserType?.code })
+
+    console.log('filteredConfig: ', filteredConfig)
     return filteredConfig
   }
 
@@ -373,11 +407,12 @@ export class BrowserConfigComponent {
 
     event.stopPropagation() // prevent default behavior of outer div
 
+    console.log(profile)
     // add crawler pacakage item,the configuration Browser Profile, to the cart system
-    this.cartService.addItemToCart({ browserProfile: profile })
+    this.cartService.addItemToCart({ browserProfile: profile }, 'crawl4ai')
 
     // on add to cart, update cart buttons
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.browserProfile)
     )
   }
@@ -389,7 +424,7 @@ export class BrowserConfigComponent {
     this.cartService.removeItemFromCart('browserProfile')
 
     // one remove update cart buttons
-    this.packCart$ = this.cartService.getCart().pipe(
+    this.packCart$ = this.cartService.getCart$.pipe(
       map(cart => cart?.browserProfile)
     )
   }
@@ -443,6 +478,8 @@ export class BrowserConfigComponent {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.browseSubs?.unsubscribe()
+    this.destroy$.next()
+    this.destroy$.complete();
   }
 
 }

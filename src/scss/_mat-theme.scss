@@ -2,23 +2,17 @@
 @use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker; // Added this line
 // Plus imports for other components in your app.
 
-// $mat-light-blue: #3dde;
-// // $app-warn-warn: rgba(238, 172, 51, 0.867);
-// $mat-red: #ff4081;
-// $mat-red2: #f32424;
-
-// $app-primary: mat-palette($mat-light-blue);
-// $app-accent: mat-palette($mat-light-blue);
-// $app-warn: mat-palette($mat-red);
-
-// $theme-light: mat-light-theme($app-primary, $app-accent, $app-warn);
+// $mat-light-blue: #03a9f4;
+// $mat-light-pink: #ff4081;
+// $mat-light-warn: #ff8040;
+// $mat-light-red: #f32424;
 
 $my-theme: mat.define-theme(
     (
         color: (
             theme-type: light,
-            primary: mat.$azure-palette,
-            tertiary: mat.$blue-palette
+            primary: mat.$blue-palette,
+            tertiary: mat.$rose-palette
         ),
         density: (
             scale: 0
@@ -30,10 +24,9 @@ $my-theme-dark: mat.define-theme(
     (
         color: (
             theme-type: dark,
-            primary: mat.$azure-palette,
-            tertiary: mat.$blue-palette
+            primary: mat.$blue-palette,
+            tertiary: mat.$rose-palette
         ),
-
         density: (
             scale: 0
         )

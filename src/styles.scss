@@ -1,9 +1,9 @@
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
-@use "@angular/material" as mat;
-@use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
 /* You can add global styles to this file, and also import other style files */
 @use "scss/main.scss" as core; // Reverted to include .scss extension
+@use "@angular/material" as mat;
+@use "@dhutaryan/ngx-mat-timepicker" as mat-timepicker;
 
 // Forward prismjs styles
 // @forward "prismjs/themes/prism-okaidia.css";
@@ -191,6 +191,19 @@ input:-webkit-autofill:focus {
         background-color 0s 600000s,
         color 0s 600000s !important;
 }
+// remove toolbar to fix standard copyclipboard
+markdown > .toolbar {
+    display: flex;
+}
+
+.tomltable {
+    code {
+        span.table {
+            display: inline !important;
+        }
+    }
+}
+
 /* @font-face {
     font-family: "icomoon";
     src:

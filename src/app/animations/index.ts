@@ -1,4 +1,4 @@
-import { animate, group, keyframes, query, style, transition, trigger } from "@angular/animations";
+import { animate, group, keyframes, query, state, style, transition, trigger } from "@angular/animations";
 export * from './sidebar'
 
 export const fadeInOutSlideAnimation =
@@ -30,11 +30,11 @@ export const fadeInOutSlideAnimation =
 
 export const slideInModalAnimation = trigger('slideInOut', [
     transition(':enter', [
-        style({ transform: 'translate(100%,-50%)' }),
-        animate('300ms ease-out', style({ transform: 'translate(-50%,-50%)' }))
+        style({ transform: 'translate(50%,0%)' }),
+        animate('300ms ease-out', style({ transform: 'translate(0%,0%)' }))
     ]),
     transition(':leave', [
-        animate('300ms ease-in', style({ transform: 'translate(100%,-50%)' }))
+        animate('300ms ease-in', style({ transform: 'translate(100%,0%)' }))
     ])
 ])
 
@@ -63,3 +63,53 @@ export const bounceAnim = trigger('bounceAnimation', [
         )
     ])
 ]);
+
+export const startSuspendAnimation = trigger('startSuspendAnimation', [
+    state('started', style({
+        opacity: 1,
+        transform: 'scale(1)'
+    })),
+    state('suspended', style({
+        opacity: 1,
+        transform: 'scale(1)'
+    })),
+    transition('suspended => started', [
+        style({ opacity: 0, transform: 'scale(1.34)' }), // start state
+        animate('500ms ease-in', style({ opacity: 1, transform: 'scale(1)' }))
+    ]),
+    transition('started => suspended', [
+        style({ opacity: 1, transform: 'scale(1.34)' }), // start state
+        animate('500ms ease-out', style({ opacity: 1, transform: 'scale(1)' }))
+    ])
+])
+
+
+export const expandCollapseAnimation = trigger('expandCollapse', [
+    state('collapsed', style({
+
+        height: '0px',
+        opacity: '0'
+    })),
+    state('expanded', style({
+
+        height: '*',
+        opacity: '1'
+    })),
+    transition('collapsed => expanded', [
+        animate('300ms ease-in-out')
+    ]),
+    transition('expanded => collapsed', [
+        animate('300ms ease-in-out')
+    ])
+])
+
+export const fadeinCartItems = trigger('fadeinCartItems', [
+    state('void', style({ opacity: 0, transform: 'translateY(-20px)' })),
+    state('*', style({ opacity: 1, transform: 'translateY(0)' })),
+    transition('void => *', [
+        animate('300ms ease-in')
+    ]),
+    transition('* => void', [
+        animate('300ms ease-out')
+    ])
+])

@@ -6,10 +6,10 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { RippleDirective } from '../../directives';
 
 @Component({
-    selector: 'app-promptarea',
-    imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
-    templateUrl: './promptarea.component.html',
-    styleUrl: './promptarea.component.scss'
+  selector: 'app-promptarea',
+  imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
+  templateUrl: './promptarea.component.html',
+  styleUrl: './promptarea.component.scss'
 })
 export class PromptareaComponent {
 
@@ -30,12 +30,12 @@ export class PromptareaComponent {
 
   constructor() {
 
-    this.userPrompt = new FormControl('', { nonNullable: true })
-    this.submitControl = new FormControl(false, { nonNullable: true })
   }
 
   ngOnInit(): void {
 
+    // this.userPrompt = new FormControl('', { nonNullable: true });
+    // this.submitControl = new FormControl(false, { nonNullable: true });
     /*  this.userPrompt.valueChanges.subscribe({
        next: (value) => {
          this.characterCount = value.length;
@@ -52,32 +52,49 @@ export class PromptareaComponent {
       }
     }) */
   }
+  doValidation(): void {
 
+    this.errors = [];
+    this.submissionStatus = '';
+    
+    
+    if (this.userPrompt.value.length === 0) {
+      this.errors.push('Please enter a prompt.');
+      return
+    }
+    
+    if (this.userPrompt.value.length >= this.maxCharacters) {
+      this.errors.push('Prompt exceeds the character limit.');
+      return
+    }
+    if (this.userPrompt.value.length < 5) {
+      this.errors.push('Prompt must be at least 5 characters long.');
+      return
+    }
+
+  }
   submitPrompt(): void {
     this.errors = [];
     this.submissionStatus = '';
-
+    console.log('Submitting prompt test:', this.userPrompt.value);
     if (this.userPrompt.value.length === 0) {
       this.errors.push('Please enter a prompt.');
-      return;
+      return
     }
 
     if (this.userPrompt.value.length >= this.maxCharacters) {
       this.errors.push('Prompt exceeds the character limit.');
-      return;
+      return
     }
 
-    try {
-      // Logic to submit the prompt to the AI model goes here
-      // For demonstration purposes, we'll simulate a successful submission
-      setTimeout(() => {
-        this.submited.emit(this.userPrompt.value)
-        this.submissionStatus = 'success'
-      }, 30);
-    } catch (error: any) {
-      this.submissionStatus = 'error';
-      this.errors.push('An error occurred during submission: ' + error.message);
+    if (this.userPrompt.value.length < 5) {
+      this.errors.push('Prompt must be at least 5 characters long.');
+      return
     }
+
+    // Emit the prompt value and set submission status
+    this.submited.emit(this.userPrompt.value);
+    this.submissionStatus = 'success';
   }
 
   protected clearPrompt(): void {

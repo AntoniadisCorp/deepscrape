@@ -10,10 +10,13 @@ export const LoginGuard: CanActivateFn = (route, state) => {
   return authService.isAuthenticated().pipe(
     map(isAuthenticated => {
       if (isAuthenticated) {
-        router.navigate(['/dashboard']);
-        return false;
+        // get return url from query parameters or default to home page
+        const returnUrl = route.queryParams['returnUrl'] || '/'
+        router.navigateByUrl(returnUrl)
+        return false
       }
-      return true;
+
+      return true
     })
   );
 };

@@ -7,7 +7,7 @@ type Color = `${string}`;
 
 @Directive({
   selector: '[appRipple]',
-  standalone: true
+
 })
 export class RippleDirective {
   @Input() rippleColor: 'light' | 'dark' | Color = 'light';

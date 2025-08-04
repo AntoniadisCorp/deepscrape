@@ -14,7 +14,7 @@ import { themeStorageKey } from 'src/app/shared';
 })
 export class DropdownComponent {
 
-  private localStorage: Storage
+  private localStorage = inject(LocalStorage)
 
   @Input() control: FormControl<{ name: string, code: string }>
   @Input() options: { name: string, code: string }[]
@@ -28,10 +28,7 @@ export class DropdownComponent {
   isFocus: boolean = false
   searchInput: string = ''
 
-  constructor() {
-
-    this.localStorage = inject(LocalStorage)
-  }
+  constructor() { }
 
   @HostListener('keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {

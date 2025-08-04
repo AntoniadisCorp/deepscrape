@@ -3,7 +3,7 @@ import { Users } from '../types';
 
 @Pipe({
   name: 'provider',
-  standalone: true
+
 })
 export class ProviderPipe implements PipeTransform {
 

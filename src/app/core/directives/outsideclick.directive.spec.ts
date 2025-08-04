@@ -4,7 +4,7 @@ import { ElementRef, Component } from '@angular/core';
 
 @Component({
   template: '<div appOutsideClick (outsideClick)="handleClick()"></div>',
-  standalone: true
+
 })
 class TestComponent {
   handleClick() { }

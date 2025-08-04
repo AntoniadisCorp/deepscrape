@@ -102,5 +102,5 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
           UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
-          API_CRAWL4AI_URL: "https://deepcrawl4ai.fly.dev"
-          GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
+          API_CRAWL4AI_URL: "https://crawlagent.fly.dev"
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
