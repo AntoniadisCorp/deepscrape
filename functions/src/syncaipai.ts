@@ -61,6 +61,7 @@ class SyncAIapis {
             jinaAICrawl)
 
         /* Machines by Arachnefly */
+
         // Check if the image is deployable
         this.router.get("/machines/check-image", this.isJwtAuth,
             arachnefly.checkImageDeployability)

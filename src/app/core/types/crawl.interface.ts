@@ -387,6 +387,17 @@ export interface CrawlResult {
     ssl_certificate?: SSLCertificate
 }
 
+export type CrawlStatus = {
+    task_id: string;
+    status: string;
+    created_at: number;
+    urls: string[];
+    _links: {
+        self: { href: string };
+        refresh: { href: string };
+    };
+}
+
 
 // Define the interface for the proxy config
 export type ProxyConfig = {

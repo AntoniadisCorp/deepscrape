@@ -19,7 +19,7 @@ class MachinesHandler {
             console.log("Invalid image name: ", imageName)
             return
         }
-        // get tken from request include in locals
+        // get token from request include in locals
         const token = req.app.locals["user"]
         const apiUrl = process.env["API_DEPLOY4SCRAP_URL"] || "https://arachnefly.fly.dev"
 

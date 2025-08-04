@@ -25,7 +25,7 @@ function serveapp(): express.Application {
 
   const serverDistFolder = dirname(fileURLToPath(import.meta.url))
   const browserDistFolder = resolve(serverDistFolder, '../browser')
-  // const indexHtml = resolve(serverDistFolder, 'index.server.html')
+
   const indexHtml = join(serverDistFolder, 'index.server.html')
   // console.log('indexHtml', indexHtml, browserDistFolder)
 
