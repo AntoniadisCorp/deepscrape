@@ -21,6 +21,7 @@ const environment = {
     ANTHROPIC_API_KEY: env["ANTHROPIC_API_KEY"],
     JINAAI_API_KEY: env["JINAAI_API_KEY"],
     GROQ_API_KEY: env["GROQ_API_KEY"],
+    GOOGLE_API_KEY: env["GOOGLE_API_KEY"],
     CRAWL4AI_API_KEY: env["CRAWL4AI_API_KEY"],
     API_CRAWL4AI: "https://crawlagent.fly.dev",
     API_DEPLOY4SCRAP: "https://arachnefly.fly.dev",

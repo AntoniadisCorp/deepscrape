@@ -23,11 +23,11 @@
               "web-streams-polyfill/dist/ponyfill.es2018.js",
               "node-domexception"
             ],
-            // "outputMode": "server",
-            // "ssr": {
-            //   "entry": "server.ts"
-            // },
-            "prerender": true,
+            "outputMode": "server",
+            "ssr": {
+              "entry": "server.ts"
+            },
+            // "prerender": false,
             "outputPath": "dist/deepscrape",
             "index": "src/index.html",
             "browser": "src/main.ts",

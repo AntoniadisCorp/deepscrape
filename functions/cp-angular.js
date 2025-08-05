@@ -4,10 +4,10 @@
 /* eslint-disable require-jsdoc */
 const fs = require("fs-extra")
 
-/* const sourceDir = "../dist/deepscrape/server"
-const destinationDir = "./server"
+// const sourceDir = "../dist/deepscrape/server"
+// const destinationDir = "./server"
 
-async function copyFiles() {
+/* async function copyFiles() {
     try {
         // Ensure the destination directory exists
         await fs.ensureDir(destinationDir)
@@ -23,14 +23,15 @@ async function copyFiles() {
         console.error("Error copying files:", err)
     }
 }
-
-copyFiles()
  */
+// copyFiles()
+
 
 const start = async function () {
+    const destinationDir = "./lib"
     const src = "../public"
     const copy = "./lib/public"
-
+    await fs.emptyDir(destinationDir)
     await fs.remove(copy)
     await fs.copy(src, copy)
 }

@@ -1,4 +1,4 @@
-import { Request, Response, Router } from "express"
+import { Request, Response } from "express"
 
 export const helloWorld = async (req: Request, res: Response) => {
 

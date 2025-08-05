@@ -6,6 +6,7 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
+
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitOverride": true,

@@ -1,5 +1,5 @@
-import serviceAccount from "functions/src/credentials.json"
-import * as admin from "firebase-admin"
+// import serviceAccount from "functions/src/credentials.json"
+// import * as admin from "firebase-admin"
 
 
 // if (process.env["PRODUCTION"] === "true") {

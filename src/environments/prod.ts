@@ -16,6 +16,7 @@ export const environment = {
   "ANTHROPIC_API_KEY": "",
   "JINAAI_API_KEY": "",
   "GROQ_API_KEY": "",
+  "GOOGLE_API_KEY": "",
   "CRAWL4AI_API_KEY": "",
   "API_DEPLOY4SCRAP": "https://arachnefly.fly.dev",
   "API_CRAWL4AI": "https://crawlagent.fly.dev",
