@@ -1,5 +1,5 @@
 // src/middleware/rateLimit.ts
-import { redisClient } from 'api/config'
+import { redisClient } from '../../api/config'
 import { Options, rateLimit, RateLimitRequestHandler } from 'express-rate-limit'
 import { RedisStore } from 'rate-limit-redis'
 

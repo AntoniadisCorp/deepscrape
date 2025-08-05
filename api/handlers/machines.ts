@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express"
 import fetch, { RequestInit } from 'node-fetch'
-import { URLSearchParams } from 'node:url'
+// import { URLSearchParams } from 'node:url'
 class MachinesHandler {
     constructor() {
     }
@@ -35,7 +35,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok)
-                throw new Error(`${apiResponse.statusText}`, { cause: await apiResponse.json() })
+                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
 
             if (!apiResponse.body)
                 throw new Error('API response body is empty')

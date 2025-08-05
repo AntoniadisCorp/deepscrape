@@ -24,7 +24,7 @@ export const deepscrape = app.deepscrape
 
 /* Auth - Functions */
 // STRIPE Functions
-export const createStripeCustomer = auth.createStripeCustomer
+export const newStripeCustomer = auth.newStripeCustomer
 export const createPaymentIntent = auth.createPaymentIntent
 export const startSubscription = auth.startSubscription
 export const updateUsage = auth.updateUsage

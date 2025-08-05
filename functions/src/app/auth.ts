@@ -1,26 +1,31 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
-import { onCall } from "firebase-functions/v1/https"
 import { db, dbName, getSecretFromManager, saveToSecretManager, stripe/* , auth as adminAuth */ } from "./config"
-import { createCustomer } from "./stripe"
-import { auth, firestore } from "firebase-functions/v1"
+// import { createCustomer } from "./stripe"
+import { firestore, auth } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { redis } from "./cacheConfig"
-import { QueryDocumentSnapshot } from "firebase-functions/v1/firestore"
+import { QueryDocumentSnapshot } from "firebase-functions/v2/firestore"
+import { createCustomer } from "./stripe"
 
-export const createStripeCustomer = auth
-    .user().onCreate(async (user: auth.UserRecord) => {
-        const firebaseUID = user.uid
-        const fireUserDoc = `users/${firebaseUID}`
+export const newStripeCustomer = auth
+    .user()
+    .onCreate(
+        async (user: auth.UserRecord) => {
+        // Create a new Stripe customer when a new user is created
+        const userId = user.uid
+        const userPath = `users/${userId}`
+
+
         try {
-            const userDoc = await db.doc(fireUserDoc).get()
+            const userDoc = await db.doc(userPath).get()
             const firebaseUser = userDoc.data()
 
             const customer = await createCustomer(firebaseUser)
             const stripeId = customer?.id
 
-            await db.doc(fireUserDoc).update({
+            await db.doc(userPath).update({
                 stripeId,
             })
 
@@ -32,15 +37,15 @@ export const createStripeCustomer = auth
     })
 
 
-export const createPaymentIntent = onCall(
+export const createPaymentIntent = onCallv2(
     // { secrets: [stripeSecretDef] },
-    async (data, context) => {
+    async (req) => {
         // Where the cart id is the cart id of last paymentIntent
         // plan chosen plan from cache memmory
         let clientSecret = ""
-        let { uid, amount, currency, cartId } = data
+        let { uid, amount, currency, cartId } = req.data
         try {
-            const userId = context?.auth?.uid
+            const userId = req?.auth?.uid
             console.log(`userId : ${userId}`, uid)
 
             // Get the user from firestore
@@ -97,16 +102,16 @@ export const createPaymentIntent = onCall(
 )
 
 
-export const startSubscription = onCall(
-    async (data, context) => {
+export const startSubscription = onCallv2(
+    async (req) => {
         // 1. Get user data
         // eslint-disable-next-line max-len
-        const userId = context?.auth?.uid
+        const userId = req?.auth?.uid
         const userDoc = await db.doc(`users/${userId}`).get()
         const user = userDoc.data()
 
         // a. Extract price and source and currency from the data
-        const { price, source, currency } = data
+        const { price, source, currency } = req.data
 
         // 2. Attach the card to the user
         await stripe.customers.createSource(user?.stripeId, {
@@ -170,11 +175,11 @@ export const updateUsage = firestore
 
 
 // Firebase Function: Create API Key
-export const createMyApiKey = onCall(async (data, context) => {
-    const { apiKey } = data
+export const createMyApiKey = onCallv2(async (req) => {
+    const { apiKey } = req.data
 
     try {
-        const userId = context?.auth?.uid
+        const userId = req?.auth?.uid
         if (!userId) {
             throw new Error("User must be authenticated")
         }
@@ -208,12 +213,12 @@ export const createMyApiKey = onCall(async (data, context) => {
     }
 })
 
-export const retrieveMyApiKeysPaging = onCall(
+export const retrieveMyApiKeysPaging = onCallv2(
 
-    async (data, context) => {
-        const { apiKeyPage, pageSize = 10 } = data
+    async (req) => {
+        const { apiKeyPage, pageSize = 10 } = req.data
         try {
-            const userId = context?.auth?.uid
+            const userId = req?.auth?.uid
             const page: number = apiKeyPage || 1
             const limit: number = pageSize
 
@@ -254,11 +259,11 @@ export const retrieveMyApiKeysPaging = onCall(
     check available policies
     bash: gcloud iam service-accounts list --project=libnet-d76db
 **/
-export const getApiKeyDoVisible = onCall(async (data, context) => {
-    const { apiKey } = data
+export const getApiKeyDoVisible = onCallv2(async (req) => {
+    const { apiKey } = req.data
 
     try {
-        const userId = context?.auth?.uid
+        const userId = req?.auth?.uid
         if (!userId) {
             throw new Error("User must be authenticated")
         }
@@ -328,13 +333,13 @@ export const enqueueCrawlOperation = firestore
         } */
     })
 
-export const getOperationsPaging = onCall(
+export const getOperationsPaging = onCallv2(
 
-    async (data, context) => {
-        const { currPage = 1, pageSize = 10 } = data
+    async (req) => {
+        const { currPage = 1, pageSize = 10 } = req.data
 
         try {
-            const userId = context?.auth?.uid
+            const userId = req?.auth?.uid
             if (!userId) {
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }

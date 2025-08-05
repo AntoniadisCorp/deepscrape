@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "commonjs",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
@@ -26,7 +26,8 @@
   "compileOnSave": true,
   "include": [
     "src",
-    "cp-angular.js"
+    "cp-angular.js",
+    "api"
   ],
   "exclude": [
     "lib",

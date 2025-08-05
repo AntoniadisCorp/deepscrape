@@ -1,48 +1,48 @@
 import { Request, Response } from "express"
 // import { auth as admin } from "../../functions/src/app/config"
 import { JinaHeader } from "../types"
-import { customUrlDecoder } from "api/fun"
+import { customUrlDecoder } from "../../api/fun"
 import fetch, { RequestInit } from 'node-fetch';
-import { pipeline } from 'node:stream'
-import { promisify } from 'node:util'
+// import { pipeline } from 'node:stream'
+// import { promisify } from 'node:util'
 
-const streamPipeline = promisify(pipeline)
+// const streamPipeline = promisify(pipeline)
 
 // Utility function to handle API requests and streaming
-const handleStreamedApiResponse = async (
-    apiUrl: string,
-    fetchOptions: RequestInit,
-    res: Response,
-    apiName: string,
-    contentType: string = 'text/event-stream'
-) => {
-    try {
-        const apiResponse = await fetch(apiUrl, fetchOptions)
+// const handleStreamedApiResponse = async (
+//     apiUrl: string,
+//     fetchOptions: RequestInit,
+//     res: Response,
+//     apiName: string,
+//     contentType: string = 'text/event-stream'
+// ) => {
+//     try {
+//         const apiResponse = await fetch(apiUrl, fetchOptions)
 
-        if (!apiResponse.ok) {
-            throw new Error(`API error: ${apiResponse.statusText}`)
-        }
+//         if (!apiResponse.ok) {
+//             throw new Error(`API error: ${apiResponse.statusText}`)
+//         }
 
-        if (!apiResponse.body) {
-            throw new Error('API response body is empty')
-        }
+//         if (!apiResponse.body) {
+//             throw new Error('API response body is empty')
+//         }
 
-        res.writeHead(200, {
-            'Content-Type': contentType,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Connection': 'keep-alive',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-        })
+//         res.writeHead(200, {
+//             'Content-Type': contentType,
+//             'Cache-Control': 'no-cache, no-store, must-revalidate',
+//             'Connection': 'keep-alive',
+//             'Pragma': 'no-cache',
+//             'Expires': '0',
+//         })
 
-        // Use pipeline to directly pipe the API's response stream to the client's response stream
-        await streamPipeline(apiResponse.body, res)
+//         // Use pipeline to directly pipe the API's response stream to the client's response stream
+//         await streamPipeline(apiResponse.body, res)
 
-    } catch (error) {
-        console.error('Error:', error)
-        res.status(500).json({ error: `Failed to connect to ${apiName} API` })
-    }
-}
+//     } catch (error) {
+//         console.error('Error:', error)
+//         res.status(500).json({ error: `Failed to connect to ${apiName} API` })
+//     }
+// }
 
 export const crawl4aiCore = async (req: Request, res: Response) => {
     // const decodedUrl = decodeURIComponent(url) // decode the URL
@@ -163,7 +163,7 @@ export const anthropicAICore = async (req: Request, res: Response) => {
             } as any,
             body: JSON.stringify(req.body),
         }
-        const apiResponse = await fetch(apiUrl)
+        const apiResponse = await fetch(apiUrl, fetchOptions)
 
         if (!apiResponse.ok) {
             throw new Error(`API error: ${apiResponse.statusText}`)

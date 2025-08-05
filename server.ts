@@ -1,15 +1,14 @@
 // import { APP_BASE_HREF } from '@angular/common'
-import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
+import { AngularNodeAppEngine, createNodeRequestHandler, writeResponseToNodeResponse } from '@angular/ssr/node'
 import express, { NextFunction, Request, Response } from 'express'
-import { fileURLToPath } from 'node:url'
-import { dirname, join, resolve } from 'node:path'
+// import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
 import chalk from 'chalk'
 // import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
 import { apiLimiter, limiter } from 'api/handlers'
-import bootstrap from 'src/main.server'
-import { APP_BASE_HREF } from '@angular/common'
 // import bootstrap from 'src/main.server'
+// import { APP_BASE_HREF } from '@angular/common'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -23,15 +22,16 @@ function serveapp(): express.Application {
   */
   const AI: SyncAIapis = new SyncAIapis()
 
-  const serverDistFolder = dirname(fileURLToPath(import.meta.url))
+  // const serverDistFolder = dirname(fileURLToPath(import.meta.url))
+  const serverDistFolder = resolve(process.cwd(), '../dist/deepscrape/server')
   const browserDistFolder = resolve(serverDistFolder, '../browser')
 
   const indexHtml = join(serverDistFolder, 'index.server.html')
-  // console.log('indexHtml', indexHtml, browserDistFolder)
+  console.log('indexHtml', indexHtml, browserDistFolder)
 
   // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
-  // const angularNodeAppEngine = new AngularNodeAppEngine()
-  const commonEngine = new CommonEngine()
+  const angularNodeAppEngine = new AngularNodeAppEngine()
+  // const commonEngine = new CommonEngine()
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
@@ -79,7 +79,7 @@ function serveapp(): express.Application {
 
   // All regular routes use the Angular engine **
   server.get('**', (req: Request, res: Response, next: any) => {
-    const { protocol, originalUrl, baseUrl, headers } = req
+    // const { protocol, originalUrl, baseUrl, headers } = req
     // Yes, this is executed in devMode via the Vite DevServer
     console.log(
       chalk.yellow('Request Method:'), req.method,
@@ -89,7 +89,7 @@ function serveapp(): express.Application {
       chalk.green('Original URL:'), req.originalUrl,
       chalk.yellow('Base URL:'), req.baseUrl
     )
-    commonEngine
+    /* commonEngine
       .render({
         bootstrap,
         documentFilePath: indexHtml,
@@ -98,13 +98,13 @@ function serveapp(): express.Application {
         providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
       })
       .then((html) => res.send(html))
-      .catch((err) => next(err))
-    /* angularNodeAppEngine
+      .catch((err) => next(err)) */
+    angularNodeAppEngine
       .handle(req, { server: 'express' })
       .then((response) =>
         response ? writeResponseToNodeResponse(response, res) : next()
       )
-      .catch(next) */
+      .catch(next)
   })
 
   return server
@@ -115,16 +115,20 @@ function run(): void {
   const host = process.env['HOST'] || 'localhost'
   // Start up the Node server
   const server = serveapp()
-  if (isMainModule(import.meta.url)) {
+  // if (isMainModule(import.meta.url)) {
     const port = process.env['PORT'] || 4000
     server.listen(port, () => {
       console.log(`%s server listening on %s`, chalk.yellow('Node Express'), chalk.green(`http://${host}:${port}`))
       return host
     })
-  }
+  /* The `// }` is a commented out closing curly brace. It seems like it was intended to close a block
+  of code or a conditional statement that might have been removed or commented out during
+  development. In this case, it appears to be closing the commented out `if` block that checks if
+  the current module is the main module. */
+  // }
 }
 
-let reqHandler = null
+let reqHandler: express.Application
 
 if (process.env['PRODUCTION'] === 'true') {
   run()
@@ -132,4 +136,5 @@ if (process.env['PRODUCTION'] === 'true') {
   reqHandler = createNodeRequestHandler(serveapp())
 }
 
+console.log(chalk.blue('Environment:'), process.env['PRODUCTION'] === 'true' ? chalk.green('Production') : chalk.red('Development'))
 export { reqHandler }
