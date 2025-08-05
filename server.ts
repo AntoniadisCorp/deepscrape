@@ -130,7 +130,7 @@ function run(): void {
 
 let reqHandler: express.Application
 
-if (process.env['PRODUCTION'] === 'true') {
+if (process.env['PRODUCTION'] === 'false') {
   run()
 } else {
   reqHandler = createNodeRequestHandler(serveapp())

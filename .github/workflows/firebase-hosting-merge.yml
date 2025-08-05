@@ -113,11 +113,12 @@ jobs:
           entryPoint: "."
           expires: "never"
       - name: Deploy Firebase Functions
-        run: |
-          npm install -g firebase-tools
-          run: firebase deploy --only functions --project libnet-d76db
+        uses: w9jds/firebase-action@v2.2.0
+        with:
+          args: deploy --only functions --project libnet-d76db
         env:
           PRODUCTION: true
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
