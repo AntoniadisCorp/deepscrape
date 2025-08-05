@@ -6,7 +6,7 @@
     "start": "ng serve",
     "prbuild": "ts-node src/environments/prod_gen.ts",
     "staging": "npm run prbuild && ng build --configuration=staging",
-    "build": "ng build --configuration=production",
+    "build": "npm run prbuild && ng build --configuration=production",
     "build:elysia": "ng build --configuration=elysia",
     "watch": "ng build --watch --configuration development",
     "serve": "npm run build && cd functions && npm run serve",
