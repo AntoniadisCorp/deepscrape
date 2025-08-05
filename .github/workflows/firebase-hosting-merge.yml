@@ -31,6 +31,7 @@ jobs:
       # Debugging step to check environment variables
       - name: Debug Environment Variables
         run: |
+          echo "PRODUCTION=true"
           echo "API_KEY=$API_KEY"
           echo "AUTH_DOMAIN=$AUTH_DOMAIN"
           echo "DATABASE_URL=$DATABASE_URL"
@@ -46,6 +47,7 @@ jobs:
           echo "GOOGLE_API_KEY=$GOOGLE_API_KEY"
           echo "JINAAI_API_KEY=$JINAAI_API_KEY"
         env:
+          PRODUCTION: true
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -64,6 +66,7 @@ jobs:
       - name: Generate environment.ts
         run: npm run prbuild
         env:
+          PRODUCTION: true
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -81,6 +84,7 @@ jobs:
       # Build Angular App in production mode
       - name: Build Angular App
         env:
+          PRODUCTION: true
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -106,7 +110,7 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: libnet-d76db
           channelId: live
-          entryPoint: "dist/deepscrape"
+          entryPoint: "."
           expires: "never"
       - name: Deploy Firebase Functions
         run: |
