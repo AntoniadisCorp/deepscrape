@@ -16,8 +16,8 @@ import { limiter } from "./handlers"
 // see here: https://reddit.com/r/reactjs/comments/fsw405/firebase_cloud_functions_cors_policy_error/?rdt=47413
 // and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
-    origin: ["https://deepscrape.web.app", "http://127.0.0.1:5001", "http://localhost", "http://127.0.0.1"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"], // Specify allowed methods "OPTIONS"
+    origin: ["https://deepscrape.dev", "https://deepscrape.web.app", "http://127.0.0.1:5001", "http://localhost:4200", "http://127.0.0.1:4200"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], // Specify allowed methods "OPTIONS"
     allowedHeaders: ["content-type", "Authorization", "Accept", "anthropic-version", "x-with-iframe",
         "x-return-format", "x-target-selector", "x-with-generated-alt", "x-set-cookie", "x-api-key"], // Specify allowed headers
     maxAge: 1,
@@ -42,7 +42,7 @@ export const corss = cors({
 
     server.set("view engine", "html");
     server.set("views", browserDistFolder);
-    server.set("trust proxy", true)
+    server.set("trust proxy", false)
 
 
     server.use(corss);
@@ -74,6 +74,7 @@ export const corss = cors({
         // res.render(indexHtml, { req, providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }] })
         res.status(404).sendFile(resolve(publicDistFolder, "404.html"))
     });
+
 
     // This is the important stuff
     // s.keepAliveTimeout = (60 * 1000) + 1000;
