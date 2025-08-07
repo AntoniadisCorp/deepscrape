@@ -1,0 +1,10 @@
+# Changelog
+
+{{#each versions}}
+## [{{version}}] - {{date}}
+
+{{#each commits}}
+- {{#if scope}}**{{scope}}:** {{/if}}{{subject}}
+{{/each}}
+
+{{/each}}
