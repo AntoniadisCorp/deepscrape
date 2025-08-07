@@ -23,8 +23,17 @@ jobs:
       - name: Run Release
         run: npm run release
 
-      - name: Commit functions package version
+      - name: Set up Git user
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+      
+      - name: Push changes and tags
+        run: |
           git push --follow-tags origin main
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body_path: CHANGELOG.md
