@@ -1,5 +1,5 @@
 import { Injectable, OnInit } from '@angular/core'
-import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots } from '@angular/fire/firestore'
+import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots, connectFirestoreEmulator } from '@angular/fire/firestore'
 import { openDB } from 'idb'
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs'
 import { AuthService } from './auth.service'

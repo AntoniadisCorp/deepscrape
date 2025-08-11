@@ -14,7 +14,7 @@ import {
 } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { from } from 'rxjs/internal/observable/from';
-import { getErrorMessage, storeUserData } from 'src/app/core/functions';
+import { getErrorMessage } from 'src/app/core/functions';
 import { AuthService, FirestoreService } from 'src/app/core/services';
 import { Subscription } from 'rxjs';
 
@@ -123,7 +123,7 @@ export class LoginComponent {
       // Store additional user info in Firestore
       if (result.user) {
         // this.getUserData(result.user)
-        await storeUserData(result.user, this.firestore);
+        await this.firestoreService.storeUserData(result.user);
       }
 
       this.router.navigate(['/dashboard'])
@@ -150,7 +150,7 @@ export class LoginComponent {
       console.log(this.auth.currentUser?.email, result.user.email, provider.providerId, result.providerId, result.operationType)
       // Store additional user info in Firestore
       if (result.user) {
-        await storeUserData(result.user, this.firestore)
+        await this.firestoreService.storeUserData(result.user)
       }
 
       this.router.navigate(['/dashboard'])

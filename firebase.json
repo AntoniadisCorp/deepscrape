@@ -4,6 +4,9 @@
     "indexes": "firestore.indexes.json",
     "database": "easyscrape"
   },
+  "database": {
+    "rules": "database.rules.json"
+  },
   "functions": [
     {
       "source": "functions",
@@ -38,7 +41,7 @@
   },
   "emulators": {
     "firestore": {
-      "port": 8010,
+      "port": 8080,
       "host": "localhost"
     },
     "apphosting": {
@@ -50,7 +53,7 @@
       "port": 9099
     },
     "functions": {
-      "port": 5001
+      "port": 8081
     },
     "hosting": {
       "port": 5000
@@ -59,9 +62,10 @@
       "port": 9199
     },
     "ui": {
-      "enabled": true
+      "enabled": true,
+      "port": 4000
     },
-    "singleProjectMode": true
+    "singleProjectMode": false
   },
   "storage": {
     "rules": "storage.rules"

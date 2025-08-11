@@ -3,28 +3,6 @@ import { User } from "@angular/fire/auth";
 import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types";
 import { MACHNINE_STATE } from "../enum";
 
-export async function storeUserData(user: User, firestore: Firestore) {
-    try {
-        const userRef = doc(firestore, 'users', user.uid)
-        // const userRefProvider = doc(firestore, `users/${user.uid}`, 'provider')
-        let dbuser: Users = {
-            uid: user.uid,
-            providerParent: user.providerId,
-            providerId: user.providerData[0].providerId,
-            providerData: user.providerData,
-            emailVerified: user.emailVerified,
-            created_At: new Date(user.metadata.creationTime || ''),
-            last_login_at: new Date(user.metadata.lastSignInTime || ''),
-        }
-
-        await setDoc(userRef, dbuser, { merge: true })
-
-        console.log('User data stored successfully.');
-    } catch (error) {
-        console.error('Error storing user data:', error);
-    }
-}
-
 export function getErrorMessage(error: any): string {
     switch (error.code) {
         case 'auth/email-already-in-use':

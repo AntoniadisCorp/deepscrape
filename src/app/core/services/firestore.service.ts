@@ -1,20 +1,23 @@
 import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core';
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database';
-import { Auth, authState, User } from '@angular/fire/auth';
+import { Auth, authState, connectAuthEmulator, User } from '@angular/fire/auth';
 import {
   addDoc,
-  collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference,
+  collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, DocumentData, DocumentReference,
   Firestore, getDoc, getDocs, getFirestore, limit, query, Query,
   QueryConstraint, QuerySnapshot, setDoc, SetOptions
 } from '@angular/fire/firestore';
 import { CartPack, CrawlPack, Users } from '../types';
 import { map, Observable, of, throwError } from 'rxjs';
+import { WindowToken } from './window.service';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
   private firestore = inject(Firestore); // inject()
+  private window: Window = inject(WindowToken)
   private readonly _injector: EnvironmentInjector = inject(EnvironmentInjector)
   // item$: Observable<Board[]> | undefined;
 
@@ -24,11 +27,26 @@ export class FirestoreService {
   ) {
     // this.app = initializeApp(environment.firebaseConfig)
     this.firestore = this.getInstanceDB('easyscrape')
+
+    if (this.isLocalhost() && !environment.production) {
+
+      console.log('🔥 Connecting Firestore Service to Firebase Emulators');
+      
+      // Connect to the Firestore emulator if running on localhost and not in production
+      connectFirestoreEmulator(this.firestore, 'localhost', 8080)
+      connectAuthEmulator(this.afAuth, 'http://localhost:9099')
+    }
   }
 
   getInstanceDB(databaseName?: string): Firestore {
     // Get Firestore with the specified database name
-    return getFirestore(this.afAuth.app, this.getFirestoreInstance(databaseName));
+    return getFirestore(this.afAuth.app, this.getFirestoreInstance(databaseName))
+  }
+
+  isLocalhost(): boolean {
+    return typeof this.window !== 'undefined' &&
+           (this.window.location.hostname === 'localhost' ||
+            this.window.location.hostname === '127.0.0.1');
   }
 
   private getFirestoreInstance(databaseName?: string): string {
@@ -78,6 +96,31 @@ export class FirestoreService {
     return null
 
   }
+
+  async storeUserData(user: User) {
+    try {
+        const userRef = this.doc('users', user.uid)
+        // const userRefProvider = doc(firestore, `users/${user.uid}`, 'provider')
+        let dbuser: Users = {
+            uid: user.uid,
+            providerParent: user.providerId,
+            providerId: user.providerData[0]?.providerId,
+            providerData: user.providerData,
+            emailVerified: user.emailVerified,
+            created_At: new Date(user.metadata.creationTime || ''),
+            last_login_at: new Date(user.metadata.lastSignInTime || ''),
+        }
+
+        await this.setDoc(userRef, dbuser, { merge: true })
+
+        console.log('User data stored successfully.');
+        return true
+    } catch (error) {
+        console.error('Error storing user data:', error);
+        return error as any
+    }
+}
+
 
   /* get last 10 crawl pack config items by sorted date from the store  */
   // async getPack

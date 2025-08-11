@@ -5,8 +5,8 @@ import { routes } from './app.routes';
 import { DomSanitizer, provideClientHydration } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
-import { getFirestore, provideFirestore } from '@angular/fire/firestore';
-import { getFunctions, provideFunctions } from '@angular/fire/functions';
+import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { connectFunctionsEmulator, getFunctions, provideFunctions } from '@angular/fire/functions';
 import { getMessaging, provideMessaging } from '@angular/fire/messaging';
 import { getPerformance, providePerformance } from '@angular/fire/performance';
 import { getStorage, provideStorage } from '@angular/fire/storage';
@@ -65,8 +65,25 @@ export const appConfig: ApplicationConfig = {
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
 
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()),
-    provideFunctions(() => getFunctions()),
+    provideFirestore(() =>
+    {
+      const firestore = getFirestore();
+      if (!environment.production) {
+        console.log('🔥 Connecting Firestore to Emulator');
+        connectFirestoreEmulator(firestore, 'localhost', 8080);
+      }
+      return firestore
+    }
+    ),
+    provideFunctions(() => {
+
+      const functions = getFunctions()
+      if (!environment.production) {
+        console.log('🔥 Connecting Functions to Emulator');
+        connectFunctionsEmulator(functions, 'localhost', 8081)
+      }
+      return functions;
+    }),
     provideMessaging(() => getMessaging()),
     providePerformance(() => getPerformance(initializeApp(environment.firebaseConfig))),
     provideStorage(() => getStorage()),

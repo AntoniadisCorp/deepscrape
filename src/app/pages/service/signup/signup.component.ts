@@ -7,7 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail } from '@angular/fire/auth';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Users } from 'src/app/core/types';
-import { getErrorMessage, storeUserData } from 'src/app/core/functions';
+import { getErrorMessage } from 'src/app/core/functions';
 import { FirestoreService } from 'src/app/core/services';
 
 @Component({
@@ -69,7 +69,9 @@ export class SignupComponent implements OnInit {
 
                 const userCredential = await createUserWithEmailAndPassword(this.auth, email, password) as UserCredential
 
-                await sendEmailVerification(userCredential.user);
+                await sendEmailVerification(userCredential.user)
+
+                // console.log('Email verification sent to:', userCredential.user)
 
                 // Store additional user info in Firestore
                 if (userCredential.user) {
@@ -81,7 +83,7 @@ export class SignupComponent implements OnInit {
                         emailVerified: false
                     }
                     this.auth.updateCurrentUser(user) */
-                    await storeUserData(userCredential.user, this.firestore);
+                    await this.firestoreService.storeUserData(userCredential.user);
                 }
 
                 // Redirect or show success message

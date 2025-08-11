@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
-  Auth, AuthProvider, authState, browserLocalPersistence, FacebookAuthProvider,
+  Auth, AuthProvider, authState, browserLocalPersistence, connectAuthEmulator, FacebookAuthProvider,
   getAuth,
   GoogleAuthProvider, indexedDBLocalPersistence, linkWithPopup, setPersistence, signInWithEmailAndPassword,
   signInWithPopup,
@@ -11,7 +11,9 @@ import { map } from 'rxjs/internal/operators/map';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { FireUser } from '../types';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
-import { FirestoreService } from './firestore.service';
+import { FirestoreService } from './firestore.service'
+import { environment } from 'src/environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -70,6 +72,12 @@ export class AuthService {
    * @description Inits auth
    */
   async initAuth() {
+
+    if (this.fireService.isLocalhost() || !environment.production) {
+      // Connect to Firebase Emulators if running on localhost and not in production
+      console.log('🔥 Connecting Auth Service to Firebase Emulators');
+      connectAuthEmulator(this.auth, 'http://localhost:9099');
+    }
 
     this.auth.onAuthStateChanged({
       next: async user => {
