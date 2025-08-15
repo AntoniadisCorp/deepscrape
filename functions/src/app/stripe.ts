@@ -14,7 +14,7 @@ type providerData = {
 
 /* TODO: create a Stripe customer account for the user use most usable data */
 export async function createCustomer(firebaseUser: any): Promise<any> {
-  const providerData = firebaseUser.providerData as providerData[]
+  const providerData = firebaseUser?.providerData as providerData[]
 
   if (!providerData || providerData.length === 0) {
     throw new Error("No provider data found for the user")

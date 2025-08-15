@@ -11,7 +11,7 @@ import {
 } from "./handlers"
 import { auth } from "./app/config"
 
-class SyncAIapis {
+class ReverseAPIProxy {
     public router: Router
 
     constructor() {
@@ -103,4 +103,4 @@ class SyncAIapis {
     }
 }
 
-export { SyncAIapis }
+export { ReverseAPIProxy }

@@ -3,7 +3,7 @@
 /* eslint-disable object-curly-spacing */
 import { db, dbName, getSecretFromManager, saveToSecretManager, stripe/* , auth as adminAuth */ } from "./config"
 // import { createCustomer } from "./stripe"
-import { firestore, auth } from "firebase-functions/v1"
+import { firestore, auth, EventContext } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { redis } from "./cacheConfig"
 import { QueryDocumentSnapshot } from "firebase-functions/v2/firestore"
@@ -12,15 +12,19 @@ import { createCustomer } from "./stripe"
 export const newStripeCustomer = auth
     .user()
     .onCreate(
-        async (user: auth.UserRecord) => {
+        async (user: auth.UserRecord, context: EventContext) => {
+        context.auth?.uid
         // Create a new Stripe customer when a new user is created
-        const userId = user.uid
+        const userId = user.uid || context.auth?.uid
         const userPath = `users/${userId}`
 
 
         try {
             const userDoc = await db.doc(userPath).get()
             const firebaseUser = userDoc.data()
+            if (!firebaseUser) {
+                throw new Error(`User document not found for userId: ${userId}`)
+            }
 
             const customer = await createCustomer(firebaseUser)
             const stripeId = customer?.id

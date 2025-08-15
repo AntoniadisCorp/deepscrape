@@ -70,7 +70,7 @@ export const appConfig: ApplicationConfig = {
       const firestore = getFirestore();
       if (!environment.production) {
         console.log('🔥 Connecting Firestore to Emulator');
-        connectFirestoreEmulator(firestore, 'localhost', 8080);
+        connectFirestoreEmulator(firestore, 'localhost', 5001);
       }
       return firestore
     }
