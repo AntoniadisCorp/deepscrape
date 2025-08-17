@@ -103,4 +103,23 @@ class ReverseAPIProxy {
     }
 }
 
+// ---- Helpers (enumeration-safe) ----
+// async function getOrCreateUserByEmail(email: string, profile = {}) {
+//   try {
+//     const user = await auth.getUserByEmail(email)
+//     return user; // Do not reveal to client
+//   } catch (e: any) {
+//     if (e.code === "auth/user-not-found") {
+//       // Create without revealing existence
+//       return await auth.createUser({
+//         email,
+//         emailVerified: !!profile.emailVerified,
+//         displayName: profile.displayName || undefined,
+//         photoURL: profile.picture || undefined,
+//       })
+//     }
+//     throw e
+//   }
+// }
+
 export { ReverseAPIProxy }

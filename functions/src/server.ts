@@ -11,10 +11,11 @@ import morgan from "morgan"
 
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
-import { ReverseAPIProxy } from "./syncaipai"
+import { ReverseAPIProxy } from "./syncaiapi"
 import { existsSync } from "node:fs"
 import { limiter } from "./handlers"
 import * as dotenv from "dotenv"
+import { AuthAPIProxy } from "./authproxy"
 dotenv.config({ quiet: true })
 
 // import { existsSync } from "node:fs"
@@ -37,20 +38,23 @@ export const corss = cors({
     // Create an instance of the Express application
     const server: express.Application = express()
     const airouter = new ReverseAPIProxy()
+    const oauthproxy = new AuthAPIProxy()
 
-    const distFolder = resolve(process.cwd(), "../dist")
+
+    // The code snippet you provided is setting up different folder paths
+    // for the Express server to serve static files from
+    const distFolder = resolve(process.cwd(), "..", "dist")
     const publicDistFolder = resolve(process.cwd(), "lib/public")
     const serverDistFolder = join(distFolder, "deepscrape", "server")
     const browserDistFolder = join(distFolder, "deepscrape", "browser")
 
     // console.log(serverDistFolder, distFolder, `Browser Dist Folder: ${browserDistFolder}`)
-
+    // Check if the serverDistFolder exists, if not, use the browserDistFolder
     const indexHtml = existsSync(join(serverDistFolder, "index.server.html"))? "index.server.html" : "index"
 
-
-    server.set("view engine", "html");
-    server.set("views", browserDistFolder);
-    server.set("trust proxy", true)
+    server.set("view engine", "html")
+    server.set("views", browserDistFolder)
+    server.set("trust proxy", false)
 
     // Security and logging middleware
     server.use(helmet());
@@ -69,6 +73,7 @@ export const corss = cors({
     })
     // Register the API routes , airouter.isJwtAuth,
     server.use("/api", limiter, airouter.isJwtAuth, airouter.router)
+    server.use("/oauth", limiter, oauthproxy.router)
     server.use("/", limiter)
 
     // Serve static files from /browser

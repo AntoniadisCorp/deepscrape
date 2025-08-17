@@ -63,6 +63,14 @@
       "^/api": ""
     }
   },
+  "/oauth": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/oauth": ""
+    }
+  },
   "/apa/*": {
     "target": "http://localhost:3400",
     "secure": false,

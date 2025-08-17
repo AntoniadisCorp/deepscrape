@@ -6,7 +6,7 @@
     "build:angular": "node cp-angular.js",
     "build": "npm run build:angular && tsc",
     "build:watch": "npm run build:angular && tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only \"functions,hosting,firestore,auth\"",
+    "serve": "npm run build && firebase emulators:start --only \"functions,hosting,firestore,auth\" --debug",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only \"functions,hosting\"",

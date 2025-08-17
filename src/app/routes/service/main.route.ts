@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginGuard } from 'src/app/core/guards';
+import { authGuard, LoginGuard, verifyGuard } from 'src/app/core/guards';
 
 export const MainRoutes: Routes = [
 
@@ -33,5 +33,13 @@ export const MainRoutes: Routes = [
             title: 'resetpassword'
         },
         canActivate: [LoginGuard],
+    },
+    {
+        path: 'verification',
+        loadComponent: () => import('../../pages').then(m => m.VerifyEmailComponent),
+        data: {
+            title: 'verification'
+        },
+        canActivate: [verifyGuard],
     }
 ]

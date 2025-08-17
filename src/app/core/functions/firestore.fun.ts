@@ -1,20 +1,50 @@
-import { writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore";
-import { User } from "@angular/fire/auth";
-import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types";
-import { MACHNINE_STATE } from "../enum";
+import { writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore"
+import { User } from "@angular/fire/auth"
+import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types"
+import { MACHNINE_STATE } from "../enum"
 
 export function getErrorMessage(error: any): string {
-    switch (error.code) {
+    const errorMessage: string = error?.code || error?.message || '';
+
+    switch (errorMessage) {
         case 'auth/email-already-in-use':
             return 'Email address is already in use.';
+        case 'auth/cancelled-popup-request':
+            return 'Popup request was cancelled. Please try again.';
+        case 'auth/popup-closed-by-user':
+            return 'Popup was closed by the user. Please try again.';
+        case 'auth/popup-blocked':
+            return 'Popup was blocked by the browser. Please allow popups for this site.';
         case 'auth/invalid-email':
             return 'Invalid email address.';
+        case 'auth/too-many-requests':
+            return 'Too many reset attempts. Please try again later.';
         case 'auth/weak-password':
             return 'Password is too weak.';
+        case 'auth/user-not-found':
+            return 'User not found with the provided credentials.';
+        case 'auth/wrong-password':
+            return 'Incorrect password.';
+        case 'auth/missing-Email':
+            return 'Missing email.';
         case 'auth/account-exists-with-different-credential':
-            return 'An account already exists with a different login method.';
+            return 'An account with this email already exists. Please sign in with your existing account to link it.';
+        case 'auth/network-request-failed':
+            return 'Network error. Please check your internet connection.';
+        case 'auth/invalid-credential':
+            return 'Invalid credentials provided.';
+        case 'auth/operation-not-supported-in-this-environment':
+            return 'This operation is not supported in the current environment.';
+        case 'auth/invalid-verification-code':
+            return 'Invalid verification code.';
+        case 'auth/argument-error':
+            return 'Invalid argument provided.';
+        case 'auth/provider-already-linked':
+            return 'This provider is already linked to the user.';
+        case 'auth/invalid-phone-number':
+            return 'Invalid phone number format.';
         default:
-            return error.message || 'An error occurred during signup.';
+            return errorMessage || 'An error occurred during signup.';
     }
 }
 
@@ -32,7 +62,7 @@ export async function storeCrawlOperation(userId: string, operationData: any, fi
         const operationsRef = doc(collection(firestore, `users/${userId}/operations`))
 
         // Create a batch to group the operations
-        const batchRef = writeBatch(firestore);
+        const batchRef = writeBatch(firestore)
 
         if (metadataRef) {
 
@@ -57,7 +87,7 @@ export async function storeCrawlOperation(userId: string, operationData: any, fi
         console.log('Operation data stored successfully.')
         return true
     } catch (error) {
-        console.error('Error storing operation data:', error);
+        console.error('Error storing operation data:', error)
         throw new Error(error as string)
     }
 }
@@ -71,7 +101,7 @@ export async function deleteOperationDoc(userId: string, operationId: string, fi
         const operationMetricsRef = doc(firestore, `operation_metrics`, operationId)
 
         // Create a batch to group the operations
-        const batchRef = writeBatch(firestore);
+        const batchRef = writeBatch(firestore)
 
         // Update the document with the soft delete flag and timestamp
         batchRef.set(operationMetricsRef, { deleted_At: Date.now(), softDelete: true }, { merge: true })

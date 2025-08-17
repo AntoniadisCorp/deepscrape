@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ChildrenOutletContexts, RouterLink, RouterOutlet } from '@angular/router';
-import { fadeInOutSlideAnimation } from 'src/app/animations';
+import { fadeInOutAnimation } from 'src/app/animations';
 import { ThemeToggleComponent } from 'src/app/shared';
 
 @Component({
@@ -10,7 +10,7 @@ import { ThemeToggleComponent } from 'src/app/shared';
     imports: [RouterOutlet, RouterLink, ThemeToggleComponent],
     templateUrl: './app-service-layout.component.html',
     styleUrl: './app-service-layout.component.scss',
-    animations: [fadeInOutSlideAnimation]
+    animations: [fadeInOutAnimation]
 })
 export class AppServiceLayoutComponent {
 

@@ -1,3 +1,5 @@
 export * from './aiservice.var'
 export * from './extension.var'
 export * from './deployment.var'
+export * from './global.var'
+export * from './authentic.var'

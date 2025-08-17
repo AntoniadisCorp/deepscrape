@@ -10,10 +10,10 @@ import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
 import { take } from 'rxjs/internal/operators/take'
 import { Subscription } from 'rxjs/internal/Subscription'
-import { asideBarAnimation, fadeInOutSlideAnimation, PopupAnimation } from 'src/app/animations'
+import { asideBarAnimation, fadeInOutAnimation, PopupAnimation } from 'src/app/animations'
 import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { CartService, FirestoreService, ScreenResizeService } from 'src/app/core/services'
+import { AuthService, CartService, FirestoreService, ScreenResizeService } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
 import { ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
@@ -26,7 +26,7 @@ import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/com
   imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
     MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
     AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
-  animations: [fadeInOutSlideAnimation, PopupAnimation, asideBarAnimation],
+  animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
 })
@@ -65,6 +65,8 @@ export class AppUserLayoutComponent {
     private resizeSvc: ScreenResizeService,
     private router: Router,
     private auth: Auth,
+
+    private authService: AuthService,
     private cartService: CartService,
   ) {
 
@@ -200,7 +202,7 @@ export class AppUserLayoutComponent {
 
   logout() {
     this.loading = true
-    this.logoutSubscription = from(signOut(this.auth)).pipe(
+    this.logoutSubscription = this.authService.logout().pipe(
       delay(1000),
       finalize(() => {
         this.loading = false
@@ -217,6 +219,7 @@ export class AppUserLayoutComponent {
         console.error('Logout error:', error)
       },
       complete: () => {
+        this.logoutSubscription?.unsubscribe()
       }
     })
   }

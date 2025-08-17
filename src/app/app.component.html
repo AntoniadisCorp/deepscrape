@@ -13,7 +13,7 @@
   class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></ngx-loading-bar>
 <!-- Application Screen Size Detector   -->
 <app-size-detector></app-size-detector>
-<div class="bg-gray-100 dark:bg-gray-900 flex flex-col">
+<div class="bg-gradient-to-br from-slate-700 via-purple-900/80 to-deep-purple-800/80 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex flex-col">
   <!-- min-h-screen overflow-hidden -->
   @if(isLoading) {
 
@@ -23,7 +23,7 @@
       class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
   </span>
   }
-  <router-outlet></router-outlet>
+  <router-outlet #outlet="outlet" [@routeAnimation]="getRouteAnimationData(outlet)"></router-outlet>
 </div>
 
 <app-snackbar

@@ -32,7 +32,7 @@ export class ApiKeyService {
         this.firestore = this.firestoreService.getInstanceDB('easyscrape')
         this.functions = getFunctions(this.firestore.app)
 
-        if ( this.firestoreService.isLocalhost() || !environment.production) {
+        if ( this.firestoreService.isLocalhost() && !environment.production) {
               
             console.log('🔥 Connecting to Firebase Emulators');
             connectFunctionsEmulator(this.functions, 'localhost', 8081)

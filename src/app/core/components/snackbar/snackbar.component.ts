@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
 import { NgClass, NgIf } from '@angular/common';
@@ -40,14 +40,28 @@ export class SnackbarComponent {
 
   visible: boolean = false
   snackbarState: 'visible' | 'void' = 'void';
+  private hideTimeout: any;
+  constructor(private cdr: ChangeDetectorRef) {}
   show(message: string, type: SnackBarType, action: string | '', duration?: number) {
     this.message = message;
     this.type = type;
     this.action = action;
     this.visible = true;
-    this.snackbarState = 'visible';
-    if (this.duration > 0)
-      setTimeout(() => this.hide(), duration || this.duration) // Auto-hide after 3 seconds
+    
+    // Use requestAnimationFrame instead of setTimeout for better performance
+    requestAnimationFrame(() => {
+      this.snackbarState = 'visible';
+      this.cdr.markForCheck(); // Use markForCheck instead of detectChanges
+    });
+    
+    if (this.duration > 0) {
+      // Clear any existing timeout to prevent memory leaks
+      if (this.hideTimeout) {
+        clearTimeout(this.hideTimeout);
+      }
+      
+      this.hideTimeout = setTimeout(() => this.hide(), duration || this.duration);
+    }
   }
 
   hide() {
@@ -90,6 +104,12 @@ export class SnackbarComponent {
         return info;
       default:
         return info;
+    }
+  }
+  ngOnDestroy() {
+    // Clean up timeout to prevent memory leaks
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
     }
   }
 }
