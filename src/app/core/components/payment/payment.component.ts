@@ -1,15 +1,15 @@
 import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core'
-import { FirestoreService, PlutoService, SessionStorage, SnackbarService, STRIPE_PUBLIC_KEY } from '../../services'
+import { FirestoreService, PlutoService, SessionStorage, SnackbarService, STRIPE_PUBLIC_KEY, WindowToken } from '../../services'
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Firestore } from '@angular/fire/firestore'
-import { Functions, getFunctions, httpsCallable } from '@angular/fire/functions'
+import { connectFunctionsEmulator, Functions, getFunctions, httpsCallable } from '@angular/fire/functions'
 import { CurrencyPipe, JsonPipe, NgIf } from '@angular/common'
 import { StripeCardCvcElement, StripeCardElement, StripeElement, StripeElementsOptions, StripePaymentElement, StripePaymentElementOptions } from '@stripe/stripe-js'
 import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe'
 import { from, fromEvent, Subscription } from 'rxjs'
 import { Auth } from '@angular/fire/auth'
 import { SnackBarType } from '../snackbar/snackbar.component'
-
+import { environment } from 'src/environments/environment'
 
 @Component({
     selector: 'app-payment',
@@ -25,6 +25,8 @@ export class PaymentComponent {
   private readonly fb = inject(FormBuilder)
   private readonly plutoService = inject(PlutoService)
   readonly stripe = injectStripe(STRIPE_PUBLIC_KEY)
+
+  private window: Window = inject(WindowToken)
 
 
   private sessionStorage: Storage = inject(SessionStorage)
@@ -60,6 +62,12 @@ export class PaymentComponent {
   ) {
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
     this.functions = getFunctions(this.firestore.app)
+
+    if ( this.isLocalhost() && !environment.production) {
+
+      console.log('🔥 Connecting to Firebase Emulators');
+      connectFunctionsEmulator(this.functions, 'localhost', 8081);
+    }
 
     this.checkoutForm = this.fb.group({
       name: ['Ricardo', [Validators.required]],
@@ -114,6 +122,13 @@ export class PaymentComponent {
         }
       )
   }
+
+  private isLocalhost(): boolean {
+    return typeof this.window !== 'undefined' &&
+           (this.window.location.hostname === 'localhost' ||
+            this.window.location.hostname === '127.0.0.1');
+  }
+
   ngOnInit() {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.

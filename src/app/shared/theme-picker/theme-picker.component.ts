@@ -11,9 +11,9 @@ export const themeStorageKey = 'app-theme-dark';
     template: `
     <div (click)="toggleTheme()" class="flex flex-col items-center cursor-pointer justify-center  border-none text-center bg-transparent 
     hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-full transition-colors">
-    <button mat-icon-button type="button" class="size-6 block xl:w-6 xl:h-6" 
+    <button mat-icon-button type="button" class="size-7 block md:size-6 " 
             [title]="getToggleLabel()" [attr.aria-label]="getToggleLabel()">
-      <mat-icon [style]="getIconColorClass()"  class=" !size-6 !leading-6 !text-[var(--icon-color)] dark:!text-[var(--icon-color-dark)]">
+      <mat-icon [style]="getIconColorClass()"  class=" !text-[var(--icon-color)] dark:!text-[var(--icon-color-dark)]">
         {{  isDark ? 'light' : 'dark'  }}_mode
       </mat-icon>
 

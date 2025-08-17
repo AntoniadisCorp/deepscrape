@@ -10,6 +10,7 @@ import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { Auth, authState, user, User } from '@angular/fire/auth';
 import { map, Observable, of, startWith, tap } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
+import { fadeInOutAnimation } from './animations';
 
 /* 
                      ,//@@@.
@@ -48,10 +49,15 @@ import { AsyncPipe } from '@angular/common';
   imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
     SizeDetectorComponent
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ThemeToggleComponent],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  // host: {
+  //   '[@routeAnimation]': 'getRouteAnimationData(routerOutlet)',
+  //   '[style.backgroundColor]': 'isLoading ? "transparent" : ""'
+  //  }, // Set background color to transparent when loading
+  animations: [fadeInOutAnimation]
 })
 export class AppComponent {
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent;
@@ -72,6 +78,9 @@ export class AppComponent {
 
     private snackbarService: SnackbarService,
     private authService: AuthService,
+    
+    // Inject ActivatedRoute to access route data
+    // private activatedRoute: ActivatedRoute,
 
 
   ) {
@@ -131,5 +140,10 @@ export class AppComponent {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.routerEventSubscription?.unsubscribe()
+  }
+
+  // Helper method to get the animation data from the router outlet
+  getRouteAnimationData(outlet: RouterOutlet) {
+    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation'];
   }
 }

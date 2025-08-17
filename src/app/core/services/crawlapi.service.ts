@@ -9,8 +9,6 @@ import { map } from 'rxjs/internal/operators/map';
 import { tap } from 'rxjs/internal/operators/tap';
 import { CrawlPack, CrawlStatus, CrawlTask, JinaOptions } from '../types';
 import { filter } from 'rxjs/internal/operators/filter';
-import { mergeMap } from 'rxjs/internal/operators/mergeMap';
-import { from } from 'rxjs/internal/observable/from';
 import { environment } from 'src/environments/environment';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
 

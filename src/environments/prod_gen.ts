@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 
 const env = dotenv.config().parsed; // Get parsed .env values directly
 const environment = {
-    production: false,
+    production: env["PRODUCTION"] === "true",
     assetsUri: "https://deepscrape.web.app/assets/",
     firebaseConfig: {
         apiKey: env["API_KEY"],

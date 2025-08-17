@@ -5,13 +5,13 @@
         <div class="flex h-full content-center items-center justify-center">
           <div class="w-full px-4 lg:w-4/12">
             <form
-              class="group relative mt-10 mb-6 flex w-full min-w-0 flex-col break-words rounded-lg border-0 bg-neutral-300 bg-opacity-60 shadow-lg dark:bg-gray6"
+              class="group relative mt-10 mb-6 flex w-full min-w-0 flex-col break-words rounded-lg border-0 bg-slate-900 bg-opacity-60 shadow-lg dark:bg-gray6"
               [formGroup]="signupForm"
               (ngSubmit)="signup()"
             >
               <div class="mb-0 rounded-t px-6 py-6">
                 <div class="mb-3 text-center">
-                  <h6 class="text-sm font-bold text-gray-600">
+                  <h6 class="text-sm font-bold text-gray-400">
                     Sign up with Credentials
                   </h6>
                 </div>
@@ -28,7 +28,7 @@
                 <div class="flex-auto px-4 py-10 pt-0 lg:px-10">
                   <div class="relative mb-3 w-full">
                     <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
                       >Full Name</label
                     >
                     <input
@@ -51,14 +51,15 @@
                   </div>
                   <div class="relative mb-3 w-full">
                     <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
-                      >Email or mobile</label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
+                      >Email</label
                     >
                     <input
+                      autocomplete="username"
                       type="text"
                       formControlName="email"
                       required
-                      placeholder="Enter your Email or Mobile"
+                      placeholder="Enter your Email"
                       class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
                     />
                     @if (signupForm.get('email')?.invalid &&
@@ -82,22 +83,25 @@
                       formControlName="password"
                       required
                       placeholder="Enter your Password"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                      autocomplete="new-password"
+                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-400 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
                     />
                     @if (signupForm.get('password')?.invalid &&
                     (signupForm.get('password')?.dirty ||
                     signupForm.get('password')?.touched)) {
                     <small class="text-red-500">
                       @if (signupForm.get('password')?.errors?.['required']) {
-                      Password is required } @if
-                      (signupForm.get('password')?.errors?.['minlength']) {
-                      Password must be at least 6 characters }
+                      Password is required } 
+                      {{signupForm.get('password')?.errors?.['passwordStrength']
+                          ? checkPasswordStrength(signupForm.get('password')?.value)
+                          : 'Invalid format'
+                         }}
                     </small>
                     }
                   </div>
                   <div class="relative mb-3 w-full">
                     <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
                       >Confirm Password</label
                     >
                     <input
@@ -105,6 +109,7 @@
                       formControlName="confirmPassword"
                       required
                       placeholder="Confirm your Password"
+                      autocomplete="new-password"
                       class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
                     />
                     @if (signupForm.get('confirmPassword')?.invalid &&
@@ -117,12 +122,33 @@
                     </small>
                     }
                   </div>
+                  <div class="relative mb-3 w-full">
+                    <label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
+                      >Phone Number (Optional)</label
+                    >
+                    <input
+                      type="text"
+                      formControlName="phoneNumber"
+                      placeholder="Enter your Phone Number (e.g., +1234567890)"
+                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                    />
+                    @if (signupForm.get('phoneNumber')?.invalid &&
+                    (signupForm.get('phoneNumber')?.dirty ||
+                    signupForm.get('phoneNumber')?.touched)) {
+                    <small class="text-red-500">
+                      @if (signupForm.get('phoneNumber')?.errors?.['pattern']) {
+                      Invalid phone number format (e.g., +1234567890).
+                      }
+                    </small>
+                    }
+                  </div>
                   <div class="mt-6 flex flex-wrap">
                     <div class="w-full text-center">
                       <a
                         [routerLink]="['/service/login']"
                         routerLinkActive="router-link-active"
-                        class="text-black-50 dark:text-gray-50"
+                        class=" text-gray-500 dark:text-gray-50"
                         ><small>Already have an account? Sign in</small></a
                       >
                     </div>
@@ -132,7 +158,7 @@
                       type="submit"
                       title="signup"
                       [disabled]="!signupForm.valid"
-                      class="mb-1 mr-1 w-full cursor-pointer dark:bg-blue-600/[0.4] dark:hover:bg-blue-600/[0.7] disabled:bg-gray-900 dark:disabled:bg-gray-900 rounded px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-700"
+                      class="mb-1 mr-1 w-full cursor-pointer dark:bg-blue-600/[0.4] dark:hover:bg-blue-600/[0.7] disabled:bg-gray-900/50 dark:disabled:bg-gray-900 rounded px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-700"
                     >
                       SIGN UP
                     </button>

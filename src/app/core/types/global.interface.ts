@@ -2,6 +2,10 @@
 export type Loading = {
     google: boolean
     github: boolean
+    email: boolean
+    logout: boolean
+    phone: boolean
+    code: boolean
 }
 
 export type DropDownOption = {

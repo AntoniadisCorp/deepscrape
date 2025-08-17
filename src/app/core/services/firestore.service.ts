@@ -1,20 +1,23 @@
 import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core';
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database';
-import { Auth, authState, User } from '@angular/fire/auth';
+import { Auth, authState, connectAuthEmulator, PopupRedirectResolver, signInWithEmailAndPassword, signInWithPopup, User, UserCredential } from '@angular/fire/auth';
 import {
   addDoc,
-  collection, CollectionReference, deleteDoc, doc, DocumentData, DocumentReference,
+  collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, DocumentData, DocumentReference,
   Firestore, getDoc, getDocs, getFirestore, limit, query, Query,
   QueryConstraint, QuerySnapshot, setDoc, SetOptions
 } from '@angular/fire/firestore';
 import { CartPack, CrawlPack, Users } from '../types';
 import { map, Observable, of, throwError } from 'rxjs';
+import { WindowToken } from './window.service';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
   private firestore = inject(Firestore); // inject()
+  private window: Window = inject(WindowToken)
   private readonly _injector: EnvironmentInjector = inject(EnvironmentInjector)
   // item$: Observable<Board[]> | undefined;
 
@@ -24,11 +27,26 @@ export class FirestoreService {
   ) {
     // this.app = initializeApp(environment.firebaseConfig)
     this.firestore = this.getInstanceDB('easyscrape')
+
+    if (this.isLocalhost() && !environment.production) {
+
+      console.log('🔥 Connecting Firestore Service to Firebase Emulators');
+
+      // Connect to the Firestore emulator if running on localhost and not in production
+      connectFirestoreEmulator(this.firestore, 'localhost', 5001)
+      connectAuthEmulator(this.afAuth, 'http://localhost:9099')
+    }
   }
 
   getInstanceDB(databaseName?: string): Firestore {
     // Get Firestore with the specified database name
-    return getFirestore(this.afAuth.app, this.getFirestoreInstance(databaseName));
+    return getFirestore(this.afAuth.app, this.getFirestoreInstance(databaseName))
+  }
+
+  isLocalhost(): boolean {
+    return typeof this.window !== 'undefined' &&
+      (this.window.location.hostname === 'localhost' ||
+        this.window.location.hostname === '127.0.0.1');
   }
 
   private getFirestoreInstance(databaseName?: string): string {
@@ -50,7 +68,7 @@ export class FirestoreService {
     }
   }
 
-  
+
   /**
    * This TypeScript function asynchronously retrieves user data based on a provided user ID.
    * @param {string} userId - The `userId` parameter is a string that represents the unique identifier
@@ -78,6 +96,33 @@ export class FirestoreService {
     return null
 
   }
+
+  async storeUserData(user: User, providerId: string, emailVerified: boolean = false, phoneVerified: boolean | null = null): Promise<boolean | Error> {
+    try {
+      const userRef = this.doc('users', user.uid)
+      
+      // const userRefProvider = doc(firestore, `users/${user.uid}`, 'provider')
+      let dbuser: Users = {
+        uid: user.uid,
+        providerParent: user.providerId,
+        providerId, // Use the last providerId from providerData this means the last provider used to sign in
+        providerData: user.providerData,
+        emailVerified,
+        phoneVerified,
+        created_At: new Date(user.metadata.creationTime || ''),
+        last_login_at: new Date(user.metadata.lastSignInTime || ''),
+      }
+
+      await this.setDoc(userRef, dbuser, { merge: true })
+
+      console.log('User data stored successfully.');
+      return true
+    } catch (error) {
+      console.error('Error storing user data:', error);
+      return error as any
+    }
+  }
+
 
   /* get last 10 crawl pack config items by sorted date from the store  */
   // async getPack
@@ -140,12 +185,20 @@ export class FirestoreService {
     return [] // Return an empty array if no documents found
   }
 
+
+  /**
+   * This TypeScript function returns an observable that emits a boolean indicating whether a user is
+   * currently authenticated.
+   * @returns An observable that emits a boolean value indicating whether the user is authenticated or
+   * not.
+   */
   public authState(): Observable<boolean> {
     return runInInjectionContext(
       this._injector,
       (): Observable<boolean> => authState(this.afAuth).pipe(map((user: User | null) => !!user)),
     )
   }
+
 
   /**
    * Note that the doc method could accept a CollectionReference or DocumentReference in addition to
@@ -237,6 +290,32 @@ export class FirestoreService {
     );
   }
 
+  public signInWithPopup(provider: any, resolver?: PopupRedirectResolver) {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential> => {
+        return await signInWithPopup(this.afAuth, provider, resolver)
+      },
+    );
+  }
+
+  public async signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential> => {
+        return await signInWithEmailAndPassword(this.afAuth, email, password)
+      },
+    );
+  }
+
+  public async signOut(): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await this.afAuth.signOut()
+      },
+    );
+  }
 
   /**
  * Runs an async function in the injection context. This can be awaited, unlike @see {runInInjectionContext}.

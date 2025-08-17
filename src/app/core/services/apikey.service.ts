@@ -4,8 +4,8 @@ import { ApiKey, ApiKeyType } from '../types/apikey.interface';
 import { SessionStorage } from './storage.service';
 import { FirestoreService } from './firestore.service';
 import { Firestore } from '@angular/fire/firestore';
-import { Functions, getFunctions, httpsCallable, HttpsCallableResult } from '@angular/fire/functions';
-
+import { connectFunctionsEmulator, Functions, getFunctions, httpsCallable, HttpsCallableResult } from '@angular/fire/functions';
+import { environment } from 'src/environments/environment';
 @Injectable({
     providedIn: 'root'
 })
@@ -31,6 +31,12 @@ export class ApiKeyService {
         // Initialize firestore function, select easyscrape db
         this.firestore = this.firestoreService.getInstanceDB('easyscrape')
         this.functions = getFunctions(this.firestore.app)
+
+        if ( this.firestoreService.isLocalhost() && !environment.production) {
+              
+            console.log('🔥 Connecting to Firebase Emulators');
+            connectFunctionsEmulator(this.functions, 'localhost', 8081)
+        }
     }
 
     private initializeApiKeys(storedKeys: string | null) {

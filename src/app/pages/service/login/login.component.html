@@ -1,5 +1,5 @@
 <main
-  class="relative inset-0 min-h-full bg-gray-200 dark:bg-gray-900 h-full"
+  class="relative inset-0 min-h-full  overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900   h-full"
   *ngIf="!isAuthenticated">
   <section class="inset-0 h-full w-full">
     <div class="relative top-52 w-full bg-cover bg-no-repeat">
@@ -14,13 +14,13 @@
               />
             </div> -->
             <form
-              class="group relative mt-10 mb-6 flex w-full min-w-0 flex-col break-words rounded-lg border-0 bg-neutral-300 bg-opacity-60 shadow-lg dark:bg-gray6"
+              class="group relative mt-10 mb-6 flex w-full min-w-0 flex-col break-words rounded-lg border-0 bg-slate-900 bg-opacity-60 shadow-lg dark:bg-gray6 "
               [formGroup]="loginForm"
               (ngSubmit)="login()">
               <!--  -->
               <div class="mb-0 rounded-t px-6 py-6">
                 <div class="mb-3 text-center">
-                  <h6 class="text-sm font-bold text-gray-600">Sign in with</h6>
+                  <h6 class="text-sm font-bold text-gray-400">Sign in with</h6>
                 </div>
                 <div class="btn-wrapper text-center">
                   <button
@@ -77,34 +77,78 @@
                   </div>
                   <div class="relative mb-3 w-full">
                     <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
-                      for="grid-password">
-                      Email or mobile
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
+                      for="identifier">
+                      Email or Phone Number
                     </label>
                     <input
-                      id="email"
+                      id="identifier"
                       autocomplete="off"
-                      formControlName="email"
+                      formControlName="identifier"
                       required
                       type="text"
-                      placeholder="Enter your Email or Mobile"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2" />
-                  </div>
+                      placeholder="Enter your Email or Phone Number"
+                      class="w-full rounded border-0 bg-slate-600/50 px-3 py-3 text-sm text-gray-200 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2" />
+                        @if (loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty ||
+                        loginForm.get('identifier')?.touched)) {
+                        <small class="text-red-500">
+                          @if (loginForm.get('identifier')?.errors?.['required']) {
+                          Email or Phone Number is required } @if
+                          (loginForm.get('identifier')?.errors?.['pattern']) { Invalid
+                          identifier format }
+                        </small>
+                        } 
+                    </div>
+
+                  @if (!phoneVerificationSent) {
                   <div class="relative mb-3 w-full">
                     <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
-                      for="grid-password">
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-100"
+                      for="password">
                       Password
                     </label>
                     <input
                       type="password"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                      class="w-full rounded border-0 bg-slate-600/50 px-3 py-3 text-sm text-gray-200 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
                       placeholder="Enter your Password"
                       formControlName="password"
-                      required
                       id="password"
                       autocomplete="current-password" />
+                      @if (loginForm.get('password')?.invalid &&
+                    (loginForm.get('password')?.dirty ||
+                    loginForm.get('password')?.touched)) {
+                    <small class="text-red-500">
+                      @if (loginForm.get('password')?.errors?.['required']) {
+                      Password is required }
+                    </small>
+                    }
                   </div>
+                  } @else {
+                  <div class="relative mb-3 w-full">
+                    <label
+                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-100"
+                      for="verificationCode">
+                      Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      class="w-full rounded border-0 bg-slate-600/50 px-3 py-3 text-sm text-gray-200 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
+                      placeholder="Enter 6-digit code"
+                      formControlName="verificationCode"
+                      required
+                      id="verificationCode" />
+                    @if (loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)) {
+                    <small class="text-red-500">
+                      @if (loginForm.get('verificationCode')?.errors?.['required']) {
+                      Verification code is required.
+                      } @if (loginForm.get('verificationCode')?.errors?.['minlength'] || loginForm.get('verificationCode')?.errors?.['maxlength']) {
+                      Code must be 6 digits.
+                      }
+                    </small>
+                    }
+                  </div>
+                  }
+                  <div id="recaptcha-container"></div>
                   <div>
                     <!-- <app-checkbox
                         [control]="rememberMe | formControl"
@@ -116,7 +160,7 @@
                       <a
                         [routerLink]="['/service/resetpassword']"
                         routerLinkActive="router-link-active"
-                        class="text-black-50 dark:text-gray-50">
+                        class=" text-gray-500 dark:text-gray-50">
                         <small>Forgot password?</small>
                       </a>
                     </div>
@@ -124,7 +168,7 @@
                       <a
                         [routerLink]="['/service/signup']"
                         routerLinkActive="router-link-active"
-                        class="text-black-50 dark:text-gray-50">
+                        class=" text-gray-500 dark:text-gray-50">
                         <small>Create new account</small>
                       </a>
                     </div>
@@ -133,10 +177,26 @@
                     <button
                       type="submit"
                       title="signin"
-                      [disabled]="!loginForm.valid"
-                      class="mb-1 mr-1 w-full cursor-pointer rounded dark:bg-blue-600/[0.4] dark:hover:bg-blue-600/[0.7] disabled:bg-gray-900 dark:disabled:bg-gray-900 px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-700">
-                      SIGN IN
+                      [disabled]="!loginForm.valid || loading.email"
+                      class="mb-1 mr-1 w-full cursor-pointer bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 transform hover:scale-105 rounded dark:bg-blue-600/[0.4] dark:hover:bg-blue-600/[0.7] disabled:bg-gray-900 dark:disabled:bg-gray-900 px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-700">
+                      @if(loading.email) {
+                      <div class="flex justify-center items-center">
+                        <div
+                          class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-50"></div>
+                      </div>
+                      } @else {
+                      <span>SIGNIN</span>
+                      }
                     </button>
+                    @if (phoneVerificationSent) {
+                    <button
+                      type="button"
+                      title="reset-phone-auth"
+                      (click)="resetAuthFlow()"
+                      class="mt-3 mb-1 mr-1 w-full cursor-pointer bg-gray-600 hover:bg-gray-700 rounded px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-800">
+                      <span>BACK / RESEND</span>
+                    </button>
+                    }
                   </div>
                 </div>
               </div>

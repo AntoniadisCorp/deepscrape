@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
+import { getErrorMessage } from 'src/app/core/functions';
 
 @Component({
     selector: 'app-resetpassword',
@@ -46,23 +47,23 @@ export class ResetPasswordComponent implements OnInit {
 
                 this.resetEmailSent = true;
             } catch (error: any) {
-                this.errorMessage = this.getErrorMessage(error);
+                this.errorMessage = getErrorMessage(error);
             } finally {
                 this.loading = false;
             }
         }
     }
 
-    private getErrorMessage(error: any): string {
-        switch (error.code) {
-            case 'auth/user-not-found':
-                return 'No user found with this email address.';
-            case 'auth/invalid-email':
-                return 'Invalid email address.';
-            case 'auth/too-many-requests':
-                return 'Too many reset attempts. Please try again later.';
-            default:
-                return 'An error occurred. Please try again.';
-        }
-    }
+    // private getErrorMessage(error: any): string {
+    //     switch (error.code) {
+    //         case 'auth/user-not-found':
+    //             return 'No user found with this email address.';
+    //         case 'auth/invalid-email':
+    //             return 'Invalid email address.';
+    //         case 'auth/too-many-requests':
+    //             return 'Too many reset attempts. Please try again later.';
+    //         default:
+    //             return 'An error occurred. Please try again.';
+    //     }
+    // }
 }

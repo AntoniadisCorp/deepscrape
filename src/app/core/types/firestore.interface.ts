@@ -13,6 +13,10 @@ export type Users = {
     created_At: Date
     updated_At?: Date
 
+    // Phone authentication fields
+    phoneNumber?: string
+    phoneVerified?: boolean | null // Optional, may not be present in all user objects
+
     // Stripe customer ID
     stripeId?: string
 
@@ -28,8 +32,9 @@ export type FireUser = {
     email: string | null
     displayName: string | null
     photoURL: string | null
-    phoneNumber: string | null
+    phoneNumber?: string | null
     providerId: string
     providerData: UserInfo[]
     emailVerified: boolean
+    phoneVerified?: boolean // Optional, may not be present in all user objects
 }
