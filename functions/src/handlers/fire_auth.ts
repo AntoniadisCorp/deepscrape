@@ -12,7 +12,14 @@ export const checkUserEmailExistance = async (req: Request, res: Response) => {
     try {
         // test email before checking providers with pattern
         // eslint-disable-next-line max-len
-        if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+export const checkUserEmailExistance = async (req: Request, res: Response) => {
+    const { email } = req.params as { email: string }
+    try {
+        // test email before checking providers with pattern
+        // eslint-disable-next-line max-len
+        if (!email || !EMAIL_REGEX.test(email)) {
             return res.status(400).send({ error: "Invalid email format" })
         }
 
