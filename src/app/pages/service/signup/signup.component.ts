@@ -122,7 +122,7 @@ export class SignupComponent implements OnInit, OnDestroy {
         const hasNonAlphas = /\W/.test(password)
 
         // has characters that not permitted
-        const hasForbiddenCharacters = /[^\w\s@dA-Za-z0-9@$!%*?&]/.test(password)
+        const hasForbiddenCharacters = /[^\w\s@$!%*?&]/.test(password)
 
         return (
             password.length < minLength ? "Risky. Password needs to be at least 8 characters long" :
