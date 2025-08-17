@@ -83,7 +83,7 @@ export const corss = cors({
     }))
 
 
-    server.get("*", (req: express.Request, res, next: NextFunction) => {
+    server.get("*", limiter, (req: express.Request, res, next: NextFunction) => {
         const { protocol, originalUrl, baseUrl, headers } = req
         console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
         // res.render(indexHtml, { req, providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }] })
