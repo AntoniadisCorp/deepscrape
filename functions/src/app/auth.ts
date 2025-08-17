@@ -13,11 +13,9 @@ export const newStripeCustomer = auth
     .user()
     .onCreate(
         async (user: auth.UserRecord, context: EventContext) => {
-        context.auth?.uid
         // Create a new Stripe customer when a new user is created
         const userId = user.uid || context.auth?.uid
         const userPath = `users/${userId}`
-
 
         try {
             const userDoc = await db.doc(userPath).get()
@@ -26,17 +24,37 @@ export const newStripeCustomer = auth
                 throw new Error(`User document not found for userId: ${userId}`)
             }
 
-            const customer = await createCustomer(firebaseUser)
-            const stripeId = customer?.id
+            // Get user email
+            const userEmail = firebaseUser.email || user.email
 
+            // Check if a customer with this email already exists in Stripe
+            let stripeId = null
+            if (userEmail) {
+                const existingCustomers = await stripe.customers.list({
+                    email: userEmail,
+                    limit: 1,
+                })
+
+                if (existingCustomers.data.length > 0) {
+                    // Use existing customer instead of creating a new one
+                    stripeId = existingCustomers.data[0].id
+                    console.log(`Using existing Stripe customer for email ${userEmail}`)
+                }
+            }
+
+            // Create new customer only if no existing customer was found
+            if (!stripeId) {
+                const customer = await createCustomer(firebaseUser)
+                stripeId = customer?.id
+                console.log(`Created new Stripe customer for user ${userId}`)
+            }
+
+            // Update the user record with the Stripe ID
             await db.doc(userPath).update({
                 stripeId,
             })
-
-            // return { doc, error: null }
         } catch (error) {
-            console.log(error)
-            // return { doc: null, error }
+            console.error("Error in newStripeCustomer:", error)
         }
     })
 
@@ -76,7 +94,7 @@ export const createPaymentIntent = onCallv2(
                     amount,
                 })
                 // FIXME: need to specified the cartId or create new cart if it doesn't exist
-                const newCart = await db.collection(`users/${userId}/cart`).add({
+                const newCart = await db.collection(`users/${userId}/paymentcart`).add({
                     paymentIntentId: paymentIntent.id,
                     status: paymentIntent.status,
                     created_At: paymentIntent.created,
@@ -86,7 +104,7 @@ export const createPaymentIntent = onCallv2(
                 clientSecret = paymentIntent.client_secret || "" // or is null
             } else {
                 // retrieve the paymentIntent where already Created
-                const cartData = await db.doc(`users/${userId}/cart/${cartId}`).get()
+                const cartData = await db.doc(`users/${userId}/paymentcart/${cartId}`).get()
                 const cart = cartData.data()
 
                 // get the latest used paymentIntentId
@@ -108,34 +126,91 @@ export const createPaymentIntent = onCallv2(
 
 export const startSubscription = onCallv2(
     async (req) => {
-        // 1. Get user data
-        // eslint-disable-next-line max-len
-        const userId = req?.auth?.uid
-        const userDoc = await db.doc(`users/${userId}`).get()
-        const user = userDoc.data()
+        try {
+            // 1. Get user data and validate
+            const userId = req?.auth?.uid
+            if (!userId) {
+                throw new HttpsError("unauthenticated", "User must be authenticated")
+            }
 
-        // a. Extract price and source and currency from the data
-        const { price, source, currency } = req.data
+            const userDoc = await db.doc(`users/${userId}`).get()
+            const user = userDoc.data()
+            if (!user || !user.stripeId) {
+                throw new HttpsError("not-found", "User or Stripe customer not found")
+            }
 
-        // 2. Attach the card to the user
-        await stripe.customers.createSource(user?.stripeId, {
-            source,
-        })
+            // 2. Extract and validate required data
+            const { price, paymentMethod, currency } = req.data
+            if (!price || !paymentMethod || !currency) {
+                throw new HttpsError("invalid-argument", "Missing required payment information")
+            }
 
-        // 3. Subscribe the user to the plan you created in stripe
-        const sub = await stripe.subscriptions.create({
-            customer: user?.stripeId,
-            items: [{ price }],
-            currency,
-        })
+            // 3. Check for existing subscription
+            if (user.subscriptionId) {
+                // Option 1: Return existing subscription
+                // return { message: "User already has an active subscription", subscriptionId: user.subscriptionId }
 
-        // 4. Update user document
-        return db.doc(`users/${userId}`).update({
-            status: sub.status,
-            currentUsage: 0,
-            subscriptionId: sub.id,
-            itemId: sub.items.data[0].id,
-        })
+                // Option 2: Update existing subscription
+                const updatedSub = await stripe.subscriptions.update(user.subscriptionId, {
+                    items: [{ id: user.itemId, price }],
+                    // Add other parameters as needed
+                })
+
+                // Update the user document with new information
+                await db.doc(`users/${userId}`).update({
+                    status: updatedSub.status,
+                    itemId: updatedSub.items.data[0].id,
+                })
+
+                return { message: "Subscription updated", subscriptionId: updatedSub.id }
+            }
+
+            // 4. Check for existing payment methods (PaymentMethods API)
+            const paymentMethodsList = await stripe.paymentMethods.list({
+                customer: user.stripeId,
+                type: "card",
+                limit: 100,
+            })
+            let paymentMethodExists = false
+            for (const pm of paymentMethodsList.data) {
+                if (pm.id === paymentMethod) {
+                    paymentMethodExists = true
+                    break
+                }
+            }
+            // Attach payment method if not already attached
+            if (!paymentMethodExists) {
+                await stripe.paymentMethods.attach(paymentMethod, { customer: user.stripeId })
+            }
+
+            // 5. Set as default payment method for invoices
+            await stripe.customers.update(user.stripeId, {
+                invoice_settings: { default_payment_method: paymentMethod },
+            })
+
+            // 6. Create subscription with idempotency key and default payment method
+            const sub = await stripe.subscriptions.create({
+                customer: user.stripeId,
+                items: [{ price }],
+                default_payment_method: paymentMethod,
+                currency,
+            }, {
+                idempotencyKey: `sub_${userId}_${price}`,
+            })
+
+            // 7. Update user document
+            await db.doc(`users/${userId}`).update({
+                status: sub.status,
+                currentUsage: 0,
+                subscriptionId: sub.id,
+                itemId: sub.items.data[0].id,
+            })
+
+            return { message: "Subscription created successfully", subscriptionId: sub.id }
+        } catch (error) {
+            console.error("Error in startSubscription:", error)
+            throw new HttpsError("internal", "Failed to start subscription")
+        }
     }
 )
 
