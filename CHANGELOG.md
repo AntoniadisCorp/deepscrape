@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/AntoniadisCorp/deepscrape/compare/v1.0.0...v1.0.1) (2025-08-18)
+
+
+### Bug Fixes
+
+* **changelog:** merge commit '00b15661f49433f12c93205bfeb661fb43b2f21c' ([7970f6c](https://github.com/AntoniadisCorp/deepscrape/commit/7970f6c6b7820f1fe73db912945c9c8411f459f6))
+* **changelog:** reset CHANGELOG.md for new release cycle ([b5414dd](https://github.com/AntoniadisCorp/deepscrape/commit/b5414ddb5dc9cb23d8a040fc647e4b04f8345317))
+
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
