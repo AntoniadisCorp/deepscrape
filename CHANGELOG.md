@@ -1,3 +1,22 @@
+# [0.2.0-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.1.2...v0.2.0-beta.1) (2025-08-18)
+
+
+### Bug Fixes
+
+* **changelog:** merge commit '00b15661f49433f12c93205bfeb661fb43b2f21c' ([7970f6c](https://github.com/AntoniadisCorp/deepscrape/commit/7970f6c6b7820f1fe73db912945c9c8411f459f6))
+* **changelog:** remove version 1.0.1 details and reset for new release cycle ([eac8979](https://github.com/AntoniadisCorp/deepscrape/commit/eac897916383f880b825a186a95c488206c428f3))
+* **changelog:** reset CHANGELOG.md for new release cycle ([b5414dd](https://github.com/AntoniadisCorp/deepscrape/commit/b5414ddb5dc9cb23d8a040fc647e4b04f8345317))
+* **landpage:** update CORS settings, adjust image sizes, and refine layout positioning ([ca7d737](https://github.com/AntoniadisCorp/deepscrape/commit/ca7d737d51990b5fcc87ee4ce07a42f17595d681))
+* **release:** add 'next' branch to push triggers and ensure fetch-tags is enabled ([671fb30](https://github.com/AntoniadisCorp/deepscrape/commit/671fb30d2fe118a5751ae9939edcf094a187836c))
+* **release:** remove package-lock.json from assets and ensure GitHub release settings are configured ([bf1e4a7](https://github.com/AntoniadisCorp/deepscrape/commit/bf1e4a7eab06a19d0e09e163722009dee0681562))
+* **server:** add rate limiting middleware to all routes ([e8f892d](https://github.com/AntoniadisCorp/deepscrape/commit/e8f892d5b57c35524b74e604cbb822914af75539))
+
+
+### Features
+
+* **authentication:** implement user signup and verification process with email and phone number ([3df1563](https://github.com/AntoniadisCorp/deepscrape/commit/3df1563e9f7de5211c6615cd896ea3fa6a3d100c))
+* **payments:** enhance stripe customer and subscription management ([cb7ea6b](https://github.com/AntoniadisCorp/deepscrape/commit/cb7ea6b19441cdc7fdc87bbe06c6cb8046620250))
+
 # [0.2.0-beta.1](https://github.com/antoniadisCorp/deepscrape/compare/v0.1.2...v0.2.0-beta.1) (2025-08-18)
 
 
