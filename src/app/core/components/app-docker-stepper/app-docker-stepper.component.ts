@@ -5,8 +5,8 @@ import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
 import { FormControlPipe } from '../../pipes'
 import { DropdownComponent } from '../dropdown/dropdown.component'
-import { DockerImageInfo, DropDownOption } from '../../types'
-import { isImageParsable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
+import { DockerImageInfo, DropDownOption, MachineResponse } from '../../types'
+import { fileToBase64, isImageParsable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
 import { cloneMachineValidator, dockerHubUrlValidator } from '../../directives'
 import { CheckboxComponent } from '../checkbox/checkbox.component'
 import { MarkdownModule } from 'ngx-markdown'
@@ -19,7 +19,7 @@ import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChang
 import { switchMap } from 'rxjs/internal/operators/switchMap'
 import { map } from 'rxjs/internal/operators/map'
 import { filter } from 'rxjs/internal/operators/filter'
-import { tap } from 'rxjs'
+import { Observable, of, tap } from 'rxjs'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 
 
@@ -434,18 +434,22 @@ export class AppDockerStepperComponent {
     let formData = new FormData()
 
     // Loop through the config object and append each key-value pair to the formData object
-    for (const key in config) {
-      if (key === 'dockerfile' && config[key]) {
-        formData.append('dockerfile', config[key] as File)
-      } else if (key === 'environmentVariables') {
-        formData.append('environmentVariables', JSON.stringify(config[key]))
-      } else {
-        // Append all other key-value pairs as strings
-        formData.append(key, String(config[key as keyof typeof config]))
-      }
-    }
+    // for (const key in config) {
+    //   if (key === 'dockerfile' && config[key]) {
+    //     // const fileBase64 = await fileToBase64(config[key] as File)
+    //     formData.append('dockerfile', config[key] as File)
+    //   } else if (key === 'environmentVariables') {
+    //     formData.append('environmentVariables', config[key])
+    //   }  else {
+    //     console.log('Appending dockerfile:', String(key))
+    //     // Append all other key-value pairs as strings
+    //     formData.append(key, String(config[key as keyof typeof config]))
+    //   }
 
-    return this.deployService.createMachine(formData)
+      
+    // }
+    console.log('Final FormData:', formData)
+    return this.deployService.createMachine(config)
   }
 
   onCheckBoxChange() {

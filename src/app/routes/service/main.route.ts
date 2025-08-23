@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, LoginGuard, verifyGuard } from 'src/app/core/guards';
+import { LoginGuard, verifyGuard } from 'src/app/core/guards';
 
 export const MainRoutes: Routes = [
 

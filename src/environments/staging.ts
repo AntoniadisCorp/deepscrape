@@ -1,5 +1,6 @@
 export const environment = {
   "production": true,
+  "emulators": false,
   "assetsUri": "https://deepscrape.web.app/assets/",
   "firebaseConfig": {
     "apiKey": "AIzaSyC7GSMBH9_61g7x5LI_hj3vvGOeuvUAXaI",
@@ -19,7 +20,7 @@ export const environment = {
   "CRAWL4AI_API_KEY": "",
   "GOOGLE_API_KEY": "",
   "API_CRAWL4AI": "https://crawlagent.fly.dev",
-  "API_DEPLOY4SCRAP": "https://arachnefly.fly.dev",
+  "API_ARACHNEFLY_URL": "https://arachnefly.fly.dev",
   "API_ANTHROPIC": "https://api.anthropic.com",
   "API_OPENAI": "https://api.openai.com",
   "API_GROQ": "https://api.groq.com",

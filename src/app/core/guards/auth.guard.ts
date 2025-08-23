@@ -11,23 +11,25 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
   const router = inject(Router);
   const auth = inject(Auth);
 
-  return authService.isAuthStateResolved.pipe(
+  return authService.isAuthenticated().pipe(
     take(1),
-    map(() => {
-      const user = authService.user;
+    map((authenticated) => {
 
-      if (!user) {
+      if (!authenticated) {
         router.navigate(['/service/login'], { queryParams: { returnUrl: state.url } });
         return false
       }
 
+      const user = authService.user
+      console.log('authGuard - Authenticated:', authenticated, 'User:', user)
+
       // console.log('User provider id:', user.providerData[0].providerId, 'Email verified:', user.emailVerified)
       const isPhoneVerified = user?.phoneVerified || false; // Default to false if not present
-      
-      if (user.providerData[0].providerId === 'password' && !user.emailVerified || ( user.phoneNumber && !isPhoneVerified)) {
-        router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url }})
+
+      if (user?.providerData[0].providerId === 'password' && !user.emailVerified || (user?.phoneNumber && !isPhoneVerified)) {
+        router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
         return false
-          }
+      }
 
       return true
     })

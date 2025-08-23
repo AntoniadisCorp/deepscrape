@@ -4,18 +4,17 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable linebreak-style */
 // Initialize Express App and Middleware //
-import express, { NextFunction } from "express"
+import express, { } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
 
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
-import { ReverseAPIProxy } from "./syncaiapi"
 import { existsSync } from "node:fs"
 import { limiter } from "./handlers"
 import * as dotenv from "dotenv"
-import { AuthAPIProxy } from "./authproxy"
+import { AuthAPIProxy, ReverseAPIProxy, UploadAPIProxy } from "./infrastructure"
 dotenv.config({ quiet: true })
 
 // import { existsSync } from "node:fs"
@@ -23,7 +22,7 @@ dotenv.config({ quiet: true })
 // see here: https://reddit.com/r/reactjs/comments/fsw405/firebase_cloud_functions_cors_policy_error/?rdt=47413
 // and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
-    origin: process.env.PRODUCTION === "true"? [
+    origin: process.env["PRODUCTION"] === "true"? [
         "https://deepscrape.dev", "https://deepscrape.web.app",
         "http://127.0.0.1:5000", "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"] : "*", // Allow all origins or specify your frontend URL
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], // Specify allowed methods "OPTIONS"
@@ -37,8 +36,9 @@ export const corss = cors({
  function serveapp() {
     // Create an instance of the Express application
     const server: express.Application = express()
-    const airouter = new ReverseAPIProxy()
-    const oauthproxy = new AuthAPIProxy()
+    const aiProxy = new ReverseAPIProxy()
+    const oauthProxy = new AuthAPIProxy()
+    const uploadProxy = new UploadAPIProxy()
 
 
     // The code snippet you provided is setting up different folder paths
@@ -61,8 +61,7 @@ export const corss = cors({
     server.use(morgan("combined"))
     server.use(corss);
 
-    server.use(express.urlencoded({ limit: "3mb", extended: false }));
-    server.use(express.json({ limit: "3mb" })) // To pars
+    // server.use() // To parse JSON request bodies
 
     // *PWA Service Worker (if running in production)
     server.use((req, res, next) => {
@@ -72,8 +71,17 @@ export const corss = cors({
         next()
     })
     // Register the API routes , airouter.isJwtAuth,
-    server.use("/api", limiter, airouter.isJwtAuth, airouter.router)
-    server.use("/oauth", limiter, oauthproxy.router)
+    server.use("/api",
+        express.urlencoded({ limit: "3mb", extended: false }),
+        express.json({ limit: "3mb" }),
+        limiter, aiProxy.isJwtAuth, aiProxy.router)
+
+    server.use("/upload", uploadProxy.router)
+
+    server.use("/oauth",
+        express.urlencoded({ limit: "3mb", extended: false }),
+        express.json({ limit: "3mb" }),
+        limiter, oauthProxy.router)
     server.use("/", limiter)
 
     // Serve static files from /browser
@@ -83,7 +91,7 @@ export const corss = cors({
     }))
 
 
-    server.get("*", limiter, (req: express.Request, res, next: NextFunction) => {
+    server.get("*", limiter, (req: express.Request, res) => {
         const { protocol, originalUrl, baseUrl, headers } = req
         console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
         // res.render(indexHtml, { req, providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }] })

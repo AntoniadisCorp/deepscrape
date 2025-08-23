@@ -68,7 +68,7 @@ export const appConfig: ApplicationConfig = {
     provideFirestore(() =>
     {
       const firestore = getFirestore();
-      if (!environment.production) {
+      if (environment.emulators) {
         console.log('🔥 Connecting Firestore to Emulator');
         connectFirestoreEmulator(firestore, 'localhost', 5001);
       }
@@ -78,7 +78,7 @@ export const appConfig: ApplicationConfig = {
     provideFunctions(() => {
 
       const functions = getFunctions()
-      if (!environment.production) {
+      if (environment.emulators) {
         console.log('🔥 Connecting Functions to Emulator');
         connectFunctionsEmulator(functions, 'localhost', 8081)
       }

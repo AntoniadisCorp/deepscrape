@@ -7,12 +7,9 @@ import { auth } from "../app/config"
 import { Request, Response } from "express"
 
 
-export const checkUserEmailExistance = async (req: Request, res: Response) => {
-    const { email } = req.params as { email: string }
-    try {
-        // test email before checking providers with pattern
-        // eslint-disable-next-line max-len
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+// test email before checking providers with pattern
+// eslint-disable-next-line max-len
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
 export const checkUserEmailExistance = async (req: Request, res: Response) => {
     const { email } = req.params as { email: string }

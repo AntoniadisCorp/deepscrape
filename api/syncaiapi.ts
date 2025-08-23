@@ -55,13 +55,12 @@ class SyncAIapis {
 
         /* Jina AI */
         this.router.get('/jina', helloWorld)
-        this.router.get('/jina/:url', this.isJwtAuth,
+        this.router.get('/jina/:url',
             jinaAICrawl)
 
         /* Machines by Arachnefly */
         // Check if the image is deployable
-        this.router.get('/machines/check-image', this.isJwtAuth,
-            arachnefly.checkImageDeployability)
+        this.router.get('/machines/check-image', arachnefly.checkImageDeployability)
 
 
         /* Crawl Agent */

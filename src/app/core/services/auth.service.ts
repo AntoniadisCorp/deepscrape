@@ -132,7 +132,7 @@ export class AuthService {
    */
   async initAuth() {
 
-    if (this.fireService.isLocalhost() && !environment.production) {
+    if (this.fireService.isLocalhost() && environment.emulators) {
       // Connect to Firebase Emulators if running on localhost and not in production
       console.log('🔥 Connecting Auth Service to Firebase Emulators');
       connectAuthEmulator(this.auth, 'http://localhost:9099');

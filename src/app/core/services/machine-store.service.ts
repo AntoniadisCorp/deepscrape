@@ -12,9 +12,6 @@ import { from } from 'rxjs/internal/observable/from'
 import { map } from 'rxjs/internal/operators/map'
 import { updateMachineState } from '../functions'
 import { AuthService } from './auth.service'
-import { of } from 'rxjs/internal/observable/of'
-import { catchError, tap, throwError } from 'rxjs'
-import { MACHNINE_STATE } from '../enum'
 
 @Injectable({
   providedIn: 'root'

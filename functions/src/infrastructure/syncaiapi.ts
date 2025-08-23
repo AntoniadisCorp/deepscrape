@@ -8,8 +8,9 @@ import { NextFunction, Request, Response, Router } from "express"
 import {
     anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl,
     helloWorld, arachnefly,
-} from "./handlers"
-import { auth } from "./app/config"
+} from "../handlers"
+import { auth } from "../app/config"
+
 
 class ReverseAPIProxy {
     public router: Router
@@ -25,7 +26,7 @@ class ReverseAPIProxy {
     // ------------------- Node JS Security -------------------
     // Middleware to verify Firebase JWT
     async isJwtAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const authHeader = req.headers["api-key"] as string
+        const authHeader = req.headers["authorization"] as string
 
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             res.status(401).json({ error: "Unauthorized: Missing or invalid token" })
@@ -51,20 +52,26 @@ class ReverseAPIProxy {
     // ------------------- Node JS Routes -------------------
 
     /**
-           * https Router Gets
-           */
+     * https Router Gets
+     */
 
     private httpRoutesGets(): void {
         /* Jina AI */
         this.router.get("/jina", helloWorld)
-        this.router.get("/jina/:url", this.isJwtAuth,
-            jinaAICrawl)
+        this.router.get("/jina/:url", jinaAICrawl)
 
-        /* Machines by Arachnefly */
+        /**
+         * Machines by Arachnefly
+         */
+
+        // Get Machine Details
+        this.router.get("/machines/machine/:id", arachnefly.getMachine)
 
         // Check if the image is deployable
-        this.router.get("/machines/check-image", this.isJwtAuth,
-            arachnefly.checkImageDeployability)
+        this.router.get("/machines/check-image", arachnefly.checkImageDeployability)
+
+        // wait for a machine to stabilize a specific state and return the machine details
+        this.router.get("/machines/machine/waitforstate/:machineId", arachnefly.waitForState)
     }
 
     /**
@@ -81,9 +88,9 @@ class ReverseAPIProxy {
 
 
         /* Machines by Arachnefly */
-        // Deploy a new Machine
-        // this.router.post('/machines/deploy', arachnefly.deployMachine)
 
+        // Deploy a new Machine
+        this.router.post("/machines/deploy", arachnefly.createMachine)
         // this.router.post('/api/machines/logs', receiveLogs)
     }
     /**
@@ -91,15 +98,30 @@ class ReverseAPIProxy {
            */
 
     private httpRoutesPut(): void {
+        /**
+         * Machines by Arachnefly
+         */
 
+        // Start a Machine
+        this.router.put("/machines/machine/:machineId/start", arachnefly.startMachine)
+
+        // Suspend a Machine
+        this.router.put("/machines/machine/:machineId/suspend", arachnefly.suspendMachine)
+
+        // Stop a Machine
+        this.router.put("/machines/machine/:machineId/stop", arachnefly.stopMachine)
     }
 
     /**
-           * https Router Delete
-           */
+     * https Router Delete
+     */
 
     private httpRoutesDelete(): void {
-
+        /**
+         * Machines by Arachnefly
+         */
+        // Destroy a Machine
+        this.router.delete("/machines/machine/:machineId", arachnefly.destroyMachine)
     }
 }
 

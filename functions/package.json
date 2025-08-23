@@ -29,14 +29,17 @@
     "express-rate-limit": "^7.5.0",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.4.0",
+    "form-data": "^4.0.4",
     "helmet": "^8.1.0",
     "ioredis": "^5.7.0",
     "morgan": "^1.10.1",
+    "multer": "^2.0.2",
     "rate-limit-redis": "^4.2.2",
     "stripe": "^17.5.0"
   },
   "devDependencies": {
     "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
     "@types/stripe": "^8.0.417",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",

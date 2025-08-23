@@ -28,7 +28,7 @@ export class FirestoreService {
     // this.app = initializeApp(environment.firebaseConfig)
     this.firestore = this.getInstanceDB('easyscrape')
 
-    if (this.isLocalhost() && !environment.production) {
+    if (this.isLocalhost() && environment.emulators) {
 
       console.log('🔥 Connecting Firestore Service to Firebase Emulators');
 

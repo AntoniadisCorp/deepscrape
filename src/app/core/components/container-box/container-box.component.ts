@@ -67,7 +67,7 @@ export class ContainerBoxComponent {
   protected stop() {
     this.stopButton.set(false)
     this.startButton.set(false)
-    this.machine.state = 'stopping'
+    this.machine.state = MACHNINE_STATE.STOPPING
 
     // emit stop event
     this.stopPressed.emit({ id: this.machine.id, laststate: this.machine.state, instance_id: this.machine.instance_id })
@@ -88,7 +88,7 @@ export class ContainerBoxComponent {
         this.startButton.set(false)
         this.stopButton.set(true)
         break;
-      case 'stopping':
+      case MACHNINE_STATE.STOPPING:
         break;
       case MACHNINE_STATE.STOPPED:
         this.startButton.set(false)

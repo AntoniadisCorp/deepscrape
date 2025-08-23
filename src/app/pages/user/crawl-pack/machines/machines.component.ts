@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal, 
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { map, tap } from 'rxjs';
+import { from, map, tap } from 'rxjs';
 import { Observable } from 'rxjs/internal/Observable';
 import { of } from 'rxjs/internal/observable/of';
 import { throwError } from 'rxjs/internal/observable/throwError';
@@ -194,7 +194,7 @@ export class MachinesComponent {
                     // update machine state to 'stopped'
                     // machine reaced the e desired state
                     this.machineStoreService.nextPage(1, 10)
-                    this.showSnackbar(`Machine ${machine.id} stopped`, SnackBarType.success)
+                    this.showSnackbar(`Machine ${machine.id} ${MACHNINE_STATE.STOPPED}`, SnackBarType.success)
                 },
                 error: (error) => {
                     console.error('Error stopping machine:', error)
@@ -205,13 +205,13 @@ export class MachinesComponent {
 
     }
 
-    deleteMachine(machine: { id: string, laststate: string, instance_id: string }): void {
+    destroyMachine(machine: { id: string, laststate: string, instance_id: string }): void {
 
         // show snackbar
-        this.showSnackbar(`Machine ${machine.id} destroying`, SnackBarType.info)
+        this.showSnackbar(`Machine ${machine.id} ${MACHNINE_STATE.DESTROYING}`, SnackBarType.info)
 
         // update machine state to 'destroying' and destroy the machine
-        this.machineStoreService.updateMachineState(machine.id, MACHNINE_STATE.DESTROYED)
+        this.machineStoreService.updateMachineState(machine.id, MACHNINE_STATE.DESTROYING)
         this.deploySub = this.deployService.destroy(machine.id)
             .pipe(
                 concatMap((response: any) => {
@@ -230,7 +230,7 @@ export class MachinesComponent {
                     // update machine state to 'destroyed'
                     // machine reaced the e desired state
                     this.machineStoreService.nextPage(1, 10)
-                    this.showSnackbar(`Machine ${machine.id} successfully destroyed`, SnackBarType.success);
+                    this.showSnackbar(`Machine ${machine.id} successfully ${MACHNINE_STATE.DESTROYED}`, SnackBarType.success);
                 },
                 error: (error) => {
                     const isRunning = (machine.laststate === MACHNINE_STATE.STARTED ? machine.id + ' currently running!' : '')

@@ -16,11 +16,11 @@ import { Subscription } from 'rxjs';
 
 // First, create an interface for your form structure
 interface SignupForm {
-  name: FormControl<string | null>;
-  email: FormControl<string | null>;
-  password: FormControl<string | null>;
-  confirmPassword: FormControl<string | null>;
-  phoneNumber: FormControl<string | null>;
+    name: FormControl<string | null>;
+    email: FormControl<string | null>;
+    password: FormControl<string | null>;
+    confirmPassword: FormControl<string | null>;
+    phoneNumber: FormControl<string | null>;
 }
 
 @Component({
@@ -59,32 +59,32 @@ export class SignupComponent implements OnInit, OnDestroy {
     ) {
     }
 
-    ngOnInit(): void { 
+    ngOnInit(): void {
         this.signupForm = this.fb.group<SignupForm>({
             name: this.fb.control('', {
-            validators: [Validators.required, Validators.minLength(2)],
-            nonNullable: false
+                validators: [Validators.required, Validators.minLength(2)],
+                nonNullable: false
             }),
             email: this.fb.control('', {
-            validators: [Validators.required, Validators.email],
-            nonNullable: false
+                validators: [Validators.required, Validators.email],
+                nonNullable: false
             }),
             password: this.fb.control('', {
-            validators: [
-                Validators.required,
-                Validators.minLength(8),
-                createPasswordStrengthValidator(),
-            ],
-            updateOn: 'blur',
-            nonNullable: false
+                validators: [
+                    Validators.required,
+                    Validators.minLength(8),
+                    createPasswordStrengthValidator(),
+                ],
+                updateOn: 'blur',
+                nonNullable: false
             }),
             confirmPassword: this.fb.control('', {
-            validators: [Validators.required],
-            nonNullable: false
+                validators: [Validators.required],
+                nonNullable: false
             }),
             phoneNumber: this.fb.control('', {
-            validators: [Validators.pattern(/^\+?[1-9]\d{1,14}$/)],
-            nonNullable: false
+                validators: [Validators.pattern(/^\+?[1-9]\d{1,14}$/)],
+                nonNullable: false
             }),
         }, {
             validators: this.passwordMatchValidator
