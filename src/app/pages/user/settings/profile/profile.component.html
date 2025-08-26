@@ -1,0 +1,150 @@
+<form
+  class="mt-4 flex h-screen flex-col"
+  [formGroup]="profileForm"
+  (ngSubmit)="onSubmit()"
+>
+  <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">Profile Picture</h2>
+  <h3 class="mt-1 font-body text-sm text-gray5/50 dark:text-gray-400">
+    Upload a picture to make your profile stand out and let people recognize
+    your tasks easily!
+  </h3>
+  <mat-progress-bar
+        class="!h-1 text-blue-600 mt-5 flex w-full max-w-sm items-center justify-center"
+        mode="indeterminate"
+        value="40"
+        *ngIf="isLoadingFile"></mat-progress-bar>
+  <div
+    class="mt-5 flex w-full max-w-sm items-center justify-center dark:shadow-inner focus:dark:shadow-gray-800"
+  >
+  
+    <label
+      (dragover)="onDragOver($event)" (drop)="onDrop($event)"
+      (dragleave)="onDragLeave($event)"
+      for="image"
+      class="flex h-40 w-full flex-auto cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray5 dark:hover:border-gray-500 dark:hover:bg-gray6 relative"
+      [ngClass]="{'border-blue-500 ring-2 ring-blue-200': isDragging}"
+    >
+      
+
+      <div
+        *ngIf="!selectedFile && !isLoadingFile"
+        class="flex w-24 flex-col items-center justify-center pt-5"
+      >
+        <svg
+          class="mb-4 h-8 w-8 text-gray-500 dark:text-gray-400"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 20 16"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
+          />
+        </svg>
+      </div>
+      <div
+        *ngIf="selectedFile && previewUrl"
+        class="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg"
+      >
+       <div class="absolute top-2 left-2 z-10 rounded-md bg-gray-900/60 px-2 py-1 text-xs font-medium text-white">
+          {{ fileSize }}
+        </div>
+        <button
+          type="button"
+          (click)="removeImage()"
+          title="Remove image"
+          class="absolute right-2 top-2 z-10 rounded-full bg-gray-200 p-1 text-gray-700 hover:bg-gray-300"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+        <img
+          [src]="previewUrl"
+          alt="Preview"
+          class="absolute inset-0 h-full w-full rounded-lg object-cover"
+        />
+      </div>
+      <!-- *ngIf="!selectedFile" -->
+      <div *ngIf="!selectedFile && !isLoadingFile" class="flex flex-col items-center justify-center px-6 py-6">
+        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+          <span class="font-semibold">Click to upload</span> or drag and drop
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          SVG, PNG, JPG, GIF, or WEBP (MAX. 1920x1080px)
+        </p>
+      </div>
+
+      <input
+        class="hidden"
+        id="image"
+        type="file"
+        #image
+        (change)="onFileSelected($event)"
+        accept="image/jpeg, image/png, image/gif, image/svg+xml, image/webp"
+      />
+    </label>
+    <div *ngIf="fileError" class="text-red-500 text-sm mt-1">
+      {{ fileError }}
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="mt-6 flex flex-row items-center">
+    <h2 class="font-body text-lg font-bold text-gray5 dark:text-gray-200">Account Information</h2>
+    <span class="mx-1 text-xs font-light dark:text-gray-400">•</span>
+    <div class="text-xs font-light dark:text-gray-400">
+      Joined <time
+        [dateTime]="'2024-04-19T09:16:16.563Z'"
+        [innerText]="'2024-04-19T09:16:16.563Z' | date: 'mediumDate'"
+      ></time>
+    </div>
+  </div>
+
+  <!-- Full Name  -->
+  <div class="flex w-full flex-row items-center justify-start gap-6">
+    <app-stinput
+      [control]="firstname | formControl"
+      [leftIcon]="'person'"
+      [label]="'First Name'"
+    ></app-stinput>
+
+    <app-stinput
+      [control]="lastname | formControl"
+      [leftIcon]="'person'"
+      [label]="'Last Name'"></app-stinput>
+  </div>
+
+  <!-- username Control field -->
+  <h3 class="-mb-3 mt-5 font-body text-sm text-gray5/50 dark:text-gray-400">
+    Username can be updated only once per year - Last username update: x months
+    ago
+  </h3>
+
+  <app-stinput
+    [control]="username | formControl"
+    [leftIcon]="'person_outline'"
+    [rightIcon]="'lock'"
+    [label]="'Username'"></app-stinput>
+
+  <!-- Save button -->
+  <button
+    type="submit"
+    [disabled]="!profileForm.valid || profileForm.pristine"
+    class="mt-5 w-20 rounded-md bg-green-500 px-4 py-2 text-white transition-colors duration-300 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+    save
+  </button>
+</form>
