@@ -1,7 +1,8 @@
-import { ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
 import { NgClass, NgIf } from '@angular/common';
+import { WindowToken } from '../../services';
 
 export enum SnackBarType {
   success = 'success',
@@ -38,6 +39,7 @@ export class SnackbarComponent {
   @Output() close = new EventEmitter<void>();
   @Output() actionClick = new EventEmitter<void>()
 
+  private window = inject(WindowToken)
   visible: boolean = false
   snackbarState: 'visible' | 'void' = 'void';
   private hideTimeout: any;
@@ -49,10 +51,10 @@ export class SnackbarComponent {
     this.visible = true;
     
     // Use requestAnimationFrame instead of setTimeout for better performance
-    requestAnimationFrame(() => {
-      this.snackbarState = 'visible';
+    this.window.requestAnimationFrame(() => {
+      this.snackbarState = 'visible'
       this.cdr.markForCheck(); // Use markForCheck instead of detectChanges
-    });
+    })
     
     if (this.duration > 0) {
       // Clear any existing timeout to prevent memory leaks

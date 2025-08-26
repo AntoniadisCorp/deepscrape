@@ -90,7 +90,7 @@ class ReverseAPIProxy {
         /* Machines by Arachnefly */
 
         // Deploy a new Machine
-        this.router.post("/machines/deploy", arachnefly.createMachine)
+        this.router.post("/machines/deploy", arachnefly.deployMachine)
         // this.router.post('/api/machines/logs', receiveLogs)
     }
     /**

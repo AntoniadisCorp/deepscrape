@@ -1,8 +1,8 @@
 import { NgFor, NgIf, DatePipe, AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, HostBinding, inject, Inject, OnInit } from '@angular/core';
-import { Observable, Subscription, tap } from 'rxjs';
+import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, HostBinding, HostListener, inject, Inject, OnInit, signal, ViewChild, ViewEncapsulation  } from '@angular/core';
+import { Observable, Subscription, tap, timer } from 'rxjs';
 import { NAVIGATOR } from 'src/app/core/providers';
-import { CheckboxComponent, ClipboardbuttonComponent, SlideInModalComponent } from 'src/app/core/components';
+import { CheckboxComponent, ClipboardbuttonComponent, DialogComponent, PopupMenuComponent, SlideInModalComponent } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
 import { ApiKey, ApiKeyLoader, ApiKeyType } from 'src/app/core/types';
 import { ApiKeyService, LocalStorage } from 'src/app/core/services';
@@ -11,17 +11,20 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { themeStorageKey } from 'src/app/shared';
 import { FormControlPipe } from 'src/app/core/pipes';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 @Component({
   selector: 'app-api-keys',
-  imports: [NgFor, NgIf, DatePipe, AsyncPipe, ClipboardbuttonComponent, TooltipDirective,
+  imports: [NgFor, NgIf, DatePipe, AsyncPipe, TooltipDirective, PopupMenuComponent, ClipboardbuttonComponent,
     MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule,
-    CheckboxComponent, FormControlPipe],
+    CheckboxComponent, FormControlPipe, DialogComponent],
   templateUrl: './api-keys.component.html',
-  styleUrl: './api-keys.component.scss'
+  styleUrl: './api-keys.component.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class ApiKeysComponent implements OnInit {
 
+ private destroyRef = inject(DestroyRef);
   @HostBinding('class') classes = 'w-full'
 
   private apiKeySub: Subscription
@@ -35,6 +38,9 @@ export class ApiKeysComponent implements OnInit {
   protected isKeyModalOpen: FormControl<boolean>
   protected keyModalTitle: string = ''
   protected apiKeyLoading: ApiKeyLoader
+
+  protected dialogOpen = signal(false)
+  protected KeyIdToDelete = signal<ApiKey>({} as ApiKey)
 
   constructor(
     private apiKeyService: ApiKeyService,
@@ -69,15 +75,21 @@ export class ApiKeysComponent implements OnInit {
   }
 
   deleteApiKey(key: ApiKey) {
+    if (!key || !key.id) return
+    console.log('deleting key', key)
     this.apiKeyService.deleteApiKey(key);
-    setTimeout(() => {
-      this.closePopupMenu(new Event(''), key);
-    }, 100)
+    timer(100)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.closePopupMenu(new Event(''), key);
+      })
   }
   disableApiKey(key: ApiKey) {
-    setTimeout(() => {
-      this.closePopupMenu(new Event(''), key);
-    }, 500)
+    timer(500)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.closePopupMenu(new Event(''), key);
+      })
     throw new Error('Method not implemented.');
   }
 
@@ -85,9 +97,11 @@ export class ApiKeysComponent implements OnInit {
     this.navigator.clipboard.writeText(key.key).then(() => {
       // Optional: Show a toast or snackbar to indicate successful copy
       console.log('API Key copied to clipboard');
-      setTimeout(() => {
+      timer(500)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
         this.closePopupMenu(new Event(''), key);
-      }, 500)
+      })
     }).catch(err => {
       console.error('Failed to copy API key: ', err);
     });
@@ -109,7 +123,9 @@ export class ApiKeysComponent implements OnInit {
         }
       })
   }
+ 
   toggleMenuVisible(key: ApiKey) {
+    console.log('toggling menu visible', key)
     this.apiKeyService.setMenuVisible(key);
   }
 
@@ -133,7 +149,7 @@ export class ApiKeysComponent implements OnInit {
 
     if (!key.menu_visible) return
 
-    this.apiKeyService.setMenuVisible(key);
+    // this.apiKeyService.setMenuVisible(key)
   }
 
   closePopupNewKey() {
@@ -186,6 +202,11 @@ export class ApiKeysComponent implements OnInit {
       })
 
   }
+
+  protected openDialog(key: ApiKey) {
+      this.KeyIdToDelete.set(key)
+      this.dialogOpen.set(true)
+  }
   onCheckBoxChange() {
     console.log(this.defaultKey.value)
     // this.defaultKey.setValue(!this.defaultKey.value)
@@ -204,3 +225,5 @@ export class ApiKeysComponent implements OnInit {
 
 
 }
+
+

@@ -23,7 +23,7 @@ class UploadAPIProxy {
 
     private httpRoutesPosts(): void {
          // Deploy a new Machine
-        this.router.post("/machines/deploy", arachnefly.createMachine)
+        this.router.post("/machines/deploy", arachnefly.deployMachine)
     }
 }
 

@@ -50,20 +50,16 @@ export function sanitizeJSON(jsonString: string): string {
         .replace(/\\f/g, "\\f");
 }
 
-export function formatBytes(bytes: number, decimals = 3) {
-    if (bytes === 0) return '0 Bytes';
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes';
 
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    let i = 0;
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-    while (bytes >= k && i < sizes.length - 1) {
-        bytes /= k;
-        i++;
-    }
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 export function encodeToBytes(str: string) {

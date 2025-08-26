@@ -23,3 +23,10 @@
 .scrollbar {
     @include scrollbar;
 }
+
+.scrollbar-hidden {
+    @include scrollbar;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}

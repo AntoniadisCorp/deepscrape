@@ -1,13 +1,13 @@
 <!-- Pagination <div></div> -->
 <div
-  class="flex flex-col items-start gap-4 dark:bg-transparent mx-auto m-4 mt-8 md:mt-8 lg:mt-0 xl:mt-0 md:m-6 lg:m-12 xl:m-24 p-4">
+  class="flex flex-col items-start gap-4 dark:bg-transparent mx-auto mt-8 md:mt-8 lg:mt-0 xl:mt-0 p-4 lg:p-10">
   <div class="flex flex-row items-center justify-between w-full">
     <h1
-      class="text-lg font-bold text-gray-800 dark:text-gray-100 items-center gap-2 inline-flex">
+      class="text-lg font-bold text-gray5 dark:text-gray-100 items-center gap-2 inline-flex">
       API Keys
       <span
         *ngIf="apiKeys$ | async as apiKeys"
-        class="dark:text-gray-300 text-sm dark:bg-gray5 rounded-full px-[.7rem] py-1 font-medium">
+        class="dark:text-gray-300 text-sm dark:bg-gray5 bg-lime-200 rounded-full px-[.7rem] py-1 font-medium">
         {{ apiKeys.length }}
       </span>
       <div *ngIf="!(apiKeys$ | async)">
@@ -110,15 +110,12 @@
         (outsideClick)="closePopupNewKey()"
         aria-current="menu"
         [id]="'newkey'"
-        class="transition-shadow duration-300 before:absolute dark:before:border-b-gray5/10 dark:after:border-b-gray7 dark:hover:shadow-md dark:hover:shadow-gray7 before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg bg-gray-200 dark:bg-gray7 border-0.5 border-gray-300 absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-[.5rem] px-1 py-1 shadow-lg focus:outline-none transform opacity-100 scale-100"
-        [hidden]="!popupNewKeyVisible"
-        style="
-          --devsite-appearance-selector-menu-transform: translate3d(-0px, 0, 0);
-        ">
+        class="devsite-appearance-selector-menu transition-shadow duration-300 before:absolute dark:before:border-b-gray5/10 dark:after:border-b-gray7 dark:hover:shadow-md dark:hover:shadow-gray7 before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-gray-200 before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-gray-200 after:content-[''] hover:shadow-lg bg-gray-200 dark:bg-gray7 border-0.5 border-gray-300 absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-[.5rem] px-1 py-1 shadow-lg focus:outline-none transform opacity-100 scale-100"
+        [hidden]="!popupNewKeyVisible">
         <li>
           <a
             (click)="addApiKey('Jina')"
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray-400 dark:text-gray-100/[.8] hover:bg-gray5/[0.5] focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
             [id]="'newkey jina'">
             <mat-icon svgIcon="jina"></mat-icon>
             Jina API Key
@@ -128,7 +125,7 @@
         <li>
           <a
             (click)="addApiKey('Anthropic')"
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray-400 dark:text-gray-100/[.8] hover:bg-gray5/[0.5] focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
             [id]="'newkey anthropic'">
             <mat-icon
               svgIcon="anthropic"
@@ -140,7 +137,7 @@
         <li>
           <a
             (click)="addApiKey('Openai')"
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray-400 dark:text-gray-100/[.8] hover:bg-gray5/[0.5] focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
             [id]="'newkey openai'">
             <mat-icon svgIcon="openai"></mat-icon>
             OpenAI API Key
@@ -149,7 +146,7 @@
         </li>
         <li>
           <a
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray-600 dark:text-gray-100/[.7] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
             [id]="'newkey custom'"
             (click)="addApiKey('custom')">
             <mat-icon>auto_fix_high</mat-icon>
@@ -169,9 +166,9 @@
   <div
     *ngIf="apiKeys$ | async as apiKeys"
     class="grid grid-row-1 w-full md:grid-row-2 lg:grid-row-3 gap-4">
+    @for (key of apiKeys; track key.id) {
     <div
-      *ngFor="let key of apiKeys"
-      class="bg-gray2/80 dark:bg-gray6 rounded shadow-lg p-4 flex flex-col">
+      class="bg-gray2/80 dark:bg-deep-purple-600/[0.08] rounded shadow-lg p-4 flex flex-col">
       <mat-progress-bar
         class="!h-1 text-blue-600"
         mode="indeterminate"
@@ -238,29 +235,20 @@
             class="flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700/[.5] px-[.3rem] py-1 rounded-full transition-[colors,border]">
             <mat-icon class="">more_horiz</mat-icon>
           </button>
-          <ul
-            appOutsideClick
-            (outsideClick)="closePopupMenu($event, key)"
-            aria-current="menu"
-            [id]="'api-key-ul-' + key.id"
-            class="transition-shadow duration-300 before:absolute dark:before:border-b-gray5/10 dark:after:border-b-gray7 dark:hover:shadow-md dark:hover:shadow-gray7 before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg bg-gray-200 dark:bg-gray7 border-0.5 border-gray-300 absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-[.5rem] px-1 py-1 shadow-lg focus:outline-none transform opacity-100 scale-100"
-            [hidden]="!key.menu_visible"
-            style="
-              --devsite-appearance-selector-menu-transform: translate3d(
-                -0px,
-                0,
-                0
-              );
-            ">
+          <app-popup-menu [popupValue]="key">
             <li>
               <app-clipboard-button
-                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                appRipple
+                rippleColor="dark"
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
                 (click)="copyToClipboard(key)"
                 [inline]="false"></app-clipboard-button>
             </li>
             <li>
               <a
-                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                appRipple
+                rippleColor="dark"
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
                 [id]="'api-key-dis-' + key.id"
                 (click)="disableApiKey(key)">
                 <mat-icon>hide_source</mat-icon>
@@ -270,15 +258,17 @@
             </li>
             <li>
               <a
-                (click)="deleteApiKey(key)"
-                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-gray5/[0.5] focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                appRipple
+                rippleColor="dark"
+                (click)="openDialog(key)"
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] cursor-pointer font-medium duration-300 transition-colors"
                 [id]="'api-key-del-' + key.id">
                 <mat-icon>delete</mat-icon>
                 Delete API Key
                 <span class="flex-grow"></span>
               </a>
             </li>
-          </ul>
+          </app-popup-menu>
         </div>
       </div>
       <div class="flex justify-between mt-auto">
@@ -286,7 +276,15 @@
           Permissions: {{ key.permissions?.join(', ') || 'None' }}
         </span>
       </div>
-    </div>
+      @if (dialogOpen() && KeyIdToDelete()) {
+        <app-dialog
+          class="fixed top-0 left-0 right-0 bottom-0 z-50"
+          (onClose)="dialogOpen.set(false)"
+          (onConfirm)="KeyIdToDelete() && deleteApiKey(KeyIdToDelete())"
+          subtitle="You are gonna delete API Key <br><strong class='text-white'>{{KeyIdToDelete().name}}</strong><br> This action cannot be undone."
+          title="Are you sure to proceed?"></app-dialog>
+        } 
+    </div>}
   </div>
 
   <!-- Loading state -->

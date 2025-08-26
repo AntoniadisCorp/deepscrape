@@ -25,7 +25,8 @@ export const MainRoutes: Routes = [
     },
     {
         path: 'settings',
-        loadComponent: () => import('../../pages').then(m => m.BillingComponent),
+        data: { title: 'Account', animation: 'account' },
+        loadComponent: () => import('../../pages').then(m => m.AccountSettingsComponent),
         loadChildren: () => import('./settings.route').then(m => m.settingsRoutes)
     },
 

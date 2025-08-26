@@ -18,6 +18,7 @@ class MachinesHandler {
     async checkImageDeployability(req: Request, res: Response, next: NextFunction) {
         const { name } = req.query
         const imageName = typeof name === "string" ? decodeURIComponent(name) : ""
+        res.type("application/json")
         if (!imageName) {
             res.status(400).json({ error: "Invalid image name" })
             return
@@ -43,13 +44,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                let errorMessage = apiResponse.statusText
-                try {
-                    const errorBody = await apiResponse.json()
-                    errorMessage += ` - ${JSON.stringify(errorBody)}`
-                } catch {
-                throw new Error(`API error: ${errorMessage}`)
-                }
+               throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -84,12 +79,15 @@ class MachinesHandler {
                 )
             }
         } catch (error) {
-            res.status(500).json({ error: "check Image API Deployability did not work. try again later" })
+            console.warn("API Error:", error)
+            const details = String(error)
+            res.status(500).json({ error: "check Image API Deployability did not work. try again later", message: details })
         }
     }
 
     async getMachine(req: Request, res: Response, next: NextFunction) {
         const machineId: string = req.params.id
+        res.type("application/json")
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
@@ -109,7 +107,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -124,18 +122,19 @@ class MachinesHandler {
             res.end(Buffer.from(buffer))
         } catch (error) {
             console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to get machine details. Please try again later." })
+            const details = String(error)
+            res.status(500).json({ error: "Failed to get machine details. Please try again later.", message: details })
         }
     }
 
-    async createMachine(req: Request, res: Response, next: NextFunction) {
+    async deployMachine(req: Request, res: Response, next: NextFunction) {
         // get region and clone from query parameters
         const { region, clone } = req.query
 
         // get form data from request
         const body = req.body
         // const files = req.files
-
+        res.type("application/json")
         if (!region || !clone || !body) {
             res.status(400).json({ error: "Missing required parameters: region or clone or body" })
             return
@@ -189,7 +188,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -204,8 +203,9 @@ class MachinesHandler {
             // await streamPipeline(apiResponse.body, res)
             res.end(Buffer.from(buffer))
         } catch (error) {
-            console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to create machine. Please try again later.", message: String(error) })
+            const details = String(error)
+            console.warn("------------------- API Error:", details)
+            res.status(500).json({ error: "Failed to deploy machine. Please try again later.", message: details })
         }
     }
 
@@ -213,7 +213,7 @@ class MachinesHandler {
         const { machineId } = req.params
         // eslint-disable-next-line camelcase
         const { instance_id, state, timeout } = req.query
-
+        res.type("application/json")
         // eslint-disable-next-line camelcase
         if (!machineId || !instance_id || !state) {
             res.status(400).json({ error: "Missing required parameters: machineId, instance_id, or state" })
@@ -244,7 +244,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -259,13 +259,14 @@ class MachinesHandler {
             res.end(Buffer.from(buffer))
         } catch (error) {
             console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to wait for machine state. Please try again later." })
+            const details = String(error)
+            res.status(500).json({ error: "Failed to wait for machine state. Please try again later.", message: details })
         }
     }
 
     async startMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
-
+        res.type("application/json")
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
@@ -292,7 +293,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -307,13 +308,14 @@ class MachinesHandler {
             res.end(Buffer.from(buffer))
         } catch (error) {
             console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to destroy machine. Please try again later." })
+            const details = String(error)
+            res.status(500).json({ error: "Failed to destroy machine. Please try again later.", message: details })
         }
     }
 
     async suspendMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
-
+        res.type("application/json")
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
@@ -338,7 +340,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -353,12 +355,14 @@ class MachinesHandler {
             res.end(Buffer.from(buffer))
         } catch (error) {
             console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to destroy machine. Please try again later." })
+            const details = String(error)
+            res.status(500).json({ error: "Failed to destroy machine. Please try again later.", message: details })
         }
     }
 
     async stopMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
+        res.type("application/json")
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
@@ -382,7 +386,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -397,14 +401,15 @@ class MachinesHandler {
             res.end(Buffer.from(buffer))
         } catch (error) {
             console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to destroy machine. Please try again later." })
+            const details = String(error)
+            res.status(500).json({ error: "Failed to destroy machine. Please try again later.", message: details })
         }
     }
 
     async destroyMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
         const force: boolean = req.query.force === "true"
-
+        res.type("application/json")
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
@@ -431,7 +436,7 @@ class MachinesHandler {
             const apiResponse = await fetch(url, fetchOptions)
 
             if (!apiResponse.ok) {
-                throw new Error(`${apiResponse.statusText} - ${JSON.stringify(await apiResponse.json())}`)
+                throw new Error(`${JSON.stringify({code: apiResponse.statusText, internal_message: await apiResponse.json()})}`)
             }
 
             if (!apiResponse.body) {
@@ -445,8 +450,9 @@ class MachinesHandler {
             })
             res.end(Buffer.from(buffer))
         } catch (error) {
-            console.warn("API Error:", error)
-            res.status(500).json({ error: "Failed to destroy machine. Please try again later." })
+            const details = String(error)
+            console.warn("API Error:", details)
+            res.status(500).json({ error: "Failed to destroy machine. Please try again later.", message: details })
         }
     }
 }

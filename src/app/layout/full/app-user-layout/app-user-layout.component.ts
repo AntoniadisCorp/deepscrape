@@ -51,6 +51,7 @@ export class AppUserLayoutComponent {
   loading: boolean
   userLoading: boolean
   authorized: boolean
+  accountImageLoading: boolean
   logoutSubscription: Subscription
   userSubscription: Subscription
   private routerEventSubscription: Subscription
@@ -131,38 +132,24 @@ export class AppUserLayoutComponent {
 
 
   private GetUserProfile(username?: string) {
-
-    // get the user id from Browser Memory
-
-    // Create an Http request to get the user profile data
-    this.userLoading = true
+    this.userLoading = true;
     this.user$ = of(this.auth.currentUser).pipe(
       take(1),
       switchMap(user => {
-        if (user) {
-          this.authorized = true
-          this.userLoading = false
-
-          return from(this.firestoreService.getUserData(user.uid)).pipe(
-            catchError((err) => {
-              console.log(err)
-              return throwError(() => err)
-            }
-            ))
-        }
-        else {
-          this.authorized = false
-          this.userLoading = false
+        if (!user) {
+          this.authorized = false;
           return of(null)
         }
+        this.authorized = true;
+        return from(this.firestoreService.getUserData(user.uid)).pipe(
+          catchError(err => {
+            console.error(err)
+            return of(null)
+          })
+        )
       }),
-      catchError(error => {
-        console.log(error)
-        this.userLoading = false
-        return of(null)
-      })
-    )
-
+      finalize(() => this.userLoading = false)
+    );
   }
 
   openProfileMenu(event?: any): void {

@@ -241,11 +241,11 @@ export class DeploymentService {
 
     return this.http.delete(url, { headers, params }).pipe(
       tap((response: any) => {
-        console.log('Machine deletion successful:', response);
+        console.log('Machine destroyed successful:', response);
       }),
       map((response: any) => response.data),
       catchError(error => {
-        console.error('Error in Machine deletion API call:', error);
+        console.error('Error on Machine destruction API call:', error);
         throw error;
       })
     );

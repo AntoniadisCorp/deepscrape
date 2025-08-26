@@ -21,7 +21,7 @@ const resetRoute = [
 export const fadeInOutSlideAnimation =
     trigger('routeAnimation', [
         transition('* <=> *', [
-            style({ position: 'relative', overflow: 'hidden' }),
+            style({ position: 'relative'/* , overflow: 'hidden' */ }),
             query(':enter, :leave', [
                 style({
                     position: 'absolute',

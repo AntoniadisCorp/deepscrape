@@ -218,6 +218,40 @@ export class ApiKeyService {
         this.saveApiKeys(updatedKeys);
     }
 
+    setMenuInVisible(key: ApiKey) {
+        // console.log('setMenuInVisible', key)
+        const currentKeys = this.apiKeysSubject.value || []
+        const updatedKeys = currentKeys?.map(k => {
+            if (k.id === key.id) {
+                return { ...k, menu_visible: false };
+            }
+            return k;
+        })
+        this.apiKeysSubject.next(updatedKeys);
+        this.saveApiKeys(updatedKeys);
+    }
+
+    setMenuInvisibleExceptOne(id: string) {
+        const currentKeys = this.apiKeysSubject.value || [];
+        const updatedKeys = currentKeys?.map(k => {
+            if (k.id === id) {
+                return { ...k, menu_visible: true };
+            }
+            return { ...k, menu_visible: false };
+        });
+        this.apiKeysSubject.next(updatedKeys);
+        this.saveApiKeys(updatedKeys);
+    }
+
+    setMenuInvisibleAll() {
+        const currentKeys = this.apiKeysSubject.value || [];    
+        const updatedKeys = currentKeys?.map(k => {
+                return { ...k, menu_visible: false };
+        });
+        this.apiKeysSubject.next(updatedKeys);
+        this.saveApiKeys(updatedKeys);
+    }
+
     private generateUniqueId(): string {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }

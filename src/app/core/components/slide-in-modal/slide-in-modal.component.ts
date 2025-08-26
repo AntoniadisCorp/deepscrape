@@ -30,6 +30,7 @@ export class SlideInModalComponent {
   }
 
   private screenSub: Subscription
+  private destroySubs: Subscription
   private destroy$ = new Subject<void>()
   private size!: SCREEN_SIZE
   private windowWidth: number
@@ -115,7 +116,7 @@ export class SlideInModalComponent {
   }
 
   close() {
-    of(false).pipe(
+    this.destroySubs = of(false).pipe(
       takeUntil(this.destroy$),
       map((value) => this.opened = value),
       // Emit false after a delay of 300ms
@@ -145,5 +146,6 @@ export class SlideInModalComponent {
     this.destroy$.next()
     this.destroy$.complete()
     this.screenSub?.unsubscribe()
+    this.destroySubs?.unsubscribe()
   }
 }

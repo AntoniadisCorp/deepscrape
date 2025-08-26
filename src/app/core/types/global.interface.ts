@@ -1,3 +1,11 @@
+export type GlobalTabs = {
+    svg: string
+    icon: string
+    color: string
+    name: string
+    id: string
+}
+
 
 export type Loading = {
     google: boolean
