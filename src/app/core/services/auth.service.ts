@@ -8,11 +8,12 @@ import {
   signInWithPopup,
   signOut,
   User,
-  UserCredential
+  UserCredential,
+  UserInfo
 } from '@angular/fire/auth';
 import { Observable } from 'rxjs/internal/Observable';
 import { Subscription } from 'rxjs/internal/Subscription';
-import { FireUser } from '../types';
+import { Users } from '../types';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
 import { FirestoreService } from './firestore.service'
 import { environment } from 'src/environments/environment';
@@ -35,8 +36,9 @@ export class AuthService {
 
   token: string | undefined = ''
 
-  private authStateResolved = new BehaviorSubject<boolean>(false);
-  user: FireUser | null = null;
+  private authStateResolved = new BehaviorSubject<boolean>(false)
+
+  private userSubject = new BehaviorSubject<Users & { currProviderData: UserInfo | null } | null>(null);
 
   private userSubs: Subscription
   private authSubs: Subscription
@@ -46,12 +48,18 @@ export class AuthService {
   }
 
   isAuthenticated(): Observable<boolean> {
-    return this.fireService.authState()
+    return this.fireService.authState().pipe(
+      map(user => !!user)
+    )
   }
 
   get isAuthStateResolved() {
     return this.authStateResolved.asObservable();
   }
+  get user$(): Observable<Users & { currProviderData: UserInfo | null } | null> {
+    return this.userSubject.asObservable();
+  }
+
 
   // Sign in with Google
   signInWithGoogle(provider: GoogleAuthProvider) {
@@ -138,45 +146,50 @@ export class AuthService {
       connectAuthEmulator(this.auth, 'http://localhost:9099');
     }
 
-    this.auth.onAuthStateChanged({
-      next: async user => {
+    this.fireService.authState().pipe(
+      switchMap(async user => {
+      console.log('Auth state changed. User:', user)
 
-        if (!user) {
-          this.user = null;
-          this.token = undefined;
-          this.authStateResolved.next(false)
-          return
-        }
+      if (!user) {
+        this.userSubject.next(null);
+        this.token = undefined;
+        this.authStateResolved.next(false);
+        return null;
+      }
 
-        this.user = user;
-        this.authStateResolved.next(true)
+      if (this.authStateResolved.value)
+        return user
 
-        try {
-          if (user) {
-            const token = await user.getIdToken()
-            this.user = this.getUser(user) as FireUser
-            this.token = token || undefined
-          } else {
-            this.token = undefined;
-          }
-        } catch (error) {
-          console.error('Error initializing auth:', error);
-          this.token = undefined;
-        }
-      },
+      try {
+        const token = await user.getIdToken();
+        const userData = await this.fireService.getUserData(user.uid) as Users;
+
+        const currProviderLogin = userData.providerId || null;
+        const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null
+
+        console.warn('User data from Firestore:', userData, 'Current provider data:', currProviderData)
+
+        this.userSubject.next({ ...userData, currProviderData });
+        this.token = token;
+        this.authStateResolved.next(true);
+
+        return user;
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        this.userSubject.next(null);
+        this.token = undefined;
+        this.authStateResolved.next(false);
+        return null;
+      }
+      })
+    ).subscribe({
       error: (error) => {
-        console.error('Error in auth state change:', error);
+      console.error('Error in auth state change:', error);
       },
       complete: () => {
-        console.log('Auth state change completed.');
+      console.log('Auth state change completed.');
       }
-    })
-  }
-
-  getUser(user: User): FireUser {
-
-    const { uid, email, displayName, phoneNumber, photoURL, providerId, providerData, emailVerified } = user
-    return { uid, displayName, email, photoURL, phoneNumber, providerId, providerData, emailVerified } as FireUser
+    });
   }
 
   checkUserEmailForDifferentProvider(email: string): Observable<{
@@ -257,7 +270,7 @@ export class AuthService {
   }
 
   logout() {
-    return from(signOut(this.auth))
+    return from(this.fireService.signOut())
   }
 
   ngOnDestroy() {

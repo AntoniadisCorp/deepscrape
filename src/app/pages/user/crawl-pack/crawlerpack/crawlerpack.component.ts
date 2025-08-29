@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, WritableSignal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { CartPack, CrawlPack, CrawlPackConfigs, Headers } from 'src/app/core/types';
+import { CartPack, CrawlPack, CrawlPackConfigs, Headers, Users } from 'src/app/core/types';
 import { CartService } from 'src/app/core/services/cart.service';
 import { AsyncPipe, JsonPipe, KeyValuePipe, NgFor, NgIf } from '@angular/common';
 import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services';
@@ -13,7 +13,7 @@ import { MatIcon } from '@angular/material/icon';
 import { ReversePipe } from 'src/app/core/pipes';
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { convertKeysToSnakeCase, switchPackageIcon, switchPackKey, } from 'src/app/core/functions';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MarkdownModule } from 'ngx-markdown';
 import { ClipboardbuttonComponent, CPackComponent, DialogComponent, SnackBarType } from 'src/app/core/components';
 import { expandCollapseAnimation, fadeinCartItems } from 'src/app/animations';
@@ -25,6 +25,7 @@ import { switchMap } from 'rxjs/internal/operators/switchMap';
 import { catchError, concatMap, finalize, map, startWith, Subject, takeUntil, throwError } from 'rxjs';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { themeStorageKey } from 'src/app/shared';
+import { UserInfo } from '@angular/fire/auth';
 
 @Component({
     selector: 'app-crawlerpack',
@@ -43,6 +44,7 @@ import { themeStorageKey } from 'src/app/shared';
 })
 export class CrawlerPackComponent implements OnInit, OnDestroy {
 
+    private user: Users & { currProviderData: UserInfo | null } | null = null
     private localStorage = inject(LocalStorage)
     readonly clipboardButton = ClipboardbuttonComponent
     previousPacks: any[] = [];
@@ -59,6 +61,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
 
 
     constructor(
+        private route: ActivatedRoute,
         private cartService: CartService,
         private fireService: FirestoreService,
         private authService: AuthService,
@@ -69,7 +72,15 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.user = this.route.snapshot.data['user']
 
+        this.setCartItems()
+
+        // load most 10 recent crawl packs
+        this.loadCrawlPacks()
+    }
+
+    private setCartItems() {
         this.cartItems$ = this.cartService.getCart$.pipe(
 
             // distinctUntilChanged((prevkey: any, currKey) => prevkey?.key === currKey?.uid),
@@ -80,16 +91,18 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
                 Object.keys(items).forEach((key) => {
                     if (key !== 'uid' && key !== 'type') {
                         this.itemVisibility[key] = signal(false)
-                        this.itemToJson[key] = convertKeysToSnakeCase(switchPackKey(key, items[key]?.config), ['headers'])
+                        this.itemToJson[key] = convertKeysToSnakeCase(
+                            switchPackKey(key, items[key]?.config), ['headers']
+                        )
                     }
                 })
                 return items
             }),
         )
-
-        // load most 10 recent crawl packs
-        if (this.authService.user?.uid)
-            this.crawlPackages$ = from(this.fireService.loadPreviousPacks(this.authService.user.uid))
+    }
+    private loadCrawlPacks() {
+        if (this.user?.uid)
+            this.crawlPackages$ = from(this.fireService.loadPreviousPacks(this.user.uid))
                 .pipe(startWith(undefined)) // Emit undefined initially to avoid flickering in the UI
     }
 
@@ -131,7 +144,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
                         value: Object.values(this.itemToJson as CrawlPackConfigs).reduce<Record<string, any>>((acc, curr) => ({ ...acc, ...curr }), {}),
                     }
                 }
-                return from(this.fireService.saveCrawlPackToFirestore(this.authService.user?.uid || '', packager, false)).pipe(
+                return from(this.fireService.saveCrawlPackToFirestore(this.user?.uid || '', packager, false)).pipe(
                     catchError((error) => {
                         this.loadingCartItems = false
                         return throwError(() => error)
@@ -140,8 +153,8 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
             }),
             concatMap((done: boolean) => this.cartService.deleteCart()),
             finalize(() => {
-                if (this.authService.user?.uid)
-                    this.crawlPackages$ = from(this.fireService.loadPreviousPacks(this.authService.user.uid))
+                if (this.user?.uid)
+                    this.crawlPackages$ = from(this.fireService.loadPreviousPacks(this.user.uid))
             })
         ).subscribe({
             next: (done: boolean) => {

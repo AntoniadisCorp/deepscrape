@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { UserResolver } from 'src/app/core/services';
 
 
 export const settingsRoutes: Routes = [
@@ -10,6 +11,7 @@ export const settingsRoutes: Routes = [
     {
         path: 'profile',
         loadComponent: () => import('../../pages').then(m => m.ProfileTabComponent),
+        resolve: { user: UserResolver },
     },
     {
         path: 'general',

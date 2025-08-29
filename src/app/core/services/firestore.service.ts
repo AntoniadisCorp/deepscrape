@@ -11,12 +11,15 @@ import { CartPack, CrawlPack, Users } from '../types';
 import { map, Observable, of, throwError } from 'rxjs';
 import { WindowToken } from './window.service';
 import { environment } from 'src/environments/environment';
+import { FirebaseStorage, getDownloadURL, getStorage, ref, Storage, StorageReference, uploadString } from '@angular/fire/storage';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
   private firestore = inject(Firestore); // inject()
+
+  private storage = inject(Storage)
   private window: Window = inject(WindowToken)
   private readonly _injector: EnvironmentInjector = inject(EnvironmentInjector)
   // item$: Observable<Board[]> | undefined;
@@ -27,6 +30,8 @@ export class FirestoreService {
   ) {
     // this.app = initializeApp(environment.firebaseConfig)
     this.firestore = this.getInstanceDB('easyscrape')
+
+    this.storage = this.getStorage()
 
     if (this.isLocalhost() && environment.emulators) {
 
@@ -42,6 +47,12 @@ export class FirestoreService {
     // Get Firestore with the specified database name
     return getFirestore(this.afAuth.app, this.getFirestoreInstance(databaseName))
   }
+
+  getStorage(bucketURL?: string): FirebaseStorage {
+    return getStorage(this.afAuth.app, bucketURL)
+  }
+
+
 
   isLocalhost(): boolean {
     return typeof this.window !== 'undefined' &&
@@ -89,21 +100,44 @@ export class FirestoreService {
     }
 
     if (docSnapshot['exists']()) {
-      const data = docSnapshot['data']() as Users
-      return data
+      const data = docSnapshot['data']() as any
+
+      return {...data, 
+        last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null, 
+        created_At: data.created_At ? (data.created_At as any).toDate() : null, 
+        updated_At: data.updated_At ? (data.updated_At as any).toDate() : null 
+      } as Users
     }
 
     return null
 
   }
 
+
+  async setUserData(userId: string, data: Partial<Users>, merge: boolean = true): Promise<boolean | Error> {
+
+    try {
+      const userRef = this.doc('users', userId)
+      await this.setDoc(userRef, data, { merge })
+      console.log('User data stored successfully.');
+      return true
+    } catch (error) {
+      console.error('Error storing user data:', error);
+      throw error as any
+    }  
+  }
+
   async storeUserData(user: User, providerId: string, emailVerified: boolean = false, phoneVerified: boolean | null = null): Promise<boolean | Error> {
     try {
       const userRef = this.doc('users', user.uid)
-      
+      const currUserProvider = user.providerData.find(p => p.providerId === providerId)
+      const email = user.email || currUserProvider?.email || null
+      const username = currUserProvider?.email?.split('@')[0] || ''
       // const userRefProvider = doc(firestore, `users/${user.uid}`, 'provider')
       let dbuser: Users = {
         uid: user.uid,
+        email,
+        username,
         providerParent: user.providerId,
         providerId, // Use the last providerId from providerData this means the last provider used to sign in
         providerData: user.providerData,
@@ -185,17 +219,48 @@ export class FirestoreService {
     return [] // Return an empty array if no documents found
   }
 
+  async uploadFileToStorage(base64: string, userId: string, fileName: string, metadata?: { [key: string]: any }): Promise<string> {
+      const storageRef = await this.ref(this.storage, `uploads/${userId}/${fileName}`); // Define the file path in storage
+
+      try {
+        // Upload the Base64 string as a file
+        await this.uploadString(storageRef, base64, 'base64', { customMetadata: metadata })
+        console.log('Photo Profile uploaded successfully!')
+
+        // Get the download URL
+        const downloadURL = await this.getDownloadURL(storageRef);
+        console.log('Download URL:', downloadURL);
+        return downloadURL
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        throw error
+      }
+  }
+
+  async saveFileUrlToFirestore(userId: string, fileUrl: string): Promise<void> {
+    const userDocRef = this.doc('users', userId) // Reference to the user's document
+
+    try {
+      await this.setDoc(userDocRef, { details: { photoURL: fileUrl } }, { merge: true });
+      console.log('File URL saved to Firestore!');
+    } catch (error) {
+      console.error('Error saving file URL to Firestore:', error);
+      throw error;
+    }
+  }
+
+
 
   /**
-   * This TypeScript function returns an observable that emits a boolean indicating whether a user is
+   * This TypeScript function returns an observable that emits user data indicating whether a user is
    * currently authenticated.
    * @returns An observable that emits a boolean value indicating whether the user is authenticated or
    * not.
    */
-  public authState(): Observable<boolean> {
+  public authState(): Observable< User | null > {
     return runInInjectionContext(
       this._injector,
-      (): Observable<boolean> => authState(this.afAuth).pipe(map((user: User | null) => !!user)),
+      (): Observable<User | null > => authState(this.afAuth).pipe(map((user: User | null) => user)), // Convert User | null to boolean
     )
   }
 
@@ -289,6 +354,37 @@ export class FirestoreService {
       },
     );
   }
+
+  public async ref(storage: FirebaseStorage, path: string): Promise<StorageReference> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<StorageReference> => {
+        return ref(storage, path);
+      },
+    )
+  }
+
+  public async uploadString(storageRef: StorageReference, data: string, 
+    format: 'raw' | 'base64' | 'base64url' | 'data_url', 
+    metadata?: { [key: string]: any }): Promise<void> {
+
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await uploadString(storageRef, data, format, metadata);
+      },
+    )
+  }
+
+  public async getDownloadURL(storageRef: StorageReference): Promise<string> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<string> => {
+        return await getDownloadURL(storageRef);
+      },
+    )
+  }
+
 
   public signInWithPopup(provider: any, resolver?: PopupRedirectResolver) {
     return this.runAsyncInInjectionContext(

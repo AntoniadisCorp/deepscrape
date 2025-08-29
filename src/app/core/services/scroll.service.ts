@@ -1,5 +1,5 @@
 import { DOCUMENT, Location, PlatformLocation, PopStateEvent, ViewportScroller } from '@angular/common'
-import { Inject, Injectable, OnDestroy, inject } from '@angular/core'
+import { Inject, Injectable, OnDestroy, Renderer2, RendererFactory2, inject } from '@angular/core'
 import { fromEvent, Subject } from 'rxjs'
 import { debounceTime, takeUntil } from 'rxjs/operators'
 import { SessionStorage } from './storage.service'
@@ -19,6 +19,7 @@ export const topMargin = 16
   providedIn: 'root'
 })
 export class ScrollService implements OnDestroy {
+  private renderer: Renderer2;
   private _topOffset: number | null
   private _topOfPageElement: HTMLElement
   private onDestroy = new Subject<void>()
@@ -50,7 +51,12 @@ export class ScrollService implements OnDestroy {
   constructor(
     @Inject(DOCUMENT) private document: Document, private platformLocation: PlatformLocation,
     private viewportScroller: ViewportScroller, private location: Location,
+    private rendererFactory: RendererFactory2,
     @Inject(SessionStorage) private storage: Storage) {
+    
+    this.renderer = this.rendererFactory.createRenderer(null, null);
+    console.log('HideScrollbarService instantiated'); // Add this lin
+    
     // On resize, the toolbar might change height, so "invalidate" the top offset.
     fromEvent(this._window, 'resize')
       .pipe(takeUntil(this.onDestroy))
@@ -251,6 +257,21 @@ export class ScrollService implements OnDestroy {
   private getCurrentHash() {
     return decodeURIComponent(this.platformLocation.hash.replace(/^#/, ''))
   }
+
+   /**
+   * Adds the 'scrollbar-hidden' class to the body element.
+   */
+  hideScroll() {
+    this.renderer.addClass(this.document.body, 'scrollbar-hidden');
+  }
+
+  /**
+   * Removes the 'scrollbar-hidden' class from the body element.
+   */
+  showScroll() {
+    this.renderer.removeClass(this.document.body, 'scrollbar-hidden');
+  }
+
 }
 
 /**

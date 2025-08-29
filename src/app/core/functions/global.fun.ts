@@ -214,3 +214,15 @@ export function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+
+export function extractNames(displayName: string): { firstname: string; lastname: string } {
+  if (!displayName) {
+    return { firstname: '', lastname: '' };
+  }
+
+  const [firstname, ...lastnameParts] = displayName.split(' ');
+  const lastname = lastnameParts.join(' '); // Handles cases where the last name has multiple parts
+
+  return { firstname: firstname || '', lastname: lastname || '' };
+}

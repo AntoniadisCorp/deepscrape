@@ -19,7 +19,7 @@ export class ProviderPipe implements PipeTransform {
       case 'email':
         return provider?.email || null;
       case 'photoURL':
-        return provider?.photoURL || `https://ui-avatars.com/api/?name=${this._handlerName(provider?.displayName || 'An+Ym')}&background=random&size=250`;
+        return value.details?.photoURL || provider?.photoURL || `https://ui-avatars.com/api/?name=${this._handlerName(provider?.displayName || 'An+Ym')}&background=random&size=250`;
       case 'phoneNumber':
         return provider?.phoneNumber || null;
       case 'providerId':

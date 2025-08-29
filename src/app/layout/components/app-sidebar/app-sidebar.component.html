@@ -2,7 +2,7 @@
   appOutsideClick
   (outsideClick)="backDropClicked($event)"
   [@asideBarAnimation]="!barClosed ? 'open' : 'closed'"
-  class="scrollbar inset-0 left-0 top-20 flex flex-1 flex-col justify-between self-start overflow-auto overflow-y-hidden border-gray-200 bg-gray-100 px-0 transition-transform hover:touch-pan-y dark:border-gray-700 dark:bg-gray-900 sm:hover:overflow-y-visible lg:w-60 lg:pt-0 xs:hover:overflow-y-visible"
+  class="scrollbar inset-0 left-0 top-20 flex flex-1 flex-col justify-between self-start overflow-auto border-gray-200 bg-gray-100 px-0 transition-transform hover:touch-pan-y dark:border-gray-700 dark:bg-gray-900 sm:hover:overflow-y-visible lg:w-60 lg:pt-0 xs:hover:overflow-y-visible"
   aria-label="Sidebar"
   id="logo-sidebar"
   [ngClass]="
@@ -29,6 +29,7 @@
 </aside>
 
 <div
-  id="barblurid"
+  id="asidebarblur"
   *ngIf="!barClosed && resizeScreen"
-  class="fixed left-0 right-0 z-[200] h-full w-full overflow-hidden bg-gray-600/[.06] backdrop-blur-[1px] dark:bg-gray-50/[.02]"></div>
+  class="backdropchain fixed left-0 right-0 z-[200] h-full w-full overflow-hidden bg-gray-600/[.06] backdrop-blur-[1px] dark:bg-gray-50/[.02]"
+  ></div>

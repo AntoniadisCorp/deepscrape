@@ -46,7 +46,7 @@ export class AiAPIService {
     this.jinaAiEndpoint = API_JINAAI + '/'// Updated URL
 
     // initialize auth state
-    this.authService.initAuth()
+    // this.authService.initAuth()
   }
 
   sendToJinaAI(url: string, options: JinaOptions, cookies?: string): Observable<string> {

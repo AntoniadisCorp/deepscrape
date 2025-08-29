@@ -1,5 +1,5 @@
 import { AsyncPipe, JsonPipe, NgFor, NgIf } from '@angular/common'
-import { Component, EventEmitter, inject, input, model, Output } from '@angular/core'
+import { Component, DestroyRef, EventEmitter, inject, input, model, Output } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
@@ -21,6 +21,7 @@ import { map } from 'rxjs/internal/operators/map'
 import { filter } from 'rxjs/internal/operators/filter'
 import { Observable, of, tap } from 'rxjs'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 
 
@@ -35,6 +36,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner'
   styleUrl: './app-docker-stepper.component.scss'
 })
 export class AppDockerStepperComponent {
+  private destroyRef = inject(DestroyRef)
   private fb: FormBuilder = inject(FormBuilder)
 
   private dockerUrlSub: Subscription
@@ -173,7 +175,10 @@ export class AppDockerStepperComponent {
     })
 
 
-    this.formStep1.get('imageOption')?.valueChanges.subscribe((value) => {
+    this.formStep1.get('imageOption')?.valueChanges.pipe(
+      takeUntilDestroyed(this.destroyRef),
+      distinctUntilChanged() // Add this line
+    ).subscribe((value) => {
       this.updateStep1Validators(value)
     })
 
@@ -278,7 +283,7 @@ export class AppDockerStepperComponent {
     else if (option === 'url') controls.dockerHubUrl?.setValidators([Validators.required, dockerHubUrlValidator()]) // (/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$/)
     // ^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(\/[^\s]*)?$
 
-    Object.values(controls).forEach((control) => control?.updateValueAndValidity())
+    Object.values(controls).forEach((control) => control?.updateValueAndValidity({ emitEvent: false }))
   }
 
   // Environment variables FormArray
@@ -416,6 +421,9 @@ export class AppDockerStepperComponent {
   }
 
   isStepValid(step: number): boolean {
+    if (!step)
+      return false
+
     if (step === 1) {
       return (
         this.formStep1.valid &&

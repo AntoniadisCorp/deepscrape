@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, HostBinding, inject, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, HostBinding, inject, signal, WritableSignal } from '@angular/core';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { GinputComponent } from '../ginput/ginput.component';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -10,14 +10,14 @@ import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, SnackbarS
 import { Subject } from 'rxjs/internal/Subject';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { delay } from 'rxjs/internal/operators/delay';
-import { CrawlPack, CrawlStatus, CrawlTask, DropDownOption } from '../../types'; // Removed CrawlResult from here
+import { CrawlPack, CrawlStatus, CrawlTask, DropDownOption, Users } from '../../types'; // Removed CrawlResult from here
 import { arrayBufferToString, setCrawlPackList } from '../../functions';
 import { SnackBarType } from '../snackbar/snackbar.component';
 import { MatIcon } from '@angular/material/icon';
 import { RemoveToolbarDirective, RippleDirective } from '../../directives';
 import { DropdownComponent } from '../dropdown/dropdown.component';
 import { FormControlPipe } from '../../pipes';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { from } from 'rxjs/internal/observable/from';
 import { startWith } from 'rxjs/internal/operators/startWith';
 import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component';
@@ -28,6 +28,8 @@ import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
 import { CrawlResult } from '../../types/crawl-result.type'; // Import the CrawlResult interface
 import { CrawlResultItemComponent } from '../crawl-result-item/crawl-result-item.component';
 import { CrawlOperationStatus } from '../../enum';
+import { UserInfo } from '@angular/fire/auth';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 const DEFAULT_CRAWL_PACK_SELECTION = { name: "select a crawlpack", code: "default" }
 @Component({
@@ -42,6 +44,8 @@ const DEFAULT_CRAWL_PACK_SELECTION = { name: "select a crawlpack", code: "defaul
 })
 export class AppCrawlComponent {
 
+  private destroyRef = inject(DestroyRef)
+  private user: Users & { currProviderData: UserInfo | null } | null = null
   private localStorage = inject(LocalStorage)
   readonly clipboardButton = ClipboardbuttonComponent
   private destroy$ = new Subject<void>()
@@ -99,6 +103,7 @@ export class AppCrawlComponent {
   }
 
   constructor(
+    private route: ActivatedRoute,
     private authService: AuthService,
     private fireService: FirestoreService,
     private crawlService: CrawlAPIService,
@@ -107,7 +112,13 @@ export class AppCrawlComponent {
     private fb: FormBuilder,
 
 
-  ) { }
+  ) {
+
+    this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
+      this.user = user 
+         console.log('appcrawl Fetched userdata from snapshot:', this.user);
+    })
+  }
 
 
   ngOnInit(): void {
@@ -176,8 +187,8 @@ export class AppCrawlComponent {
     })
 
     // load most 10 recent crawl packs
-    if (this.authService.user?.uid)
-      this.loadPackSubscription = from(this.fireService.loadPreviousPacks(this.authService.user.uid))
+    if (this.user?.uid)
+      this.loadPackSubscription = from(this.fireService.loadPreviousPacks(this.user.uid))
         .pipe(startWith(undefined)) // Emit undefined initially to avoid flickering in the UI
         .subscribe({
           next: (pack: CrawlPack[] | null | undefined) => {

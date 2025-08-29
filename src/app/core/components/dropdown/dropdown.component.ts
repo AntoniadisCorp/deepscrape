@@ -21,6 +21,7 @@ export class DropdownComponent {
   @Input() position: 'bottom' | 'top' = 'bottom'
   @Input() dropDownName?: string = 'Region'
   @Input() padding?: string
+  @Input() lightColor?: string = 'blue'
   @Output() select: EventEmitter<any> = new EventEmitter()
   @ViewChild('dropDown') dropDown: ElementRef
   @ViewChild('menu') menu: ElementRef

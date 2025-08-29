@@ -5,7 +5,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { slideInModalAnimation } from 'src/app/animations';
 import { SCREEN_SIZE } from '../../enum';
-import { ScreenResizeService } from '../../services';
+import { ScreenResizeService, ScrollService } from '../../services';
 import { delay, map, of, Subject, take, takeUntil, tap } from 'rxjs';
 
 @Component({
@@ -16,8 +16,6 @@ import { delay, map, of, Subject, take, takeUntil, tap } from 'rxjs';
   animations: [slideInModalAnimation],
 })
 export class SlideInModalComponent {
-
-
   @ViewChild('modal') modal: ElementRef<any>
 
   @HostListener('document:mousedown', ['$event'])
@@ -38,7 +36,10 @@ export class SlideInModalComponent {
 
   protected opened: boolean = false
 
-  constructor(private resizeSvc: ScreenResizeService, private cdr: ChangeDetectorRef) {
+  constructor(
+    private resizeSvc: ScreenResizeService, 
+    private cdr: ChangeDetectorRef,
+  ) {
   }
 
   @Input() maxWidth?: string = 'max-w-lg'
@@ -71,15 +72,16 @@ export class SlideInModalComponent {
     }) */
     this.screenSub = this.isOpen.valueChanges.subscribe((value) => {
       this.opened = value
-    })
-
+    })    
+    
   }
 
   ngAfterViewInit(): void {
     //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
     //Add 'implements AfterViewInit' to the class.
     // this.setStyle()
-  }
+      
+    }
 
   /* private setStyle() {
 
@@ -131,6 +133,7 @@ export class SlideInModalComponent {
           this.isOpen.setValue(false, { emitModelToViewChange: false })
           this.opened = false
           console.error(err)
+          this.cdr.detectChanges()
         },
         complete: () => {
           this.cdr.detectChanges()

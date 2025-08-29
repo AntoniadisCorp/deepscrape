@@ -12,7 +12,6 @@ import { getErrorMessage } from 'src/app/core/functions';
 
 @Component({
   selector: 'app-verification',
-  standalone: true,
   imports: [MatIcon, CommonModule, ReactiveFormsModule],
   templateUrl: './verification.component.html',
   styleUrl: './verification.component.scss'

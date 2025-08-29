@@ -1,10 +1,12 @@
 import { Routes } from '@angular/router';
+import { UserResolver } from 'src/app/core/services';
 
 export const crawlerPackRoutes: Routes = [
     {
         path: '',
         pathMatch: 'full',
         loadComponent: () => import('../../pages').then(m => m.CrawlerPackComponent),
+        resolve: { user: UserResolver },
         // redirectTo: 'keys'
     },
     {

@@ -15,7 +15,6 @@ import { myIcons } from 'src/app/shared';
 
 @Component({
   selector: 'app-account-settings',
-  standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, AsyncPipe, LucideAngularModule, TitleCasePipe, RippleDirective],
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss',

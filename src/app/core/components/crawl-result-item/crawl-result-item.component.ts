@@ -9,7 +9,6 @@ import { myIcons } from 'src/app/shared';
 
 @Component({
   selector: 'app-crawl-result-item',
-  standalone: true,
   imports: [CommonModule, NgClass, NgIf, NgFor, NgSwitch, NgSwitchCase, JsonPipe, MarkdownModule, MatIconModule,
     LucideAngularModule
   ],

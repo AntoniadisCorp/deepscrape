@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { UserResolver } from 'src/app/core/services';
 
 export const MainRoutes: Routes = [
     {
@@ -17,6 +18,7 @@ export const MainRoutes: Routes = [
     {
         path: 'operations',
         loadComponent: () => import('../../pages').then(m => m.OperationsComponent),
+        resolve: { user: UserResolver },
     },
     {
         path: 'billing',

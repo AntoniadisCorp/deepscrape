@@ -1,5 +1,6 @@
 import { writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore"
-import { User } from "@angular/fire/auth"
+
+import { User, AuthError, AuthErrorCodes } from "@angular/fire/auth"
 import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types"
 import { MACHNINE_STATE } from "../enum"
 
@@ -43,6 +44,8 @@ export function getErrorMessage(error: any): string {
             return 'This provider is already linked to the user.';
         case 'auth/invalid-phone-number':
             return 'Invalid phone number format.';
+        case AuthErrorCodes.INVALID_ORIGIN:
+            return 'This domain is not authorized for OAuth operations.';
         default:
             return errorMessage || 'An error occurred during signup.';
     }

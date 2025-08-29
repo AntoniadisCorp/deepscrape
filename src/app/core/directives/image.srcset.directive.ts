@@ -18,7 +18,7 @@ export class ImageSrcsetDirective implements OnInit, OnDestroy, AfterViewInit {
   constructor(private elementRef: ElementRef) { }
   ngOnInit(): void {
     this._image = this.elementRef.nativeElement
-    console.log('ImageSrcsetDirective initialized with srcset:', this.imageUrl, this.defaultSrcset);
+    // console.log('ImageSrcsetDirective initialized with srcset:', this.imageUrl, this.defaultSrcset);
     
     this._handleError()
   }
@@ -39,7 +39,9 @@ export class ImageSrcsetDirective implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private _handleError(): void {
-    this.loading = false;
+    this.loading = false
+    if (!this.nativeElement)
+      return
     // Replace with a fallback image URL
     this.nativeElement.srcset = this.defaultSrcset || `https://ui-avatars.com/api/?name=${this._handlerName(this.name || 'An+Ym')}&background=random&size=128`;
   }
@@ -55,6 +57,8 @@ export class ImageSrcsetDirective implements OnInit, OnDestroy, AfterViewInit {
 
   private _handleLoad(): void {
     this.loading = false;
+    if (!this.nativeElement)
+      return
     this.nativeElement.onerror = null;
     this.nativeElement.onload = null;
   }

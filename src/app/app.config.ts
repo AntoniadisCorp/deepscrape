@@ -25,7 +25,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
 import { LogLevel, setLogLevel } from '@angular/fire';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
-import { myIcons } from './shared';
+import { myIcons } from './shared'
 
 setLogLevel(LogLevel.VERBOSE)
 // const analytics = getAnalytics(app);

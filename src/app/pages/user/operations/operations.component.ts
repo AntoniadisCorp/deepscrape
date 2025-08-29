@@ -4,7 +4,7 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressBarModule } from '@angular/material/progress-bar'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
-import { RouterLink, Router } from '@angular/router'
+import { RouterLink, Router, ActivatedRoute } from '@angular/router'
 import { distinct, distinctUntilChanged, Observable, of, refCount, Subject, Subscription, switchMap, tap } from 'rxjs'
 import { DropdownComponent, GinputComponent, LoadingDotsComponent, PromptareaComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
 import { Outsideclick, RippleDirective } from 'src/app/core/directives'
@@ -12,12 +12,13 @@ import { CrawlOperationStatus } from 'src/app/core/enum'
 import { crawlOperationStatusColor, isArray, setAIModel, setOperationStatusList } from 'src/app/core/functions'
 import { FormControlPipe } from 'src/app/core/pipes'
 import { AuthService, CrawlStoreService, ScrollService, SnackbarService } from 'src/app/core/services'
-import { AIModel, CrawlConfig, CrawlOperation, DropDownOption } from 'src/app/core/types'
+import { AIModel, CrawlConfig, CrawlOperation, DropDownOption, Users } from 'src/app/core/types'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatTimepickerModule, provideNativeDateTimeAdapter } from '@dhutaryan/ngx-mat-timepicker'
+import { UserInfo } from '@angular/fire/auth'
 
 
 
@@ -39,6 +40,7 @@ import { MatTimepickerModule, provideNativeDateTimeAdapter } from '@dhutaryan/ng
 export class OperationsComponent {
 
 
+  private user: Users & { currProviderData: UserInfo | null } | null = null
   /* INPUT AND BUTS VARIABLES IN ACTION */
   @HostBinding('class') classes = 'grow';
   @ViewChild("searchBar") searchBar!: ElementRef
@@ -107,7 +109,9 @@ export class OperationsComponent {
 
   protected isOperOptionsLoading: boolean
 
-  constructor(private cdr: ChangeDetectorRef,
+  constructor(
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
     private fb: FormBuilder,
     private authService: AuthService,
     private crawlStoreService: CrawlStoreService,
@@ -123,6 +127,8 @@ export class OperationsComponent {
   }
 
   private initVariables() {
+
+    this.user = this.route.snapshot.data['user'];
 
     this.addScrapperBtn = false
 
@@ -322,7 +328,7 @@ export class OperationsComponent {
     if (!operation.id)
       return
 
-    if (operation.author.uid !== this.authService.user?.uid)
+    if (operation.author.uid !== this.user?.uid)
       return
 
     this.isOperOptionsLoading = true
@@ -465,7 +471,7 @@ export class OperationsComponent {
 
     // setup the crawl operation
     const operationData: CrawlOperation = {
-      author: { uid: this.authService.user?.uid || '', displayName: this.authService.user?.displayName || '' },
+      author: { uid: this.user?.uid || '', displayName: this.user?.currProviderData?.displayName || '' },
       modelAI: this.modelAI.value as AIModel,
       created_At: Date.now(),
       name: this.operationName.value,

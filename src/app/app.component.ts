@@ -71,20 +71,14 @@ export class AppComponent {
 
   private routerEventSubscription: Subscription
   constructor(
-
     private matIconRegistry: SvgIconService,
     private router: Router,
     private theme: ThemeToggleComponent,
-
     private snackbarService: SnackbarService,
     private authService: AuthService,
-    
     // Inject ActivatedRoute to access route data
     // private activatedRoute: ActivatedRoute,
-
-
   ) {
-
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
       if (event instanceof NavigationStart) {
         this.isLoading = true;

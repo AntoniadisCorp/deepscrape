@@ -49,7 +49,7 @@ export class AppSidebarComponent {
   backDropClicked($event: MouseEvent) {
     const element = $event.target as HTMLElement
 
-    if (element.id === "barblurid") {
+    if (element.id === "asidebarblur") {
       this.backDropPressed.emit(true)
     }
   }

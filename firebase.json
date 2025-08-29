@@ -41,8 +41,7 @@
   },
   "emulators": {
     "firestore": {
-      "port": 5001,
-      "host": "localhost"
+      "port": 5001
     },
     "apphosting": {
       "port": 5002,

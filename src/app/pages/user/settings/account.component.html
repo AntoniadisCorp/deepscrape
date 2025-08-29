@@ -1,8 +1,8 @@
-<div class="relative flex h-full w-full flex-col p-4 lg:px-20 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-sm">
+<div class="relative flex h-full w-full flex-col p-4 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-sm">
   <h1 *ngIf="activeLink !== 'keys'" class="text-2xl font-semibold mb-5 text-gray6 dark:text-gray3">{{ ( activeLink + ' ' + "Settings") | titlecase }}</h1>
   <!-- Tab Menu -->
   <div
-    class="sticky scrollbar-hidden z-50 flex h-16 flex-nowrap items-center justify-start gap-1 overflow-y-hidden border-b bg-gray-200 text-base text-gray-800 dark:border-b-dark-600 dark:bg-gray-900"
+    class="sticky scrollbar-hidden z-50 flex h-16 flex-nowrap items-center justify-start gap-1 overflow-y-hidden border-b bg-gray-200 text-base text-gray-800 dark:border-b-[#64b5f633] dark:bg-gray-900"
   >
     <a
       *ngFor="let gTab of gTabs$ | async"
