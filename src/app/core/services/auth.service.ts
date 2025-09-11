@@ -370,8 +370,9 @@ export class AuthService {
 
     return from(this.fireService.setSignOutMetrics(userId, loginId)).pipe(
       switchMap(() => from(this.fireService.signOut())),
-      catchError((error) => { 
+      catchError(async (error) => { 
         console.error('Logout error:', error)
+        await this.fireService.signOut()
         return throwError(() => error) 
       }
     ))
