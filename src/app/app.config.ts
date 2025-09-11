@@ -2,7 +2,7 @@ import { ApplicationConfig, isDevMode, importProvidersFrom, provideExperimentalZ
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { DomSanitizer, provideClientHydration } from '@angular/platform-browser';
+import { DomSanitizer, provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -57,7 +57,9 @@ export const appConfig: ApplicationConfig = {
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
-    provideClientHydration(),
+    provideClientHydration(/* withHttpTransferCacheOptions({
+      includePostRequests: true
+    }) */),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'

@@ -6,7 +6,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { Observable } from 'rxjs/internal/Observable';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { fadeInOutSlideAnimation } from 'src/app/animations';
+import { smoothfadeAnimation } from 'src/app/animations';
 import { RippleDirective } from 'src/app/core/directives';
 import { RouteService } from 'src/app/core/services';
 import { GlobalTabs } from 'src/app/core/types';
@@ -18,7 +18,7 @@ import { myIcons } from 'src/app/shared';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, AsyncPipe, LucideAngularModule, TitleCasePipe, RippleDirective],
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss',
-  animations: [fadeInOutSlideAnimation]
+  animations: [smoothfadeAnimation]
 })
 export class AccountSettingsComponent {
   readonly icons = myIcons
@@ -68,9 +68,9 @@ export class AccountSettingsComponent {
     return id === 'account' ? ['/settings'] : ['/settings', id]
   }
 
-  getAnimationData() {
-    return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
-    // return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
+  getAnimationData(outlet: RouterOutlet) {
+    // return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
+    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
   }
 
   getRouteId(): string {

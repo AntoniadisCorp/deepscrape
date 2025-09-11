@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
 import { getErrorMessage } from 'src/app/core/functions';
+import { FirestoreService } from 'src/app/core/services';
 
 @Component({
     selector: 'app-resetpassword',
@@ -27,11 +28,15 @@ export class ResetPasswordComponent implements OnInit {
 
     constructor(
         private fb: FormBuilder,
-        private auth: Auth
+        private fireService: FirestoreService
     ) {
         this.resetPasswordForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]]
         });
+    }
+
+    get email() {
+        return this.resetPasswordForm.get('email');
     }
 
     ngOnInit(): void { }
@@ -43,7 +48,7 @@ export class ResetPasswordComponent implements OnInit {
 
             try {
                 const email = this.resetPasswordForm.get('email')?.value;
-                await sendPasswordResetEmail(this.auth, email);
+                await this.fireService.sendPasswordResetEmail(email)
 
                 this.resetEmailSent = true;
             } catch (error: any) {

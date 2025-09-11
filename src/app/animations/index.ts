@@ -21,7 +21,7 @@ const resetRoute = [
 export const fadeInOutSlideAnimation =
     trigger('routeAnimation', [
         transition('* <=> *', [
-            style({ position: 'relative'/* , overflow: 'hidden' */ }),
+            style({ position: 'relative', overflow: 'hidden' }),
             query(':enter, :leave', [
                 style({
                     position: 'absolute',
@@ -80,6 +80,12 @@ export const slideInModalAnimation = trigger('slideInOut', [
     ])
 ])
 
+export const smoothfadeAnimation = trigger('routeChildAnimation', [
+  transition('* <=> *', [
+    style({ opacity: 0 }),
+    animate('500ms ease-in-out', style({ opacity: 1 }))
+  ])
+])
 export const PopupAnimation = trigger('enableProfileMenu', [
 
     transition(':enter', [

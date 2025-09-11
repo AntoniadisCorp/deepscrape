@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router';
@@ -8,9 +8,14 @@ import { ThemeToggleComponent } from './shared';
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components';
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { Auth, authState, user, User } from '@angular/fire/auth';
-import { map, Observable, of, startWith, tap } from 'rxjs';
-import { AsyncPipe } from '@angular/common';
+import { map, Observable, of, startWith, tap, switchMap } from 'rxjs';
+import { AsyncPipe, DOCUMENT, isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { fadeInOutAnimation } from './animations';
+import { HttpClient } from '@angular/common/http';
+import { Inject, OnInit } from '@angular/core';
+import { environment } from 'src/environments/environment';
+import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 /* 
                      ,//@@@.
@@ -59,7 +64,8 @@ import { fadeInOutAnimation } from './animations';
   //  }, // Set background color to transparent when loading
   animations: [fadeInOutAnimation]
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  private destroyRef = inject(DestroyRef); 
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent;
   protected snackbarMessage = '';
   protected snackbarAction = '';
@@ -71,11 +77,13 @@ export class AppComponent {
 
   private routerEventSubscription: Subscription
   constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
     private matIconRegistry: SvgIconService,
     private router: Router,
     private theme: ThemeToggleComponent,
     private snackbarService: SnackbarService,
     private authService: AuthService,
+    private http: HttpClient, // Inject HttpClient
     // Inject ActivatedRoute to access route data
     // private activatedRoute: ActivatedRoute,
   ) {
@@ -98,23 +106,36 @@ export class AppComponent {
   get token() {
     return this.authService.token
   }
-  ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
-    this.theme.setDefaultTheme()
+  ngOnInit(){
+    this.theme.setDefaultTheme();
 
-
-
+    const isBrowser = isPlatformBrowser(this.platformId)
+    // Make a request to the status endpoint to trigger guestTracker
+    if (isBrowser) {
+      this.http.get(`/status`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          console.log('API Status Check:', response);
+        },
+        error: (error) => {
+          console.error('Error checking API status:', error);
+        }
+      })
+    }
+  
   }
 
 
   ngAfterViewInit() {
 
     // Set the initial values
-    this.isAuthState$ = this.authService.isAuthenticated().pipe(
-      map((isAuth) => {
-        console.log('User is logged in: ', isAuth)
-        return isAuth
+    this.isAuthState$ = this.authService.isAuthenticated()
+    .pipe(
+      map((isAuthData) => {
+        const { isAuthenticated } = isAuthData
+        console.log('User is logged in: ', isAuthenticated)
+        return isAuthenticated
       })
     )
 

@@ -21,7 +21,8 @@ import {
     Fingerprint,
     PiggyBank,
     LucidePiggyBank,
-    KeyRound
+    KeyRound,
+    CircleCheckBig
 } from 'lucide-angular'
 
 export let myIcons: LucideIcons = {
@@ -44,5 +45,6 @@ export let myIcons: LucideIcons = {
     "user-round": UserRound,
     fingerprint: Fingerprint,
     "piggy-bank": LucidePiggyBank,
-    "key-round": KeyRound
+    "key-round": KeyRound,
+    'circle-check-big': CircleCheckBig
 }

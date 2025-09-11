@@ -1,28 +1,34 @@
-import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core';
-// import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database';
-import { Auth, authState, connectAuthEmulator, PopupRedirectResolver, signInWithEmailAndPassword, signInWithPopup, User, UserCredential } from '@angular/fire/auth';
+import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core'
+// import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database'
+import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, User, UserCredential } from '@angular/fire/auth'
 import {
   addDoc,
   collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, DocumentData, DocumentReference,
-  Firestore, getDoc, getDocs, getFirestore, limit, query, Query,
-  QueryConstraint, QuerySnapshot, setDoc, SetOptions
-} from '@angular/fire/firestore';
-import { CartPack, CrawlPack, Users } from '../types';
-import { map, Observable, of, throwError } from 'rxjs';
-import { WindowToken } from './window.service';
-import { environment } from 'src/environments/environment';
-import { FirebaseStorage, getDownloadURL, getStorage, ref, Storage, StorageReference, uploadString } from '@angular/fire/storage';
+  FieldValue,
+  Firestore, getDoc, getDocs, getFirestore, increment, limit, query, Query,
+  QueryConstraint, QuerySnapshot, serverTimestamp, setDoc, SetOptions,
+  Timestamp, writeBatch, WriteBatch,
+  where
+} from '@angular/fire/firestore'
+import { CartPack, CrawlPack, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
+import { map, Observable, of, throwError } from 'rxjs'
+import { WindowToken } from './window.service'
+import { environment } from 'src/environments/environment'
+import {
+  connectStorageEmulator, FirebaseStorage, getDownloadURL, getStorage, ref, Storage, StorageReference, uploadString,
+  fromTask, uploadBytesResumable, TaskEvent
+} from '@angular/fire/storage'
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
-  private firestore = inject(Firestore); // inject()
+  private firestore = inject(Firestore) // inject()
 
   private storage = inject(Storage)
   private window: Window = inject(WindowToken)
   private readonly _injector: EnvironmentInjector = inject(EnvironmentInjector)
-  // item$: Observable<Board[]> | undefined;
+  // item$: Observable<Board[]> | undefined
 
   constructor(
     private afAuth: Auth,
@@ -35,11 +41,13 @@ export class FirestoreService {
 
     if (this.isLocalhost() && environment.emulators) {
 
-      console.log('🔥 Connecting Firestore Service to Firebase Emulators');
+      console.log('🔥 Connecting Firestore Service to Firebase Emulators')
 
       // Connect to the Firestore emulator if running on localhost and not in production
       connectFirestoreEmulator(this.firestore, 'localhost', 5001)
       connectAuthEmulator(this.afAuth, 'http://localhost:9099')
+      connectStorageEmulator(this.storage, 'localhost', 9199) // <-- Add this line
+
     }
   }
 
@@ -57,7 +65,7 @@ export class FirestoreService {
   isLocalhost(): boolean {
     return typeof this.window !== 'undefined' &&
       (this.window.location.hostname === 'localhost' ||
-        this.window.location.hostname === '127.0.0.1');
+        this.window.location.hostname === '127.0.0.1')
   }
 
   private getFirestoreInstance(databaseName?: string): string {
@@ -75,7 +83,7 @@ export class FirestoreService {
       case 'easyscrape':
         return databaseName
       default:
-        throw new Error('Invalid database name');
+        throw new Error('Invalid database name')
     }
   }
 
@@ -96,16 +104,17 @@ export class FirestoreService {
 
     if (err) {
       console.error("Failed to get user's data:", err)
-      return null;
+      return null
     }
 
     if (docSnapshot['exists']()) {
       const data = docSnapshot['data']() as any
 
-      return {...data, 
-        last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null, 
-        created_At: data.created_At ? (data.created_At as any).toDate() : null, 
-        updated_At: data.updated_At ? (data.updated_At as any).toDate() : null 
+      return {
+        ...data,
+        last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null,
+        created_At: data.created_At ? (data.created_At as any).toDate() : null,
+        updated_At: data.updated_At ? (data.updated_At as any).toDate() : null
       } as Users
     }
 
@@ -119,20 +128,22 @@ export class FirestoreService {
     try {
       const userRef = this.doc('users', userId)
       await this.setDoc(userRef, data, { merge })
-      console.log('User data stored successfully.');
+      console.log('User data stored successfully.')
       return true
     } catch (error) {
-      console.error('Error storing user data:', error);
+      console.error('Error storing user data:', error)
       throw error as any
-    }  
+    }
   }
 
-  async storeUserData(user: User, providerId: string, emailVerified: boolean = false, phoneVerified: boolean | null = null): Promise<boolean | Error> {
+  async storeUserData(user: User, providerId: string, emailVerified: boolean = false,
+    newUsername?: string | null, phoneVerified: boolean | null = null): Promise<boolean | Error> {
     try {
       const userRef = this.doc('users', user.uid)
       const currUserProvider = user.providerData.find(p => p.providerId === providerId)
       const email = user.email || currUserProvider?.email || null
-      const username = currUserProvider?.email?.split('@')[0] || ''
+      const username = newUsername || currUserProvider?.email?.split('@')[0] || ''
+
       // const userRefProvider = doc(firestore, `users/${user.uid}`, 'provider')
       let dbuser: Users = {
         uid: user.uid,
@@ -143,19 +154,218 @@ export class FirestoreService {
         providerData: user.providerData,
         emailVerified,
         phoneVerified,
-        created_At: new Date(user.metadata.creationTime || ''),
         last_login_at: new Date(user.metadata.lastSignInTime || ''),
+        created_At: new Date(user.metadata.creationTime || ''),
+        updated_At: new Date(),
       }
 
       await this.setDoc(userRef, dbuser, { merge: true })
 
-      console.log('User data stored successfully.');
+      console.log('User data stored successfully.')
       return true
     } catch (error) {
-      console.error('Error storing user data:', error);
+      console.error('Error storing user data:', error)
       return error as any
     }
   }
+
+  async setUserLoginMetrics(userId: string, metrics: any, guestInfo?: Guest) {
+    const { ipAddress, userAgent, location, deviceType, connection, providerId, browser } = metrics
+
+    if (!userId || !ipAddress || !userAgent) {
+      throw new Error('UID, IP Address, and User Agent are required.')
+    }
+
+    try {
+      const batch = this.writeBatch()
+      const loginMetricsRef = this.doc('login_metrics', userId)
+      let err, loginMetricsSnap = await this.getDoc(loginMetricsRef)
+
+      if (err) {
+        console.warn("Failed to get user's login metrics:", err)
+      }
+
+      const currentTime = serverTimestamp()
+
+      if (!loginMetricsSnap['exists']()) {
+        // Create new document
+        batch.set(loginMetricsRef, {
+          guestId: guestInfo?.id || '',
+          id: userId,
+          creationTime: currentTime,
+          lastSignInTime: currentTime,
+          loginCount: 0,
+        }, { merge: false })
+      }
+
+      if (!guestInfo) {
+        const loginMetrics = loginMetricsSnap["data"]() as loginMetrics
+
+        let err2, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
+
+        if (err2) {
+          console.warn("Failed to get guest data:", err2)
+        } else if (guestSnap['exists']()) {
+          guestInfo = guestSnap['data']() as Guest
+          console.log("Guest info retrieved from lastGuestId:", guestInfo)
+        }
+      }
+
+      const loginHistoryEntry: loginHistoryInfo = {
+        uid: userId,
+        providerId, // The provider used to sign in
+        connection,
+        connected: true,
+        timestamp: new Date(),
+        ipAddress: guestInfo?.ip.raw || ipAddress,
+        // we give priority to the passed userAgent param from the client(browser) over the guestInfo userAgent
+        os: guestInfo?.os || 'Unknown',
+        browser: browser || guestInfo?.browser,
+        userAgent: userAgent || guestInfo?.userAgent || 'Unknown',
+        location: guestInfo?.location || location || 'Unknown',
+        deviceType: deviceType || guestInfo?.device || 'Unknown',
+        // Only include guestInfo if it's defined and not undefined
+        ...(guestInfo ? { guestId: guestInfo.id } : {}),
+      }
+
+
+
+      // Add entry to subcollection
+      const loginHistoryRef = this.collection(this.firestore, `login_metrics/${userId}/login_history_Info`)
+      let newlogin: DocumentReference<unknown, DocumentData>
+      // create a query that checks if there's already a login history entry for the same ipAddress, deviceType and location, browser, os
+      // then only add a new entry if there's no existing entry
+      const query = this.query(loginHistoryRef,
+        this.where('ipAddress', 'in', [loginHistoryEntry.ipAddress, loginHistoryEntry.ipAddress.replace(/:\d+$/, '')]), // Handle both IPv4 and IPv6
+        this.where('deviceType', '==', loginHistoryEntry.deviceType),
+        this.where('location', '==', loginHistoryEntry.location),
+        this.where('browser', '==', loginHistoryEntry.browser),
+        this.where('os', '==', loginHistoryEntry.os),
+        this.where('providerId', '==', loginHistoryEntry.providerId),
+        this.limit(1)
+      )
+      let err2, querySnapshot = await this.getDocs(query)
+      if (err2) {
+        console.warn("Failed to query login history:", err2)
+        return null
+      } else if (!querySnapshot.empty) {
+        console.log("Login history entry already exists for this IP, device, location, browser, and OS. Skipping new entry.")
+        newlogin = querySnapshot.docs[0].ref // return the existing document reference
+        // // Update metrics document
+        // const signOutMetrics = {
+        //   connected: false,
+        //   lastSignInTime: new Date(),
+        // }
+      } else {
+        // TODO: restrict new login history entries if already exists for the same location and device within the last X minutes/hours
+        // This is to prevent spamming the login history with multiple entries for the same login session 
+        const newLoginRef = this.newDocRef(loginHistoryRef) // Create a new document reference with a generated ID
+        newlogin = newLoginRef
+      }
+
+      batch.set(newlogin, loginHistoryEntry)
+
+      // Update metrics document
+      const newLoginMetrics = {
+        lastGuestId: guestInfo?.id || '',
+        id: userId,
+        lastLoginId: newlogin.id,
+        lastSignInTime: currentTime,
+        loginCount: increment(1),
+      }
+
+      // Update existing document
+      batch.set(loginMetricsRef, newLoginMetrics, { merge: true })
+
+      await batch.commit() // Commit the batch write
+
+      return { success: true, message: `Login metrics recorded for user ${userId}.`, loginId: newlogin.id }
+
+    }
+    catch (error) {
+      console.error('Error storing user data:', error)
+      return null
+    }
+  }
+
+  async setSignOutMetrics(userId: string, loginId: string) {
+
+    if (!userId || !loginId) {
+      throw new Error('UID and Login ID are required. ' + `Received UID: ${userId}, Login ID: ${loginId}`)
+    }
+    try {
+      const loginHistoryRef = this.doc(`login_metrics/${userId}/login_history_Info`, loginId)
+
+      // Update metrics document
+      const signOutMetrics = {
+        connected: false,
+        signOutTime: new Date(),
+      }
+      // Update existing document
+      await this.setDoc(loginHistoryRef as any, signOutMetrics, { merge: true })
+
+      return { success: true, message: `Sign-out metrics recorded for user ${userId}.` }
+    }
+    catch (error) {
+      console.error('Error storing sign-out data:', error)
+      return null
+    }
+  }
+
+  async linkGuestToUser(uid: string, guestId: string) {
+    if (!uid || !guestId) {
+      throw new Error("User ID and Guest ID are required.");
+    }
+
+    let guestInfo: Guest | null = null;
+
+    try {
+      const guestRef = this.doc('guests', guestId);
+      let err, guestSnap = await this.getDoc(guestRef);
+
+      if (err) {
+        console.error("Failed to get guest data:", err);
+        return { err, guestInfo };
+      }
+
+      if (!guestSnap['exists']()) {
+        return { err: "Guest not found", guestInfo: null };
+      }
+
+      guestInfo = guestSnap['data']() as Guest;
+
+      const details: Partial<UserDetails> = {
+        latitude: guestInfo.latitude || 0,
+        longitude: guestInfo.longitude || 0,
+        country: guestInfo.country || "Unknown",
+        geo: guestInfo.geo || { continent: "Unknown", region: "Unknown" },
+        region: guestInfo.region || "Unknown",
+        timezone: guestInfo.timezone || "UTC",
+        location: guestInfo.location || "Unknown",
+        updated_At: new Date(),
+      };
+
+      const userDetails: any = {
+        details,
+        updated_At: new Date(),
+      };
+
+      // Batch write: user first, then guest
+      const userRef = this.doc('users', uid);
+      const batch = this.writeBatch();
+      batch.set(userRef, userDetails, { merge: true });
+      batch.set(guestRef, { uid, linkedAt: new Date() }, { merge: true });
+
+      await batch.commit();
+
+      console.log(`Guest ${guestId} linked to user ${uid}.`);
+      return { err: null, guestInfo };
+    } catch (error) {
+      console.error("Error linking guest data to user:", error);
+      return { err: error as string, guestInfo };
+    }
+  }
+
 
 
   /* get last 10 crawl pack config items by sorted date from the store  */
@@ -206,7 +416,7 @@ export class FirestoreService {
 
   async loadPreviousPacks(userId: string, limit = 10): Promise<CrawlPack[] | null> {
     const packsCollection = this.collection(this.firestore, `users/${userId}/crawlpack`)
-    const q = this.query(packsCollection, this.limit(limit)); // Adjust limit as needed
+    const q = this.query(packsCollection, this.limit(limit)) // Adjust limit as needed
     let err, querySnapshot = await this.getDocs(q)
     if (err) {
       console.error("Failed to get user's data:", err)
@@ -220,32 +430,51 @@ export class FirestoreService {
   }
 
   async uploadFileToStorage(base64: string, userId: string, fileName: string, metadata?: { [key: string]: any }): Promise<string> {
-      const storageRef = await this.ref(this.storage, `uploads/${userId}/${fileName}`); // Define the file path in storage
 
-      try {
-        // Upload the Base64 string as a file
-        await this.uploadString(storageRef, base64, 'base64', { customMetadata: metadata })
-        console.log('Photo Profile uploaded successfully!')
 
-        // Get the download URL
-        const downloadURL = await this.getDownloadURL(storageRef);
-        console.log('Download URL:', downloadURL);
-        return downloadURL
-      } catch (error) {
-        console.error('Error uploading file:', error);
-        throw error
-      }
+    try {
+      const storageRef = await this.ref(this.storage, `uploads/${userId}/${fileName}`) // Define the file path in storage
+
+      // Upload the Base64 string as a file
+      await this.uploadString(storageRef, base64, 'base64', { customMetadata: metadata })
+
+      // Creating an upload task 
+      // const byteArray = new Uint8Array(Buffer.from(base64, 'base64'))
+      // const uploadTask = uploadBytesResumable(storageRef, byteArray, { customMetadata: metadata })
+
+      // console.log('Photo Profile uploaded successfully!')
+
+      // // Just listening for progress/state changes, this is legal.
+      // uploadTask.on("state_changed", (snapshot) => {
+      //   var percent = snapshot.bytesTransferred / snapshot.totalBytes * 100
+      //   console.log(percent + "% done")
+      // })
+
+      // // This is also legal.
+      //   uploadTask.on("state_changed", {
+      //     'complete': () => {
+      //       console.log('upload complete!')
+      //     }
+      //   })
+      // Get the download URL
+      const downloadURL = await this.getDownloadURL(storageRef)
+      console.log('Download URL:', downloadURL)
+      return downloadURL
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      throw error
+    }
   }
 
   async saveFileUrlToFirestore(userId: string, fileUrl: string): Promise<void> {
     const userDocRef = this.doc('users', userId) // Reference to the user's document
 
     try {
-      await this.setDoc(userDocRef, { details: { photoURL: fileUrl } }, { merge: true });
-      console.log('File URL saved to Firestore!');
+      await this.setDoc(userDocRef, { details: { photoURL: fileUrl } }, { merge: true })
+      console.log('File URL saved to Firestore!')
     } catch (error) {
-      console.error('Error saving file URL to Firestore:', error);
-      throw error;
+      console.error('Error saving file URL to Firestore:', error)
+      throw error
     }
   }
 
@@ -257,10 +486,10 @@ export class FirestoreService {
    * @returns An observable that emits a boolean value indicating whether the user is authenticated or
    * not.
    */
-  public authState(): Observable< User | null > {
+  public authState(): Observable<User | null> {
     return runInInjectionContext(
       this._injector,
-      (): Observable<User | null > => authState(this.afAuth).pipe(map((user: User | null) => user)), // Convert User | null to boolean
+      (): Observable<User | null> => authState(this.afAuth).pipe(map((user: User | null) => user)), // Convert User | null to boolean
     )
   }
 
@@ -273,7 +502,7 @@ export class FirestoreService {
     return runInInjectionContext(
       this._injector,
       (): DocumentReference => doc(this.firestore, path, ...pathSegments),
-    );
+    )
   }
 
   /**
@@ -294,38 +523,52 @@ export class FirestoreService {
       async (): Promise<DocumentData> => {
         return await getDoc(userRef)
       },
-    );
+    )
   }
 
-  public async addDoc(collectionRef: CollectionReference, data: unknown): Promise<DocumentData> {
+  public async addDoc(collectionRef: CollectionReference, data: unknown): Promise<DocumentReference<unknown, DocumentData>> {
 
     return this.runAsyncInInjectionContext(
       this._injector,
-      async (): Promise<DocumentData> => {
+      async (): Promise<DocumentReference<unknown, DocumentData>> => {
         return await addDoc(collectionRef, data)
       },
-    );
+    )
+  }
+
+  public newDocRef(collectionRef: CollectionReference): DocumentReference {
+    return runInInjectionContext(
+      this._injector,
+      (): DocumentReference => doc(collectionRef),
+    )
   }
 
   public collection(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference {
     return runInInjectionContext(
       this._injector,
       (): CollectionReference => collection(firestore, path, ...pathSegments),
-    );
+    )
   }
 
   public query(collectionRef: CollectionReference, ...queryConstraints: QueryConstraint[]): Query<DocumentData> {
     return runInInjectionContext(
       this._injector,
       (): Query<DocumentData> => query(collectionRef, ...queryConstraints),
-    );
+    )
+  }
+
+  public where(fieldPath: string | FieldValue, opStr: any, value: any): QueryConstraint {
+    return runInInjectionContext(
+      this._injector,
+      (): QueryConstraint => where(fieldPath, opStr, value),
+    )
   }
 
   public limit(limits: number): QueryConstraint {
     return runInInjectionContext(
       this._injector,
       (): QueryConstraint => limit(limits),
-    );
+    )
   }
 
   public getDocs(q: Query<DocumentData>): Promise<QuerySnapshot<DocumentData, DocumentData>> {
@@ -334,7 +577,7 @@ export class FirestoreService {
       async (): Promise<QuerySnapshot<DocumentData, DocumentData>> => {
         return await getDocs(q)
       },
-    );
+    )
   }
 
   public async setDoc(userRef: DocumentReference<DocumentData>, data: unknown, options: SetOptions): Promise<void> {
@@ -343,7 +586,7 @@ export class FirestoreService {
       async (): Promise<void> => {
         await setDoc(userRef as DocumentReference<unknown, DocumentData>, data as Partial<unknown>, options)
       },
-    );
+    )
   }
 
   public async deleteDoc(userRef: DocumentReference<DocumentData>): Promise<void> {
@@ -352,26 +595,26 @@ export class FirestoreService {
       async (): Promise<void> => {
         await deleteDoc(userRef)
       },
-    );
+    )
   }
 
   public async ref(storage: FirebaseStorage, path: string): Promise<StorageReference> {
     return this.runAsyncInInjectionContext(
       this._injector,
       async (): Promise<StorageReference> => {
-        return ref(storage, path);
+        return ref(storage, path)
       },
     )
   }
 
-  public async uploadString(storageRef: StorageReference, data: string, 
-    format: 'raw' | 'base64' | 'base64url' | 'data_url', 
+  public async uploadString(storageRef: StorageReference, data: string,
+    format: 'raw' | 'base64' | 'base64url' | 'data_url',
     metadata?: { [key: string]: any }): Promise<void> {
 
     return this.runAsyncInInjectionContext(
       this._injector,
       async (): Promise<void> => {
-        await uploadString(storageRef, data, format, metadata);
+        await uploadString(storageRef, data, format, metadata)
       },
     )
   }
@@ -380,8 +623,15 @@ export class FirestoreService {
     return this.runAsyncInInjectionContext(
       this._injector,
       async (): Promise<string> => {
-        return await getDownloadURL(storageRef);
+        return await getDownloadURL(storageRef)
       },
+    )
+  }
+
+  public writeBatch(): WriteBatch {
+    return runInInjectionContext(
+      this._injector,
+      (): WriteBatch => writeBatch(this.firestore),
     )
   }
 
@@ -392,7 +642,7 @@ export class FirestoreService {
       async (): Promise<UserCredential> => {
         return await signInWithPopup(this.afAuth, provider, resolver)
       },
-    );
+    )
   }
 
   public async signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential> {
@@ -401,7 +651,52 @@ export class FirestoreService {
       async (): Promise<UserCredential> => {
         return await signInWithEmailAndPassword(this.afAuth, email, password)
       },
-    );
+    )
+  }
+
+  public async reauthenticateWithCredential(currentUser: User, credential: AuthCredential): Promise<UserCredential> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential> => {
+        return await reauthenticateWithCredential(currentUser, credential)
+      },
+    )
+  }
+  public async linkWithPopup(currentUser: User, provider: any, resolver?: PopupRedirectResolver): Promise<UserCredential> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential> => {
+        return await linkWithPopup(currentUser, provider, resolver)
+      },
+    )
+  }
+
+  public async linkWithCredential(currentUser: User, credential: AuthCredential): Promise<UserCredential> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential> => {
+        return await linkWithCredential(currentUser, credential)
+      },
+    )
+  }
+
+  public async updatePassword(currentUser: User, newPassword: string): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await updatePassword(currentUser, newPassword)
+      },
+    )
+  }
+
+
+  public async sendPasswordResetEmail(email: string, actactionCodeSettings?: ActionCodeSettings): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await sendPasswordResetEmail(this.afAuth, email, actactionCodeSettings)
+      },
+    )
   }
 
   public async signOut(): Promise<void> {
@@ -410,7 +705,7 @@ export class FirestoreService {
       async (): Promise<void> => {
         await this.afAuth.signOut()
       },
-    );
+    )
   }
 
   /**
@@ -427,16 +722,16 @@ export class FirestoreService {
   async runAsyncInInjectionContext<T>(injector: Injector, fn: () => Promise<T>): Promise<T> {
     return await runInInjectionContext(injector, () => {
       return new Promise((resolve, reject) => {
-        fn().then(resolve).catch(reject);
-      });
-    });
+        fn().then(resolve).catch(reject)
+      })
+    })
   }
 
 
   runOutsideAngular<T>(fn: () => T): T { // Helper function
-    return this.ngZone.runOutsideAngular(fn);
+    return this.ngZone.runOutsideAngular(fn)
   }
   runInsideAngular<T>(fn: () => T): T { // Helper function
-    return this.ngZone.run(fn);
+    return this.ngZone.run(fn)
   }
 }

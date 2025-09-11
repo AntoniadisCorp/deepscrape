@@ -298,7 +298,7 @@
   <div class="mt-28 flex"> -->
 
 <!-- Inner Section 
-  [@routeAnimation]="getAnimationData(outlet)" -->
+   -->
 <div
   [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
   class="w-full mt-20 px-4 pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2">
@@ -306,7 +306,7 @@
     [barClosed]="closeAsideBar"
     [resizeScreen]="viewSmallDevices"
     (backDropPressed)="onCloseAsideBar($event)"></app-sidebar>
-  <router-outlet #outlet="outlet"></router-outlet>
+  <router-outlet [@routeAnimation]="currentRouteAnimation" #outlet="outlet"></router-outlet>
 </div>
 @if(!compIsLoading) {
 <app-footer></app-footer>

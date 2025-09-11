@@ -2,6 +2,8 @@
 /* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 /* eslint-disable linebreak-style */
+import {geoDBManager} from "./analytics"
+const port = process.env.PORT || 4000
 /**
  * Soft Decryption Algorithm: Reverses the soft encryption process.
  * @param input - The transformed string to decrypt.
@@ -20,4 +22,60 @@ export function customUrlDecoder(input: string): string {
         .join("")
 
     return original
+}
+
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+export async function onListening() {
+    try {
+        // Open the database once when the module is loaded
+        await geoDBManager.open()
+        console.log("IP2Location database initialized successfully.")
+    } catch (error) {
+        console.error("Error initializing IP2Location database:!", error)
+    }
+    // debug('Listening on ' + bind);
+}
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+export function normalizePort(servPort: string) {
+    const port = parseInt(servPort, 10)
+
+    if (isNaN(port)) return servPort // named pipe
+
+    if (port < 0) return false
+    else return port // port number
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ * @param {any} error
+ * @returns {void}
+ */
+export function onError(error: any): void {
+    if (error.syscall !== "listen") {
+        throw error
+    }
+
+    const bind = typeof port === "string" ?
+        "Pipe " + port :
+        "Port " + port
+
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+        case "EACCES":
+            console.error(bind + " requires elevated privileges")
+            process.exit(1)
+            break
+        case "EADDRINUSE":
+            console.error(bind + " is already in use")
+            process.exit(1)
+            break
+        default:
+            throw error
+    }
 }

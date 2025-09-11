@@ -46,6 +46,8 @@ export function getErrorMessage(error: any): string {
             return 'Invalid phone number format.';
         case AuthErrorCodes.INVALID_ORIGIN:
             return 'This domain is not authorized for OAuth operations.';
+        case 'auth/no-such-provider':
+            return 'No such provider is linked to the user.';
         default:
             return errorMessage || 'An error occurred during signup.';
     }

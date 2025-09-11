@@ -1,4 +1,5 @@
-import { UserInfo } from "@angular/fire/auth"
+/* eslint-disable object-curly-spacing */
+import { UserInfo } from "firebase-functions/lib/common/providers/identity"
 
 export type Users = {
     // Firebase UID
@@ -14,13 +15,14 @@ export type Users = {
     providerData: UserInfo[]
     mfa_nabled?: boolean
     emailVerified: boolean
-    last_login_at: any // Timestamp | null
+    last_login_at: Date // Timestamp | null
     created_At: Date
     updated_At?:Date
 
     // Phone authentication fields
     phoneNumber?: string
-    phoneVerified?: boolean | null // Optional, may not be present in all user objects
+    // Optional, may not be present in all user objects
+    phoneVerified?: boolean | null
 
     // Stripe customer ID
     stripeId?: string
@@ -33,11 +35,12 @@ export type Users = {
 
     // User Authorization fields
     role?: string
-    plan?: 'free' | 'pro' | 'enterprise'
+    plan?: "free" | "pro" | "enterprise"
     isAdmin?: boolean
 
     // Profile status
     profileStatus?: ProfileStatus
+    loginMetricsId?: string
 }
 
 export type UserDetails = {
@@ -46,23 +49,23 @@ export type UserDetails = {
     engineerStatus?: string
     geo?: {
         continent: string,
-        region: string 
-    } // continent: "EU" region: "GR"
-    country?: string
+        region: string
+     } // continent: "EU" region: "GR"
     region?: string
-    location?: string
+    country?: string
     language?: string
     timezone?: string
-    latitude?: number
-    longitude?: number
     bio?: string
     website?: string
+    location?: string
+    longitude?: number
+    latitude?: number
     company?: string
     jobTitle?: string
     socialLinks?: UserSocialLinks
     last_username_change?: Date | null
     updated_At?: Date | null
-} 
+}
 
 
 export type ProfileStatus = {
@@ -127,6 +130,7 @@ export type Guest = {
   linkedAt?: Date | null
 }
 
+
 export type UserSocialLinks = {
     twitter?: string
     linkedin?: string
@@ -138,38 +142,3 @@ export type UserSocialLinks = {
     website?: string
     stackoverflow?: string
 }
-
-export interface FileMetadata {
-  uploadedBy: string;
-  uploadedAt: number;
-  lastModified: number;
-  type: string;
-  initialName: string;
-  initialSize: number;
-}
-
-export type Session = {
-    id: string
-    auth_id: string
-    username: string
-    user_id: string
-    auth_type: string
-    expires_at: Date
-    created_at: Date
-}
-
-export type Author = Pick<UserInfo, 'uid' | 'displayName'>
-
-
-
-// export type FireUser = {
-//     uid: string
-//     email: string | null
-//     displayName: string | null
-//     photoURL: string | null
-//     phoneNumber?: string | null
-//     providerId: string
-//     providerData: UserInfo[]
-//     emailVerified: boolean
-//     phoneVerified?: boolean // Optional, may not be present in all user objects
-// }

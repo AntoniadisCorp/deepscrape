@@ -1,7 +1,7 @@
 import { CrawlOperationStatus } from "../enum"
 import { convertKeysToSnakeCase } from "../functions"
+import { Author } from "./firestore.interface"
 import { AIModel } from "./global.interface"
-import { Author } from "./user.interface"
 
 export interface BrowserConfig {
     /**

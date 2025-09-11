@@ -30,7 +30,8 @@ export const MainRoutes: Routes = [
         path: 'resetpassword',
         loadComponent: () => import('../../pages').then(m => m.ResetPasswordComponent),
         data: {
-            title: 'resetpassword'
+            title: 'resetpassword',
+            animation: 'resetpassword'
         },
         canActivate: [LoginGuard],
     },
@@ -38,7 +39,8 @@ export const MainRoutes: Routes = [
         path: 'verification',
         loadComponent: () => import('../../pages').then(m => m.VerifyEmailComponent),
         data: {
-            title: 'verification'
+            title: 'verification',
+            animation: 'verification'
         },
         canActivate: [verifyGuard],
     }

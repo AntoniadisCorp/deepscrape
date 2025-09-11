@@ -5,6 +5,7 @@
   class="mt-4 flex flex-col"
   [formGroup]="profileForm"
   (ngSubmit)="saveProfile()">
+  
   <div class="flex w-full flex-col gap-4">
     <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
       Profile Picture
@@ -26,7 +27,7 @@
           for="image"
           class="flex h-40 w-full flex-auto cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray5 dark:hover:border-gray-500 dark:hover:bg-gray6 relative"
           [ngClass]="{ 'border-blue-500 ring-2 ring-blue-200': isDragging }">
-          @if(!isLoadingFile && !selectedFile && !previewUrl) {
+          @if(!isLoadingFile && !selectedFile && !previewUrl?.value) {
           <div class="flex w-24 flex-col items-center justify-center pt-5">
             <svg
               class="mb-4 h-8 w-8 text-gray-500 dark:text-gray-400"
@@ -42,14 +43,15 @@
                 d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
             </svg>
           </div>
-          } @if (previewUrl && !selectedFile &&
+          } 
+          @if (previewUrl?.value && !selectedFile &&
           profileForm.get('photoFile')?.value) {
 
           <div
             class="flex h-full max-w-[11rem] flex-col items-center justify-center">
             <img
               [srcset]="
-                previewUrl.toString() ||
+                previewUrl?.value.toString() ||
                 (user | provider : user?.providerId || '' : 'photoFile')
               "
               [name]="user | provider : user?.providerId || '' : 'displayName'"
@@ -59,7 +61,7 @@
           }
 
           <div
-            *ngIf="selectedFile && previewUrl"
+            *ngIf="selectedFile && previewUrl?.value"
             class="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
             <div
               class="absolute top-2 left-2 z-10 rounded-md bg-gray-900/60 px-2 py-1 text-xs font-medium text-white">
@@ -81,10 +83,7 @@
                   clip-rule="evenodd" />
               </svg>
             </button>
-            <img
-              [src]="previewUrl"
-              alt="Preview"
-              class="absolute inset-0 h-full w-full rounded-lg object-cover" />
+            <app-preview-image formControlName="previewUrl"></app-preview-image>
           </div>
           <!-- *ngIf="!selectedFile" -->
           <div
@@ -100,10 +99,10 @@
           </div>
 
           <input
+            #image
             class="hidden"
             id="image"
             type="file"
-            #image
             (change)="onFileSelected($event)"
             accept="image/jpeg, image/png, image/gif, image/svg+xml, image/webp" />
         </label>

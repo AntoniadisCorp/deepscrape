@@ -60,6 +60,7 @@ export class AppUserLayoutComponent {
   /* animations */
   viewSmallDevices: boolean
   isThemeDark: boolean = false; // New property
+  currentRouteAnimation: string | undefined; // Property to hold animation state
 
   constructor(
 
@@ -78,6 +79,13 @@ export class AppUserLayoutComponent {
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
       if (event instanceof NavigationEnd) {
         setTimeout(() => { this.compIsLoading = false; }, 1000)
+        // Update the animation state when navigation ends
+        const outlet = this.contexts.getContext('primary')?.outlet;
+        if (outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']) {
+          this.currentRouteAnimation = outlet.activatedRouteData['animation'];
+        } else {
+          this.currentRouteAnimation = undefined;
+        }
       }
     })
 
@@ -235,8 +243,8 @@ export class AppUserLayoutComponent {
   }
 
   getAnimationData(outlet: RouterOutlet) {
-    return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
-    // return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
+    // return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
+    return this.currentRouteAnimation;
   }
 
   // Removed themeIsDark() method

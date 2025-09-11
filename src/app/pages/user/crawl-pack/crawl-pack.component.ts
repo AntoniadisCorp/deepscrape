@@ -3,6 +3,7 @@ import { Component, HostBinding } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
+import { fadeInOutAnimation, smoothfadeAnimation } from 'src/app/animations';
 import { AppTabsComponent } from 'src/app/core/components';
 import { LinkTabs } from 'src/app/core/types';
 
@@ -10,7 +11,8 @@ import { LinkTabs } from 'src/app/core/types';
     selector: 'app-crawl-pack',
     imports: [RouterOutlet, AppTabsComponent],
     templateUrl: './crawl-pack.component.html',
-    styleUrl: './crawl-pack.component.scss'
+    styleUrl: './crawl-pack.component.scss',
+    animations: [ smoothfadeAnimation]
 })
 export class CrawlPackComponent {
 
@@ -69,6 +71,11 @@ export class CrawlPackComponent {
         }
       })
     })
+  }
+
+  // Helper method to get the animation data from the router outlet
+  getRouteAnimationData(outlet: RouterOutlet) {
+    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation'];
   }
 
   ngOnDestroy(): void {

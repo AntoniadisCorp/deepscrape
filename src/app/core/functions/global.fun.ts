@@ -226,3 +226,42 @@ export function extractNames(displayName: string): { firstname: string; lastname
 
   return { firstname: firstname || '', lastname: lastname || '' };
 }
+
+
+ /**
+   * @function: checkPasswordStrength
+   * @description Checks password strength
+   * @param password 
+   * @returns password strength 
+   */
+export function checkPasswordStrength(password: string) {
+
+    const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasNonAlphas = /\W/.test(password)
+
+        // has characters that not permitted
+        const hasForbiddenCharacters = /[^\w\s@$!%*?&]/.test(password)
+
+        return (
+            password.length < minLength ? "Risky. Password needs to be at least 8 characters long" :
+                !hasLowerCase ? "Risky. Password needs at least one lowercase letter" :
+                    !hasUpperCase ? "Risky. Password needs at least one uppercase letter" :
+                        !hasNumbers ? "Risky. Password needs at least one number" :
+                            !hasNonAlphas ? "Risky. Password needs at least one special character" :
+                                hasForbiddenCharacters ? "Risky. Dont use characters that are not permitted.." : "Strong as it gets"
+        )
+}
+
+export async function getBrowser(navigator: any) {
+
+return (navigator as any).brave && (navigator as any).brave.isBrave && 
+        (await (navigator as any).brave.isBrave()) ? 'brave' : 
+          navigator.userAgent.match(/chrome|chromium|crios/i) ? 'chrome' : 
+            navigator.userAgent.match(/firefox|fxios/i) ? 'firefox' : 
+              navigator.userAgent.match(/safari/i) ? 'safari' : navigator.userAgent.match(/opr\//i) ? 
+                'opera' : navigator.userAgent.match(/edg/i) ? 'edge' : 
+                  'other'
+}

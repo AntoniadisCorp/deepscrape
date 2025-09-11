@@ -1,13 +1,13 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, forwardRef, inject } from '@angular/core'
 import { CommonModule, DatePipe, JsonPipe, NgClass, NgIf } from '@angular/common'
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
-import { FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services'
-import { DropdownComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
+import { FormControl, FormGroup, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators } from '@angular/forms'
+import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services'
+import { DropdownComponent, PreviewImageComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
 import { FormControlPipe, ProviderPipe } from 'src/app/core/pipes'
 import { MatProgressBarModule } from '@angular/material/progress-bar'
 import { ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core'
 import { extractNames, fileToBase64, formatBytes } from 'src/app/core/functions'
-import { DropDownOption, ProfileStatus, UserDetails, Users, UserSocialLinks } from 'src/app/core/types'
+import { DropDownOption, FileMetadata, ProfileStatus, UserDetails, Users, UserSocialLinks } from 'src/app/core/types'
 import { UserInfo } from '@angular/fire/auth'
 import { ActivatedRoute } from '@angular/router'
 import { ImageSrcsetDirective, RippleDirective } from 'src/app/core/directives'
@@ -21,7 +21,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
   selector: 'app-profile-tab',
   imports: [StinputComponent, FormControlPipe, DatePipe,
     NgIf, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective,
-     ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule
+     ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent
     ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
@@ -32,13 +32,12 @@ export class ProfileTabComponent {
   private localStorage = inject(LocalStorage)
   private cdRef = inject(ChangeDetectorRef)
   private firestore = inject(FirestoreService)
-
+  private authService = inject(AuthService)
   private snackbarService = inject(SnackbarService)
   profileForm: FormGroup
 
   protected user: Users & { currProviderData: UserInfo | null } | null = null
   selectedFile: File | null = null
-  previewUrl: string | ArrayBuffer | null = null
   isDragging = false
   isLoadingFile = false
   fileError: string | null = null
@@ -46,14 +45,19 @@ export class ProfileTabComponent {
 
   isSaving: boolean = false
 
-  @ViewChild('image', { static: false }) imageInput: ElementRef
+  engineerStatuses: DropDownOption[] = []
+  @ViewChild('image', { static: true }) imageInput: ElementRef
 
   constructor(private route: ActivatedRoute) {
     this.user = this.route.snapshot.data['user']
     console.log('Resolved user data:', this.user)
   }
 
-  engineerStatuses: DropDownOption[] = []
+
+  get previewUrl() {
+    return this.profileForm.get('previewUrl')
+  }
+
 
   validateFile(file: File): boolean {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
@@ -71,7 +75,6 @@ export class ProfileTabComponent {
     return true
   }
 
-
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
@@ -79,34 +82,6 @@ export class ProfileTabComponent {
     this.initPhotoPreview()
   }
 
-  onFileSelected(event: any) {
-    this.fileError = null
-    if (!event.target.files || event.target.files.length === 0) {
-      console.log('No file selected')
-      return
-    }
-
-    const file = event.target.files[0]
-    if (!this.validateFile(file)) {
-      this.selectedFile = null
-      this.previewUrl = null
-      this.fileSize = null
-      return
-    }
-
-    this.selectedFile = file
-    this.fileSize = formatBytes(file.size)
-    this.isLoadingFile = true
-
-     // Update the form control value and mark it as dirty
-    const photoFileControl = this.profileForm.controls['photoFile']
-    photoFileControl.setValue(this.selectedFile)
-    photoFileControl.markAsDirty() // Mark the control as dirty
-    photoFileControl.markAsTouched() // Optionally mark it as touched
-
-    this.previewFile()
-    this.cdRef.detectChanges()
-  }
 
 
   initProfileForm() {
@@ -127,7 +102,12 @@ export class ProfileTabComponent {
         Validators.minLength(4),
         ]
       }),
-      photoFile: new FormControl<File | null>(new File([], 'myfile'), {
+      photoFile: new FormControl<File | null>(null, {
+        updateOn: 'change',
+        validators: [],
+        nonNullable: false
+      }),
+      previewUrl: new FormControl<string | ArrayBuffer | null>('', {
         updateOn: 'change',
         validators: [],
         nonNullable: false
@@ -203,10 +183,10 @@ export class ProfileTabComponent {
     if (!this.user?.providerId)
       return
   
-   this.previewUrl = this.user?.details?.photoURL || this.user?.currProviderData?.photoURL || null
+    this.previewUrl?.setValue(this.user?.details?.photoURL || this.user?.currProviderData?.photoURL || null, { emitEvent: false })
   //  set a default File object to trigger the preview display
   if (this.previewUrl)
-    this.profileForm.controls['photoFile'].setValue(new File([], 'profile-pic'), { emitEvent: false }) 
+    this.profileForm.controls['photoFile'].patchValue(new File([], 'profile-pic'), { emitEvent: false }) 
   }
 
   patchProfileForm() {
@@ -255,7 +235,7 @@ export class ProfileTabComponent {
       // get form values
       const config = this.profileForm.getRawValue()
       const newConfig = { ...config }; // Create a copy of the config object
-      // delete newConfig.title; // Remove the 'title' attribute from the config object
+      delete newConfig?.previewUrl; // Remove the 'previewUrl' attribute from the config object
   
   
       // Filter out null, unchanged, or default values
@@ -292,7 +272,7 @@ export class ProfileTabComponent {
 
     // 2. Handle file upload if a new file is selected and get the photoURL
     const detailsUpdate: Partial<UserDetails> | null = await this.saveImageAndGetFormData()
-
+    
     if (!detailsUpdate) {
       this.isSaving = false
       this.cdRef.detectChanges() // Trigger change detection manually
@@ -323,7 +303,7 @@ export class ProfileTabComponent {
       takeUntilDestroyed(this.destroryRef)
     ).subscribe({
       next: () => {
-        console.log('Profile updated successfully')
+        // console.log('Profile updated successfully')
         // Reset form state after successful save
         this.profileForm.markAsPristine()
         this.profileForm.markAsUntouched()
@@ -331,10 +311,10 @@ export class ProfileTabComponent {
         
         
         // Optionally, you can also reset the selected file and preview URL as upload is done
-        this.previewUrl =  detailsUpdate.photoURL || this.user?.currProviderData?.photoURL || null
+        this.previewUrl?.setValue(detailsUpdate.photoURL || this.user?.currProviderData?.photoURL || null, { emitEvent: false })
 
         //  set a default File object to trigger the preview display
-        if (this.previewUrl)
+        if (this.previewUrl?.value)
           this.profileForm.controls['photoFile'].setValue(new File([], 'profile-pic'), { emitEvent: false }) 
 
         this.selectedFile = null
@@ -348,7 +328,7 @@ export class ProfileTabComponent {
         this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
         this.cdRef.detectChanges() // Ensure the view is updated
       },
-      complete: () => {
+      complete: async () => {
         this.isSaving = false
         this.showSnackbar('Profile updated successfully', SnackBarType.success, '', 3000)
         this.cdRef.detectChanges() // Ensure the view is updated
@@ -360,8 +340,13 @@ export class ProfileTabComponent {
 
      // 1. Handle file upload if a new file is selected
     const {photoFile} = this.getAndFilterConfirmForm()
+    const userId = this.user?.uid || ''
+    if (!userId) {
+      console.error('User ID is missing. Cannot upload profile picture.')
+      return null
+    }
 
-    //  
+    //  { photoFile: File, previewUrl: string | ArrayBuffer }
     let detailsUpdate: Partial<UserDetails & { photoFile: File }> = {... this.getAndFilterConfirmForm() as Partial<UserDetails & { photoFile: File }>}
     delete detailsUpdate.photoFile// we handle photoFile separately
 
@@ -373,18 +358,18 @@ export class ProfileTabComponent {
 
         // upload to firebase storage
         const markDate = Date.now()
-        const fileName = `${photoFile.name.split('.').shift()}-${markDate}.${photoFile.type.split('/')[1]}`
-        const metadata = { 
+        const fileName = `${photoFile.name.split('.').shift()}.${photoFile.type.split('/')[1]}`
+        const metadata: FileMetadata = {
+            uploadedBy: userId,
+            uploadedAt: markDate,
             lastModified: photoFile.lastModified, 
-            type: photoFile.type, 
-            initial_name: photoFile.name, 
-            uid: this.user?.uid || '',
-            initial_size: photoFile.size,
-            uploaded_At: markDate
+            type: photoFile.type,
+            initialName: photoFile.name, 
+            initialSize: photoFile.size,
           }
 
 
-        const downloadURL = await this.firestore.uploadFileToStorage(detailsUpdate.photoURL, this.user?.uid || '',
+        const downloadURL = await this.firestore.uploadFileToStorage(detailsUpdate.photoURL, userId,
            fileName, metadata)
 
         detailsUpdate.photoURL = downloadURL
@@ -401,21 +386,26 @@ export class ProfileTabComponent {
   }
 
   previewFile() {
-    if (this.selectedFile) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        this.previewUrl = e.target?.result as string
-        this.isLoadingFile = false
-      }
-      reader.onerror = (error) => {
-        console.error('Error reading file:', error)
-        this.fileError = 'There was an error reading the file.'
-      }
-      this.isLoadingFile = true
-      reader.readAsDataURL(this.selectedFile)
-    
-      this.cdRef.detectChanges() // <-- Force view update after async file read
-    }
+    if (!this.selectedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.previewUrl?.setValue(reader.result as string, { emitEvent: true })
+      this.isLoadingFile = false
+      this.cdRef.markForCheck()
+      this.cdRef.detectChanges()
+    };
+    reader.onerror = () => {
+      console.error('Error reading file.');
+      this.fileError = 'There was an error reading the file.';
+      this.isLoadingFile = false
+      this.cdRef.markForCheck()
+      this.cdRef.detectChanges()
+    };
+
+    this.isLoadingFile = true;
+    reader.readAsDataURL(this.selectedFile)
+    this.cdRef.detectChanges()
   }
 
   onEngineerStatusChange(option: Event) {
@@ -424,31 +414,29 @@ export class ProfileTabComponent {
     controls.markAsTouched()
   }
 
+
   onDragOver(event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
     this.isDragging = true
-    this.cdRef.detectChanges()
   }
 
   onDragLeave(event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
     this.isDragging = false
-    this.cdRef.detectChanges()
   }
 
-  onDrop(event: DragEvent) {
+  async onDrop(event: DragEvent) {
     event.preventDefault()
     event.stopPropagation()
     this.isDragging = false
-
     const files = event.dataTransfer?.files
     if (files && files.length > 0) {
       const file = files[0]
       if (!this.validateFile(file)) {
         this.selectedFile = null
-        this.previewUrl = null
+        this.previewUrl?.reset()
         this.fileSize = null
         return
       }
@@ -461,15 +449,55 @@ export class ProfileTabComponent {
       photoFileControl.setValue(this.selectedFile)
       photoFileControl.markAsDirty() // Mark the control as dirty
       photoFileControl.markAsTouched() // Optionally mark it as touched
+      photoFileControl.updateValueAndValidity()
+      // this.imageInput.nativeElement.blur() // Remove focus from the input element
       
       this.previewFile()
     }
-    this.cdRef.detectChanges()
+  }
+
+  onPreviewChange(event: any) {
+    // event.preventDefault()
+    // event.stopPropagation()
+    console.log('Preview change event:', event)
+  }
+
+    onFileSelected(event: any) {
+    this.fileError = null
+    const input = event.target as HTMLInputElement
+
+    // console.log('File input event:', event, input)
+
+    if (!input.files || input.files.length === 0) {
+      console.log('No file selected')
+      return
+    }
+
+    const file = input.files[0]
+    if (!this.validateFile(file)) {
+      this.selectedFile = null
+      this.previewUrl?.reset()
+      this.fileSize = null
+      return
+    }
+
+    this.selectedFile = file
+    this.fileSize = formatBytes(file.size)
+    this.isLoadingFile = true
+     // Update the form control value and mark it as dirty
+    const photoFileControl = this.profileForm.controls['photoFile']
+    photoFileControl.setValue(this.selectedFile)
+    photoFileControl.markAsDirty() // Mark the control as dirty
+    photoFileControl.markAsTouched() // Optionally mark it as touched
+    photoFileControl.updateValueAndValidity()
+    // input.blur() // Remove focus from the input element alue = await this.selectedFile.bytes()
+
+    this.previewFile()
   }
 
   removeImage() {
     this.selectedFile = null
-    this.previewUrl = null
+    this.previewUrl?.reset()
     this.profileForm.controls['photoFile'].setValue(null, { emitEvent: true })
     if (this.imageInput) {
       this.imageInput.nativeElement.value = ''

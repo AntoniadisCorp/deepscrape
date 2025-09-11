@@ -4,8 +4,8 @@ export const DEFAULT_PROFILE_URL = 'https://cdn.pixabay.com/photo/2015/10/05/22/
 export const ACCOUNT_DATA_TABS: GlobalTabs[] = [
     // inventory tabs
     { svg: '', icon: 'user-round', color: "gray", name: 'Profile', id: 'profile' },
-    { svg: '', icon: 'settings', color: "black", name: 'General', id: 'general' },
+    // { svg: '', icon: 'settings', color: "black", name: 'General', id: 'general' },
     { svg: '', icon: 'fingerprint', color: "pink", name: 'Security', id: 'security' },
-    { svg: '', icon: 'piggy-bank', color: "sky", name: 'Payments', id: 'payment' },
+    // { svg: '', icon: 'piggy-bank', color: "sky", name: 'Payments', id: 'payment' },
     { svg: '', icon: 'key-round', color: "green", name: 'API Keys', id: 'keys' },
 ]

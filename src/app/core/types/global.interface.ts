@@ -10,10 +10,12 @@ export type GlobalTabs = {
 export type Loading = {
     google: boolean
     github: boolean
-    email: boolean
+    email: boolean,
+    password: boolean,
     logout: boolean
     phone: boolean
-    code: boolean
+    code: boolean,
+    mfa: boolean,
 }
 
 export type DropDownOption = {

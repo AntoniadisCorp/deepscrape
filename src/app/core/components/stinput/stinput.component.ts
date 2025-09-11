@@ -34,6 +34,7 @@ export class StinputComponent {
   @Input() svgIcon?: string = ''
 
 
+
   @ViewChild('stInput', { static: true }) stInput: ElementRef<HTMLInputElement> = {} as ElementRef;
   constructor() { }
 
