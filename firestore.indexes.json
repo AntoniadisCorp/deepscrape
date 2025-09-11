@@ -26,11 +26,6 @@
         { "fieldPath": "config.guest.memory_mb", "mode": "DESCENDING" },
         { "fieldPath": "config.guest.cpu_kind", "mode": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "login_history_Info",
-      "queryScope": "COLLECTION",
-      "fields": [{ "fieldPath": "sessionKey", "mode": "ASCENDING" }]
     }
   ],
   "fieldOverrides": []
