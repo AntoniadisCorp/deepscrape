@@ -8,6 +8,8 @@ import chalk from 'chalk'
 import { SyncAIapis } from 'api'
 import { apiLimiter, limiter } from 'api/handlers'
 import { fileURLToPath } from 'node:url'
+import bootstrap from 'src/main.server'
+import { APP_BASE_HREF } from '@angular/common'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -22,7 +24,7 @@ function serveapp(): express.Application {
   const AI: SyncAIapis = new SyncAIapis()
 
   const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
-  const serverDistFolder = serverDistFolderD // resolve(process.cwd(), 'dist/deepscrape/server')
+  const serverDistFolder =  resolve(process.cwd(), 'dist/deepscrape/server') // serverDistFolderD //
   const browserDistFolder = resolve(process.cwd(), 'dist/deepscrape/browser')
 
   const indexHtml = join(serverDistFolder, 'index.server.html')
@@ -35,7 +37,7 @@ function serveapp(): express.Application {
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
-  server.set('trust proxy', true)
+  server.set('trust proxy', false)
 
   server.use(express.urlencoded({ limit: '3mb', extended: false }))
   server.use(express.json({ limit: '3mb' })) // To pars
@@ -119,10 +121,12 @@ function serveapp(): express.Application {
 }
 
 
+// Start up the Node server
+  const server = serveapp()
+
 function run(): void {
   const host = process.env['HOST'] || 'localhost'
-  // Start up the Node server
-  const server = serveapp()
+
   if (isMainModule(import.meta.url)) {
     const port = process.env['PORT'] || 4000
     server.listen(port, () => {
@@ -140,10 +144,10 @@ function run(): void {
 let reqHandler: express.Application
 
 // if (process.env['PRODUCTION'] === 'false') {
-  
+  run()
 // } 
-run()
-reqHandler = createNodeRequestHandler(serveapp())
+
+reqHandler = createNodeRequestHandler(server)
 
 console.log(chalk.blue('Environment:'), process.env['PRODUCTION'] === 'true' ? chalk.green('Production') : chalk.red('Development'))
 export { reqHandler }
