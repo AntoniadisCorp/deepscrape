@@ -433,8 +433,14 @@ class MachinesHandler {
         const machineId: string = req.params.machineId
         const force: boolean = req.query.force === "true"
         res.type("application/json")
+        // Add same validation as stopMachine
+        const validIdPattern = /^[a-zA-Z0-9\-]+$/; // Should be defined/updated as needed
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
+            return
+        }
+        if (!validIdPattern.test(machineId)) {
+            res.status(400).json({ error: "Invalid machineId format" })
             return
         }
 
