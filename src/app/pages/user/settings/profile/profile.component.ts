@@ -225,7 +225,7 @@ export class ProfileTabComponent {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-      usernameControl?.[this.user.details.last_username_change > sixMonthsAgo ? 'enable' : 'disable']({ emitEvent: false });
+      usernameControl?.[this.user.details.last_username_change > sixMonthsAgo ? 'disable' : 'enable']({ emitEvent: false });
     } else {
       usernameControl?.disable({ emitEvent: false });
     }
