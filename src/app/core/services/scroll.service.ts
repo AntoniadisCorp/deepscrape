@@ -259,17 +259,17 @@ export class ScrollService implements OnDestroy {
   }
 
    /**
-   * Adds the 'scrollbar-hidden' class to the body element.
+   * Adds the 'scrollbar-none' class to the body element.
    */
   hideScroll() {
-    this.renderer.addClass(this.document.body, 'scrollbar-hidden');
+    this.renderer.addClass(this.document.body, 'scrollbar-none');
   }
 
   /**
-   * Removes the 'scrollbar-hidden' class from the body element.
+   * Removes the 'scrollbar-none' class from the body element.
    */
   showScroll() {
-    this.renderer.removeClass(this.document.body, 'scrollbar-hidden');
+    this.renderer.removeClass(this.document.body, 'scrollbar-none');
   }
 
 }

@@ -94,11 +94,7 @@
   } @else {
   <div class="mt-0 h-[20px] px-2 text-sm text-green-400" role="alert">
     {{
-      control.valid && control.touched && invalidCount > 0
-        ? errorLabel
-          ? errorLabel
-          : 'Valid'
-        : ''
+      control.valid && control.touched && invalidCount > 0? errorLabel ? errorLabel : '' : ''
     }}
   </div>
   }

@@ -24,13 +24,20 @@
     @include scrollbar;
 }
 
-.scrollbar-hidden {
+.scrollbar-none {
     overflow: hidden;
     height: 100vh; /* Optional: Prevents content shift */
     touch-action: none; /* Disables touch scrolling */
     -ms-overflow-style: none; /* Hide scrollbar in IE and Edge */
     scrollbar-width: none; /* Hide scrollbar in Firefox */
     @include scrollbar;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.scrollbar-hidden {
+@include scrollbar;
     &::-webkit-scrollbar {
         display: none;
     }

@@ -66,7 +66,7 @@ export class SizeDetectorComponent implements AfterViewInit {
     private resizeSvc: ScreenResizeService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    this.isBrowser = isPlatformBrowser(this.platformId);
+    this.isBrowser = isPlatformBrowser(this.platformId)
   }
 
   ngAfterViewInit() {
