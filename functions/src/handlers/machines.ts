@@ -272,8 +272,14 @@ class MachinesHandler {
     async startMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
         res.type("application/json")
+        // Only allow machine IDs that are alphanumeric, dash or underscore (adjust pattern as needed)
+        const SAFE_MACHINE_ID_REGEX = /^[a-zA-Z0-9_-]+$/
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
+            return
+        }
+        if (!SAFE_MACHINE_ID_REGEX.test(machineId)) {
+            res.status(400).json({ error: "Invalid parameter: machineId" })
             return
         }
 
