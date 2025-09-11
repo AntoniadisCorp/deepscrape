@@ -321,8 +321,14 @@ class MachinesHandler {
     async suspendMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
         res.type("application/json")
+        // Only allow UUID-like or alphanumeric-dash-underscore ids (adapt as needed)
+        const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
+            return
+        }
+        if (!validIdPattern.test(machineId)) {
+            res.status(400).json({ error: "Invalid machineId format" })
             return
         }
 
@@ -364,10 +370,16 @@ class MachinesHandler {
             res.status(500).json({ error: "Failed to destroy machine. Please try again later.", message: details })
         }
     }
+        // Only allow UUID-like or alphanumeric-dash-underscore ids (adapt as needed)
+        const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
 
     async stopMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
         res.type("application/json")
+        if (!validIdPattern.test(machineId)) {
+            res.status(400).json({ error: "Invalid machineId format" })
+            return
+        }
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
