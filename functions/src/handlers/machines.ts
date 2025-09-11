@@ -211,6 +211,11 @@ class MachinesHandler {
 
     async waitForState(req: Request, res: Response, next: NextFunction) {
         const { machineId } = req.params
+        // Validate machineId: allow only alphanumeric, dash, and underscore (change regex as needed for your IDs)
+        if (!machineId || !/^[a-zA-Z0-9_-]+$/.test(machineId)) {
+            res.status(400).json({ error: "Invalid machineId format." });
+            return;
+        }
         // eslint-disable-next-line camelcase
         const { instance_id, state, timeout } = req.query
         res.type("application/json")
