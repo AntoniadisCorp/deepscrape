@@ -39,7 +39,7 @@
     "@angular/pwa": "^19.2.6",
     "@angular/router": "^19.2.5",
     "@angular/service-worker": "^19.2.5",
-    "@angular/ssr": "^19.2.6",
+    "@angular/ssr": "^19.2.16",
     "@dhutaryan/ngx-mat-timepicker": "^19.1.0",
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/node": "^1.2.6",
