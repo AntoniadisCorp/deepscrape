@@ -1,3 +1,25 @@
+# [0.3.0](https://github.com/AntoniadisCorp/deepscrape/compare/v0.2.0...v0.3.0) (2025-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update semantic-release and related packages to latest versions ([c45642b](https://github.com/AntoniadisCorp/deepscrape/commit/c45642b47caeaced9d3ead154be72fbd04c107f6))
+* **machines:** enhance machineId validation and error handling ([1ce1bfd](https://github.com/AntoniadisCorp/deepscrape/commit/1ce1bfd2ca0a8874c098bfde41fd47639bfd5695))
+* **package-lock:** fix version from v0.2.0-beta.2 to 0.2.0 ([3f351e9](https://github.com/AntoniadisCorp/deepscrape/commit/3f351e954152c7c2a808e676815a4d52f2085a8f))
+* refactor Firebase configuration to use environment variables and improve secret management ([f60979c](https://github.com/AntoniadisCorp/deepscrape/commit/f60979c772181a5d3aa6b5a2da749134167492a5))
+* **ui:** improve snackbar, buttons, scrollbar, and mixins ([4f563a1](https://github.com/AntoniadisCorp/deepscrape/commit/4f563a1b0d48ac8e0149d2fdd7140f5c1425e82f))
+* update Angular SSR version and add loading bar dependencies ([c1d891a](https://github.com/AntoniadisCorp/deepscrape/commit/c1d891ae5d45a356b3815aa5ee42057825e406be))
+* **workflow:** add npm cache directory setup and caching step ([77c066f](https://github.com/AntoniadisCorp/deepscrape/commit/77c066f7b997a9997a636855f5eb32315df2a88a))
+* **workflow:** update dependency installation step to include npm install ([d8dc578](https://github.com/AntoniadisCorp/deepscrape/commit/d8dc5781e0042b683a1eeaa9ed82ba9b4e8cfb23))
+
+
+### Features
+
+* **account:** enhance security settings, user experience, user analytics, and icons ([f3709d0](https://github.com/AntoniadisCorp/deepscrape/commit/f3709d0af52c6bee97eb2af52527fb1faa635acc))
+* **account:** implement user settings page with multiple tabs ([84c1731](https://github.com/AntoniadisCorp/deepscrape/commit/84c173181f7d9a559de93582d36ae9ca0b9b0c44))
+* **account:** improve login session deduplication and device tracking ([9fe62c3](https://github.com/AntoniadisCorp/deepscrape/commit/9fe62c31f45d1299d45dbc856ba0ef9d47420b76))
+* **api:** implement AuthAPIProxy and SyncAI API Proxy ([7143ee8](https://github.com/AntoniadisCorp/deepscrape/commit/7143ee8319b1d538d15adb78b99bee26d783d657))
+
 # [0.3.0-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.2.0...v0.3.0-beta.1) (2025-09-11)
 
 
