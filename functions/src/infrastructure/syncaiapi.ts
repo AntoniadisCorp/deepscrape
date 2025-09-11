@@ -7,10 +7,16 @@
 import { NextFunction, Request, Response, Router } from "express"
 import {
     anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl,
-    helloWorld, arachnefly,
+    arachnefly,
 } from "../handlers"
 import { auth } from "../app/config"
+import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier"
 
+declare module "express-serve-static-core" {
+    interface Request {
+        user?: DecodedIdToken
+    }
+}
 
 class ReverseAPIProxy {
     public router: Router
@@ -38,6 +44,7 @@ class ReverseAPIProxy {
         try {
             const decodedToken = await auth.verifyIdToken(token)
             if (decodedToken) {
+                req.user = decodedToken
                 req.app.locals["user"] = token // Add user info to the request
                 next()
             } else {
@@ -57,7 +64,7 @@ class ReverseAPIProxy {
 
     private httpRoutesGets(): void {
         /* Jina AI */
-        this.router.get("/jina", helloWorld)
+        // this.router.get("/jina", helloWorld)
         this.router.get("/jina/:url", jinaAICrawl)
 
         /**

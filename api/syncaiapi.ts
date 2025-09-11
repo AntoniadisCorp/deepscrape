@@ -5,6 +5,12 @@ import {
 } from "./handlers"
 // import { auth } from "./security"
 
+import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier"
+declare module "express-serve-static-core" {
+    interface Request {
+        user?: DecodedIdToken
+    }
+}
 
 class SyncAIapis {
 
@@ -34,6 +40,7 @@ class SyncAIapis {
         try {
             const decodedToken = /* await auth.verifyIdToken(token)//  || */ "decodedToken"
             if (decodedToken) {
+                // req.user = decodedToken
                 req.app.locals["user"] = token; // Add user info to the request
                 next()
             } else {
