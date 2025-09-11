@@ -12,7 +12,7 @@ export type Users = {
     providerParent: string
     providerId: string
     providerData: UserInfo[]
-    mfa_nabled?: boolean
+    mfa_enabled?: boolean
     emailVerified: boolean
     last_login_at: any // Timestamp | null
     created_At: Date
@@ -101,6 +101,7 @@ export type loginHistoryInfo = {
     deviceType?: string // Optional field to store the type of device used
     guestId?: string // Optional field to store geolocation data
     signOutTime?: Date // Optional field to store sign out time
+    sessionKey?: string // Optional field to link to a session
 }
 
 export type Guest = {

@@ -53,6 +53,12 @@ export function getErrorMessage(error: any): string {
     }
 }
 
+// Utility to create a compound session key
+export function createSessionKey(ip: string, deviceType: string, providerId: string, browser: string, os: string, location: string): string {
+  return `${ip}|${location}|${deviceType}|${os}|${browser}|${providerId}`
+}
+
+
 
 /* Firestore Crawl Operation */
 export async function storeCrawlOperation(userId: string, operationData: any, firestore: Firestore): Promise<boolean> {

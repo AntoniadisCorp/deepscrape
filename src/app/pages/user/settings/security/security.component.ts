@@ -113,7 +113,7 @@ export class SecurityTabComponent {
           // forbiddenNameValidator(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/i)
         ]
       }),
-      mfa: this.fb.control<boolean>(this.user?.mfa_nabled ?? false, {
+      mfa: this.fb.control<boolean>(this.user?.mfa_enabled ?? false, {
         updateOn: 'change', //default will be change
         validators: [
           Validators.required,

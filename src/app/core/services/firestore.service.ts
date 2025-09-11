@@ -18,6 +18,7 @@ import {
   connectStorageEmulator, FirebaseStorage, getDownloadURL, getStorage, ref, Storage, StorageReference, uploadString,
   fromTask, uploadBytesResumable, TaskEvent
 } from '@angular/fire/storage'
+import { createSessionKey } from '../functions'
 
 @Injectable({
   providedIn: 'root'
@@ -211,19 +212,29 @@ export class FirestoreService {
         }
       }
 
+      // Prepare login history entry
+      const ip = guestInfo?.ip.raw || ipAddress;
+      const currentLocation = guestInfo?.location || location || 'Unknown'
+      const currentBrowser = browser || guestInfo?.browser
+      const currentOS = guestInfo?.os || 'Unknown'
+      const currDeviceType = deviceType || guestInfo?.device || 'Unknown'
+      const currUserAgent = userAgent || guestInfo?.userAgent || 'Unknown'
+      const sessionKey = createSessionKey(ip, currDeviceType, providerId, currentBrowser, currentOS, currentLocation)
+
       const loginHistoryEntry: loginHistoryInfo = {
         uid: userId,
         providerId, // The provider used to sign in
         connection,
         connected: true,
         timestamp: new Date(),
-        ipAddress: guestInfo?.ip.raw || ipAddress,
+        ipAddress: ip,
         // we give priority to the passed userAgent param from the client(browser) over the guestInfo userAgent
-        os: guestInfo?.os || 'Unknown',
-        browser: browser || guestInfo?.browser,
-        userAgent: userAgent || guestInfo?.userAgent || 'Unknown',
-        location: guestInfo?.location || location || 'Unknown',
-        deviceType: deviceType || guestInfo?.device || 'Unknown',
+        os: currentOS,
+        browser: currentBrowser,
+        userAgent: currUserAgent,
+        location: currentLocation,
+        deviceType: currDeviceType,
+        sessionKey,
         // Only include guestInfo if it's defined and not undefined
         ...(guestInfo ? { guestId: guestInfo.id } : {}),
       }
@@ -235,13 +246,9 @@ export class FirestoreService {
       let newlogin: DocumentReference<unknown, DocumentData>
       // create a query that checks if there's already a login history entry for the same ipAddress, deviceType and location, browser, os
       // then only add a new entry if there's no existing entry
+      // Query using only sessionKey
       const query = this.query(loginHistoryRef,
-        this.where('ipAddress', 'in', [loginHistoryEntry.ipAddress, loginHistoryEntry.ipAddress.replace(/:\d+$/, '')]), // Handle both IPv4 and IPv6
-        this.where('deviceType', '==', loginHistoryEntry.deviceType),
-        this.where('location', '==', loginHistoryEntry.location),
-        this.where('browser', '==', loginHistoryEntry.browser),
-        this.where('os', '==', loginHistoryEntry.os),
-        this.where('providerId', '==', loginHistoryEntry.providerId),
+        this.where('sessionKey', '==', sessionKey),
         this.limit(1)
       )
       let err2, querySnapshot = await this.getDocs(query)
