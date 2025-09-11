@@ -1,9 +1,10 @@
 {
   "name": "deepscrape",
-  "version": "0.2.0",
+  "version": "v0.2.0-beta.2",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "release:prepare": "npx semantic-release --no-ci --dry-run",
     "release": "npx semantic-release",
     "prbuild": "ts-node src/environments/prod_gen.ts",
     "dev": "ng build --configuration=development",
@@ -62,6 +63,7 @@
     "ioredis": "^5.7.0",
     "lucide-angular": "^0.511.0",
     "marked": "^15.0.7",
+    "ngx-cookie-service": "^19.1.2",
     "ngx-markdown": "^19.1.1",
     "ngx-stripe": "^19.0.0",
     "node-fetch": "^3.3.2",
