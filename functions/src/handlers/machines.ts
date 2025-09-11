@@ -10,6 +10,10 @@ import { Buffer } from "node:buffer" // Import Buffer for file handling
 // import FormData from "form-data" // Import FormData for handling form data
 import { pipeline } from "node:stream"
 import { createGunzip } from "node:zlib"
+
+// Only allow UUID-like or alphanumeric-dash-underscore ids (adapt as needed)
+const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
+
 class MachinesHandler {
     constructor() {
         // this.upload = multer({ storage: multer.memoryStorage() })
@@ -92,6 +96,12 @@ class MachinesHandler {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
         }
+
+        if (!validIdPattern.test(machineId)) {
+            res.status(400).json({ error: "Invalid parameter: machineId" })
+            return
+        }
+
         // const token = req.app.locals["user"]
         const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}`)
@@ -213,8 +223,8 @@ class MachinesHandler {
         const { machineId } = req.params
         // Validate machineId: allow only alphanumeric, dash, and underscore (change regex as needed for your IDs)
         if (!machineId || !/^[a-zA-Z0-9_-]+$/.test(machineId)) {
-            res.status(400).json({ error: "Invalid machineId format." });
-            return;
+            res.status(400).json({ error: "Invalid machineId format." })
+            return
         }
         // eslint-disable-next-line camelcase
         const { instance_id, state, timeout } = req.query
@@ -376,8 +386,6 @@ class MachinesHandler {
             res.status(500).json({ error: "Failed to destroy machine. Please try again later.", message: details })
         }
     }
-        // Only allow UUID-like or alphanumeric-dash-underscore ids (adapt as needed)
-        const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
 
     async stopMachine(req: Request, res: Response) {
         const machineId: string = req.params.machineId
@@ -434,7 +442,6 @@ class MachinesHandler {
         const force: boolean = req.query.force === "true"
         res.type("application/json")
         // Add same validation as stopMachine
-        const validIdPattern = /^[a-zA-Z0-9\-]+$/; // Should be defined/updated as needed
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
             return
