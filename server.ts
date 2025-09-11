@@ -1,5 +1,5 @@
 // import { APP_BASE_HREF } from '@angular/common'
-import { AngularNodeAppEngine, createNodeRequestHandler, writeResponseToNodeResponse } from '@angular/ssr/node'
+import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
 import express, { NextFunction, Request, Response } from 'express'
 // import { fileURLToPath } from 'node:url'
 import { join, resolve } from 'node:path'
@@ -7,8 +7,6 @@ import chalk from 'chalk'
 // import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
 import { apiLimiter, limiter } from 'api/handlers'
-// import bootstrap from 'src/main.server'
-// import { APP_BASE_HREF } from '@angular/common'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -22,12 +20,13 @@ function serveapp(): express.Application {
   */
   const AI: SyncAIapis = new SyncAIapis()
 
-  // const serverDistFolder = dirname(fileURLToPath(import.meta.url))
-  const serverDistFolder = resolve(process.cwd(), '../dist/deepscrape/server')
-  const browserDistFolder = resolve(serverDistFolder, '../browser')
+  // const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
+  const serverDistFolder =  resolve(process.cwd(), 'dist/deepscrape/server') // serverDistFolderD //
+  const browserDistFolder = resolve(process.cwd(), 'dist/deepscrape/browser')
 
   const indexHtml = join(serverDistFolder, 'index.server.html')
-  console.log('indexHtml', indexHtml, browserDistFolder)
+  // const indexHtmlB = join(browserDistFolder, 'index.html')
+  console.log('indexHtml', indexHtml, /* serverDistFolderD */)
 
   // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
   const angularNodeAppEngine = new AngularNodeAppEngine()
@@ -35,7 +34,7 @@ function serveapp(): express.Application {
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
-  server.set('trust proxy', true)
+  server.set('trust proxy', false)
 
   server.use(express.urlencoded({ limit: '3mb', extended: false }))
   server.use(express.json({ limit: '3mb' })) // To pars
@@ -44,12 +43,14 @@ function serveapp(): express.Application {
   server.use('/api', (req: Request, res: Response, next: NextFunction) => {
 
     console.log(
-      chalk.yellow('Request Method:'), req.method,
-      chalk.yellow('Request URL:'), req.url,
-      chalk.green('Status Code:'), req.statusCode,
-      chalk.yellow('Protocol:'), req.protocol,
-      chalk.green('Original URL:'), req.originalUrl,
-      chalk.yellow('Base URL:'), req.baseUrl
+      chalk.bgYellow('Request Method:'), req.method,
+      chalk.bgYellow('Request URL:'), req.url,
+      chalk.bgGreen('Status Code:'), req.statusCode,
+      chalk.bgYellow('Protocol:'), req.protocol,
+      chalk.bgGreen('Original URL:'), req.originalUrl,
+      chalk.bgYellow('Base URL:'), req.baseUrl,
+      chalk.bgBlue.black('IP:'), req.ip,
+      chalk.bgBlue.black('Host:'), req.hostname
     )
     next()
   }, apiLimiter, AI.isJwtAuth, AI.router)
@@ -60,12 +61,14 @@ function serveapp(): express.Application {
     if (req.url.includes('ngsw')) {
       res.setHeader('Service-Worker-Allowed', '/')
       console.log(
-        chalk.yellow('Request Method:'), req.method,
-        chalk.yellow('Request URL:'), req.url,
-        chalk.green('Status Code:'), req.statusCode,
-        chalk.yellow('Protocol:'), req.protocol,
-        chalk.green('Original URL:'), req.originalUrl,
-        chalk.yellow('Base URL:'), req.baseUrl
+        chalk.bgYellow('Request Method:'), req.method,
+        chalk.bgYellow('Request URL:'), req.url,
+        chalk.bgGreen('Status Code:'), req.statusCode,
+        chalk.bgYellow('Protocol:'), req.protocol,
+        chalk.bgGreen('Original URL:'), req.originalUrl,
+        chalk.bgYellow('Base URL:'), req.baseUrl,
+        chalk.bgBlue.black('IP:'), req.ip,
+        chalk.bgBlue.black('Host:'), req.hostname
       )
     }
     next()
@@ -74,31 +77,35 @@ function serveapp(): express.Application {
   // Serve static files from /browser
   server.get('*.*', express.static(browserDistFolder, {
     maxAge: '1y',
-    index: 'index.html',
+    index: "index.html",
   }))
 
   // All regular routes use the Angular engine **
   server.get('**', (req: Request, res: Response, next: any) => {
     // const { protocol, originalUrl, baseUrl, headers } = req
+    // res.render(indexHtmlB, { req, providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }] })
     // Yes, this is executed in devMode via the Vite DevServer
     console.log(
-      chalk.yellow('Request Method:'), req.method,
-      chalk.yellow('Request URL:'), req.url,
-      chalk.green('Status Code:'), req.statusCode,
-      chalk.yellow('Protocol:'), req.protocol,
-      chalk.green('Original URL:'), req.originalUrl,
-      chalk.yellow('Base URL:'), req.baseUrl
+      chalk.bgYellow('Request Method:'), req.method,
+      chalk.bgYellow('Request URL:'), req.url,
+      chalk.bgGreen('Status Code:'), req.statusCode,
+      chalk.bgYellow('Protocol:'), req.protocol,
+      chalk.bgGreen('Original URL:'), req.originalUrl,
+      chalk.bgYellow('Base URL:'), req.baseUrl,
+      chalk.bgBlue.black('IP:'), req.ip,
+      chalk.bgBlue.black('Host:'), req.hostname
     )
-    /* commonEngine
-      .render({
-        bootstrap,
-        documentFilePath: indexHtml,
-        url: `${protocol}://${headers.host}${originalUrl}`,
-        publicPath: browserDistFolder,
-        providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
-      })
-      .then((html) => res.send(html))
-      .catch((err) => next(err)) */
+     
+    // commonEngine
+    //   .render({
+    //     bootstrap,
+    //     documentFilePath: indexHtml,
+    //     url: `${protocol}://${headers.host}${originalUrl}`,
+    //     publicPath: browserDistFolder,
+    //     providers: [{provide: APP_BASE_HREF, useValue: baseUrl}],
+    //   })
+    //   .then((html) => res.send(html))
+    //   .catch((err) => next(err));
     angularNodeAppEngine
       .handle(req, { server: 'express' })
       .then((response) =>
@@ -111,30 +118,34 @@ function serveapp(): express.Application {
 }
 
 
+// Start up the Node server
+const server = serveapp()
+
 function run(): void {
   const host = process.env['HOST'] || 'localhost'
-  // Start up the Node server
-  const server = serveapp()
-  // if (isMainModule(import.meta.url)) {
+
+  if (isMainModule(import.meta.url)) {
     const port = process.env['PORT'] || 4000
     server.listen(port, () => {
       console.log(`%s server listening on %s`, chalk.yellow('Node Express'), chalk.green(`http://${host}:${port}`))
       return host
     })
+ 
   /* The `// }` is a commented out closing curly brace. It seems like it was intended to close a block
   of code or a conditional statement that might have been removed or commented out during
   development. In this case, it appears to be closing the commented out `if` block that checks if
   the current module is the main module. */
-  // }
+  }
 }
 
 let reqHandler: express.Application
 
 if (process.env['PRODUCTION'] === 'false') {
   run()
-} else {
-  reqHandler = createNodeRequestHandler(serveapp())
-}
-
+} 
 console.log(chalk.blue('Environment:'), process.env['PRODUCTION'] === 'true' ? chalk.green('Production') : chalk.red('Development'))
+
+reqHandler = createNodeRequestHandler(server)
+
+
 export { reqHandler }

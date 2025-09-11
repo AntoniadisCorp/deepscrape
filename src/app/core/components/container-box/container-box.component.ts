@@ -1,17 +1,21 @@
 import { CommonModule, DatePipe, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, model, Output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, model, Output, signal, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { startSuspendAnimation } from 'src/app/animations';
 import { FlyMachine } from '../../types';
 import { FormatBytesPipe } from '../../pipes';
 import { DeploymentService } from '../../services';
 import { MACHNINE_STATE } from '../../enum';
+import { Outsideclick, RippleDirective } from '../../directives';
 
+export interface ExtendedFlyMachine extends FlyMachine {
+  menu_visible?: boolean
+}
 
 @Component({
   selector: 'app-container-box',
   imports: [
-    MatIcon, DatePipe, NgIf, FormatBytesPipe
+    MatIcon, DatePipe, NgIf, FormatBytesPipe, RippleDirective
   ],
   templateUrl: './container-box.component.html',
   styleUrl: './container-box.component.scss',
@@ -20,9 +24,20 @@ import { MACHNINE_STATE } from '../../enum';
 })
 export class ContainerBoxComponent {
 
+  
+  @ViewChild('menuElement') menuElement: any;
+  
+  @HostListener('document:mousedown', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const menu = this.menuElement.nativeElement;
+    if (menu && !menu.contains(event.target)) {
+      this.machine.menu_visible = false;
+    }
+  }
+
   startButton = signal<boolean>(false)
   stopButton = signal<boolean>(false) // model.required<boolean>()
-  @Input() machine: FlyMachine
+  @Input() machine: ExtendedFlyMachine
 
   @Output() startPressed = new EventEmitter<{ id: string, laststate: string, instance_id: string }>()
   @Output() suspendPressed = new EventEmitter<{ id: string, laststate: string, instance_id: string }>()
@@ -45,6 +60,10 @@ export class ContainerBoxComponent {
     return this.machine.description
   }
 
+  get state() {
+    return this.machine.state
+  }
+
 
   /* Actions */
   protected start() {
@@ -62,12 +81,13 @@ export class ContainerBoxComponent {
 
   protected destroy() {
     this.destroyPressed.emit({ id: this.machine.id, laststate: this.machine.state, instance_id: this.machine.instance_id })
+    this.toggleMenuVisible()
   }
 
   protected stop() {
     this.stopButton.set(false)
     this.startButton.set(false)
-    this.machine.state = 'stopping'
+    this.machine.state = MACHNINE_STATE.STOPPING
 
     // emit stop event
     this.stopPressed.emit({ id: this.machine.id, laststate: this.machine.state, instance_id: this.machine.instance_id })
@@ -78,7 +98,7 @@ export class ContainerBoxComponent {
     switch (this.machine.state) {
       case MACHNINE_STATE.CREATED:
         this.startButton.set(true)
-        this.stopButton.set(false)
+        this.stopButton.set(true)
         break;
       case MACHNINE_STATE.STARTED:
         this.startButton.set(true)
@@ -88,7 +108,7 @@ export class ContainerBoxComponent {
         this.startButton.set(false)
         this.stopButton.set(true)
         break;
-      case 'stopping':
+      case MACHNINE_STATE.STOPPING:
         break;
       case MACHNINE_STATE.STOPPED:
         this.startButton.set(false)
@@ -97,6 +117,21 @@ export class ContainerBoxComponent {
       default:
         break;
     }
+  }
+
+  toggleMenuVisible() {
+    this.machine.menu_visible = !this.machine.menu_visible
+    // this.apiKeyService.setMenuVisible(key)
+  }
+
+  closePopupMenu(event: MouseEvent) {
+
+    /* const element = event.target as HTMLElement
+    console.log(element) */
+
+    if (!this.machine?.menu_visible) return
+
+    // this.apiKeyService.setMenuVisible(key);
   }
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.

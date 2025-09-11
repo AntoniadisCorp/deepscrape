@@ -7,3 +7,7 @@
         background: linear-gradient(311deg, #673ab7 2.35%, #7d47cb 76.99%); /* Dark mode gradient */
     }
 }
+
+.devsite-appearance-selector-menu {
+  --devsite-appearance-selector-menu-transform: translate3d(-0px, 0, 0);
+}

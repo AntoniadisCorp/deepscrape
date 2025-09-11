@@ -1,0 +1,21 @@
+IP2LOCATION LITE DATA LICENSE
+
+TERMS OF USE
+
+Copyright (c) 2025 IP2Location.com. All Rights Reserved.
+
+This download is provided free of charge by IP2Location.com under the following conditions:
+
+1. You must agree to our "Terms of Use", which are published online at https://lite.ip2location.com/terms-of-use at all times.
+
+2. You are not permitted to redistribute or resell this product.
+
+3. The use of "IP2Location.com" to endorse or promote products derived from this database is prohibited without specific prior written permission.
+
+5. Licensees may copy, distribute, display, and perform the work and create derivative works based on IP2Location LITE only if they give IP2LOCATION.COM credits in the manner specified below.
+
+All sites, advertising materials, and documentation mentioning features or the use of this database must display the following acknowledgment:
+
+"[Your site name or product name] uses the IP2Location LITE database for <a href="https://lite.ip2location.com">IP geolocation</a>."
+
+IP2Location is a registered trademark of Hexasoft Development Sdn Bhd. All other trademarks are the property of their respective owners.

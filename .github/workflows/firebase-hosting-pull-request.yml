@@ -29,7 +29,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
       - name: Install Dependencies
-        run: npm ci
+        run: npm i && npm ci
       - name: Install Angular CLI Globally
         run: npm install -g @angular/cli
       # Debugging step to check environment variables

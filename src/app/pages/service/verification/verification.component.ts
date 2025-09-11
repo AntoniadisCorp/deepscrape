@@ -12,7 +12,6 @@ import { getErrorMessage } from 'src/app/core/functions';
 
 @Component({
   selector: 'app-verification',
-  standalone: true,
   imports: [MatIcon, CommonModule, ReactiveFormsModule],
   templateUrl: './verification.component.html',
   styleUrl: './verification.component.scss'
@@ -25,6 +24,8 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   timerSubscriber: Subscription;
   loading: Loading = {
     email: false,
+    password: false,
+    mfa: false,
     logout: false,
     phone: false,
     code: false,
@@ -165,7 +166,8 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
 
       if (userCredential.user) {
-        await this.firestoreService.storeUserData(userCredential.user, "phone", true, true); // Update Firestore with phone number and verified status
+        // FIXME: Update Firestore user data to mark phone as verified
+        await this.firestoreService.storeUserData(userCredential.user, "phone", true, null, true); // Update Firestore with phone number and verified status
         this.showSnackbar('Phone number verified successfully!', SnackBarType.success);
         this.router.navigate(['/dashboard']);
       } else {

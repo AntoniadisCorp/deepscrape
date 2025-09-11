@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const env = dotenv.config().parsed; // Get parsed .env values directly
 const environment = {
     production: env["PRODUCTION"] === "true",
+    emulators: env["EMULATORS"] === "true",
     assetsUri: "https://deepscrape.web.app/assets/",
     firebaseConfig: {
         apiKey: env["API_KEY"],
@@ -24,7 +25,7 @@ const environment = {
     GOOGLE_API_KEY: env["GOOGLE_API_KEY"],
     CRAWL4AI_API_KEY: env["CRAWL4AI_API_KEY"],
     API_CRAWL4AI: "https://crawlagent.fly.dev",
-    API_DEPLOY4SCRAP: "https://arachnefly.fly.dev",
+    API_ARACHNEFLY_URL: "https://arachnefly.fly.dev",
     API_ANTHROPIC: "https://api.anthropic.com",
     API_OPENAI: "https://api.openai.com",
     API_GROQ: "https://api.groq.com",

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { API_DEPLOY4SCRAP } from '../variables';
+import { API_ARACHNEFLY_UPLOAD_URL, API_ARACHNEFLY_URL } from '../variables';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { tap } from 'rxjs/internal/operators/tap';
 import { DockerImageInfo, FlyMachine, MachineResponse } from '../types';
@@ -31,12 +31,12 @@ export class DeploymentService {
    * encountered during the
    */
   checkImageDeployability(imageName: string): Observable<{ exists: boolean; info: DockerImageInfo }> {
-    const url = `${API_DEPLOY4SCRAP}/check-image` // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/check-image` // Replace with your API endpoint
     const headers = {
-      'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
+      // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
       'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
     }
-    const params = new HttpParams().set('name', encodeURIComponent(imageName))
+    const params = new HttpParams().set('name', imageName)
 
     return this.http.get<{ exists: boolean; info: DockerImageInfo }>(url, { headers, params }).pipe(
       tap((response: any) => {
@@ -47,6 +47,32 @@ export class DeploymentService {
     )
   }
 
+  getMachine(machineId: string): Observable<MachineResponse> {
+
+    // set api url
+    const url = `${API_ARACHNEFLY_URL}/machine/${machineId}` // Replace with your API endpoint
+    
+    // set headers
+    const headers = {
+      'Authorization': `Bearer ${this.authService.token}`,
+      'Content-Type': 'application/json',
+      // 'Content-Type': 'multipart/form-data' // Let the browser set it
+    }
+
+    // make the http request
+    return this.http.get(url, { headers }).pipe(
+      tap((response: any) => {
+        console.log('Get Machine successful:', response)
+      }),
+      map((response: any) => response?.data),
+      catchError(error => {
+        console.error('Error in Get Machine API call:', error)
+        throw error
+      })
+    );
+  }
+
+
   /**
    * The function `createMachine` sends a POST request to an API endpoint with deployment data, setting
    * headers and parameters, and handling the response and errors.
@@ -55,33 +81,35 @@ export class DeploymentService {
    * In this context, it likely contains the data needed for deploying a machine or making a
    * deployment-related API call. The function sets headers
    * @returns The `createMachine` function is returning an Observable from an HTTP POST request to the
-   * specified API endpoint (`API_DEPLOY4SCRAP/deploy`). The function sets headers with an
+   * specified API endpoint (`API_ARACHNEFLY_URL/deploy`). The function sets headers with an
    * authorization token, sets parameters including the region and clone values, and then makes the
    * POST request with the deployment data, headers, and parameters.
    */
-  createMachine(deploymentData: FormData): Observable<MachineResponse> {
+  createMachine(deploymentData: any): Observable<MachineResponse> {
 
     // set headers
     const headers = {
-      'Authorization': `Bearer ${this.authService.token}`
+      'Authorization': `Bearer ${this.authService.token}`,
+      'Content-Type': 'application/json',
+      // 'Content-Type': 'multipart/form-data' // Let the browser set it
     }
-    const region: string = deploymentData.get('region')?.valueOf() as string
+    const region: string = deploymentData['region'] as string
 
     // set params
     const params: HttpParams = new HttpParams()
-    params.set('region', region)
-    params.set('clone', 'false')
+    .set('region', region)
+    .set('clone', 'false')
 
-    const url = `${API_DEPLOY4SCRAP}/deploy` // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/deploy` // Replace with your API endpoint
 
     return this.http.post(url, deploymentData, { headers, params }).pipe(
       tap((response: any) => {
-        console.log('Deployment successful:', response)
+      console.log('Deployment successful:', response)
       }),
       map((response: any) => response?.data),
       catchError(error => {
-        console.error('Error in Deployment API call:', error)
-        throw error
+      console.error('Error in Deployment API call:', error)
+      throw error
       })
     );
   }
@@ -91,7 +119,7 @@ export class DeploymentService {
     const headers = {
       'Authorization': `Bearer ${this.authService.token}`
     }
-    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}/start`  // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/machine/${machineId}/start`  // Replace with your API endpoint
 
     return this.http.put(url, {}, { headers }).pipe(
       tap((response: any) => {
@@ -110,7 +138,7 @@ export class DeploymentService {
     const headers = {
       'Authorization': `Bearer ${this.authService.token}`
     }
-    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}/suspend`  // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/machine/${machineId}/suspend`  // Replace with your API endpoint
 
     return this.http.put(url, {}, { headers }).pipe(
       tap((response: any) => {
@@ -129,7 +157,7 @@ export class DeploymentService {
     const headers = {
       'Authorization': `Bearer ${this.authService.token}`
     }
-    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}/stop`  // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/machine/${machineId}/stop`  // Replace with your API endpoint
 
     return this.http.put(url, {}, { headers }).pipe(
       tap((response: any) => {
@@ -148,7 +176,7 @@ export class DeploymentService {
     const headers = {
       'Authorization': `Bearer ${this.authService.token}`
     }
-    const url = `${API_DEPLOY4SCRAP}/machine/waitforstate/${machineId}`  // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/machine/waitforstate/${machineId}`  // Replace with your API endpoint
 
     // set params
     const params = new HttpParams()
@@ -204,7 +232,7 @@ export class DeploymentService {
   } */
 
   destroy(machineId: string, force: boolean = false): Observable<any> {
-    const url = `${API_DEPLOY4SCRAP}/machine/${machineId}`; // Replace with your API endpoint
+    const url = `${API_ARACHNEFLY_URL}/machine/${machineId}`; // Replace with your API endpoint
     const headers = {
       'Authorization': `Bearer ${this.authService.token}`
     }
@@ -213,11 +241,11 @@ export class DeploymentService {
 
     return this.http.delete(url, { headers, params }).pipe(
       tap((response: any) => {
-        console.log('Machine deletion successful:', response);
+        console.log('Machine destroyed successful:', response);
       }),
       map((response: any) => response.data),
       catchError(error => {
-        console.error('Error in Machine deletion API call:', error);
+        console.error('Error on Machine destruction API call:', error);
         throw error;
       })
     );

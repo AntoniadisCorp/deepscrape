@@ -21,7 +21,7 @@ const redis = new Redis({
 
 // Configure your Redis client.  IMPORTANT: Use environment variables
 // for sensitive information like host, port, password.
-const httpHost = process.env["UPSTASH_REDIS_REST_URL"]
+const httpHost = upstashUrl
 const port = process.env["UPSTASH_REDIS_REST_PORT"]
 const username = process.env["UPSTASH_REDIS_REST_USER"] // Default username for Redis
 const p4ss = process.env["UPSTASH_REDIS_REST_PASSWORD"]

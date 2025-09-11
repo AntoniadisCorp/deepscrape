@@ -15,7 +15,14 @@ import {
     Bot,
     Menu,
     LucideIcons,
-    ShieldCheck
+    ShieldCheck,
+    Settings,
+    UserRound,
+    Fingerprint,
+    PiggyBank,
+    LucidePiggyBank,
+    KeyRound,
+    CircleCheckBig
 } from 'lucide-angular'
 
 export let myIcons: LucideIcons = {
@@ -33,5 +40,11 @@ export let myIcons: LucideIcons = {
     search: Search,
     monitor: Monitor,
     zap: Zap,
-    shieldcheck: ShieldCheck
+    shieldcheck: ShieldCheck,
+    settings: Settings,
+    "user-round": UserRound,
+    fingerprint: Fingerprint,
+    "piggy-bank": LucidePiggyBank,
+    "key-round": KeyRound,
+    'circle-check-big': CircleCheckBig
 }

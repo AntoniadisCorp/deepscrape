@@ -1,7 +1,9 @@
-import { AfterViewInit, Component, ElementRef, HostListener, Inject, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, HostListener, Inject, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser, NgFor } from '@angular/common';
 import { ScreenResizeService, WindowToken } from 'src/app/core/services';
 import { SCREEN_SIZE } from 'src/app/core/enum';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs/internal/observable/timer';
 
 
 @Component({
@@ -15,7 +17,9 @@ import { SCREEN_SIZE } from 'src/app/core/enum';
 export class SizeDetectorComponent implements AfterViewInit {
 
   private isBrowser: boolean
+  private destroyRef = inject(DestroyRef)
   private _window = inject(WindowToken); // or window = inject(WINDOW);
+  private animationFrameId: number | null = null;
 
   prefix = 'is-';
   sizes = [
@@ -48,9 +52,13 @@ export class SizeDetectorComponent implements AfterViewInit {
 
   @HostListener("window:resize", ['$event'])
   private onResize() {
+    if (this.animationFrameId) {
+      this._window.cancelAnimationFrame(this.animationFrameId);
+    }
 
-    // this.console.log('window:resize:')
-    this.detectScreenSize();
+    this.animationFrameId = this._window.requestAnimationFrame(() => {
+      this.detectScreenSize();
+    });
   }
 
   constructor(
@@ -58,14 +66,16 @@ export class SizeDetectorComponent implements AfterViewInit {
     private resizeSvc: ScreenResizeService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    this.isBrowser = isPlatformBrowser(this.platformId);
+    this.isBrowser = isPlatformBrowser(this.platformId)
   }
 
   ngAfterViewInit() {
     if (this.isBrowser) {
-      setTimeout(() => {
-        this.detectScreenSize()
-      })
+      timer(100)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => {
+              this.detectScreenSize()
+            })
     }
   }
 
@@ -85,7 +95,5 @@ export class SizeDetectorComponent implements AfterViewInit {
 
     if (currentSize)
       this.resizeSvc.onResize(currentSize.id)
-
-
   }
 }

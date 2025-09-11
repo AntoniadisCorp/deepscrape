@@ -1,0 +1,42 @@
+<div class="relative flex h-full w-full flex-col p-4 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-sm">
+  <h1 *ngIf="activeLink !== 'keys'" class="text-2xl font-semibold mb-5 text-gray6 dark:text-gray3">{{ ( activeLink + ' ' + "Settings") | titlecase }}</h1>
+  <!-- Tab Menu -->
+  <div
+    class="sticky scrollbar-hidden snap-x overflow-auto z-50 flex h-16 flex-nowrap items-center justify-start gap-1 border-b bg-gray-200 text-base text-gray-800 dark:border-b-[#64b5f633] dark:bg-gray-900"
+  >
+    <a
+      *ngFor="let gTab of gTabs$ | async"
+      (click)="activeLink = gTab.id"
+      [ngClass]="
+        activeLink === gTab.id
+          ? 'bg-gray-300/70 transition dark:border-blue-300 dark:bg-gray5/40'
+          : ''
+      "
+      [routerLink]="routerLink(gTab.id)"
+      routerLinkActive="active"
+      appRipple
+      rippleColor="dark"
+      class="flex snap-normal h-full w-full max-w-[9rem] flex-shrink-0 items-center space-x-2 rounded-sm rounded-tl-lg rounded-tr-lg border-b-2 border-transparent px-3 py-3 text-gray-900 transition-all hover:border-blue-300 hover:bg-cyan-100 hover:duration-100 hover:ease-in-out dark:text-gray-400 dark:hover:bg-cyan-300/10 dark:hover:text-gray-200"
+    >
+    <lucide-angular
+      faria-hidden="false"
+      aria-label="Example face SVG icon"
+      [img]="icons[gTab.icon]"
+      [ngClass]="gTab.color === 'gray' ? 'text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white ' : 
+      gTab.color === 'pink' ? 'text-pink-500 group-hover:text-pink-900 dark:group-hover:text-pink-300 ' :
+      gTab.color === 'sky' ? 'text-sky-500 group-hover:text-sky-900 dark:group-hover:text-sky-300 ' :
+      gTab.color === 'green' ? 'text-green-500 group-hover:text-green-900 dark:group-hover:text-green-300 ' :
+      'text-black group-hover:text-gray-900 dark:group-hover:text-white '"
+      
+      class="h-8 w-8 max-h-[16px] max-w-[16px] flex-shrink-0 transition duration-75 fill-none"></lucide-angular>
+      
+      <span>{{ gTab.name }}</span>
+    </a>
+  </div>
+
+  <!-- Inner Section  -->
+
+  <div class="" [@routeChildAnimation]="getAnimationData(outlet)">
+    <router-outlet #outlet="outlet"></router-outlet>
+  </div>
+</div>

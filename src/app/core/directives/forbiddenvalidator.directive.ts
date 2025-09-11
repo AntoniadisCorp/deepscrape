@@ -37,7 +37,7 @@ export function forbiddenNameValidator(nameRe: RegExp): ValidatorFn {
   }
 }
 
-export function createPasswordStrengthValidator(): ValidatorFn {
+export function createPasswordStrengthValidatorV1(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
 
     const value = control.value
@@ -58,6 +58,26 @@ export function createPasswordStrengthValidator(): ValidatorFn {
 
     return !passwordValid ? { passwordStrength: true } : null
   }
+}
+
+
+export function createPasswordStrengthValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+
+    if (!value) {
+      return null; // If the value is empty, no validation error
+    }
+
+    // Regex to validate password strength
+    const passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    // Test the value against the regex
+    const isValid = passwordStrengthRegex.test(value);
+
+    // Return validation error if the password is invalid
+    return !isValid ? { passwordStrength: true } : null;
+  };
 }
 
 function sliceByPrefix(str: string, prefix: string) {

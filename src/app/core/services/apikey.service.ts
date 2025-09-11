@@ -32,7 +32,7 @@ export class ApiKeyService {
         this.firestore = this.firestoreService.getInstanceDB('easyscrape')
         this.functions = getFunctions(this.firestore.app)
 
-        if ( this.firestoreService.isLocalhost() && !environment.production) {
+        if ( this.firestoreService.isLocalhost() && environment.emulators) {
               
             console.log('🔥 Connecting to Firebase Emulators');
             connectFunctionsEmulator(this.functions, 'localhost', 8081)
@@ -214,6 +214,40 @@ export class ApiKeyService {
             }
             return k;
         })
+        this.apiKeysSubject.next(updatedKeys);
+        this.saveApiKeys(updatedKeys);
+    }
+
+    setMenuInVisible(key: ApiKey) {
+        // console.log('setMenuInVisible', key)
+        const currentKeys = this.apiKeysSubject.value || []
+        const updatedKeys = currentKeys?.map(k => {
+            if (k.id === key.id) {
+                return { ...k, menu_visible: false };
+            }
+            return k;
+        })
+        this.apiKeysSubject.next(updatedKeys);
+        this.saveApiKeys(updatedKeys);
+    }
+
+    setMenuInvisibleExceptOne(id: string) {
+        const currentKeys = this.apiKeysSubject.value || [];
+        const updatedKeys = currentKeys?.map(k => {
+            if (k.id === id) {
+                return { ...k, menu_visible: true };
+            }
+            return { ...k, menu_visible: false };
+        });
+        this.apiKeysSubject.next(updatedKeys);
+        this.saveApiKeys(updatedKeys);
+    }
+
+    setMenuInvisibleAll() {
+        const currentKeys = this.apiKeysSubject.value || [];    
+        const updatedKeys = currentKeys?.map(k => {
+                return { ...k, menu_visible: false };
+        });
         this.apiKeysSubject.next(updatedKeys);
         this.saveApiKeys(updatedKeys);
     }

@@ -31,6 +31,9 @@ export class StinputComponent {
   @Input() outlined?: boolean = false
   @Input() errorLabel?: string = ''
 
+  @Input() svgIcon?: string = ''
+
+
 
   @ViewChild('stInput', { static: true }) stInput: ElementRef<HTMLInputElement> = {} as ElementRef;
   constructor() { }

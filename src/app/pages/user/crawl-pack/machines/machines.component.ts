@@ -1,9 +1,10 @@
 import { AsyncPipe, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal, ViewChild, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal, ViewChild, WritableSignal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { map, tap } from 'rxjs';
+import { from, map, tap } from 'rxjs';
 import { Observable } from 'rxjs/internal/Observable';
 import { of } from 'rxjs/internal/observable/of';
 import { throwError } from 'rxjs/internal/observable/throwError';
@@ -14,7 +15,7 @@ import { AppDockerStepperComponent, ContainerBoxComponent, RadioButtonComponent,
 import { RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { MACHNINE_STATE } from 'src/app/core/enum';
 import { FormControlPipe } from 'src/app/core/pipes';
-import { DeploymentService, FirestoreService, LocalStorage, MachineStoreService, SnackbarService } from 'src/app/core/services';
+import { DeploymentService, FirestoreService, LocalStorage, MachineStoreService, ScrollService, SnackbarService } from 'src/app/core/services';
 import { FlyMachine, MachineResponse } from 'src/app/core/types';
 import { themeStorageKey } from 'src/app/shared';
 
@@ -23,15 +24,16 @@ import { themeStorageKey } from 'src/app/shared';
     imports: [ContainerBoxComponent, NgClass, NgIf, NgFor, ReactiveFormsModule, MatIcon, SlideInModalComponent,
         RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe, FormControlPipe
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './machines.component.html',
     styleUrl: './machines.component.scss'
 })
 export class MachinesComponent {
+    private cdr = inject(ChangeDetectorRef)
+    private destroyRef = inject(DestroyRef)
     @ViewChild(AppDockerStepperComponent, { static: false }) dockerStepper: AppDockerStepperComponent
     private localStorage: Storage = inject(LocalStorage)
     private deploySub: Subscription
-    modalOpened: boolean = false
+    protected modalOpened: boolean = false
     protected isModalOpen: FormControl<boolean>
     protected isModalLoading: { modal: boolean, visibility: { [key: string]: boolean } }
     protected newMachineName: FormControl<string>
@@ -49,13 +51,14 @@ export class MachinesComponent {
 
     protected currMachinePage: number = 1
 
-    createMachineForm: any;
+    protected createMachineForm: any;
 
     constructor(
         private formBuilder: FormBuilder,
         private deployService: DeploymentService,
         private machineStoreService: MachineStoreService,
-        private snackbarService: SnackbarService
+        private snackbarService: SnackbarService,
+        private scrollService: ScrollService,
     ) {
     }
 
@@ -65,7 +68,12 @@ export class MachinesComponent {
         this.initMachines()
 
         this.initMachineForm()
+    }
 
+    ngAfterViewInit(): void {
+        //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
+        //Add 'implements AfterViewInit' to the class.
+        this.modalOpenChanged()
     }
 
     private initMachines(): void {
@@ -89,6 +97,30 @@ export class MachinesComponent {
         })
         // this.newMachineName = new FormControl<string>('', { nonNullable: true, validators: [Validators.required] })
 
+    }
+
+    private modalOpenChanged(): void {
+        this.isModalOpen.valueChanges.pipe(
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe((isOpen) => {
+            
+            this.modalOpened = isOpen
+            console.log('Modal open state changed:', isOpen, this.modalOpened)
+            if (!isOpen) {
+                // reset the stepper
+                this.currentStep.set(1)
+                // reset the form
+                this.createMachineForm.reset()
+                // reset the stepper component
+                this.dockerStepper.formStep1.reset()
+                this.dockerStepper.formStep2.reset()
+                this.dockerStepper.formStep3.reset()
+                this.dockerStepper.currentStep.set(1)
+            }
+            this.handleScrollbar(!isOpen)
+            // detect changes
+            this.cdr.detectChanges()
+        })
     }
 
     /* Machine Actions */
@@ -194,7 +226,7 @@ export class MachinesComponent {
                     // update machine state to 'stopped'
                     // machine reaced the e desired state
                     this.machineStoreService.nextPage(1, 10)
-                    this.showSnackbar(`Machine ${machine.id} stopped`, SnackBarType.success)
+                    this.showSnackbar(`Machine ${machine.id} ${MACHNINE_STATE.STOPPED}`, SnackBarType.success)
                 },
                 error: (error) => {
                     console.error('Error stopping machine:', error)
@@ -205,13 +237,13 @@ export class MachinesComponent {
 
     }
 
-    deleteMachine(machine: { id: string, laststate: string, instance_id: string }): void {
+    destroyMachine(machine: { id: string, laststate: string, instance_id: string }): void {
 
         // show snackbar
-        this.showSnackbar(`Machine ${machine.id} destroying`, SnackBarType.info)
+        this.showSnackbar(`Machine ${machine.id} ${MACHNINE_STATE.DESTROYING}`, SnackBarType.info)
 
         // update machine state to 'destroying' and destroy the machine
-        this.machineStoreService.updateMachineState(machine.id, MACHNINE_STATE.DESTROYED)
+        this.machineStoreService.updateMachineState(machine.id, MACHNINE_STATE.DESTROYING)
         this.deploySub = this.deployService.destroy(machine.id)
             .pipe(
                 concatMap((response: any) => {
@@ -230,7 +262,7 @@ export class MachinesComponent {
                     // update machine state to 'destroyed'
                     // machine reaced the e desired state
                     this.machineStoreService.nextPage(1, 10)
-                    this.showSnackbar(`Machine ${machine.id} successfully destroyed`, SnackBarType.success);
+                    this.showSnackbar(`Machine ${machine.id} successfully ${MACHNINE_STATE.DESTROYED}`, SnackBarType.success);
                 },
                 error: (error) => {
                     const isRunning = (machine.laststate === MACHNINE_STATE.STARTED ? machine.id + ' currently running!' : '')
@@ -258,6 +290,9 @@ export class MachinesComponent {
 
     isStepValid(step: number) {
         const isValid = this.dockerStepper?.isStepValid(step)
+        if (isValid === undefined)
+            return true
+        
         // this.cdr.detectChanges()
         return isValid
     }
@@ -353,6 +388,13 @@ export class MachinesComponent {
     themeIsDark() {
 
         return this.localStorage?.getItem(themeStorageKey) === 'true'
+    }
+
+    private handleScrollbar(closed: boolean) {
+        if (closed) // If aside bar is closed, show scrollbar
+            this.scrollService.showScroll()
+        else // If aside bar is open, hide scrollbar
+            this.scrollService.hideScroll()
     }
 
     showSnackbar(

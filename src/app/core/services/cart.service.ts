@@ -1,10 +1,11 @@
-import { Injectable, OnInit } from '@angular/core'
+import { DestroyRef, inject, Injectable, OnInit } from '@angular/core'
 import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots, connectFirestoreEmulator } from '@angular/fire/firestore'
 import { openDB } from 'idb'
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs'
 import { AuthService } from './auth.service'
 import { FirestoreService } from './firestore.service'
 import { BrowserConfig, BrowserProfile, CrawlConfig, CrawlPack, CrawlResult, CrawlResultConfig } from '../types'
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -13,13 +14,18 @@ export class CartService {
   private storeName = 'pack'
   private userId: string
 
+  private destroyRef = inject(DestroyRef)
+
   constructor(
     private firestore: Firestore,
     private authService: AuthService,
     private firestoreService: FirestoreService
   ) {
 
-    this.userId = this.authService.user?.uid ?? ''
+    this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
+      this.userId = user?.uid ?? '';
+    })
+    
     // set the firestore instance
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 

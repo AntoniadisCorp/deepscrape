@@ -1,4 +1,4 @@
-import { Inject, inject, Injectable, InjectionToken, OnInit } from '@angular/core';
+import { DestroyRef, Inject, inject, Injectable, InjectionToken, OnInit } from '@angular/core';
 import { FirestoreService } from './firestore.service';
 import { AuthService } from './auth.service';
 import { Firestore } from '@angular/fire/firestore';
@@ -13,14 +13,17 @@ import { storeBrowserProfile, storeCrawlConfig, storeCrawlResultsConfig } from '
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable } from 'rxjs/internal/Observable';
 import { map } from 'rxjs/internal/operators/map';
+import { Subject } from 'rxjs/internal/Subject';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 export const CONTROL_NAME = new InjectionToken<string>('CONTROL_NAME');
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PackService {
 
+  private destroyRef = inject(DestroyRef)
   private firestore: Firestore = inject(Firestore)
   private functions: Functions = inject(Functions)
   private auth: AuthService = inject(AuthService)
@@ -63,9 +66,12 @@ export class PackService {
 
   constructor(@Inject(CONTROL_NAME) private _controlName: string) {
 
+    this.auth.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
+      this.userId = user?.uid || 'default_user_id';
+    })
+
     this.controlName = _controlName || 'defaultControlName';
 
-    this.userId = this.auth.user?.uid || 'user_id'
     // set the firestore instance
     this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 

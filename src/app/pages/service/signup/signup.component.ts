@@ -7,20 +7,21 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, linkWithPhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider } from '@angular/fire/auth';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Users, Loading } from 'src/app/core/types';
-import { getErrorMessage } from 'src/app/core/functions';
+import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
 import { FirestoreService, SnackbarService, AuthService } from 'src/app/core/services';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { createPasswordStrengthValidator } from 'src/app/core/directives';
 import { SnackBarType } from 'src/app/core/components';
 import { Subscription } from 'rxjs';
+import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 
 // First, create an interface for your form structure
 interface SignupForm {
-  name: FormControl<string | null>;
-  email: FormControl<string | null>;
-  password: FormControl<string | null>;
-  confirmPassword: FormControl<string | null>;
-  phoneNumber: FormControl<string | null>;
+    name: FormControl<string | null>;
+    email: FormControl<string | null>;
+    password: FormControl<string | null>;
+    confirmPassword: FormControl<string | null>;
+    phoneNumber: FormControl<string | null>;
 }
 
 @Component({
@@ -44,7 +45,10 @@ export class SignupComponent implements OnInit, OnDestroy {
         google: false,
         email: false,
         phone: false,
-        code: false
+        code: false,
+        password: false,
+        mfa: false
+        
     };
     errorMessage = '';
 
@@ -55,36 +59,37 @@ export class SignupComponent implements OnInit, OnDestroy {
         private router: Router,
         private firestoreService: FirestoreService,
         private snackbarService: SnackbarService,
-        private authService: AuthService // Inject AuthService
+        private authService: AuthService, // Inject AuthService
+        private cookieService: CookieService, // Inject CookieService
     ) {
     }
 
-    ngOnInit(): void { 
+    ngOnInit(): void {
         this.signupForm = this.fb.group<SignupForm>({
             name: this.fb.control('', {
-            validators: [Validators.required, Validators.minLength(2)],
-            nonNullable: false
+                validators: [Validators.required, Validators.minLength(2)],
+                nonNullable: false
             }),
             email: this.fb.control('', {
-            validators: [Validators.required, Validators.email],
-            nonNullable: false
+                validators: [Validators.required, Validators.email],
+                nonNullable: false
             }),
             password: this.fb.control('', {
-            validators: [
-                Validators.required,
-                Validators.minLength(8),
-                createPasswordStrengthValidator(),
-            ],
-            updateOn: 'blur',
-            nonNullable: false
+                validators: [
+                    Validators.required,
+                    Validators.minLength(8),
+                    createPasswordStrengthValidator(),
+                ],
+                updateOn: 'blur',
+                nonNullable: false
             }),
             confirmPassword: this.fb.control('', {
-            validators: [Validators.required],
-            nonNullable: false
+                validators: [Validators.required],
+                nonNullable: false
             }),
             phoneNumber: this.fb.control('', {
-            validators: [Validators.pattern(/^\+?[1-9]\d{1,14}$/)],
-            nonNullable: false
+                validators: [Validators.pattern(/^\+?[1-9]\d{1,14}$/)],
+                nonNullable: false
             }),
         }, {
             validators: this.passwordMatchValidator
@@ -107,31 +112,10 @@ export class SignupComponent implements OnInit, OnDestroy {
         }
     }
 
-    /**
-   * TODO: comment checkPasswordStrength
-   * @description Checks password strength
-   * @param password 
-   * @returns password strength 
-   */
+   
     protected checkPasswordStrength(password: string): string {
 
-        const minLength = 8;
-        const hasUpperCase = /[A-Z]/.test(password);
-        const hasLowerCase = /[a-z]/.test(password);
-        const hasNumbers = /\d/.test(password);
-        const hasNonAlphas = /\W/.test(password)
-
-        // has characters that not permitted
-        const hasForbiddenCharacters = /[^\w\s@$!%*?&]/.test(password)
-
-        return (
-            password.length < minLength ? "Risky. Password needs to be at least 8 characters long" :
-                !hasLowerCase ? "Risky. Password needs at least one lowercase letter" :
-                    !hasUpperCase ? "Risky. Password needs at least one uppercase letter" :
-                        !hasNumbers ? "Risky. Password needs at least one number" :
-                            !hasNonAlphas ? "Risky. Password needs at least one special character" :
-                                hasForbiddenCharacters ? "Risky. Dont use characters that are not permitted.." : "Strong as it gets"
-        )
+        return checkPasswordStrength(password)
     }
 
     async signup() {
@@ -173,11 +157,15 @@ export class SignupComponent implements OnInit, OnDestroy {
                             console.log('User profile updated:', userCredential.user.providerData,
                                 userCredential.user.displayName)
 
-                            await this.firestoreService.storeUserData(userCredential.user, "password", false, phoneNumber ? false : null)
+                            await this.firestoreService.storeUserData(userCredential.user, "password", false, null, phoneNumber ? false : null)
                         }
 
                         // Redirect or show success message
-                        this.router.navigate(['/service/verification'], { state: { verificationId: confirmationResult?.verificationId, phoneNumber, email: userCredential.user.email } });
+                        this.router.navigate(['/service/verification'], { state: { 
+                            verificationId: confirmationResult?.verificationId, 
+                            phoneNumber, 
+                            email: userCredential.user.email 
+                        } });
                     } catch (error: any) {
                         this.errorMessage = getErrorMessage(error)
                         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
@@ -189,8 +177,6 @@ export class SignupComponent implements OnInit, OnDestroy {
                 }
 
             })
-
-
         }
     }
     // 'info' | 'success' | 'warning' | 'error'

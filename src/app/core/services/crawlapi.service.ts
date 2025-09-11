@@ -23,7 +23,7 @@ export class CrawlAPIService {
     this.crawl4AiEndpoint = API_CRAWL4AI + '/crawl' // Updated URL
 
     // initialize auth state
-    this.authService.initAuth()
+    // this.authService.initAuth()
   }
 
   getfromCrawl4Ai(): Observable<any> {

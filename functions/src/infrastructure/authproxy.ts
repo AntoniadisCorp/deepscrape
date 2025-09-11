@@ -6,7 +6,7 @@
 
 import { Router } from "express"
 import { checkUserEmailForDifferentProvider,
-    verifyLogin} from "./handlers/fire_auth"
+    verifyLogin} from "../handlers/fire_auth"
 
 /* eslint-disable max-len */
 class AuthAPIProxy {

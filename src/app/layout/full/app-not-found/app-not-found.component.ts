@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AppFooterComponent } from '../../footer'
 // import { AppHeaderComponent } from '../../header';
 import { RouterLink } from '@angular/router';

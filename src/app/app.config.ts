@@ -2,7 +2,7 @@ import { ApplicationConfig, isDevMode, importProvidersFrom, provideExperimentalZ
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { DomSanitizer, provideClientHydration } from '@angular/platform-browser';
+import { DomSanitizer, provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -25,7 +25,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
 import { LogLevel, setLogLevel } from '@angular/fire';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
-import { myIcons } from './shared';
+import { myIcons } from './shared'
 
 setLogLevel(LogLevel.VERBOSE)
 // const analytics = getAnalytics(app);
@@ -57,7 +57,9 @@ export const appConfig: ApplicationConfig = {
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
-    provideClientHydration(),
+    provideClientHydration(/* withHttpTransferCacheOptions({
+      includePostRequests: true
+    }) */),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
@@ -68,7 +70,7 @@ export const appConfig: ApplicationConfig = {
     provideFirestore(() =>
     {
       const firestore = getFirestore();
-      if (!environment.production) {
+      if (environment.emulators) {
         console.log('🔥 Connecting Firestore to Emulator');
         connectFirestoreEmulator(firestore, 'localhost', 5001);
       }
@@ -78,7 +80,7 @@ export const appConfig: ApplicationConfig = {
     provideFunctions(() => {
 
       const functions = getFunctions()
-      if (!environment.production) {
+      if (environment.emulators) {
         console.log('🔥 Connecting Functions to Emulator');
         connectFunctionsEmulator(functions, 'localhost', 8081)
       }

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 // import { AuthGuard, redirectUnauthorizedTo } from '@angular/fire/auth-guard';
 import { authGuard } from '../core/guards';
+import { UserResolver } from '../core/services';
 
 
 
@@ -12,7 +13,7 @@ export const UserRoutes: Routes = [{
     loadComponent: () => import('../layout/full').then(c => c.AppUserLayoutComponent),
     loadChildren: () => import('./user/main.route').then(m => m.MainRoutes),
     canActivate: [authGuard],
-    canActivateChild: [authGuard],
     data: { /* authGuardPipe: redirectUnauthorizedToLogin, */ title: 'user', animation: 'user' }, // Apply the redirection
+    resolve: { user: UserResolver },
 
 }]

@@ -1,5 +1,6 @@
 import { writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore"
-import { User } from "@angular/fire/auth"
+
+import { User, AuthError, AuthErrorCodes } from "@angular/fire/auth"
 import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types"
 import { MACHNINE_STATE } from "../enum"
 
@@ -43,10 +44,20 @@ export function getErrorMessage(error: any): string {
             return 'This provider is already linked to the user.';
         case 'auth/invalid-phone-number':
             return 'Invalid phone number format.';
+        case AuthErrorCodes.INVALID_ORIGIN:
+            return 'This domain is not authorized for OAuth operations.';
+        case 'auth/no-such-provider':
+            return 'No such provider is linked to the user.';
         default:
             return errorMessage || 'An error occurred during signup.';
     }
 }
+
+// Utility to create a compound session key
+export function createSessionKey(ip: string, deviceType: string, providerId: string, browser: string, os: string, location: string): string {
+  return `${ip}|${location}|${deviceType}|${os}|${browser}|${providerId}`
+}
+
 
 
 /* Firestore Crawl Operation */

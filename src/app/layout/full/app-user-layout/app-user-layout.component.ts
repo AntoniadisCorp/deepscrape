@@ -1,11 +1,11 @@
 import { AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage } from '@angular/common'
 import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
-import { Auth, signOut, User } from '@angular/fire/auth'
+import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
-import { ChildrenOutletContexts, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router'
-import { catchError, delay, finalize, from, map, switchMap, throwError, timer } from 'rxjs'
+import { ActivatedRoute, ChildrenOutletContexts, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router'
+import { catchError, delay, finalize, from, map, switchMap, throwError, timer, fromEvent } from 'rxjs' // Added fromEvent
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
 import { take } from 'rxjs/internal/operators/take'
@@ -13,9 +13,9 @@ import { Subscription } from 'rxjs/internal/Subscription'
 import { asideBarAnimation, fadeInOutAnimation, PopupAnimation } from 'src/app/animations'
 import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { AuthService, CartService, FirestoreService, ScreenResizeService } from 'src/app/core/services'
+import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, WindowToken } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
-import { ThemeToggleComponent } from 'src/app/shared'
+import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
@@ -32,13 +32,15 @@ import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/com
 })
 export class AppUserLayoutComponent {
 
+  private window: Window = inject(WindowToken)
+  private localStorage = inject(LocalStorage)
   @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900 min-h-svh'
   private firestoreService = inject(FirestoreService)
   size!: SCREEN_SIZE;
 
-  sizeSub: Subscription;
+  sizeSub: Subscription = new Subscription(); // Initialize sizeSub
 
-  user$: Observable<Users | null>
+  user: Users & { currProviderData: UserInfo | null } | null = null
   cartPackager$: Observable<any>
 
   // Toggle Button To Open and Close Profile Dropdown Menu
@@ -50,13 +52,15 @@ export class AppUserLayoutComponent {
 
   loading: boolean
   userLoading: boolean
-  authorized: boolean
+  accountImageLoading: boolean
   logoutSubscription: Subscription
   userSubscription: Subscription
   private routerEventSubscription: Subscription
   protected compIsLoading = true;
   /* animations */
   viewSmallDevices: boolean
+  isThemeDark: boolean = false; // New property
+  currentRouteAnimation: string | undefined; // Property to hold animation state
 
   constructor(
 
@@ -64,15 +68,24 @@ export class AppUserLayoutComponent {
     private contexts: ChildrenOutletContexts,
     private resizeSvc: ScreenResizeService,
     private router: Router,
+    private route: ActivatedRoute,
     private auth: Auth,
 
     private authService: AuthService,
     private cartService: CartService,
+    private scrollService: ScrollService,
   ) {
 
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
       if (event instanceof NavigationEnd) {
         setTimeout(() => { this.compIsLoading = false; }, 1000)
+        // Update the animation state when navigation ends
+        const outlet = this.contexts.getContext('primary')?.outlet;
+        if (outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']) {
+          this.currentRouteAnimation = outlet.activatedRouteData['animation'];
+        } else {
+          this.currentRouteAnimation = undefined;
+        }
       }
     })
 
@@ -80,11 +93,11 @@ export class AppUserLayoutComponent {
     this.viewSmallDevices = false
 
     // Set the initial values
-    this.authorized = this.loading = false
+    this.loading = false
 
     this.showProfileMenu = false
 
-    this.user$ = of(null)
+    // this.user$ = of(null)
     this.cartPackager$ = this.cartService.getCart$
 
 
@@ -93,8 +106,18 @@ export class AppUserLayoutComponent {
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-    if (isPlatformBrowser(this.platformId))
-      this.GetUserProfile()
+    if (isPlatformBrowser(this.platformId)) {
+      this.user = this.route.snapshot.data['user']
+      // this.GetUserProfile();
+      this.isThemeDark = this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
+
+      // Listen for changes in local storage to update theme
+      this.sizeSub.add(fromEvent<StorageEvent>(this.window, 'storage').subscribe((event: StorageEvent) => {
+        if (event.key === themeStorageKey) {
+          this.isThemeDark = event.newValue === 'true';
+        }
+      }));
+    }
 
     this.InitCloseSideBarOnSmallDevices()
   }
@@ -110,10 +133,12 @@ export class AppUserLayoutComponent {
     this.sizeSub = this.resizeSvc.onResize$.subscribe(x => {
 
       this.size = x
-      if (this.closeAsideBar != undefined)
+      if (this.closeAsideBar != undefined) {
         this.closeAsideBar = this.viewSmallDevices = this.size < SCREEN_SIZE.LG
-
+        // this.handleScrollbar()
+      }
     })
+    // this.handleScrollbar()
   }
 
   addAsideBar(value: boolean) {
@@ -122,48 +147,41 @@ export class AppUserLayoutComponent {
       this.closeAsideBar = !value
 
     else this.closeAsideBar = value
+
+    this.handleScrollbar()
   }
 
   onCloseAsideBar(event: boolean) {
-
     this.closeAsideBar = event
+
+    this.handleScrollbar()
   }
 
-
-  private GetUserProfile(username?: string) {
-
-    // get the user id from Browser Memory
-
-    // Create an Http request to get the user profile data
-    this.userLoading = true
-    this.user$ = of(this.auth.currentUser).pipe(
-      take(1),
-      switchMap(user => {
-        if (user) {
-          this.authorized = true
-          this.userLoading = false
-
-          return from(this.firestoreService.getUserData(user.uid)).pipe(
-            catchError((err) => {
-              console.log(err)
-              return throwError(() => err)
-            }
-            ))
-        }
-        else {
-          this.authorized = false
-          this.userLoading = false
-          return of(null)
-        }
-      }),
-      catchError(error => {
-        console.log(error)
-        this.userLoading = false
-        return of(null)
-      })
-    )
-
+  private handleScrollbar() {
+    if (this.closeAsideBar) // If aside bar is closed, show scrollbar
+      this.scrollService.showScroll()
+    else // If aside bar is open, hide scrollbar
+      this.scrollService.hideScroll()
   }
+
+  // private GetUserProfile(username?: string) {
+  //   this.userLoading = true;
+  //   this.user$ = of(this.auth.currentUser).pipe(
+  //     take(1),
+  //     switchMap(user => {
+  //       if (!user) {
+  //         return of(null)
+  //       }
+  //       return from(this.firestoreService.getUserData(user.uid)).pipe(
+  //         catchError(err => {
+  //           console.error(err)
+  //           return of(null)
+  //         })
+  //       )
+  //     }),
+  //     finalize(() => this.userLoading = false)
+  //   );
+  // }
 
   openProfileMenu(event?: any): void {
     // if user press profile button
@@ -225,9 +243,11 @@ export class AppUserLayoutComponent {
   }
 
   getAnimationData(outlet: RouterOutlet) {
-    return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
-    // return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
+    // return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
+    return this.currentRouteAnimation;
   }
+
+  // Removed themeIsDark() method
 
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.

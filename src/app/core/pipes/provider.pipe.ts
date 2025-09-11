@@ -19,7 +19,7 @@ export class ProviderPipe implements PipeTransform {
       case 'email':
         return provider?.email || null;
       case 'photoURL':
-        return provider?.photoURL || 'https://eu.ui-avatars.com/api/?name=Prok+Ant' + '&size=250';
+        return value.details?.photoURL || provider?.photoURL || `https://ui-avatars.com/api/?name=${this._handlerName(provider?.displayName || 'An+Ym')}&background=random&size=250`;
       case 'phoneNumber':
         return provider?.phoneNumber || null;
       case 'providerId':
@@ -29,6 +29,15 @@ export class ProviderPipe implements PipeTransform {
       default:
         return null;
     }
+  }
+
+  private _handlerName(fullName: string): string {
+    // Split the full name into first name and last name
+    const [firstName, lastName] = fullName.split(' ');
+    const firstLetterFirstName = firstName?.charAt(0);
+    const firstLetterLastName = lastName?.charAt(0);
+    return firstLetterFirstName + '+' + firstLetterLastName;
+
   }
 
 }

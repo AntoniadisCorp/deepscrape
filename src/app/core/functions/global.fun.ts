@@ -50,20 +50,16 @@ export function sanitizeJSON(jsonString: string): string {
         .replace(/\\f/g, "\\f");
 }
 
-export function formatBytes(bytes: number, decimals = 3) {
-    if (bytes === 0) return '0 Bytes';
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes';
 
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    let i = 0;
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-    while (bytes >= k && i < sizes.length - 1) {
-        bytes /= k;
-        i++;
-    }
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 export function encodeToBytes(str: string) {
@@ -203,4 +199,69 @@ export function setAutoContainerOptions(array: DropDownOption[]): void {
         { name: 'manual', code: 'off' },
     ]
     array.push(...autoContainerOptions)
+}
+
+
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Remove the data:*/*;base64, prefix if needed
+      const base64 = (reader.result as string).split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+
+export function extractNames(displayName: string): { firstname: string; lastname: string } {
+  if (!displayName) {
+    return { firstname: '', lastname: '' };
+  }
+
+  const [firstname, ...lastnameParts] = displayName.split(' ');
+  const lastname = lastnameParts.join(' '); // Handles cases where the last name has multiple parts
+
+  return { firstname: firstname || '', lastname: lastname || '' };
+}
+
+
+ /**
+   * @function: checkPasswordStrength
+   * @description Checks password strength
+   * @param password 
+   * @returns password strength 
+   */
+export function checkPasswordStrength(password: string) {
+
+    const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasNonAlphas = /\W/.test(password)
+
+        // has characters that not permitted
+        const hasForbiddenCharacters = /[^\w\s@$!%*?&]/.test(password)
+
+        return (
+            password.length < minLength ? "Risky. Password needs to be at least 8 characters long" :
+                !hasLowerCase ? "Risky. Password needs at least one lowercase letter" :
+                    !hasUpperCase ? "Risky. Password needs at least one uppercase letter" :
+                        !hasNumbers ? "Risky. Password needs at least one number" :
+                            !hasNonAlphas ? "Risky. Password needs at least one special character" :
+                                hasForbiddenCharacters ? "Risky. Dont use characters that are not permitted.." : "Strong as it gets"
+        )
+}
+
+export async function getBrowser(navigator: any) {
+
+return (navigator as any).brave && (navigator as any).brave.isBrave && 
+        (await (navigator as any).brave.isBrave()) ? 'brave' : 
+          navigator.userAgent.match(/chrome|chromium|crios/i) ? 'chrome' : 
+            navigator.userAgent.match(/firefox|fxios/i) ? 'firefox' : 
+              navigator.userAgent.match(/safari/i) ? 'safari' : navigator.userAgent.match(/opr\//i) ? 
+                'opera' : navigator.userAgent.match(/edg/i) ? 'edge' : 
+                  'other'
 }

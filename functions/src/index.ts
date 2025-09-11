@@ -7,6 +7,7 @@ https://medium.com/@unravel-technologies/angular-loading-performance-deploying-s
 */
 import * as app from "./server"
 import * as auth from "./app/auth"
+import * as stripe from "./app/stripe"
 // import path, { join } from "node:path"
 // import { fileURLToPath } from "node:url"
 
@@ -22,11 +23,14 @@ export const deepscrape = app.deepscrape
 
 
 /* Auth - Functions */
+// User Management - Functions
+// export const linkGuestToUser = auth.linkGuestToUser
+
 // STRIPE Functions
-export const newStripeCustomer = auth.newStripeCustomer
-export const createPaymentIntent = auth.createPaymentIntent
-export const startSubscription = auth.startSubscription
-export const updateUsage = auth.updateUsage
+export const newStripeCustomer = stripe.newStripeCustomer
+export const createPaymentIntent = stripe.createPaymentIntent
+export const startSubscription = stripe.startSubscription
+export const updateUsage = stripe.updateUsage
 
 // API SECRET KEYS - Functions
 export const createMyApiKey = auth.createMyApiKey

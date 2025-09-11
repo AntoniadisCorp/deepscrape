@@ -5,25 +5,38 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as admin from "firebase-admin"
 import Stripe from "stripe"
-import serviceAccount from "../credentials.json"
-import { defineSecret } from "firebase-functions/params"
+import { defineSecret, projectID } from "firebase-functions/params"
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
 
 const secretManager = new SecretManagerServiceClient()
 export const stripeSecretDef = defineSecret("stripeSecretTest")
-export const dbName = serviceAccount.dbName
+export const dbName = process.env.DB_NAME || "easyscrape"
 
+const projectId = process.env["GCP_PROJECT_ID"] || projectID
+
+// apiKey: process.env.FIRE_API_KEY,
+// authDomain: process.env.FIRE_AUTH_DOMAIN,
+// databaseURL: process.env.FIRE_DATABASE_URL,
+// projectId: process.env.FIRE_PROJECT_ID,
+// storageBucket: process.env.FIRE_STORAGE_BUCKET,
+// messagingSenderId: process.env.FIRE_MESSAGING_SENDER_ID,
+// appId: process.env.FIRE_APP_ID,
+const firebaseConfig: admin.AppOptions = {
+
+    databaseURL: process.env.FIRE_DATABASE_URL,
+    projectId: process.env.FIRE_PROJECT_ID,
+    storageBucket: process.env.FIRE_STORAGE_BUCKET,
+}
 // Initialize Firebase
-admin.initializeApp(serviceAccount.firebaseConfig)
+admin.initializeApp(firebaseConfig)
 
 export const db = admin.firestore()
 db.settings({ databaseId: dbName })
 
 export const auth = admin.auth()
 /* config().stripe?.secret */
-export const stripeSecret = process.env["STRIPE_PUBLIC_KEY"] ||
-    serviceAccount.stripe.secret
+export const stripeSecret = process.env["STRIPE_PUBLIC_KEY"] || ""
 // export const stripePublishable = serviceAccount.stripe.publishable;
 // export const stripeClientId = serviceAccount.stripe.clientid;
 export const stripe = new Stripe(stripeSecret)
@@ -38,7 +51,7 @@ export function generateApiKey() {
 export async function saveToSecretManager(secretId: any, apiKey: any) {
     // Create a new secret
     const [secret] = await secretManager.createSecret({
-        parent: `projects/${process.env["GCP_PROJECT_ID"]}`,
+        parent: `projects/${projectId}`,
         secretId,
         secret: {
             replication: {

@@ -6,7 +6,7 @@ export const billingRoutes: Routes = [
         path: '',
         // loadComponent: () => import('../../pages').then(m => m.PassesComponent),
         // canActivate: [LoginGuard],
-        redirectTo: 'passes',
+        redirectTo: 'plans',
         pathMatch: 'full'
     },
     {

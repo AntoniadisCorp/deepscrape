@@ -80,6 +80,12 @@ export const slideInModalAnimation = trigger('slideInOut', [
     ])
 ])
 
+export const smoothfadeAnimation = trigger('routeChildAnimation', [
+  transition('* <=> *', [
+    style({ opacity: 0 }),
+    animate('500ms ease-in-out', style({ opacity: 1 }))
+  ])
+])
 export const PopupAnimation = trigger('enableProfileMenu', [
 
     transition(':enter', [

@@ -1,11 +1,21 @@
+export type GlobalTabs = {
+    svg: string
+    icon: string
+    color: string
+    name: string
+    id: string
+}
+
 
 export type Loading = {
     google: boolean
     github: boolean
-    email: boolean
+    email: boolean,
+    password: boolean,
     logout: boolean
     phone: boolean
-    code: boolean
+    code: boolean,
+    mfa: boolean,
 }
 
 export type DropDownOption = {

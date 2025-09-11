@@ -31,12 +31,12 @@
           <img
             src=""
             alt=""
-            srcset="assets/logo-512x512.png 2x"
+            srcset="{{!isThemeDark? 'assets/logo-512x512.png 2x' : 'assets/logo-512x512_sky.png 2x'}}"
             class="mt-4 h-20 border-none" />
         </h1>
         <h1
           class="text-2xl hidden xs:block sm:block font-bold text-gray-800 dark:text-gray-300">
-          DeepScrape
+          DeepScrape 
         </h1>
       </a>
     </div>
@@ -49,7 +49,7 @@
 
       <!-- Theme Mode Switch -->
       <app-theme-toggle></app-theme-toggle>
-      @if (user$ | async; as user) {
+      @if (user) {
       <!-- Profile Image Menu Button -->
       <button
         type="button"
@@ -203,7 +203,7 @@
         <img
           class="rounded-full object-contain"
           [srcset]="''"
-          alt="user photo" />
+                    alt="user photo" />
       </button>
       <div
         @enableProfileMenu
@@ -297,16 +297,16 @@
 <!-- <div class="mx-auto w-full bg-white dark:bg-gray-900">
   <div class="mt-28 flex"> -->
 
-<!-- Inner Section  relative w-full rounded-lg p-4 lg:max-h-full -->
+<!-- Inner Section 
+   -->
 <div
-  [@routeAnimation]="getAnimationData(outlet)"
   [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
   class="w-full mt-20 px-4 pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2">
   <app-sidebar
     [barClosed]="closeAsideBar"
     [resizeScreen]="viewSmallDevices"
     (backDropPressed)="onCloseAsideBar($event)"></app-sidebar>
-  <router-outlet #outlet="outlet"></router-outlet>
+  <router-outlet [@routeAnimation]="currentRouteAnimation" #outlet="outlet"></router-outlet>
 </div>
 @if(!compIsLoading) {
 <app-footer></app-footer>
