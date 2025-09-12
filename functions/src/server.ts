@@ -50,8 +50,8 @@ export const corss = cors({
     // The code snippet you provided is setting up different folder paths
     // for the Express server to serve static files from
     const distFolder = resolve(process.cwd(), "..", "dist")
-    // const publicDistFolder = resolve(process.cwd(), "lib/public")
-    const serverDistFolder = join(distFolder, "deepscrape", "server")
+    const publicDistFolder = resolve(process.cwd(), "lib/public")
+    // const serverDistFolder = join(distFolder, "deepscrape", "server")
     const browserDistFolder = join(distFolder, "deepscrape", "browser")
 
     // console.log(serverDistFolder, distFolder, `Browser Dist Folder: ${browserDistFolder}`)
@@ -112,9 +112,9 @@ export const corss = cors({
     server.get("*", limiter, (req: express.Request, res, next: NextFunction) => {
         const { protocol, originalUrl, baseUrl, headers } = req
         console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
-        res.sendFile(join(serverDistFolder, "index.server.html"))
+        // res.sendFile(join(serverDistFolder, "index.server.html"))
 
-        // res.status(404).sendFile(resolve(publicDistFolder, "404.html"))
+        res.sendFile(resolve(publicDistFolder, "404.html"))
 
         // console.log(
         //   chalk.bgYellow('Request Method:'), req.method,

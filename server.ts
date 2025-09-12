@@ -2,11 +2,12 @@
 import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
 import express, { NextFunction, Request, Response } from 'express'
 // import { fileURLToPath } from 'node:url'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import chalk from 'chalk'
 // import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
 import { apiLimiter, limiter } from 'api/handlers'
+import { fileURLToPath } from 'node:url'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -20,8 +21,8 @@ function serveapp(): express.Application {
   */
   const AI: SyncAIapis = new SyncAIapis()
 
-  // const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
-  const serverDistFolder =  resolve(process.cwd(), 'dist/deepscrape/server') // serverDistFolderD //
+  const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
+  const serverDistFolder =  serverDistFolderD // resolve(process.cwd(), 'dist/deepscrape/server')
   const browserDistFolder = resolve(process.cwd(), 'dist/deepscrape/browser')
 
   const indexHtml = join(serverDistFolder, 'index.server.html')
@@ -140,9 +141,9 @@ function run(): void {
 
 let reqHandler: express.Application
 
-if (process.env['PRODUCTION'] === 'false') {
-  run()
-} 
+// if (process.env['PRODUCTION'] === 'false') {
+run()
+// } 
 console.log(chalk.blue('Environment:'), process.env['PRODUCTION'] === 'true' ? chalk.green('Production') : chalk.red('Development'))
 
 reqHandler = createNodeRequestHandler(server)
