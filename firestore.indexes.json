@@ -2,29 +2,62 @@
   "indexes": [
     {
       "collectionGroup": "operations",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "created_At", "mode": "DESCENDING" },
-        { "fieldPath": "scheduled_At", "mode": "ASCENDING" }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "scheduled_At", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "operations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "created_At", "order": "DESCENDING" },
+        { "fieldPath": "scheduled_At", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "apikeys",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "created_At", "mode": "DESCENDING" },
-        { "fieldPath": "type", "mode": "ASCENDING" }
+        { "fieldPath": "created_At", "order": "DESCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "machines",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "created_at", "mode": "DESCENDING" },
-        { "fieldPath": "region", "mode": "DESCENDING" },
-        { "fieldPath": "state", "mode": "DESCENDING" },
-        { "fieldPath": "config.guest.memory_mb", "mode": "DESCENDING" },
-        { "fieldPath": "config.guest.cpu_kind", "mode": "DESCENDING" }
+        { "fieldPath": "created_at", "order": "DESCENDING" },
+        { "fieldPath": "region", "order": "DESCENDING" },
+        { "fieldPath": "state", "order": "DESCENDING" },
+        { "fieldPath": "config.guest.memory_mb", "order": "DESCENDING" },
+        { "fieldPath": "config.guest.cpu_kind", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "machines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "created_at", "order": "DESCENDING" },
+        { "fieldPath": "region", "order": "DESCENDING" },
+        { "fieldPath": "state", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "machines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "state", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "machines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "created_at", "order": "DESCENDING" },
+        { "fieldPath": "state", "order": "DESCENDING" }
       ]
     }
   ],

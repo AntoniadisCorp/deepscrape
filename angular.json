@@ -27,7 +27,6 @@
             "ssr": {
               "entry": "server.ts"
             },
-            // "prerender": true,
             "outputPath": "dist/deepscrape",
             "index": "src/index.html",
             "browser": "src/main.ts",

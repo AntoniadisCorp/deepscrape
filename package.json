@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:elysia": "ng serve --configuration=elysia",
     "release:prepare": "npx semantic-release --no-ci --dry-run",
     "release": "npx semantic-release",
     "prbuild": "ts-node src/environments/prod_gen.ts",

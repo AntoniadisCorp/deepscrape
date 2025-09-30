@@ -1,3 +1,5 @@
+# local emulator data
+/local-data
 # Compiled JavaScript files
 /lib
 # Remove lib js files
