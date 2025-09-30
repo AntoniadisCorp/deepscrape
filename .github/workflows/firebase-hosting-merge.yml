@@ -46,6 +46,8 @@ jobs:
           echo "GROQ_API_KEY=$GROQ_API_KEY"
           echo "GOOGLE_API_KEY=$GOOGLE_API_KEY"
           echo "JINAAI_API_KEY=$JINAAI_API_KEY"
+          echo "API_CRAWL4AI_URL=$API_CRAWL4AI_URL"
+          echo "API_ARACHNEFLY_URL=$API_ARACHNEFLY_URL"
         env:
           PRODUCTION: true
           API_KEY: ${{ secrets.API_KEY }}
@@ -62,6 +64,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       # Generate environment.ts
       - name: Generate environment.ts
         run: npm run prbuild
@@ -81,6 +85,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       # Build Angular App in production mode
       - name: Build Angular App
         env:
@@ -99,6 +105,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
         run: npm run build
       - name: Install Functions Dependencies
         working-directory: ./functions
@@ -125,7 +133,8 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
           UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
-          API_CRAWL4AI_URL: "https://crawlagent.fly.dev"
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       # - name: Deploy Firebase Functions
       #   uses: w9jds/firebase-action@master
       #   with:
