@@ -123,7 +123,7 @@ export class CrawlConfigComponent {
 
     this.activeLink = ''
 
-    this.configForm = this.fb.group({
+    this.configForm = this.fb.group<CrawlerRunConfig | any>({
       // Crawler Configuration Title
       title: this.fb.control('', {
         nonNullable: true, validators: [
@@ -312,6 +312,14 @@ export class CrawlConfigComponent {
     const newConfig = { ...config }; // Create a copy of the config object
     delete newConfig.title; // Remove the 'title' attribute from the config object
 
+    const fields = 
+      ['delayBeforeReturnHtml', 'wordCountThreshold', 'pageTimeout', 
+       'screenshotHeightThreshold', 'screenshotWaitFor','scrollDelay',
+       'imageDescriptionMinWordThreshold', 'imageScoreThreshold'
+      ]
+
+    // Convert specific fields to numbers
+    this.convertFormFieldsToNumber(newConfig, fields)
 
     // Filter out null, unchanged, or default values
     const filteredConfig: CrawlerRunConfig = Object.keys(newConfig).reduce((acc: any, key) => {
@@ -331,6 +339,17 @@ export class CrawlConfigComponent {
     }, {})
 
     return filteredConfig
+  }
+
+  private convertFormFieldsToNumber(config: any, fields: string[]) {
+    fields.forEach(field => {
+      if (config[field] !== null && config[field] !== undefined && config[field] !== '') {
+        const parsedValue = parseFloat(config[field]);
+        if (!isNaN(parsedValue)) {
+          config[field] = parsedValue;
+        }
+      }
+    })
   }
 
   private setCrawlConfiguration() {

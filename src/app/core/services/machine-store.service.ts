@@ -31,7 +31,6 @@ export class MachineStoreService {
 
   constructor(
     private firestoreService: FirestoreService,
-    private firestore: Firestore,
     private functions: Functions,
     private loadingBar: LoadingBarService,
 
@@ -40,9 +39,6 @@ export class MachineStoreService {
 
 
     this.initializeOperations(null)
-
-    // set the firestore instance
-    this.firestore = this.firestoreService.getInstanceDB('easyscrape')
   }
 
   private initializeOperations(storeMachines: string | null) {
@@ -87,7 +83,7 @@ export class MachineStoreService {
           }
 
           const newMachine = machines?.map((machine: FlyMachine): any => {
-            const created_At = machine.created_at // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
+            // const created_At = (machine.created_at as any).toDate() // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
             // const showKey = key.showKey
             return { ...machine }
           })

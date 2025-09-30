@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core'
-import { Firestore } from '@angular/fire/firestore'
+import { Firestore, Timestamp } from '@angular/fire/firestore'
 import { FirestoreService } from './firestore.service'
 import { deleteOperationDoc, storeCrawlOperation } from '../functions'
 import { from } from 'rxjs/internal/observable/from'
@@ -9,10 +9,7 @@ import { Functions, httpsCallable } from '@angular/fire/functions'
 import { SessionStorage } from './storage.service'
 import { LoadingBarService } from '@ngx-loading-bar/core';
 
-type CrawlOpePages = {
-  operations: CrawlOperation[],
-  totalPages: number
-}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -186,7 +183,14 @@ export class CrawlStoreService {
           }
 
           const newOpe = operations?.map((oper: CrawlOperation): any => {
-            const created_At = oper.created_At // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
+            // const created_At = (oper.created_At as any).toDate()
+            // const metrics = oper.metrics ? { 
+            //   ...oper.metrics, 
+            //   timestamp: (oper.metrics.timestamp instanceof Timestamp) 
+            //     ? (oper.metrics.timestamp as any).toDate() 
+            //     : oper.metrics.timestamp 
+            // } : undefined
+            // oper = { ...oper, metrics }
             // const showKey = key.showKey
             return { ...oper }
           })

@@ -10,7 +10,7 @@ import {
   Timestamp, writeBatch, WriteBatch,
   where
 } from '@angular/fire/firestore'
-import { CartPack, CrawlPack, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
+import { BrowserProfile, CartPack, CrawlPack, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
 import { map, Observable, of, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
@@ -200,15 +200,19 @@ export class FirestoreService {
       }
 
       if (!guestInfo) {
-        const loginMetrics = loginMetricsSnap["data"]() as loginMetrics
+        const loginMetrics = loginMetricsSnap["data"]() as loginMetrics | undefined
 
-        let err2, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
+        if (loginMetrics && loginMetrics.lastGuestId) {
+          let err2, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
 
-        if (err2) {
-          console.warn("Failed to get guest data:", err2)
-        } else if (guestSnap['exists']()) {
-          guestInfo = guestSnap['data']() as Guest
-          console.log("Guest info retrieved from lastGuestId:", guestInfo)
+          if (err2) {
+            console.warn("Failed to get guest data:", err2)
+          } else if (guestSnap['exists']()) {
+            guestInfo = guestSnap['data']() as Guest
+            console.log("Guest info retrieved from lastGuestId:", guestInfo)
+          }
+        } else {
+          console.warn("loginMetrics is undefined or lastGuestId is missing.")
         }
       }
 
@@ -278,7 +282,7 @@ export class FirestoreService {
         id: userId,
         lastLoginId: newlogin.id,
         lastSignInTime: currentTime,
-        loginCount: increment(1),
+        loginCount: this.increment(1),
       }
 
       // Update existing document
@@ -485,6 +489,28 @@ export class FirestoreService {
     }
   }
 
+  /* Crawler Packs - Browser Profiles - Crawler Configurations - Crawler Results - Crawler Strategies 
+  *  Each of these should be their own collections and subcollections
+  *  under the user document.
+  */
+
+  async storeBrowserProfile(userId: string, profile: BrowserProfile): Promise<void> {
+    try {
+      const browserCollection = this.collection(this.firestore, `users/${userId}/browser`);
+      profile.uid = userId;
+
+      const browserRef = profile.id
+        ? this.docRef(browserCollection, profile.id) // Update existing profile
+        : this.newDocRef(browserCollection); // Create new profile
+
+      await this.setDoc(browserRef, profile, { merge: !!profile.id })
+      console.log(`${profile.id ? 'Browser profile updated' : 'New browser profile created'} in Firestore.`);
+    } catch (error) {
+      console.error('Error storing user browser profile data:', error)
+      throw error;
+    }
+  }
+
 
 
   /**
@@ -509,6 +535,17 @@ export class FirestoreService {
     return runInInjectionContext(
       this._injector,
       (): DocumentReference => doc(this.firestore, path, ...pathSegments),
+    )
+  }
+
+  /**
+   * Note that the doc method could accept a CollectionReference or DocumentReference in addition to
+   * Firestore.
+   */
+  public docRef<AppModelType, DbModelType extends DocumentData>(reference: CollectionReference<AppModelType, DbModelType>, path?: string, ...pathSegments: string[]): DocumentReference {
+    return runInInjectionContext(
+      this._injector,
+      (): DocumentReference => doc(reference, path, ...pathSegments) as DocumentReference<DocumentData, DocumentData>,
     )
   }
 
@@ -712,6 +749,13 @@ export class FirestoreService {
       async (): Promise<void> => {
         await this.afAuth.signOut()
       },
+    )
+  }
+
+  private increment(value: number): FieldValue {
+    return runInInjectionContext(
+      this._injector,
+      (): FieldValue => increment(value),
     )
   }
 

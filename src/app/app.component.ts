@@ -16,6 +16,8 @@ import { Inject, OnInit } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgswUpdateService } from './core/services/ngsw-update.service';
+import { Analytics, logEvent } from '@angular/fire/analytics';
 
 /* 
                      ,//@@@.
@@ -55,7 +57,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     SizeDetectorComponent
   ],
   // changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ThemeToggleComponent],
+  providers: [ThemeToggleComponent, NgswUpdateService],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   // host: {
@@ -65,7 +67,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   animations: [fadeInOutAnimation]
 })
 export class AppComponent implements OnInit {
-  private destroyRef = inject(DestroyRef); 
+  private destroyRef = inject(DestroyRef)
+  private analytics = inject(Analytics)
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent;
   protected snackbarMessage = '';
   protected snackbarAction = '';
@@ -83,15 +86,26 @@ export class AppComponent implements OnInit {
     private theme: ThemeToggleComponent,
     private snackbarService: SnackbarService,
     private authService: AuthService,
+    private ngswUpdate: NgswUpdateService,
     private http: HttpClient, // Inject HttpClient
     // Inject ActivatedRoute to access route data
     // private activatedRoute: ActivatedRoute,
   ) {
+    //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
+    //Add 'implements AfterViewInit' to the class.
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
       if (event instanceof NavigationStart) {
         this.isLoading = true;
       } else if (event instanceof NavigationEnd) {
-        this.isLoading = false;
+        this.isLoading = false
+        try {
+          // Safely log event, won't crash if analytics isn't ready
+          logEvent(this.analytics, 'screen_view' as any, {
+            screen_name: event.urlAfterRedirects,
+          });
+        } catch (e) {
+          console.warn('Analytics not ready:', e);
+        }
       }
     })
 
@@ -106,38 +120,40 @@ export class AppComponent implements OnInit {
   get token() {
     return this.authService.token
   }
-  ngOnInit(){
+  ngOnInit() {
+
     this.theme.setDefaultTheme();
 
     const isBrowser = isPlatformBrowser(this.platformId)
     // Make a request to the status endpoint to trigger guestTracker
     if (isBrowser) {
       this.http.get(`/status`)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          console.log('API Status Check:', response);
-        },
-        error: (error) => {
-          console.error('Error checking API status:', error);
-        }
-      })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (response) => {
+            console.log('API Status Check:', response);
+          },
+          error: (error) => {
+            console.error('Error checking API status:', error);
+          }
+        })
     }
-  
+
   }
 
 
   ngAfterViewInit() {
+    
 
     // Set the initial values
     this.isAuthState$ = this.authService.isAuthenticated()
-    .pipe(
-      map((isAuthData) => {
-        const { isAuthenticated } = isAuthData
-        console.log('User is logged in: ', isAuthenticated)
-        return isAuthenticated
-      })
-    )
+      .pipe(
+        map((isAuthData) => {
+          const { isAuthenticated } = isAuthData
+          console.log('User is logged in: ', isAuthenticated)
+          return isAuthenticated
+        })
+      )
 
     this.snackbarService.setSnackbar(this.snackbar)
   }

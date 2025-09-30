@@ -31,6 +31,7 @@ import { DEFAULT_PROFILE_URL } from 'src/app/core/variables'
 import { SnackBarType } from 'src/app/core/components'
 import { CookieService } from 'ngx-cookie-service' // Import CookieService
 import { NAVIGATOR } from 'src/app/core/providers'
+import { Analytics, logEvent, setUserId, setUserProperties } from '@angular/fire/analytics'
 
 type loginCredentials = {
     mergeRequired: boolean
@@ -46,7 +47,7 @@ type loginCredentials = {
   styleUrl: './login.component.scss',
 })
 export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
-
+  private analytics = inject(Analytics) 
   private localStorage = inject(LocalStorage)
   protected loading: Loading
   protected loginForm: FormGroup // Combined form for email/phone and password/code
@@ -58,7 +59,6 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   public phoneVerificationSent: boolean = false // Tracks if SMS code has been sent
   protected pendingCredential: AuthCredential | null = null // Stores credential for linking
 
-  protected isAuthenticated: boolean
   private authSubs: Subscription
   private signInSusbscribe: Subscription
   private signInWithEmailSusbscribe: Subscription
@@ -67,7 +67,6 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private firestore: Firestore,
     private firestoreService: FirestoreService,
     private auth: Auth,
     private authService: AuthService,
@@ -96,8 +95,6 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           this.isAuthenticated = isAuthenticated
         }
       ) */
-
-    // this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 
     this.loginForm = this.formBuilder.group({
       identifier: this.formBuilder.control('', {
@@ -137,6 +134,17 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit(): void {
 
   }
+  private trackLoginAttempt(method: string, success: boolean): void {
+    logEvent(this.analytics, 'login_attempt', {
+      method,
+      success,
+      timestamp: new Date().toISOString(),
+      browser: getBrowser(this.navigator) || 'Unknown',
+      platform: this.navigator?.platform || 'Unknown',
+    })
+  }
+
+
 
   private initializeRecaptcha() {
 
@@ -186,6 +194,8 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
             if (response.user) {
 
              try {
+                this.trackLoginAttempt('email', true)
+
                 // login metrics
                 await this.loginMetrics(response.user.uid, 'password')
 
@@ -193,12 +203,14 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
                 const isVerfied = await this.onLoginUpdate(response, 'password')
                 if (!isVerfied) return
                 
-                this.isAuthenticated = true
+
                 this.showSnackbar('Sign-in successful', SnackBarType.success, '', 3000)
                 const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
+                setUserId(this.analytics, response.user.uid)
                 this.router.navigateByUrl(returnUrl)
 
               } catch (error) {
+                this.trackLoginAttempt('email', false)
                 this.errorMessage = getErrorMessage(error)
                 this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                 this.loading.email = false
@@ -208,6 +220,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           },
           error: (error) => {
             // this.extractFirebaseError(error)
+            this.trackLoginAttempt('email', false)
             this.errorMessage = getErrorMessage(error)
             this.handleAccountExistsError(error, 'password')
             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
@@ -253,25 +266,30 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           }
 
           try {
+            this.trackLoginAttempt('google', true)
             // login metrics
             await this.loginMetrics(response.user.uid, 'google.com')
 
             await this.firestoreService.storeUserData(response.user, "google.com", true)
             this.showSnackbar('Sign-in successful', SnackBarType.success, '', 3000)
             const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
+            setUserId(this.analytics, response.user.uid)
             this.router.navigateByUrl(returnUrl)
           } catch (error) {
+            this.trackLoginAttempt('google.com', false)
             this.errorMessage = getErrorMessage(error)
             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
             this.loading.google = false
             return
           }
         } else {
+          this.trackLoginAttempt('google.com', false)
           this.errorMessage = 'User object is null after sign-in.'
           this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
         }
       },
       error: (error) => {
+        this.trackLoginAttempt('google.com', false)
         // this.extractFirebaseError(error)
         this.handleAccountExistsError(error, 'google.com')
         this.errorMessage = getErrorMessage(error)
@@ -306,6 +324,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
             })
           }
           try {
+            this.trackLoginAttempt('github.com', true)
             // login metrics
             await this.loginMetrics(response.user.uid, 'github.com')
 
@@ -313,8 +332,10 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
             await this.firestoreService.storeUserData(response.user, "github.com", true)
             this.showSnackbar('Sign-in successful', SnackBarType.success, '', 3000)
             const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
+            setUserId(this.analytics, response.user.uid)
             this.router.navigateByUrl(returnUrl)
           } catch (error) {
+            this.trackLoginAttempt('github.com', false)
             this.errorMessage = getErrorMessage(error)
             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
             this.loading.github = false
@@ -323,6 +344,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       },
       error: (error) => {
+        this.trackLoginAttempt('github.com', false)
         // this.extractFirebaseError(error)
         this.handleAccountExistsError(error, 'github.com')
         this.errorMessage = getErrorMessage(error)
@@ -431,11 +453,13 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       if (userCredential.user) {
         let userData = await this.firestoreService.getUserData(userCredential.user.uid)
         if (userData) {
+          this.trackLoginAttempt('phone', true);
           // Update user data in Firestore, including phone number and verification status
           // Assuming phoneVerified is set to true by Firebase on successful verification
           await this.firestoreService.storeUserData(userCredential.user, "phone", true)
 
           if (!userCredential.user.phoneNumber) {
+            this.trackLoginAttempt('phone', false)
             this.showSnackbar('Phone number not found on user object after verification.', SnackBarType.error, '', 5000)
             this.resetAuthFlow()
             return
@@ -447,15 +471,18 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
           this.router.navigateByUrl(returnUrl)
         } else {
+          this.trackLoginAttempt('phone', false)
           this.showSnackbar('Sign-in failed: User data not found after phone verification.', SnackBarType.error, '', 3000)
           this.resetAuthFlow()
         }
       } else {
+        this.trackLoginAttempt('phone', false)
         this.errorMessage = 'User object is null after phone verification.'
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
         this.resetAuthFlow()
       }
     } catch (error: any) {
+      this.trackLoginAttempt('phone', false)
       console.error('Error verifying phone number code:', error)
       this.errorMessage = getErrorMessage(error)
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)

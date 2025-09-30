@@ -28,11 +28,12 @@ import { API_AUTH_FIREBASE } from '../variables';
 import { cleanAndParseJSON, handleError } from '../functions';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { of } from 'rxjs';
+import { of, pipe, timestamp } from 'rxjs';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CookieService } from 'ngx-cookie-service';
 import { LocalStorage } from './storage.service';
+import { Analytics, logEvent } from '@angular/fire/analytics';
 
 @Injectable({
   providedIn: 'root'
@@ -40,6 +41,7 @@ import { LocalStorage } from './storage.service';
 export class AuthService {
 
   private destroyRef = inject(DestroyRef)
+  private analytics = inject(Analytics)
   private cookieService = inject(CookieService)
   private localStorage = inject(LocalStorage)
   token: string | undefined = ''
@@ -370,12 +372,22 @@ export class AuthService {
 
     return from(this.fireService.setSignOutMetrics(userId, loginId)).pipe(
       switchMap(() => from(this.fireService.signOut())),
+      tap( () => this.trackingLogout('logout')),
       catchError(async (error) => { 
         console.error('Logout error:', error)
+        this.trackingLogout('logout', true)
         await this.fireService.signOut()
         return throwError(() => error) 
       }
     ))
+  }
+
+  private trackingLogout(method: string, withError: boolean = false) {
+    logEvent(this.analytics, 'logout', {
+      method: 'logout',
+      withError,
+      timestamp: new Date().toISOString()
+    })
   }
 
   private getLoginIdFromStorage() {

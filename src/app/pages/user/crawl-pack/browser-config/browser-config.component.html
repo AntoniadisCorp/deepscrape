@@ -221,7 +221,7 @@
         </div>
         } @else {
         <div
-          class="flex justify-between items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2">
+          class="flex justify-between items-start mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2">
           <div class="w-full">
             <app-stinput
               [control]="configForm.get('title') | formControl"
@@ -238,10 +238,9 @@
                   configForm.invalid || savingNewProfile
               }"
               title="save new profile"
-              class="inline-flex text-lg min-w-32 items-center justify-center text-center border border-transparent leading-[0] gap-2 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-3 px-4 duration-300 rounded-full transition-colors">
+              class="inline-flex text-lg items-center justify-center text-center border border-transparent leading-[0] gap-2 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-3 px-3 duration-300 rounded-full transition-colors">
               @if (!savingNewProfile) {
-              <span>save</span>
-              <mat-icon class="font-bold !w-[2rem] !h-[1.6rem]">save</mat-icon>
+              <mat-icon class="font-bold">save</mat-icon>
               } @else {
               <mat-spinner
                 [diameter]="20"

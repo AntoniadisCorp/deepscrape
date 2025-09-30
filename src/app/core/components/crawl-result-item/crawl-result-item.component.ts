@@ -1,16 +1,17 @@
 import { Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, AfterViewInit, ElementRef, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule, JsonPipe, NgClass, NgFor, NgIf, NgSwitch, NgSwitchCase } from '@angular/common';
-import { CrawlResult } from '../../types/crawl-result.type';
+import { CrawlResults } from '../../types';
 import { expandCollapseAnimation } from 'src/app/animations';
 import { MarkdownModule } from 'ngx-markdown';
 import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule
 import { LucideAngularModule } from 'lucide-angular';
 import { myIcons } from 'src/app/shared';
+import { PdfSrcPipe } from '../../pipes';
 
 @Component({
   selector: 'app-crawl-result-item',
   imports: [CommonModule, NgClass, NgIf, NgFor, NgSwitch, NgSwitchCase, JsonPipe, MarkdownModule, MatIconModule,
-    LucideAngularModule
+    LucideAngularModule, PdfSrcPipe
   ],
   animations: [expandCollapseAnimation],
   templateUrl: './crawl-result-item.component.html',
@@ -27,9 +28,9 @@ import { myIcons } from 'src/app/shared';
   `]
 })
 export class CrawlResultItemComponent implements AfterViewInit {
-  @Input() crawlResult!: CrawlResult;
+  @Input() crawlResult!: CrawlResults;
   @Input() clipboardButton: any; // Type as any for now, as it's a component reference
-  @Output() toggleExpand = new EventEmitter<CrawlResult>();
+  @Output() toggleExpand = new EventEmitter<CrawlResults>();
 
   readonly icons = myIcons
   activeSubTab: string = 'overview';

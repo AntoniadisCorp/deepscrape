@@ -10,6 +10,7 @@ import { connectFunctionsEmulator, getFunctions, provideFunctions } from '@angul
 import { getMessaging, provideMessaging } from '@angular/fire/messaging';
 import { getPerformance, providePerformance } from '@angular/fire/performance';
 import { getStorage, provideStorage } from '@angular/fire/storage';
+import { provideAnalytics, getAnalytics, ScreenTrackingService, UserTrackingService } from '@angular/fire/analytics';
 
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, provideAppCheck, ReCaptchaV3Provider } from '@angular/fire/app-check';
 import { getAuth, provideAuth } from '@angular/fire/auth';
@@ -57,9 +58,12 @@ export const appConfig: ApplicationConfig = {
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
-    provideClientHydration(/* withHttpTransferCacheOptions({
-      includePostRequests: true
-    }) */),
+    provideAnalytics(() => getAnalytics()),
+    ScreenTrackingService, // track page views automatically
+    UserTrackingService, // track unique users automatically
+    /* withHttpTransferCacheOptions({
+        includePostRequests: true
+      }) */
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'

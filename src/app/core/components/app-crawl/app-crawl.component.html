@@ -76,12 +76,13 @@
     <div class="flex w-full items-center justify-start">
       <ng-container *ngIf="taskStatus$ | async as taskStatus">
         <div
-          *ngIf="taskStatus === 'In Progress'"
+          *ngIf="taskStatus.status === 'In Progress' || taskStatus.status === 'Pending'"
           class="animate-pulse bg-yellow-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-yellow-700 dark:text-yellow-200 p-4 rounded shadow-md">
-          Processing... Please wait.
+          Processing... Please wait. {{taskStatus.status === 'Pending' ? '(in queue)' : ''}}
         </div>
+        
         <div class="spinner"
-        *ngIf="taskStatus === 'In Progress'">
+        *ngIf="taskStatus.status === 'In Progress' || taskStatus.status === 'Pending'">
           <div></div>
           <div></div>
           <div></div>
@@ -90,17 +91,17 @@
           <div></div>
         </div>
         <div
-          *ngIf="taskStatus === 'Completed'"
+          *ngIf="taskStatus.status === 'Completed'"
           class="bg-green-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-green-700 dark:text-green-200 p-4 rounded shadow-md">
-          Task completed successfully!
+          Task completed {{taskStatus?.result?.status === 'Failed' ? 'with error' : 'successfully'}}!
         </div>
         <div
-          *ngIf="taskStatus === 'Canceled'"
+          *ngIf="taskStatus.status === 'Canceled'"
           class="bg-red-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-red-700 dark:text-red-200 p-4 rounded shadow-md">
-          Task was canceled.
+          Task was canceled {{taskStatus?.result?.status === 'Failed' ? 'with error' : 'successfully'}}.
         </div>
         <div
-          *ngIf="taskStatus === 'Failed'"
+          *ngIf="taskStatus.status === 'Failed'"
           class="bg-red-600 dark:bg-transparent dark:rounded-none dark:shadow-none text-white p-4 rounded">
           Task failed. Please try again.
         </div>
@@ -165,6 +166,13 @@
   </div>
   <!-- Results Display Area -->
   <div class="flex flex-col w-full gap-3 mt-4">
+    @if(progress !== null) {
+    <mat-progress-bar
+      class="mt-2 rounded-full h-3"
+      mode="determinate"
+      color="primary"
+      [value]="progress"></mat-progress-bar>
+    }
     <app-crawl-result-item
       *ngFor="let result of crawlResults; trackBy: trackByCrawlResult"
       [crawlResult]="result"

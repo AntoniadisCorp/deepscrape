@@ -6,6 +6,7 @@ import { FirestoreService } from './firestore.service';
 import { Firestore } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, Functions, getFunctions, httpsCallable, HttpsCallableResult } from '@angular/fire/functions';
 import { environment } from 'src/environments/environment';
+import { toDate } from '../functions';
 @Injectable({
     providedIn: 'root'
 })
@@ -79,9 +80,9 @@ export class ApiKeyService {
 
                     console.log(apiKeys)
                     const newKeys = apiKeys.map((key: ApiKey): ApiKey => {
-                        const created_At = new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
+                        const created_At = toDate(key.created_At)
                         const showKey = key.showKey
-                        return { ...key, visibility: false, menu_visible: false, key: showKey, created_At: created_At }
+                        return { ...key, visibility: false, menu_visible: false, key: showKey, created_At }
                     })
 
                     return newKeys

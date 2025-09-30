@@ -11,7 +11,7 @@ export function handleError(error: HttpErrorResponse | any): Observable<never> {
     } else {
         console.error(
             `Backend returned code ${error.status}, ` +
-            `body was: ${error.error}`)
+            `body was:`, error.error, error)
     }
     return throwError(() => 'Something bad happened; please try again later.');
 }

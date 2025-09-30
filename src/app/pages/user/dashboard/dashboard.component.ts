@@ -24,16 +24,5 @@ export class DashboardComponent {
   // Handle consent decision
 
   fetchData() {
-    this.crawlservice.getfromCrawl4Ai().subscribe({
-      error: (error) => {
-        console.log(error)
-      },
-      next: (data) => {
-        console.log(data)
-      },
-      complete: () => {
-        console.log('complete')
-      }
-    })
   }
 }

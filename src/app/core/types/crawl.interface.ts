@@ -1,3 +1,4 @@
+import { Timestamp } from "@angular/fire/firestore"
 import { CrawlOperationStatus } from "../enum"
 import { convertKeysToSnakeCase } from "../functions"
 import { Author } from "./firestore.interface"
@@ -390,12 +391,14 @@ export interface CrawlResult {
 export type CrawlStatus = {
     task_id: string;
     status: string;
+    error?: string
+    result?: {status: string, message: string}
     created_at: number;
     urls: string[];
     _links: {
         self: { href: string };
         refresh: { href: string };
-    };
+    }
 }
 
 
@@ -473,23 +476,38 @@ export type CrawlPackRef = Record<string, CrawlerRunConfig | BrowserConfig | Cra
 export type CrawlOperation = {
 
     id?: string
+    task_id?: string
     urls: string[]
     author: Author,
     name: string
+    type: CrawlJobType
+    urlPath?: string
     color: string
     modelAI?: AIModel
     created_At: number
     updated_At?: number
     scheduled_At?: number
-    sumPrompt: string
+    prompt?: string
     status: CrawlOperationStatus
     metadataId?: string | null // CrawlPack
-
+    metrics?: CrawlOperationMetrics
     // Crawl Operation Metadata Results
     error?: string | null
     storage?: CrawlStorage[]
 }
 
+export type CrawlOperationMetrics = {
+
+    id?: string
+    duration: number
+    machine_id: string
+    peak_memory: number
+    memory_used: number
+    timestamp: Date
+    urls_processed: number
+}
+
+export type CrawlJobType = 'playground' | 'operation'
 export type CrawlPackType = 'crawl4ai' | 'spider'
 
 export type CrawlPackConfigs = {
@@ -499,6 +517,7 @@ export type CrawlPackConfigs = {
 }
 export type CartPack = {
     uid: string,
+    title: string,
     type: CrawlPackType,
     crawlResultconfig: CrawlResult
     crawlConfig: CrawlerRunConfig
@@ -508,7 +527,7 @@ export type CartPack = {
 export type CrawlPack = {
     id: string
     uid: string
-    name: string
+    title: string
     type: CrawlPackType
     created_at: Date
     updated_at?: Date
@@ -521,9 +540,12 @@ export type CrawlPack = {
 export type CrawlTask = {
     id: string, 
     status: CrawlOperationStatus,
+    tempTaskId: string,
+    operationId: string,
     _links: {
         self: { href: string },
         status: { href: string },
+        cancel: {href: string}
     },
 
  }

@@ -13,13 +13,12 @@
   <!-- Current Cart Configuration -->
   <div class="mb-8">
     <div
-      class="flex items-center justify-between mt-5 mb-2"
+      class="flex items-center justify-between mt-5 mb-6"
       *ngIf="cartItems$ | async">
       <h2 class="text-2xl dark:text-gray-100 text-gray4 font-normal">
         Your Current Cart
       </h2>
-
-      <div class="class flex gap-2">
+      <div class="flex gap-2">
         <h2 class="text-2xl font-semibold relative">
           <div
             *ngIf="loadingCartItems"
@@ -27,7 +26,7 @@
             <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
           </div>
           <button
-            [disabled]="!(cartItems$ | async) || loadingCartItems"
+            [disabled]="!(cartItems$ | async) || loadingCartItems || deletingCart"
             (click)="saveCartItems()"
             appRipple
             rippleColor="dark"
@@ -41,12 +40,12 @@
         </h2>
         <h2 class="text-2xl font-semibold relative">
           <div
-            *ngIf="loadingCartItems"
+            *ngIf="deletingCart"
             class="absolute right-[1.5rem] top-[.6rem] z-10 h-5 w-5">
             <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
           </div>
           <button
-            [disabled]="!(cartItems$ | async) || loadingCartItems"
+            [disabled]="!(cartItems$ | async) || loadingCartItems || deletingCart"
             (click)="openDialog()"
             appRipple
             rippleColor="dark"
@@ -64,6 +63,19 @@
           }
         </h2>
       </div>
+    </div>
+    <div class="mb-4" *ngIf="cartItems$ | async">
+      <label
+        class="block w-full text-sm justify-self-center font-medium text-gray-700 dark:text-gray-200">
+        <!-- Page Timeout type of number -->
+        <div class="w-full">
+          <app-stinput
+            [control]="packTitleControl"
+            [leftIcon]="'edit'"
+            [label]="'Crawl Pack Title'"
+            ></app-stinput>
+        </div>
+      </label>
     </div>
     <ng-container
       class="border dark:border-gray-300/30 border-gray-100 rounded-lg p-4"

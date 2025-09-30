@@ -1,17 +1,17 @@
-import { AsyncPipe, DatePipe, NgClass, NgFor, NgIf } from '@angular/common'
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, ViewChild } from '@angular/core'
+import { AsyncPipe, DatePipe, DecimalPipe, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common'
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, SimpleChanges, ViewChild } from '@angular/core'
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressBarModule } from '@angular/material/progress-bar'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { RouterLink, Router, ActivatedRoute } from '@angular/router'
-import { distinct, distinctUntilChanged, Observable, of, refCount, Subject, Subscription, switchMap, tap } from 'rxjs'
+import { combineLatest, distinct, distinctUntilChanged, map, Observable, of, refCount, Subject, Subscription, switchMap, tap, timer, finalize } from 'rxjs'
 import { DropdownComponent, GinputComponent, LoadingDotsComponent, PromptareaComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
 import { Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { CrawlOperationStatus } from 'src/app/core/enum'
 import { crawlOperationStatusColor, isArray, setAIModel, setOperationStatusList } from 'src/app/core/functions'
 import { FormControlPipe } from 'src/app/core/pipes'
-import { AuthService, CrawlStoreService, ScrollService, SnackbarService } from 'src/app/core/services'
+import { AuthService, CrawlStoreService, ScrollService, SnackbarService, TaskStatus, WebSocketService } from 'src/app/core/services'
 import { AIModel, CrawlConfig, CrawlOperation, DropDownOption, Users } from 'src/app/core/types'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -28,7 +28,7 @@ import { UserInfo } from '@angular/fire/auth'
     MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe,
     GinputComponent, DropdownComponent, RouterLink, PromptareaComponent,
     ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner,
-    MatInputModule,
+    MatInputModule, DecimalPipe,
     MatTimepickerModule,
     MatDatepickerModule,
   ],
@@ -101,6 +101,7 @@ export class OperationsComponent {
   private destroy$ = new Subject<void>()
   private crawlSubs: Subscription
   private pagesSubs: Subscription
+  private timerSubs: Subscription
 
   protected totalOperPerPage: number
 
@@ -108,7 +109,8 @@ export class OperationsComponent {
   protected operOptions: { menu_visible: boolean, id: string }[] = []
 
   protected isOperOptionsLoading: boolean
-
+  private taskStatuses: TaskStatus[] = []
+  private _seenTaskIds: Set<string> = new Set<string>()
   constructor(
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
@@ -116,8 +118,9 @@ export class OperationsComponent {
     private authService: AuthService,
     private crawlStoreService: CrawlStoreService,
     private snackbarService: SnackbarService,
-
     private scroll: ScrollService,
+
+    private wsService: WebSocketService
   ) {
     this.initVariables()
     this.initFormBuilders()
@@ -237,7 +240,81 @@ export class OperationsComponent {
   }
   initOperations() {
 
-    this.operations$ = this.crawlStoreService.operations$
+    // Subscribe to task status updates
+    this.wsService.taskStatus$
+      .subscribe(
+        statuses => {
+          this.taskStatuses = statuses;
+
+          // Track new non-final statuses for one-time refresh
+          if (!this._seenTaskIds) this._seenTaskIds = new Set<string>();
+          let shouldRefresh = false;
+
+          for (const s of statuses) {
+            if (!s.final && !this._seenTaskIds.has(s.task_id)) {
+              this._seenTaskIds.add(s.task_id);
+              shouldRefresh = true;
+            }
+          }
+
+          if (shouldRefresh) {
+            this.refreshOperationList()
+          }
+
+          // At the end, if all statuses are final, refresh
+          if (statuses.length > 0 && statuses.every(s => s.final)) {
+            this.refreshOperationList()
+            // Optionally clear seenTaskIds for next batch
+            this._seenTaskIds.clear()
+          }
+        }
+      )
+
+
+    // Combine operations$ and taskStatus$
+    this.operations$ = combineLatest([
+      this.crawlStoreService.operations$,
+      this.wsService.taskStatus$
+    ]).pipe(
+      map(([operations, statuses]) => {
+        if (!operations) return operations;
+        // Map each operation and update its status if found in statuses
+        return operations.map((op: CrawlOperation) => {
+          const taskStatus = statuses.find((ts: any) => ts.task_id === op.task_id);
+          if (taskStatus) {
+            return {
+              ...op,
+              status: taskStatus.status as CrawlOperationStatus,
+              color: crawlOperationStatusColor(taskStatus.status as CrawlOperationStatus)
+            }
+          }
+          return op
+        })
+      }),
+      tap((operations: CrawlOperation[] | null | undefined) => {
+        if (!operations || operations.length === 0) {
+          return
+        }
+        // Connect to websocket for active tasks
+        const taskIds = operations
+          .filter(op => op.status !== CrawlOperationStatus.COMPLETED &&
+            op.status !== CrawlOperationStatus.FAILED &&
+            op.status !== CrawlOperationStatus.CANCELED)
+          .map(op => op.task_id)
+          .filter((taskId): taskId is string => !!taskId) // Type guard to filter out undefined/null taskIds
+        this.connectToTaskWebSocket(taskIds)
+      }),
+      switchMap((operations) => {
+        if (!operations || operations.length === 0) {
+          return of(operations)
+        }
+        return of(operations)
+      }),
+      finalize(()=> {
+        this.loadingOperList = false
+      })
+    )
+
     this.totalOpePages$ = this.crawlStoreService.totalPages$
     this.inTotal$ = this.crawlStoreService.inTotal$
 
@@ -251,26 +328,24 @@ export class OperationsComponent {
         id: `${i + 1}`,
       })
     }
+  }
 
-    /* this.addOperation({
-      authorId: "George Konstantine",
-      created_At: Date.now(),
-      name: "Create docs embeddings for given urls",
-      urls: ["https://akispetretzikis.com/recipe/8615/revithada-me-chwriatiko-loukaniko"],
-      sumPrompt: `create a most beautifull custom table not html tabe, for example alist of box operations 
-      with tailwind dark and light mode in angular where each operation has date created author name actions 
-      operation name summerized prompt urls use outer boxes in each light or dark mode`,
-      status: CrawlOperationStatus.READY,
-      color: crawlOperationStatusColor(CrawlOperationStatus.READY),
+  // ngOnChanges(changes: SimpleChanges): void {
+  //   if (changes['taskIds'] && !changes['taskIds'].firstChange) {
+  //     this.connectToTaskWebSocket();
+  //   }
+  // }
 
-    }) */
+  private connectToTaskWebSocket(taskIds: string[] | undefined): void {
+    if (!taskIds || taskIds.length === 0)
+      return
 
+    this.wsService.connectAndTrackTasks(taskIds)
   }
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-
   }
 
   protected refreshOperationList() {
@@ -282,12 +357,13 @@ export class OperationsComponent {
     this.crawlStoreService.nextPage(this.currentOpePage)
 
     // scroll to the search bar target in the page
-    this.scroll.scrollToElement(this.searchBar.nativeElement as HTMLElement)
+    if (this.searchBar.nativeElement)
+      this.scroll.scrollToElement(this.searchBar.nativeElement as HTMLElement)
 
-    setTimeout(() => {
-      // loading Operation List
-      this.loadingOperList = false
-    }, 400)
+    // Use RxJS timer instead of setTimeout
+    this.timerSubs = timer(400).subscribe(() => {
+      this.loadingOperList = false;
+    })
   }
 
   private prepareCrawlOperation(operation: CrawlOperation) {
@@ -476,7 +552,8 @@ export class OperationsComponent {
       created_At: Date.now(),
       name: this.operationName.value,
       urls: arrURL,
-      sumPrompt: this.userprompt.value, // 
+      type: 'operation',
+      prompt: this.userprompt.value, // 
       scheduled_At,  // 30 * 60 * 1000
       status: this.operationStatus.value.code as CrawlOperationStatus,
       color: crawlOperationStatusColor(this.operationStatus.value.code as CrawlOperationStatus),
@@ -557,6 +634,28 @@ export class OperationsComponent {
   }
 
 
+  getVisiblePageNumbers(totalPages: number): number[] {
+    // When we have 7 or fewer pages, just return all pages
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // For more than 7 pages, we'll show a sliding window of 5 pages
+    let startPage = Math.max(2, this.currentOpePage - 2);
+    let endPage = Math.min(totalPages - 1, this.currentOpePage + 2);
+
+    // Adjust the window to always show 5 pages when possible
+    if (this.currentOpePage <= 4) {
+      endPage = 6;
+    } else if (this.currentOpePage >= totalPages - 3) {
+      startPage = totalPages - 5;
+    }
+
+    return Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i
+    );
+  }
   // 'info' | 'success' | 'warning' | 'error'
   private showSnackbar(
     message: string,
@@ -578,5 +677,6 @@ export class OperationsComponent {
     this.destroy$.complete()
     this.crawlSubs?.unsubscribe()
     this.pagesSubs?.unsubscribe()
+    this.timerSubs?.unsubscribe()
   }
 }

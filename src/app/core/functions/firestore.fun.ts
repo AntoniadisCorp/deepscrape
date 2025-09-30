@@ -53,6 +53,23 @@ export function getErrorMessage(error: any): string {
     }
 }
 
+export function toDate(timestamp?: any): Date | null {
+    if (!timestamp) return new Date();
+
+    if (timestamp instanceof Date) return timestamp;
+
+    if (timestamp._seconds !== undefined) {
+        return new Date(((timestamp as any)._seconds * 1000) + ((timestamp as any)._nanoseconds / 1e6)) // Handle Firestore Timestamp
+    }
+
+    if (typeof timestamp === 'number' || typeof timestamp === 'string') {
+        const parsedDate = new Date(timestamp);
+        return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+    }
+
+    return null;
+}
+
 // Utility to create a compound session key
 export function createSessionKey(ip: string, deviceType: string, providerId: string, browser: string, os: string, location: string): string {
   return `${ip}|${location}|${deviceType}|${os}|${browser}|${providerId}`
@@ -130,27 +147,6 @@ export async function deleteOperationDoc(userId: string, operationId: string, fi
         throw new Error(error as string)
     }
 
-
-}
-
-
-export async function storeBrowserProfile(userId: string, profile: BrowserProfile, firestore: Firestore) {
-    try {
-
-        // Ensure unique ID
-        const browserRef = doc(collection(firestore, `users/${userId}/browser`))
-
-        // add the user id to the profile
-        profile.uid = userId
-
-        // Store the profile data in Firestore
-        await setDoc(browserRef, profile)
-
-        console.log('Browser profile data stored successfully in Firestore.')
-
-    } catch (error) {
-        console.error('Error storing user browser profile data:', error)
-    }
 
 }
 

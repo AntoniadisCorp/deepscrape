@@ -4,6 +4,8 @@ import { MatIcon } from '@angular/material/icon';
 import { NgClass, NgIf, NgFor } from '@angular/common'; // Added NgFor for iterating over icons
 import { WindowToken } from '../../services';
 import { RippleDirective } from '../../directives';
+import { Subscription } from 'rxjs/internal/Subscription';
+import { timer } from 'rxjs/internal/observable/timer';
 
 export enum SnackBarType {
   success = 'success',
@@ -59,28 +61,29 @@ export class SnackbarComponent {
   snackbarState: 'visible' | 'void' = 'void';
   private hideTimeout: any;
   constructor(private cdr: ChangeDetectorRef) {}
+  private hideTimerSub?: Subscription;
+
   show(message: string, type: SnackBarType, action: string | '', duration?: number) {
     this.message = message;
     this.type = type;
     this.action = action;
     this.visible = true;
-    
-    // Use requestAnimationFrame instead of setTimeout for better performance
+
+    // Use requestAnimationFrame for better performance
     this.window.requestAnimationFrame(() => {
       this.snackbarState = 'visible'
-      this.cdr.markForCheck(); // Use markForCheck instead of detectChanges
-    })
-    
+      this.cdr.markForCheck();
+    });
+
     if (this.duration > 0) {
-      // Clear any existing timeout to prevent memory leaks
-      if (this.hideTimeout) {
-        clearTimeout(this.hideTimeout);
+      // Unsubscribe from any existing timer to prevent memory leaks
+      if (this.hideTimerSub) {
+        this.hideTimerSub.unsubscribe();
       }
-      
-      this.hideTimeout = setTimeout(() => this.hide(), duration || this.duration);
+
+      this.hideTimerSub = timer(duration || this.duration).subscribe(() => this.hide())
     }
   }
-
   hide() {
     this.visible = false;
     this.snackbarState = 'void';
@@ -153,8 +156,8 @@ export class SnackbarComponent {
 
   ngOnDestroy() {
     // Clean up timeout to prevent memory leaks
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout);
-    }
+    if (this.hideTimerSub) {
+        this.hideTimerSub.unsubscribe();
+      }
   }
 }

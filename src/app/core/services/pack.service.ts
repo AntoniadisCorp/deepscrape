@@ -9,7 +9,7 @@ import { from } from 'rxjs/internal/observable/from';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { tap } from 'rxjs/internal/operators/tap';
-import { storeBrowserProfile, storeCrawlConfig, storeCrawlResultsConfig } from '../functions';
+import { storeCrawlConfig, storeCrawlResultsConfig } from '../functions';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable } from 'rxjs/internal/Observable';
 import { map } from 'rxjs/internal/operators/map';
@@ -206,7 +206,7 @@ export class PackService {
   storeBrowserProfile(browserProfile: BrowserProfile) {
 
     // get the user document
-    return from(storeBrowserProfile(this.userId, browserProfile, this.firestore)).pipe(
+    return from(this.firestoreService.storeBrowserProfile(this.userId, browserProfile)).pipe(
       tap(() => {
 
         // Get the current BehaviorSubject Value

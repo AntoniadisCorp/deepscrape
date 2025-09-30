@@ -9,7 +9,8 @@ export const environment = {
     "projectId": "libnet-d76db",
     "storageBucket": "libnet-d76db.appspot.com",
     "messagingSenderId": "332716075857",
-    "appId": "1:332716075857:web:34793571e8aa3c3c308170"
+    "appId": "1:332716075857:web:34793571e8aa3c3c308170",
+    "measurementId": "G-G709SMG382"
   },
   "STRIPE_PUBLIC_KEY": "pk_test_51OELbJFBBAUAyJFBp3qyNV35TE56uUP9g1IkZ0KOuWnrNLC2ijFoIIkG71xqISwnFwiibjCOumO8itPsLLIyA1py00ABQ2TJ4H",
   "RECAPTCHA_KEY": "6LdpDvcpAAAAACHPpjMmhYp2ZoSO45-5VJUMI4-n",
@@ -19,7 +20,7 @@ export const environment = {
   "GROQ_API_KEY": "",
   "CRAWL4AI_API_KEY": "",
   "GOOGLE_API_KEY": "",
-  "API_CRAWL4AI": "https://crawlagent.fly.dev",
+  "API_CRAWL4AI_URL": "https://agent.deepscrape.dev",
   "API_ARACHNEFLY_URL": "https://arachnefly.fly.dev",
   "API_ANTHROPIC": "https://api.anthropic.com",
   "API_OPENAI": "https://api.openai.com",
