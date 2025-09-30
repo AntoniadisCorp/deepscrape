@@ -4,7 +4,7 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable linebreak-style */
 // Initialize Express App and Middleware //
-import express, { NextFunction } from "express"
+import express, { NextFunction, Response, Request } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
@@ -18,6 +18,7 @@ import { AuthAPIProxy, ReverseAPIProxy, UploadAPIProxy} from "./infrastructure"
 // import { geoDBManager, guestTracker, IP2LocationManager } from "./gfunctions"
 import cookieParser from "cookie-parser"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
+import { existsSync } from "node:fs"
 // import { createNodeRequestHandler } from "@angular/ssr/node"
 dotenv.config({ quiet: true })
 // import { existsSync } from "node:fs"
@@ -26,8 +27,7 @@ dotenv.config({ quiet: true })
 // and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
     origin: process.env["PRODUCTION"] === "true"? [
-        "https://deepscrape.dev", "https://deepscrape.web.app",
-        "http://127.0.0.1:5000", "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"] : "*", // Allow all origins or specify your frontend URL
+        "https://deepscrape.dev", "https://deepscrape.web.app"] : ["http://127.0.0.1:5000", "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"], // Allow all origins or specify your frontend URL
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], // Specify allowed methods "OPTIONS"
     allowedHeaders: ["content-type", "Authorization", "Accept", "anthropic-version", "x-with-iframe",
         "x-return-format", "x-target-selector", "x-with-generated-alt", "x-set-cookie", "x-api-key"], // Specify allowed headers
@@ -53,10 +53,10 @@ export const corss = cors({
     const publicDistFolder = resolve(process.cwd(), "lib/public")
     // const serverDistFolder = join(distFolder, "deepscrape", "server")
     const browserDistFolder = join(distFolder, "deepscrape", "browser")
-
+    const indexHtml = existsSync(join(publicDistFolder, "index.server.html"))? "index.server.html" : "index"
     // console.log(serverDistFolder, distFolder, `Browser Dist Folder: ${browserDistFolder}`)
     // Check if the serverDistFolder exists, if not, use the browserDistFolder
-    // const indexHtml = existsSync(join(serverDistFolder, "index.server.html"))? "index.server.html" : "index"
+
     // const browserIndexHtml = existsSync(join(browserDistFolder, "index.html"))? "index.html" : "index"
     /* const { APP_BASE_HREF } = await import("@angular/common")
     const { ngExpressEngine } = await import("@nguniversal/express-engine")
@@ -66,7 +66,7 @@ export const corss = cors({
     })) */
     server.set("view engine", "html")
     server.set("views", browserDistFolder)
-    server.set("trust proxy", true)
+    server.set("trust proxy", false)
 
     // Security and logging middleware
     server.use(helmet())
@@ -88,12 +88,12 @@ export const corss = cors({
         express.urlencoded({ limit: "3mb", extended: false }),
         express.json({ limit: "3mb" }),
         limiter, statusCheck) // aiProxy.router now contains the /status route
-
     // Register the API routes (with authentication)
     server.use("/api",
         express.urlencoded({ limit: "3mb", extended: false }),
         express.json({ limit: "3mb" }),
-        limiter, aiProxy.isJwtAuth, aiProxy.router)
+        process.env.PRODUCTION === "true"? limiter : (req: Request, res: Response, next: NextFunction) => next(),
+        aiProxy.isJwtAuth, aiProxy.router)
 
     server.use("/upload", uploadProxy.router)
 
@@ -112,10 +112,13 @@ export const corss = cors({
     server.get("*", limiter, (req: express.Request, res, next: NextFunction) => {
         const { protocol, originalUrl, baseUrl, headers } = req
         console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
-        // res.sendFile(join(serverDistFolder, "index.server.html"))
 
-        res.sendFile(resolve(publicDistFolder, "404.html"))
-
+        if (indexHtml) {
+          console.log(`Serving from: ${publicDistFolder}`)
+          res.sendFile(resolve(publicDistFolder, "index.server.html"))
+        } else {
+          res.status(404).sendFile(resolve(publicDistFolder, "404.html"))
+        }
         // console.log(
         //   chalk.bgYellow('Request Method:'), req.method,
         //   chalk.bgYellow('Request URL:'), req.url,

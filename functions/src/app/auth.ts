@@ -1,10 +1,11 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
+import { FieldPath } from "firebase-admin/firestore"
 import { db, dbName, getSecretFromManager, saveToSecretManager/* , auth as adminAuth */ } from "./config"
 import { auth, firestore } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
-import { redis } from "./cacheConfig"
+// import { redis } from "./cacheConfig"
 
 
 export const trackGuest = auth
@@ -177,7 +178,7 @@ export const enqueueCrawlOperation = firestore
         const operationId = context.params.operationId
         const userId = context.params.userId
 
-        const task = {
+        const operation = {
             operationId,
             scheduled_At: after?.scheduled_At,
             status: after.status,
@@ -186,13 +187,14 @@ export const enqueueCrawlOperation = firestore
             urls: after?.urls,
             modelAI: after?.modelAI,
             metadataId: after?.metadataId,
-            sumPrompt: after?.sumPrompt,
+            prompt: after?.prompt,
         }
 
         // const { client: redis, release } = await getRedisClient()
         try {
-            const num = await redis.lpush("operation_queue", JSON.stringify(task))
-            console.log(`Operation ${operationId} queued successfully in position`, num)
+            // const num = await redis.lpush("operation_queue", JSON.stringify(operation))
+            // console.log(`Operation ${operationId} queued successfully in position`, num)
+            console.log(`Operation ${operationId} queued successfully`, operation)
             return true
         } catch (error) {
             console.error(`Error enqueuing operation ${operationId}:`, error)
@@ -208,52 +210,114 @@ export const getOperationsPaging = onCallv2(
         const { currPage = 1, pageSize = 10 } = req.data
 
         try {
-            const userId = req?.auth?.uid
-            if (!userId) {
+            // Early validation
+            if (!req?.auth?.uid) {
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
+            if (currPage < 1 || pageSize < 1) {
+                throw new HttpsError("invalid-argument", "Invalid page or size parameters.")
+            }
 
-            const operationsRef = db.collection(`users/${userId}/operations`).orderBy("created_At", "desc")
+            const userId = req.auth.uid
+            const operationsRef = db.collection(`users/${userId}/operations`)
+
+            const [totalSnapshot, firstPageSnapshot] = await Promise.all([
+            operationsRef.count().get(),
+            operationsRef
+                    .orderBy("created_At", "desc")
+                    .limit(pageSize)
+                    .get(),
+            ])
+
+            const inTotal = totalSnapshot.data()?.count || 0
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
 
             // Check if collection exists
-            const snapshot = await operationsRef.get()
-            if (snapshot.empty) {
+            // Early return if no operations
+            if (inTotal === 0) {
                 return {
                     error: null,
                     operations: [],
-                    totalPages: 1,
+                    totalPages: 0,
                     inTotal: 0,
-                    message: "Operations retrieved successfully",
+                    message: "No operations found",
                 }
             }
 
-            // Get total count of operations
-            const totalOperationsQuery = await operationsRef.count().get()
-            const inTotal = totalOperationsQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
+            // Validate page number
             if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+                throw new HttpsError("invalid-argument", `Page ${currPage} exceeds total pages (${totalPages}).`)
             }
 
-            let query = operationsRef.limit(pageSize)
+            let operationDocs
 
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await operationsRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
+            // For first page, use the result we already have
+            if (currPage === 1) {
+                operationDocs = firstPageSnapshot.docs
+            } else {
+                // For other pages, get the last document of the previous page
+                const lastVisibleDoc = await operationsRef
+                    .orderBy("created_At", "desc")
+                    .limit((currPage - 1) * pageSize)
+                    .get()
+                    .then((snap) => snap.docs[snap.size - 1])
+
+                // Get the requested page
+                const operationsSnapshot = await operationsRef
+                    .orderBy("created_At", "desc")
+                    .startAfter(lastVisibleDoc)
+                    .limit(pageSize)
+                    .get()
+
+                operationDocs = operationsSnapshot.docs
+            }
+
+            // Extract operation IDs for metrics lookup
+            const operationIds = operationDocs.map((doc) => doc.id)
+
+            // Fetch metrics in batches to avoid potential limitations
+            const BATCH_SIZE = 10
+            const metricsPromises = []
+
+            for (let i = 0; i < operationIds.length; i += BATCH_SIZE) {
+                const batchIds = operationIds.slice(i, i + BATCH_SIZE)
+                metricsPromises.push(
+                    db.collection("operation_metrics")
+                    .where(FieldPath.documentId(), "in", batchIds)
+                    .get()
+                )
+            }
+
+            // Wait for all metrics queries to complete
+            const metricsSnapshots = await Promise.all(metricsPromises)
+
+            // Create a map of operation ID to metrics data
+            const metricsMap = new Map()
+            metricsSnapshots.forEach((snapshot) => {
+                snapshot.docs.forEach((doc) => {
+                    metricsMap.set(doc.id, doc.data())
+                })
+            })
+
+            // Merge operations with their metrics
+            const operations = operationDocs.map((doc) => {
+                const operationData = {
+                    id: doc.id,
+                    ...doc.data(),
                 }
-            }
 
-            // Fetch operations for the current page
-            const operationsSnapshot = await query.get()
-            const operations = operationsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
+                // Merge metrics data if available
+                const metrics = metricsMap.get(doc.id)
+                if (metrics) {
+                    return {
+                        ...operationData,
+                        metrics,
+                    }
+                }
+
+                return operationData
+            })
 
             return {
                 error: null,
@@ -264,7 +328,11 @@ export const getOperationsPaging = onCallv2(
             }
         } catch (error) {
             console.error("Error retrieving operations:", error)
-            throw new HttpsError("internal", "Failed to retrieve operations by pagination.")
+            throw new HttpsError(
+                (error instanceof HttpsError ? error.code : "internal"),
+                error instanceof HttpsError ? error.message : "Failed to retrieve operations.",
+                error
+            )
         }
     })
 
@@ -493,7 +561,7 @@ export const receiveLogs = onRequest(async (request, response) => {
         logs.forEach((log: any) => {
             console.log(log, authHeader) // Log to Firebase Function logs for debugging
             // Optionally, store in Firestore or another database
-            // Example: admin.firestore().collection('logs').add(JSON.parse(log));
+            // Example: admin.firestore().collection('logs').add(JSON.parse(log))
         })
         await Promise.all(logPromises)
         response.sendStatus(200) // Respond with success

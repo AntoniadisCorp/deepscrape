@@ -10,10 +10,11 @@ import { APP_BASE_HREF } from '@angular/common'
 import bootstrap from 'src/main.server'
 // import { node } from '@elysiajs/node'
 // import swagger from '@elysiajs/swagger'
-const serverDistFolder = dirname(fileURLToPath(import.meta.url))
-const browserDistFolder = resolve(serverDistFolder, '../browser')
+const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
+const serverDistFolder =  serverDistFolderD // resolve(process.cwd(), 'dist/deepscrape/server')
+const browserDistFolder = resolve(process.cwd(), 'dist/deepscrape/browser')
 
-const indexHtml = join(serverDistFolder, '../browser/index.html')
+const indexHtml = join(serverDistFolder, 'index.server.html')
 console.log('indexHtml', indexHtml, browserDistFolder)
 const commonEngine = new CommonEngine({
     enablePerformanceProfiler: true,
@@ -65,7 +66,7 @@ function serveapp(): Elysia {
     // Use a hook to modify the response headers
     app.onAfterHandle(({ request, set }) => {
         const url = new URL(request.url)
-        console.log('url', url)
+        // console.log('url', url)
         if (url.pathname.endsWith('.js') || url.pathname.includes('ngsw.json')) {
             set.headers['Content-Type'] = 'application/javascript'
             set.headers['Service-Worker-Allowed'] = '/'
@@ -111,7 +112,7 @@ function serveapp(): Elysia {
         .get('*', async ({ originalUrl, baseUrl, protocol, headers }) => {
 
             let header: HeadersInit | undefined = {}
-            console.log('headers', headers)
+            // console.log('headers', headers)
             if (originalUrl.includes('ngsw')) {
                 header = {
                     'Service-Worker-Allowed': '/',

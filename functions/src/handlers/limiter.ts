@@ -40,7 +40,7 @@ const apiLimmitOptions: Partial<Options> = {
         })
     },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    legacyHeaders: true, // Disable the `X-RateLimit-*` headers
     validate: { trustProxy: true, ip: process.env.PRODUCTION === "true" }, // Trust the reverse proxy
     store: redisStore, // Use Redis as the store for rate limiting
     // skipSuccessfulRequests: true, // Don't count successful logins

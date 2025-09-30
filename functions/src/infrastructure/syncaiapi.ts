@@ -79,20 +79,42 @@ class ReverseAPIProxy {
 
         // wait for a machine to stabilize a specific state and return the machine details
         this.router.get("/machines/machine/waitforstate/:machineId", arachnefly.waitForState)
+
+
+        /**
+         * Crawler by crawlagent
+         */
+
+        // Get New Temporary Task Id
+        // this.router.get("/crawl/job/temp-task-id", crawlagent.getTempTaskId)
+
+        // // Get the Task Id
+        // this.router.get("/crawl/job/:tempTaskId", crawlagent.getTaskId)
+
+        // // Get the Task Status
+        // this.router.get("/crawl/stream/job/status/:taskId", crawlagent.getTaskStatus)
+
+        // // Stream the Task Results
+        // this.router.get("/crawl/stream/job/:taskId", crawlagent.streamTaskResults)
     }
 
     /**
-           * https Router Post
-           */
+     * https Router Post
+     */
 
     private httpRoutesPosts(): void {
         this.router.post("/anthropic/messages", anthropicAICore) // Search for Markets
         this.router.post("/openai/chat/completions", openaiAICore)
         this.router.post("/groq/chat/completions", groqAICore)
 
-        /* Crawl4AI */
+        /**
+         * Crawler Management by crawlagent
+        */
+
         this.router.post("/crawl", crawl4aiCore)
 
+        // Enqueue a stream Crawl Task
+        // this.router.post("/crawl/stream/job", crawlagent.multiCrawlEnqueue)
 
         /* Machines by Arachnefly */
 
@@ -117,6 +139,14 @@ class ReverseAPIProxy {
 
         // Stop a Machine
         this.router.put("/machines/machine/:machineId/stop", arachnefly.stopMachine)
+
+
+        /**
+         * Crawler Management by crawlagent
+        */
+
+        // Cancel a Crawl Task
+        // this.router.put("/crawl/job/:tempTaskId/cancel", crawlagent.cancelTask)
     }
 
     /**

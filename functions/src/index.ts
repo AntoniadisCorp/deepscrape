@@ -17,10 +17,9 @@ import * as stripe from "./app/stripe"
 // const __dirname = dirname(__filename)
 
 
-// Export the Firebase deepscrape SSR app
+// Export the Firebase deepscrape SPA app
 // https://firebase.google.com/docs/functions/networking
 export const deepscrape = app.deepscrape
-
 
 /* Auth - Functions */
 // User Management - Functions
@@ -39,7 +38,7 @@ export const getApiKeyDoVisible = auth.getApiKeyDoVisible
 
 
 // CRAWL OPERATIONS - Function TRIGGERS
-export const enqueueCrawlOperation = auth.enqueueCrawlOperation
+// export const enqueueCrawlOperation = auth.enqueueCrawlOperation
 export const getOperationsPaging = auth.getOperationsPaging
 
 
