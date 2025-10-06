@@ -1,0 +1,578 @@
+<!-- Preset configuration chips with improved responsive design -->
+<div class="w-full mx-auto mb-3 mt-8">
+  <div class="flex justify-between items-center px-2 mb-2">
+    <div class="flex items-center gap-2">
+      <h3 class="text-md font-medium text-gray-700 dark:text-gray-300">
+        Preset Configurations:
+      </h3>
+      <span
+        class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"
+        title="Drag to scroll">
+        <mat-icon class="text-base !h-4 !w-4 leading-4 opacity-70">
+          swipe
+        </mat-icon>
+        <span class="hidden sm:inline">Drag to scroll</span>
+      </span>
+    </div>
+    <button
+      *ngIf="activePreset"
+      (click)="resetForm()"
+      class="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+      title="Reset to default configuration">
+      Reset
+    </button>
+  </div>
+  <div
+    class="preset-scroll-container relative rounded-lg will-change-transform">
+    <!-- Left arrow button with YouTube-style design -->
+    <button
+      (click)="scrollPresets('left')"
+      [class.opacity-0]="!showLeftScroller"
+      [class.pointer-events-none]="!showLeftScroller"
+      class="scroll-arrow-button absolute left-1 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white dark:bg-gray-800 bg-opacity-95 dark:bg-opacity-90 flex items-center justify-center cursor-pointer shadow-md">
+      <div
+        appRipple
+        rippleColor="dark"
+        class="flex items-center justify-center w-full h-full rounded-full">
+        <mat-icon class="text-gray-700 dark:text-gray-200">
+          chevron_left
+        </mat-icon>
+      </div>
+    </button>
+
+    <!-- Right arrow button with YouTube-style design -->
+    <button
+      (click)="scrollPresets('right')"
+      [class.opacity-0]="!showRightScroller"
+      [class.pointer-events-none]="!showRightScroller"
+      class="scroll-arrow-button absolute right-1 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white dark:bg-gray-800 bg-opacity-95 dark:bg-opacity-90 flex items-center justify-center cursor-pointer shadow-md">
+      <div
+        appRipple
+        rippleColor="dark"
+        class="flex items-center justify-center w-full h-full rounded-full">
+        <mat-icon class="text-gray-700 dark:text-gray-200">
+          chevron_right
+        </mat-icon>
+      </div>
+    </button>
+    <!-- Left fade effect gradient - more YouTube-like with stronger fade -->
+    <div
+      [class.opacity-0]="!showLeftScroller"
+      class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-gray-50 via-gray-50 dark:from-gray6 dark:via-gray6 to-transparent z-10 pointer-events-none transition-opacity duration-200"></div>
+
+    <!-- Right fade effect gradient - more YouTube-like with stronger fade -->
+    <div
+      [class.opacity-0]="!showRightScroller"
+      class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-gray-50 via-gray-50 dark:from-gray6 dark:via-gray6 to-transparent z-10 pointer-events-none transition-opacity duration-200"></div>
+    <!-- Scrollable container -->
+    <div
+      class="overflow-x-hidden scrollbar-thin overscroll-contain touch-pan-x"
+      appHiddenDragScroll
+      #scrollContainer
+      (scroll)="onPresetScroll($event)">
+      <div
+        class="flex gap-2 p-2 pb-1 whitespace-nowrap min-w-max cursor-grab active:cursor-grabbing">
+        <button
+          *ngFor="let preset of presets"
+          (click)="applyPreset(preset.id)"
+          class="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border flex items-center"
+          [title]="preset.description"
+          [ngClass]="{
+            'bg-sky-500 text-white hover:bg-sky-600 shadow-md border-transparent font-medium':
+              activePreset === preset.id,
+            'bg-white text-gray-800 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700 hover:shadow-sm':
+              activePreset !== preset.id
+          }">
+          <span class="mr-1 text-xs" *ngIf="activePreset === preset.id">✓</span>
+          {{ preset.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Form Card with enhanced styling -->
+<div
+  [@fadeInUp]
+  class="group inline-block w-full mx-auto rounded-2xl shadow-lg dark:bg-gradient-to-r dark:to-[#1c3041] dark:from-[#2a2e35] bg-white border border-gray-100 dark:border-gray-800 transition-all hover:shadow-xl">
+  <!-- Header with toggle button -->
+  <div
+    class="flex justify-between items-center cursor-pointer gap-2 p-5 rounded-t-2xl"
+    (click)="toggleExpand()">
+    <div>
+      <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">
+        {{ formTitle }}
+      </h2>
+      <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+        <span *ngIf="domains.length > 0">
+          {{ domains.length }} domain{{ domains.length > 1 ? 's' : '' }}
+          configured
+        </span>
+        <span *ngIf="activePreset && getPresetConfigSummary()">
+          <span *ngIf="domains.length > 0">|</span>
+          {{ getPresetConfigSummary() }}
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center">
+      <div
+        *ngIf="activePreset"
+        class="mr-2 px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-900 text-xs text-sky-700 dark:text-sky-300">
+        Preset
+      </div>
+      <button
+        appRipple
+        rippleColor="dark"
+        class="p-2 w-full flex items-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <mat-icon
+          class="text-gray-600 dark:text-gray-400 transition-colors duration-200">
+          {{ isExpanded ? 'expand_less' : 'expand_more' }}
+        </mat-icon>
+      </button>
+    </div>
+  </div>
+  <!-- Collapsible Form Content -->
+  <div [@expandCollapse]="isExpanded ? 'expanded' : 'collapsed'" class="px-6">
+    <form [formGroup]="researchForm" (ngSubmit)="onSubmit()">
+      <!-- Domains Input with Material Chips -->
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block font-semibold text-gray-700 dark:text-gray-200">
+            Domains:
+          </label>
+          <div
+            *ngIf="domains.length > 0 && activePreset"
+            class="text-xs text-sky-600 dark:text-sky-400 italic">
+            Example domains added
+          </div>
+        </div>
+        <mat-chip-grid
+          #domainChipList
+          aria-label="Domain selection"
+          class="flex flex-wrap gap-2 mb-2">
+          <mat-chip-row
+            *ngFor="let domain of domains.controls; let i = index"
+            [removable]="true"
+            (removed)="removeDomainChip(domains.at(i).value)"
+            class="bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 hover:shadow-md transition-shadow">
+            {{ domains.at(i).value }}
+            <button
+              matChipRemove
+              type="button"
+              class="ml-2 text-xs text-red-500 hover:text-red-700">
+              &times;
+            </button>
+          </mat-chip-row>
+        </mat-chip-grid>
+
+        <div class="relative">
+          <input
+            placeholder="Enter domain and press Enter (e.g. example.com)"
+            [formControl]="domainInputControl"
+            [matChipInputFor]="domainChipList"
+            [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+            [matChipInputAddOnBlur]="true"
+            (matChipInputTokenEnd)="addDomainChip($event)"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all focus:shadow-md"
+            autocomplete="off" />
+          <div class="absolute right-3 top-3 text-gray-400">
+            <mat-icon>domain</mat-icon>
+          </div>
+        </div>
+        <div
+          *ngIf="
+            domainInputControl.value && !isDomainValid(domainInputControl.value)
+          "
+          class="text-xs text-red-500 mt-1 pl-1">
+          Invalid domain format
+        </div>
+        <div
+          *ngIf="domains.controls.length === 0 && researchForm.touched"
+          class="text-xs text-red-500 mt-1 pl-1">
+          At least one domain is required
+        </div>
+      </div>
+
+      <!-- Query Input with Material Chips -->
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block font-semibold text-gray-700 dark:text-gray-200">
+            Query:
+          </label>
+          <div
+            *ngIf="queryValues.length > 0 && activePreset"
+            class="text-xs text-pink-600 dark:text-pink-400 italic">
+            Preset query terms
+          </div>
+        </div>
+        <mat-chip-grid
+          #queryChipList
+          aria-label="Query selection"
+          class="flex flex-wrap gap-2 mb-2">
+          <mat-chip-row
+            *ngFor="let query of queryValues"
+            [removable]="true"
+            (removed)="removeQueryChip(query)"
+            class="bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 hover:shadow-md transition-shadow">
+            {{ query }}
+            <button
+              matChipRemove
+              type="button"
+              class="ml-2 text-xs text-red-500 hover:text-red-700">
+              &times;
+            </button>
+          </mat-chip-row>
+        </mat-chip-grid>
+
+        <div class="relative">
+          <input
+            placeholder="Enter query and press Enter (e.g. API documentation guide)"
+            [formControl]="queryInputControl"
+            [matChipInputFor]="queryChipList"
+            [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+            [matChipInputAddOnBlur]="true"
+            (matChipInputTokenEnd)="addQueryChip($event)"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all focus:shadow-md"
+            autocomplete="off" />
+          <div class="absolute right-3 top-3 text-gray-400">
+            <mat-icon>search</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Fields with improved styling -->
+      <div
+        formGroupName="config"
+        class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-6">
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            for="source-select"
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Source:
+          </label>
+          <div class="relative">
+            <select
+              id="source-select"
+              formControlName="source"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
+              <option value="sitemap+cc">sitemap+cc</option>
+              <option value="sitemap">sitemap</option>
+              <option value="cc">cc</option>
+            </select>
+            <div
+              class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <mat-icon class="text-gray-400">expand_more</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Pattern:
+          </label>
+          <div class="relative">
+            <input
+              formControlName="pattern"
+              placeholder="URL pattern (e.g. */docs/*)"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" />
+            <div
+              class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <mat-icon class="text-gray-400">link</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Max URLs:
+          </label>
+          <div class="relative">
+            <input
+              type="number"
+              formControlName="max_urls"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" />
+            <div
+              class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <mat-icon class="text-gray-400">format_list_numbered</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Concurrency:
+          </label>
+          <div class="relative">
+            <input
+              type="number"
+              formControlName="concurrency"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" />
+            <div
+              class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <mat-icon class="text-gray-400">call_split</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Hits/sec:
+          </label>
+          <div class="relative">
+            <input
+              type="number"
+              formControlName="hits_per_sec"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" />
+            <div
+              class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <mat-icon class="text-gray-400">speed</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            for="scoring-method-select"
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Scoring method:
+          </label>
+          <div class="relative">
+            <select
+              id="scoring-method-select"
+              formControlName="scoring_method"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 appearance-none focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
+              <option value="bm25">bm25</option>
+              <option value="semantic">semantic</option>
+            </select>
+            <div
+              class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <mat-icon class="text-gray-400">expand_more</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="transition-all hover:shadow-sm p-2 -mx-2 rounded-lg">
+          <label
+            class="block font-semibold mb-1 text-gray-700 dark:text-gray-200 text-sm">
+            Score threshold:
+          </label>
+          <mat-slider
+            discrete
+            [displayWith]="formatLabel"
+            min="0"
+            max="1"
+            step="0.05"
+            class="w-full mt-2">
+            <input
+              formControlName="score_threshold"
+              value="0.3"
+              matSliderThumb />
+          </mat-slider>
+          <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            Value: {{ researchForm.get('config.score_threshold')?.value }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Checkboxes with improved layout -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 mb-6">
+        <app-checkbox
+          [control]="getFormControl('config.extract_head')"
+          [title]="'Extract head metadata'"
+          class="h-8 font-code inline-flex justify-end w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"></app-checkbox>
+        <app-checkbox
+          [control]="getFormControl('config.live_check')"
+          [title]="'Live check URLs'"
+          class="h-8 font-code inline-flex justify-end w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"></app-checkbox>
+        <app-checkbox
+          [control]="getFormControl('config.force')"
+          [title]="'Force (bypass cache)'"
+          class="h-8 font-code inline-flex justify-end w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"></app-checkbox>
+        <app-checkbox
+          [control]="getFormControl('config.filter_nonsense_urls')"
+          [title]="'Filter nonsense URLs'"
+          class="h-8 font-code inline-flex justify-end w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"></app-checkbox>
+        <app-checkbox
+          [control]="getFormControl('config.verbose')"
+          [title]="'Verbose output'"
+          class="h-8 font-code inline-flex justify-end w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"></app-checkbox>
+        <app-checkbox
+          [control]="getFormControl('stream')"
+          [title]="'Stream results'"
+          class="h-8 font-code inline-flex justify-end w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"></app-checkbox>
+      </div>
+
+      <!-- Submit button with improved styling -->
+      <button
+        type="submit"
+        [disabled]="isSeederProcessing || !isFormValid()"
+        class="w-full py-3 px-4 mb-6 rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+        [ngClass]="{
+          'opacity-50 cursor-not-allowed': !isFormValid() || isSeederProcessing
+        }">
+        <div class="flex items-center justify-center gap-2">
+          <mat-icon *ngIf="isSeederProcessing" class="animate-spin">
+            refresh
+          </mat-icon>
+          <span>
+            {{ isSeederProcessing ? 'Processing...' : 'Start Research' }}
+          </span>
+        </div>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Results Section with improved isSeederProcessing indicator -->
+  @if((taskStatus$ | async)) { 
+  <div
+    class="rounded-xl p-8 text-center w-full flex items-center">
+    <div class="flex w-full items-center justify-start">
+      <ng-container *ngIf="taskStatus$ | async as taskStatus">
+        <div
+          *ngIf="
+            taskStatus.status === 'In Progress' ||
+            taskStatus.status === 'Pending'
+          "
+          class="animate-pulse bg-yellow-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-yellow-700 dark:text-yellow-200 p-4 rounded shadow-md">
+          Processing... Please wait.
+          {{ taskStatus.status === 'Pending' ? '(in queue)' : '' }}
+        </div>
+
+        <div
+          class="spinner"
+          *ngIf="
+            taskStatus.status === 'In Progress' ||
+            taskStatus.status === 'Pending'
+          ">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <div
+          *ngIf="taskStatus.status === 'Completed'"
+          class="bg-green-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-green-700 dark:text-green-200 p-4 rounded shadow-md">
+          Task completed
+          {{
+            taskStatus?.result?.status === 'Failed'
+              ? 'with error'
+              : 'successfully'
+          }}!
+        </div>
+        <div
+          *ngIf="taskStatus.status === 'Canceled'"
+          class="bg-red-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-red-700 dark:text-red-200 p-4 rounded shadow-md">
+          Task was canceled
+          {{
+            taskStatus?.result?.status === 'Failed'
+              ? 'with error'
+              : 'successfully'
+          }}.
+        </div>
+        <div
+          *ngIf="taskStatus.status === 'Failed'"
+          class="bg-red-600 dark:bg-transparent dark:rounded-none dark:shadow-none text-white p-4 rounded">
+          Task failed. Please try again.
+        </div>
+      </ng-container>
+    </div>
+    <div class="flex items-center justify-end">
+      <button
+        appRipple
+        rippleColor="dark"
+        [disabled]="
+          (!isSeederProcessing || abortButtonPressed) && !latestTaskId()
+        "
+        *ngIf="isSeederProcessing"
+        (click)="abortRequests()"
+        class="flex flex-row w-auto flex-nowrap gap-1 pr-[7px] pl-[5px] justify-center h-10 items-center disabled:bg-transparent hover:bg-dark-400/20 dark:bg-gray-100/[0.08] rounded-full text-gray-600 transition-colors duration-200 bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-gray-100 dark:hover:bg-gray5/60 dark:hover:text-gray-400 dark:focus:ring-gray4/60 font-roboto py-0 mr-2">
+        <mat-icon
+          faria-hidden="false"
+          aria-label="abort"
+          class="!w-7 !h-8 text-3xl leading-8">
+          stop_circle
+        </mat-icon>
+      </button>
+    </div>
+  </div>
+ }
+
+<!-- Results Section with enhanced header -->
+<div *ngIf="results.length" class="mt-8 max-w-6xl mx-auto">
+  <div class="mb-8">
+    <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 text-center">
+      Results
+    </h3>
+    <div class="flex flex-col items-center gap-2 mt-2">
+      <span
+        class="bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 py-1 px-4 rounded-full text-sm font-medium">
+        {{ results.length }}
+        {{ results.length === 1 ? 'result' : 'results' }} found
+      </span>
+
+      <div
+        class="flex flex-wrap justify-center gap-2 mt-2 max-w-xl text-center">
+        <span
+          class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-1 px-3 rounded-lg text-xs">
+          <span class="font-medium">Domains:</span>
+          {{ domains.controls.length }}
+        </span>
+        <span
+          *ngIf="queryValues.length"
+          class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-1 px-3 rounded-lg text-xs">
+          <span class="font-medium">Query terms:</span>
+          {{ queryValues.length }}
+        </span>
+        <span
+          class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-1 px-3 rounded-lg text-xs">
+          <span class="font-medium">Method:</span>
+          {{ researchForm.get('config.scoring_method')?.value }}
+        </span>
+        <span
+          class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-1 px-3 rounded-lg text-xs">
+          <span class="font-medium">Threshold:</span>
+          {{ researchForm.get('config.score_threshold')?.value }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6">
+    <div class="flex items-center justify-center gap-2">
+      <mat-icon class="text-sky-600 dark:text-sky-400">info</mat-icon>
+      <p class="text-sm text-gray-700 dark:text-gray-300">
+        Results are sorted by relevance score. Higher scores indicate better
+        matches to your query.
+      </p>
+    </div>
+  </div>
+   <!-- Results Display Area -->
+  <div class="flex flex-col w-full gap-3 mt-4">
+   @if(progress !== null) {
+    <mat-progress-bar
+      class="mt-2 rounded-full h-3"
+      mode="determinate"
+      color="primary"
+      [value]="progress"></mat-progress-bar>
+    }
+  <app-seeder-results [results]="results"></app-seeder-results>
+  </div>
+</div>
+
+<!-- Empty state with enhanced styling -->
+<div *ngIf="!results.length && !isSeederProcessing" class="mt-8 mx-auto">
+  <div
+    class="bg-white dark:bg-transparent rounded-xl shadow dark:shadow-none p-8 text-center">
+    <p class="text-lg text-gray-600 dark:text-gray-400">
+      No results to display.
+    </p>
+    <mat-icon
+      class="mt-4 text-5xl text-gray-300 dark:text-gray-600 !w-auto !h-auto">
+      search_off
+    </mat-icon>
+    <p class="mt-4 text-sm text-gray-500 dark:text-gray-500">
+      Configure your research parameters and click "Start Research" to begin.
+    </p>
+  </div>
+</div>

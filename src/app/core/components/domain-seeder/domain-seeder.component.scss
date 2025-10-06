@@ -1,0 +1,179 @@
+.scrollbar-thin {
+  cursor: grab;
+  position: relative;
+  overscroll-behavior-x: contain; /* Modern replacement for -webkit-overflow-scrolling */
+  touch-action: pan-x; /* Allow horizontal panning */
+  -webkit-user-select: none;
+  user-select: none; /* Prevent text selection during drag */
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  /* Add subtle scroll indication for mobile */
+  // &::after {
+  //   content: "";
+  //   position: absolute;
+  //   bottom: 0;
+  //   left: 50%;
+  //   transform: translateX(-50%);
+  //   width: 50px;
+  //   height: 2px;
+  //   background: rgba(125, 125, 125, 0.3);
+  //   border-radius: 2px;
+  //   opacity: 0;
+  //   transition: opacity 0.3s;
+  // }
+  &:hover::after {
+    opacity: 1;
+  }
+
+  /* Hide scrollbar across all browsers */
+  &::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+    display: none;
+  }
+  
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  /* Safari workaround: hide scrollbar using a pseudo-element */
+  @media not all and (min-resolution: 0.001dpcm) {
+    @supports (-webkit-touch-callout: none) {
+      & {
+        overflow: -webkit-paged-x;
+      }
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  }
+
+  /* Fix for momentum scrolling with overflow-hidden */
+  &:after {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 100%;
+  }
+
+  /* Improve GPU acceleration for smoother scrolling */
+  & {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: scroll-position;
+  }
+}
+
+// Style for the YouTube-style scroll arrows
+.preset-scroll-container {
+  position: relative;
+  will-change: transform; // Hardware acceleration for smooth scrolling
+  backface-visibility: hidden; // Helps with mobile rendering performance
+
+  // Add subtle shadow to the container
+  // box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden; // Ensures the rounded corners clip content
+
+  // Dark mode adjustments for the container
+  @media (prefers-color-scheme: dark) {
+    // box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  .scroll-arrow-button {
+    position: absolute;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 20;
+    pointer-events: auto;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 40px !important;
+    height: 40px !important;
+
+    // YouTube-style button appearance
+    &:hover:not(.pointer-events-none) {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    &:active:not(.pointer-events-none) {
+      // transform: scale(1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    // Icon styling to match YouTube
+    mat-icon {
+      font-size: 20px;
+      height: 20px;
+      width: 20px;
+      line-height: 20px;
+      opacity: 0.8;
+    }
+
+    // Position adjustment for exact YouTube style
+    &:first-of-type {
+      left: 2px;
+    }
+
+    &:last-of-type {
+      right: 2px;
+    }
+
+    // Dark mode adjustments for the buttons
+    @media (prefers-color-scheme: dark) {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+
+      mat-icon {
+        opacity: 0.9;
+      }
+    }
+  }
+  // Style for the preset chips container
+  .scrollbar-thin {
+    position: relative;
+    min-height: 0px; // Ensure consistent height
+
+    // Style for the chips
+    button {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+      &:hover {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      &:active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      // YouTube-like active chip appearance
+      &.bg-sky-500 {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+        &:hover {
+          background-color: #0284c7 !important; // slightly darker sky-500
+        }
+      }
+    }
+
+    // Container for the chips
+    > div {
+      padding: 6px 4px;
+      gap: 8px;
+    }
+  }
+}
+
+/* For dark mode */
+@media (prefers-color-scheme: dark) {
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #2d3748;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #4a5568;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+  }
+}
