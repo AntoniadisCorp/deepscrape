@@ -540,7 +540,7 @@ export type CrawlPack = {
 export type CrawlTask = {
     id: string, 
     status: CrawlOperationStatus,
-    tempTaskId: string,
+    // tempTaskId: string,
     operationId: string,
     _links: {
         self: { href: string },

@@ -72,29 +72,9 @@ export class CrawlAPIService {
       )
   }
 
-  getTempTaskId(): Observable<string> {
+  getTaskId(taskId: string): Observable<string> {
 
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/job/temp-task-id"
-
-
-    const headers = new HttpHeaders({
-      // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
-      'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
-      'Content-Type': 'application/octet-stream',
-    })
-
-
-    return this.http.get<{ temp_task_id: string }>(crawl4AiEndpoint, { headers })
-      .pipe(
-        map((response) => response.temp_task_id),
-        catchError(handleError)
-      )
-
-  }
-
-  getTaskId(tempTaskId: string): Observable<string> {
-
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/job/" + tempTaskId
+    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/job/" + taskId
 
 
     const headers = new HttpHeaders({
@@ -198,9 +178,9 @@ export class CrawlAPIService {
 
   }
 
-  cancelTask(tempTaskId: string): Observable<any> {
+  cancelTask(taskId: string): Observable<any> {
 
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + `/job/${tempTaskId}/cancel`
+    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + `/job/${taskId}/cancel`
 
     const headers = new HttpHeaders({
       // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
@@ -210,12 +190,12 @@ export class CrawlAPIService {
     const body = null
     return this.http.put(crawl4AiEndpoint, body, {headers})
     .pipe(
-      tap((value) => console.log(value)),
+      // tap((value) => console.log(value)),
       catchError(handleError)
     )
   }
   
-  multiCrawlEnqueue(urls: string[], tempTaskId: string, operationData: CrawlOperation, crawlPack: CrawlPack ): Observable<CrawlTask> {
+  multiCrawlEnqueue(urls: string[], operationData: CrawlOperation, crawlPack: CrawlPack ): Observable<CrawlTask> {
 
     const URLs = urls // environment.CRAWL4AI_API_KEY !== '' ? urls.map(url => customUrlEncoder(url)) : urls
     const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint + "/stream/job"
@@ -228,7 +208,6 @@ export class CrawlAPIService {
 
     const body = {
       "urls": URLs,
-      "temp_task_id": tempTaskId,
       "operation_data": operationData,
       // "priority": 10,
       ...crawlPack.config.value,
@@ -241,8 +220,7 @@ export class CrawlAPIService {
       }),
       map((job: any) => {
         return {
-          id: job.task_id, 
-          tempTaskId: job.temp_task_id, 
+          id: job.task_id,
           operationId: job.operation_id, 
           ...job} as CrawlTask
       }),
@@ -255,7 +233,7 @@ export class CrawlAPIService {
   streamTaskResults(url: string, taskId: string): Observable<any> {
     // const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url
     // console.log("encodedUrl: ", encodedUrl, environment?.CRAWL4AI_API_KEY)
-    const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint + "/stream/job/" + taskId
+    const crawl4AiReaderEndpoint: string = /* url ||  */(this.crawl4AiEndpoint + "/stream/job/" + taskId)
 
     const headers = new HttpHeaders({
       // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,

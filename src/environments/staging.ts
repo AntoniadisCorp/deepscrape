@@ -2,6 +2,7 @@ export const environment = {
   "production": true,
   "emulators": false,
   "assetsUri": "https://deepscrape.web.app/assets/",
+  "wsUrl": "ws://agent.deepscrape.dev",
   "firebaseConfig": {
     "apiKey": "AIzaSyC7GSMBH9_61g7x5LI_hj3vvGOeuvUAXaI",
     "authDomain": "libnet-d76db.firebaseapp.com",

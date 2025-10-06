@@ -7,6 +7,7 @@ const environment = {
     production: env["PRODUCTION"] === "true",
     emulators: env["EMULATORS"] === "true",
     assetsUri: "https://deepscrape.dev/assets/",
+    wsUrl: "ws://agent.deepscrape.dev", //  || "ws://crawlagent.fly.dev"
     firebaseConfig: {
         apiKey: env["API_KEY"],
         authDomain: env["AUTH_DOMAIN"],
