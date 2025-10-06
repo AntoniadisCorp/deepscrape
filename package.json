@@ -73,7 +73,6 @@
     "rate-limit-redis": "^4.2.0",
     "rxjs": "~7.8.0",
     "stream-buffers": "^3.0.3",
-    "tailwindcss-motion": "^1.1.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
@@ -113,6 +112,7 @@
     "postcss": "^8.4.49",
     "semantic-release": "^24.2.8",
     "tailwindcss": "^3.4.15",
+    "tailwindcss-motion": "^1.1.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"

@@ -1,23 +1,21 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core';
-import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
-import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { LoadingBarRouterModule } from '@ngx-loading-bar/router';
-import { Subscription } from 'rxjs/internal/Subscription';
-import { AuthService, SnackbarService, SvgIconService } from './core/services';
-import { ThemeToggleComponent } from './shared';
-import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components';
-import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
-import { Auth, authState, user, User } from '@angular/fire/auth';
-import { map, Observable, of, startWith, tap, switchMap } from 'rxjs';
-import { AsyncPipe, DOCUMENT, isPlatformBrowser, isPlatformServer } from '@angular/common';
-import { fadeInOutAnimation } from './animations';
-import { HttpClient } from '@angular/common/http';
-import { Inject, OnInit } from '@angular/core';
-import { environment } from 'src/environments/environment';
-import { firstValueFrom } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgswUpdateService } from './core/services/ngsw-update.service';
-import { Analytics, logEvent } from '@angular/fire/analytics';
+import { Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core'
+import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router'
+import { MatProgressSpinner } from '@angular/material/progress-spinner'
+import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
+import { Subscription } from 'rxjs/internal/Subscription'
+import { AuthService, SnackbarService, SvgIconService } from './core/services'
+import { ThemeToggleComponent } from './shared'
+import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
+import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
+import { map, Observable, of } from 'rxjs'
+import { isPlatformBrowser, isPlatformServer } from '@angular/common'
+import { fadeInOutAnimation } from './animations'
+import { HttpClient } from '@angular/common/http'
+import { Inject, OnInit } from '@angular/core'
+import { environment } from 'src/environments/environment'
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
+import { NgswUpdateService } from './core/services/ngsw-update.service'
+import { Analytics, logEvent } from '@angular/fire/analytics'
 
 /* 
                      ,//@@@.
@@ -69,11 +67,11 @@ import { Analytics, logEvent } from '@angular/fire/analytics';
 export class AppComponent implements OnInit {
   private destroyRef = inject(DestroyRef)
   private analytics = inject(Analytics)
-  @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent;
-  protected snackbarMessage = '';
-  protected snackbarAction = '';
-  protected snackbarType: SnackBarType = SnackBarType.info;
-  protected snackbarDuration = 3000;
+  @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent
+  protected snackbarMessage = ''
+  protected snackbarAction = ''
+  protected snackbarType: SnackBarType = SnackBarType.info
+  protected snackbarDuration = 3000
 
   protected isLoading: boolean = true
   protected isAuthState$: Observable<boolean | null> = of(null)
@@ -95,16 +93,16 @@ export class AppComponent implements OnInit {
     //Add 'implements AfterViewInit' to the class.
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
       if (event instanceof NavigationStart) {
-        this.isLoading = true;
+        this.isLoading = true
       } else if (event instanceof NavigationEnd) {
         this.isLoading = false
         try {
           // Safely log event, won't crash if analytics isn't ready
-          logEvent(this.analytics, 'screen_view' as any, {
-            screen_name: event.urlAfterRedirects,
-          });
+          // logEvent(this.analytics, 'screen_view' as any, {
+          //   screen_name: event.urlAfterRedirects,
+          // })
         } catch (e) {
-          console.warn('Analytics not ready:', e);
+          console.warn('Analytics not ready:', e)
         }
       }
     })
@@ -122,7 +120,7 @@ export class AppComponent implements OnInit {
   }
   ngOnInit() {
 
-    this.theme.setDefaultTheme();
+    this.theme.setDefaultTheme()
 
     const isBrowser = isPlatformBrowser(this.platformId)
     // Make a request to the status endpoint to trigger guestTracker
@@ -131,10 +129,10 @@ export class AppComponent implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (response) => {
-            console.log('API Status Check:', response);
+            console.log('API Status Check:', response)
           },
           error: (error) => {
-            console.error('Error checking API status:', error);
+            console.error('Error checking API status:', error)
           }
         })
     }
@@ -159,13 +157,17 @@ export class AppComponent implements OnInit {
   }
 
   onSnackbarAction() {
-    console.log('Snackbar action clicked');
+    // console.log('Snackbar action clicked')
   }
 
   onSnackbarClose() {
-    console.log('Snackbar closed');
+    // console.log('Snackbar closed')
   }
 
+  // Helper method to get the animation data from the router outlet
+  getRouteAnimationData(outlet: RouterOutlet) {
+    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
+  }
 
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
@@ -173,8 +175,4 @@ export class AppComponent implements OnInit {
     this.routerEventSubscription?.unsubscribe()
   }
 
-  // Helper method to get the animation data from the router outlet
-  getRouteAnimationData(outlet: RouterOutlet) {
-    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation'];
-  }
 }
