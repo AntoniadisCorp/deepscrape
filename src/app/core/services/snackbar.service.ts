@@ -18,14 +18,14 @@ export class SnackbarService {
     action: string | '' = '',
     duration: number = 3000
   ) {
-    if (this.snackbarRef) {
-      this.snackbarRef.show(message, type, action, duration);
-    }
+
+    this.snackbarRef?.show(message, type, action, duration);
+
   }
 
   hideSnackBar() {
-    if (this.snackbarRef) {
-      this.snackbarRef.hide()
-    }
+
+    this.snackbarRef?.hide()
+
   }
 }

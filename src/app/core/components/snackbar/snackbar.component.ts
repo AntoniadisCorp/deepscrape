@@ -24,24 +24,24 @@ export enum SnackBarPosition {
 }
 
 @Component({
-    selector: 'app-snackbar',
-    imports: [NgClass, MatIcon, NgIf, RippleDirective],
-    templateUrl: './snackbar.component.html',
-    styleUrl: './snackbar.component.scss',
-    animations: [
-        trigger('snackbarState', [
-            state('void', style({
-                transform: 'translateY(100%)',
-                opacity: 0
-            })),
-            state('visible', style({
-                transform: 'translateY(0)',
-                opacity: 1
-            })),
-            transition('void => visible', animate('300ms ease-out')),
-            transition('visible => void', animate('200ms ease-in'))
-        ])
-    ]
+  selector: 'app-snackbar',
+  imports: [NgClass, MatIcon, NgIf, RippleDirective],
+  templateUrl: './snackbar.component.html',
+  styleUrl: './snackbar.component.scss',
+  animations: [
+    trigger('snackbarState', [
+      state('void', style({
+        transform: 'translateY(100%)',
+        opacity: 0
+      })),
+      state('visible', style({
+        transform: 'translateY(0)',
+        opacity: 1
+      })),
+      transition('void => visible', animate('300ms ease-out')),
+      transition('visible => void', animate('200ms ease-in'))
+    ])
+  ]
 })
 export class SnackbarComponent {
   @Input() message: string = ''
@@ -60,7 +60,7 @@ export class SnackbarComponent {
   visible: boolean = false
   snackbarState: 'visible' | 'void' = 'void';
   private hideTimeout: any;
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef) { }
   private hideTimerSub?: Subscription;
 
   show(message: string, type: SnackBarType, action: string | '', duration?: number) {
@@ -72,15 +72,12 @@ export class SnackbarComponent {
     // Use requestAnimationFrame for better performance
     this.window.requestAnimationFrame(() => {
       this.snackbarState = 'visible'
-      this.cdr.markForCheck();
+      this.cdr.markForCheck()
     });
 
     if (this.duration > 0) {
       // Unsubscribe from any existing timer to prevent memory leaks
-      if (this.hideTimerSub) {
-        this.hideTimerSub.unsubscribe();
-      }
-
+      this.hideTimerSub?.unsubscribe()
       this.hideTimerSub = timer(duration || this.duration).subscribe(() => this.hide())
     }
   }
@@ -101,19 +98,19 @@ export class SnackbarComponent {
 
 
   get snackbarTypeClass(): string {
-  switch (this.type) {
-    case 'success':
-      return 'border-green-400 text-green-400';
-    case 'error':
-      return 'border-red-500 text-red-500';
-    case 'warning':
-      return 'border-yellow-500 text-yellow-500';
-    case 'info':
-      return 'border-blue-400 text-blue-400';
-    default:
-      return 'border-blue-400 text-blue-400';
+    switch (this.type) {
+      case 'success':
+        return 'border-green-400 text-green-400';
+      case 'error':
+        return 'border-red-500 text-red-500';
+      case 'warning':
+        return 'border-yellow-500 text-yellow-500';
+      case 'info':
+        return 'border-blue-400 text-blue-400';
+      default:
+        return 'border-blue-400 text-blue-400';
+    }
   }
-}
 
 
 
@@ -156,8 +153,7 @@ export class SnackbarComponent {
 
   ngOnDestroy() {
     // Clean up timeout to prevent memory leaks
-    if (this.hideTimerSub) {
-        this.hideTimerSub.unsubscribe();
-      }
+
+    this.hideTimerSub?.unsubscribe()
   }
 }
