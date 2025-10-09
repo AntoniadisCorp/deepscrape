@@ -10,7 +10,7 @@ import {
   Timestamp, writeBatch, WriteBatch,
   where
 } from '@angular/fire/firestore'
-import { BrowserProfile, CartPack, CrawlPack, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
+import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
 import { map, Observable, of, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
@@ -495,21 +495,50 @@ export class FirestoreService {
   */
 
   async storeBrowserProfile(userId: string, profile: BrowserProfile): Promise<void> {
-    try {
-      const browserCollection = this.collection(this.firestore, `users/${userId}/browser`);
-      profile.uid = userId;
-
-      const browserRef = profile.id
-        ? this.docRef(browserCollection, profile.id) // Update existing profile
-        : this.newDocRef(browserCollection); // Create new profile
-
-      await this.setDoc(browserRef, profile, { merge: !!profile.id })
-      console.log(`${profile.id ? 'Browser profile updated' : 'New browser profile created'} in Firestore.`);
-    } catch (error) {
-      console.error('Error storing user browser profile data:', error)
-      throw error;
-    }
+    return this.storeUserConfig(userId, profile, 'browser', 'Browser profile')
   }
+
+  async storeCrawlConfig(userId: string, config: CrawlConfig): Promise<void> {
+   return this.storeUserConfig(userId, config, 'crawlconfigs', 'Crawl Config')
+  }
+
+  async storeCrawlResultsConfig(userId: string, config: CrawlResultConfig): Promise<void> {
+    return this.storeUserConfig(userId, config, 'crawlresultsconfig', 'CrawlResult Config')
+  }
+
+
+  /**
+ * Generic method to store user-related configurations in Firestore
+ * @param userId The user ID
+ * @param data The data object to store
+ * @param collectionPath The subcollection path where data should be stored
+ * @param itemName Human-readable name for logging
+ * @returns Promise that resolves when the operation completes
+ */
+async storeUserConfig<T extends { id?: string; uid?: string }>(
+  userId: string, 
+  data: T, 
+  collectionPath: string,
+  itemName: string
+): Promise<void> {
+  try {
+    const configCollection = this.collection(this.firestore, `users/${userId}/${collectionPath}`);
+    data.uid = userId
+
+    const configRef = data.id
+      ? this.docRef(configCollection, data.id) // Update existing item
+      : this.newDocRef(configCollection) // Create new item
+    
+    // Exclude 'id' property when storing the data
+    const { id, ...dataWithoutId } = data as any
+    await this.setDoc(configRef, dataWithoutId, { merge: !!data.id })
+    console.log(`${data.id ? `${itemName} updated` : `New ${itemName} created`} in Firestore.`)
+  } catch (error) {
+    console.error(`Error storing user ${itemName.toLowerCase()} data:`, error)
+    throw error
+  }
+}
+
 
 
 

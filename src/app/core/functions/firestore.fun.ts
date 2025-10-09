@@ -150,45 +150,6 @@ export async function deleteOperationDoc(userId: string, operationId: string, fi
 
 }
 
-
-export async function storeCrawlConfig(userId: string, config: CrawlConfig, firestore: Firestore) {
-    try {
-
-        // Ensure unique ID
-        const configRef = doc(collection(firestore, `users/${userId}/crawlconfigs`))
-
-        // add the user id to the profile
-        config.uid = userId
-
-        // Store the profile data in Firestore
-        await setDoc(configRef, config)
-
-        console.log('Crawl config data stored successfully in Firestore.')
-
-    } catch (error) {
-        console.error('Error storing Crawl config data:', error)
-    }
-}
-export async function storeCrawlResultsConfig(userId: string, config: any, firestore: Firestore) {
-    try {
-
-        // Ensure unique ID
-        const configRef = doc(collection(firestore, `users/${userId}/crawlresultsconfig`))
-
-        // add the user id to the profile
-        config.uid = userId
-
-        // Store the profile data in Firestore
-        await setDoc(configRef, config)
-
-        console.log('CrawlResult config data stored successfully in Firestore.')
-
-    } catch (error) {
-        console.error('Error storing Crawl config data:', error)
-    }
-}
-
-
 export async function updateMachineState(userId: string, machine: FlyMachine, state: MACHNINE_STATE, firestore: Firestore) {
 
     try {
