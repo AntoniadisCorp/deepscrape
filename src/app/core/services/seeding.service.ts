@@ -55,7 +55,7 @@ export class SeedingService {
   }
 
   streamTaskResults(url: string, taskId: string): Observable<any> {
-    const crawl4AiEndpoint: string = /* url ||  */this.crawl4AiEndpoint.replace('/seeder', '/crawl') + "/stream/job/" + taskId
+    const crawl4AiEndpoint: string = /* url ||  */this.crawl4AiEndpoint.replace('/seeder', '/job') + "/stream/" + taskId
 
     return this.crawlService.streamTaskResults(crawl4AiEndpoint, taskId)
   }
