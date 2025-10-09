@@ -38,12 +38,12 @@ export class CrawlResultsComponent {
     // console.log(scrollPosition, activeLink)
   }
   resultsForm: FormGroup
-
   private links: { id: string, label: string }[]
   protected activeLink: string | null = null
   protected showLink: boolean
   protected newConfigOpened: boolean
   protected savingNewConfig: boolean
+  protected editMode: boolean
   protected showSettings: boolean
   protected configSelectedById: string | undefined
   protected crawlResults$: Observable<CrawlResult[] | null | undefined>
@@ -83,7 +83,6 @@ export class CrawlResultsComponent {
     // set pack service with custom injectToken to be used on retrieving list of configurations by pagination
     this.packService = new PackService('crawlResults')
   }
-
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
@@ -91,14 +90,14 @@ export class CrawlResultsComponent {
     this.setCrawlResults()
 
     // set toggle buttons
-    this.showLink = this.showSettings = this.newConfigOpened = this.savingNewConfig = false
+    this.showLink = this.showSettings = this.editMode = this.newConfigOpened = this.savingNewConfig = false
   }
-
 
   private initForm() {
     this.activeLink = ''
 
     this.resultsForm = this.fb.group({
+      created_at: this.fb.control(null, { nonNullable: true }),
       // CrawlResults Configuration Title
       title: this.fb.control('', {
         nonNullable: true, validators: [
@@ -142,12 +141,12 @@ export class CrawlResultsComponent {
 
     })
   }
-
   getAndFilterConfirmForm(): any {
     // get form values
     const config = this.resultsForm.getRawValue()
     const newConfig = { ...config }; // Create a copy of the config object
     delete newConfig.title; // Remove the 'title' attribute from the config object
+    delete newConfig.created_at; // Remove the 'created_at' attribute from the config object
 
 
     // Filter out null, unchanged, or default values
@@ -188,44 +187,53 @@ export class CrawlResultsComponent {
 
     // reset form to default values
     this.resultsForm.reset()
+
+    this.resultsForm.enable() // enable form
     // console.log('reset form', this.resultsForm.valid, this.resultsForm.errors)
   }
-
-  onSelectCrawlResult(crawl: any) {
+  onSelectCrawlResult(results: any) {
     // this.selectedProfile = profile
     // this.configForm.get('userDataDir')?.setValue(profile.path)
 
     if (this.newConfigOpened)
       this.newConfigOpened = false
-    else
-      this.showSettings = true
+    else {
+      this.showSettings = this.configSelectedById === results.id? 
+        !this.showSettings : true
+    }
 
     if (this.showSettings) {
-      this.configSelectedById = crawl.id
-      this.resultsForm.get('title')?.setValue(crawl.title)
-
-      // set form values
-      this.resultsForm.patchValue(crawl.config)
-      // this.resultsForm.get('cacheMode')?.patchValue({ code: crawl.config.cacheMode, name: crawl.config.cacheMode?.toUpperCase() })
+      this.configSelectedById = results.id
+      
+      this.setConfigFormFromInput(results)
+      this.resultsForm.disable() // disable form
+      
+      // always reset editable when new profile selected
+      this.editMode = false
     } else {
       this.configSelectedById = ''
+      this.resultsForm.enable() // enable form
       this.resultsForm.reset()
     }
 
   }
-
   saveCrawlResultsConfig() {
 
     // validate form before saving
-    if (this.resultsForm.invalid)
+    if (this.resultsForm.invalid || (this.editMode && this.resultsForm.pristine))
       return
-
+      
+    this.resultsForm.disable();
+      
     // get form values
     const config: any = this.getAndFilterConfirmForm()
+    const now = Date.now();
+    
     const newCrawlResultsConfig: any = {
+      ...!this.editMode ? {} : {id: this.configSelectedById},
       title: this.resultsForm.get('title')?.value,
       config,
-      created_At: Date.now(),
+      ...!this.editMode ? {created_At: now} : {updated_At: now, created_At: this.resultsForm.get('created_at')?.value},
     }
 
     // console.log('newCrawlConfig', newCrawlConfig)
@@ -233,24 +241,28 @@ export class CrawlResultsComponent {
     // loading state
     this.savingNewConfig = true
 
+    console.log('Saving CrawlResult Config...', newCrawlResultsConfig)
+
     this.crawlResultSubs = this.packService.storeCrawlResultConfig(newCrawlResultsConfig)
       .subscribe({
         next: (res) => {
           //  console.log(res)
-        },
-        error: (err) => {
+        },        error: (err) => {
           console.log(err)
+          this.savingNewConfig = false;
           // show snackbar Error
           this.showSnackbar(err || "", SnackBarType.error, '', 5000)
-        },
-        complete: () => {
+          this.resultsForm.enable();
+        },complete: () => {
           // reset the form
-          this.savingNewConfig = false
-          this.newConfigOpened = false
-          this.showSettings = false
-          this.newConfigOpened = false
-          this.resultsForm.reset()
-          // show snackbar Error
+          this.savingNewConfig = this.newConfigOpened = false;
+          this.showSettings = false;
+          
+          if (!this.editMode)
+            this.resultsForm.reset();
+            
+          this.resultsForm.enable();
+          // show snackbar success
           this.showSnackbar('CrawlResult Config saved successfully.', SnackBarType.success, '', 5000)
         }
       })
@@ -330,4 +342,31 @@ export class CrawlResultsComponent {
     this.crawlResultSubs?.unsubscribe()
   }
 
+  protected makeEditable() {
+    if (this.newConfigOpened)
+      return
+
+    this.editMode = !this.editMode
+
+    if (this.editMode) {
+      this.resultsForm.enable() // enable form
+    } else {
+      // refill the form with the selected profile values stored by configSelectedById
+      this.crawlResults$.forEach(configs => {
+        const config = configs?.find(c => c.id === this.configSelectedById)
+        if (!config) return
+        this.setConfigFormFromInput(config)
+        return
+      })
+      this.resultsForm.disable() // disable form
+      this.resultsForm.markAllAsTouched() // mark form
+      this.resultsForm.markAsPristine() // mark form
+    }
+  }
+
+  private setConfigFormFromInput(resultConfig: any) {
+    this.resultsForm.get('title')?.setValue(resultConfig.title)
+    this.resultsForm.get('created_at')?.setValue(resultConfig.created_At || null)
+    this.resultsForm.patchValue(resultConfig.config)
+  }
 }

@@ -160,30 +160,55 @@
         </p>
       </div>
       }
-    </div>
-
-    <h3
+    </div>    <div
       *ngIf="showSettings"
-      class="mb-8 text-xl font-light text-gray-800 dark:text-gray-200">
-      <span>
-        <span
-          [ngClass]="{
-        'text-green-400 bg-green-600/10': newConfigOpened,
-        'text-yellow-900 bg-yellow-600/10': !newConfigOpened,
-      }"
-          class="p-2 rounded-xl mr-2">
-          {{ !newConfigOpened ? 'Opened' : 'New' }}
+      class="inline-flex items-center justify-between gap-2 mb-8 w-full">
+      <h3 class="text-xl font-light text-gray-800 dark:text-gray-200">
+        <span>
+          <span
+            [ngClass]="{
+              'text-green-400 bg-green-600/10': newConfigOpened,
+              'text-blue-400 bg-blue-600/10': !newConfigOpened && !editMode,
+              'text-yellow-800 dark:text-yellow-700 dark:bg-yellow-600/10 bg-yellow-800/20': !newConfigOpened && editMode
+            }"
+            class="p-2 rounded-xl mr-2">
+            {{
+              !newConfigOpened && !editMode
+                ? 'Opened'
+                : editMode
+                ? 'Editing'
+                : 'New'
+            }}
+          </span>
+          <span>Crawl Config</span>
         </span>
-        <span>Crawl Config</span>
-      </span>
-      <span *ngIf="newConfigOpened" class="text-red-400">*</span>
-    </h3>
+        <span *ngIf="newConfigOpened" class="text-red-400">*</span>
+      </h3>
+      <button
+        type="button"
+        *ngIf="!newConfigOpened"
+        [title]="editMode ? 'cancel edit' : 'edit config'"
+        (click)="makeEditable()"
+        [ngClass]="
+          !editMode
+            ? 'hover:bg-gray-400/[0.5] dark:hover:bg-gray-700/40 dark:focus:bg-gray-700/[0.7] focus:bg-gray-400/[0.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 dark:bg-gray-700/20 bg-gray-400/30'
+            : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
+        "
+        class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+        <mat-icon
+          [ngClass]="
+            !editMode ? 'text-gray-600 dark:text-gray-300/80' : '-rotate-90'
+          "
+          class="text-xl transition-transform !size-6 leading-6">
+          {{ editMode ? 'close' : 'edit' }}
+        </mat-icon>
+      </button>
+    </div>
 
     <div
       *ngIf="showSettings"
       class="border rounded-xl p-4 border-gray-200 dark:border-gray6/70">
-      <div class="border-b-2 border-gray-200 dark:border-gray-700 mb-8 gap-1">
-        @if (!newConfigOpened) {
+      <div class="border-b-2 border-gray-200 dark:border-gray-700 mb-8 gap-1">        @if (!newConfigOpened && !editMode) {
         <div
           class="flex justify-center items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2">
           <mat-icon class="">travel_explore</mat-icon>
@@ -193,7 +218,7 @@
         </div>
         } @else {
         <div
-          class="flex justify-between items-center mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2">
+          class="flex justify-between items-start mb-4 dark:hover:text-white text-slate-500 dark:text-gray-100 gap-2">
           <div class="w-full">
             <app-stinput
               [control]="configForm.get('title') | formControl"
@@ -201,22 +226,18 @@
               [label]="'Title'"
               [errorLabel]="getErrorLabel('title')"></app-stinput>
           </div>
-          <!-- <div>
-            {{ configForm.errors | json }}
-          </div> -->
-          <div>
+          <div class="inline-flex items-center justify-center gap-2">
             <button
               type="submit"
-              [disabled]="configForm.invalid || savingNewConfig"
+              [disabled]="configForm.invalid || savingNewConfig || (editMode && configForm.pristine)"
               [ngClass]="{
                 'bg-green-600/[.2] dark:bg-green-600/[0.2]':
-                  configForm.invalid || savingNewConfig
+                  configForm.invalid || savingNewConfig || (editMode && configForm.pristine)
               }"
-              title="save new profile"
-              class="inline-flex text-lg min-w-32 items-center justify-center text-center border border-transparent leading-[0] gap-2 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-3 px-4 duration-300 rounded-full transition-colors">
+              title="save config"
+              class="inline-flex text-lg items-center justify-center text-center border border-transparent leading-[0] gap-2 disabled:bg-green-600/[0.5] bg-green-600/80 hover:bg-green-700/70 focus:bg-green-900/[0.8] disabled:hover:bg-green-600/50 text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium p-[.6rem] lg:p-3 duration-300 rounded-full transition-colors">
               @if (!savingNewConfig) {
-              <span>save</span>
-              <mat-icon class="font-bold !w-[2rem] !h-[1.6rem]">save</mat-icon>
+              <mat-icon class="font-bold">save</mat-icon>
               } @else {
               <mat-spinner
                 [diameter]="20"

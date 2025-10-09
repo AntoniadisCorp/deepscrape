@@ -4,12 +4,11 @@ import { AuthService } from './auth.service';
 import { Firestore } from '@angular/fire/firestore';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
-import { BrowserProfile, CrawlConfig, CrawlResult } from '../types';
+import { BrowserProfile, CrawlConfig, CrawlResult, CrawlResultConfig } from '../types';
 import { from } from 'rxjs/internal/observable/from';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { tap } from 'rxjs/internal/operators/tap';
-import { storeCrawlConfig, storeCrawlResultsConfig } from '../functions';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable } from 'rxjs/internal/Observable';
 import { map } from 'rxjs/internal/operators/map';
@@ -120,6 +119,7 @@ export class PackService {
       this.totalPagesBrowserSubject.next(1)
       // Get Data from Firestore
       this.fireSaveSub = this.getBrowserProfilesByPagination().pipe(
+        takeUntilDestroyed(this.destroyRef)
       ).subscribe({
         next: (results: any) => {
           const { profiles, inTotal, totalPages } = results
@@ -151,6 +151,7 @@ export class PackService {
       this.totalPagesConfigSubject.next(1)
       // Get Data from Firestore
       this.fireSaveSub = this.getCrawlConfigsByPagination().pipe(
+        takeUntilDestroyed(this.destroyRef)
       ).subscribe({
         next: (results: any) => {
           const { configs, inTotal, totalPages } = results
@@ -182,6 +183,7 @@ export class PackService {
       this.totalPagesResultsSubject.next(1)
       // Get Data from Firestore
       this.fireSaveSub = this.getCrawlResultConfigsByPagination().pipe(
+        takeUntilDestroyed(this.destroyRef)
       ).subscribe({
         next: (results: any) => {
           const { crawlResultConfigs, inTotal, totalPages } = results
@@ -203,7 +205,17 @@ export class PackService {
   }
 
 
-  storeBrowserProfile(browserProfile: BrowserProfile) {
+  private updateCache(configs: any, config: any, subject: BehaviorSubject<any>) {
+    // If the profile has an ID, it's an update operation
+    const index = configs?.findIndex((profile: any) => profile.id === config.id)
+    if (index !== undefined && index > -1 && configs) {
+      // Update the existing profile in place
+      configs[index] = config
+      subject.next(configs)
+    }
+  }
+
+  storeBrowserProfile(browserProfile: BrowserProfile, pageSize: number = 10) {
 
     // get the user document
     return from(this.firestoreService.storeBrowserProfile(this.userId, browserProfile)).pipe(
@@ -213,12 +225,17 @@ export class PackService {
         const browserProfiles: BrowserProfile[] | null | undefined = this.browserSubject.value
         let totalPages: number = this.totalPagesBrowserSubject.value
 
-        console.log(totalPages)
+        if (browserProfile?.id) {
+          this.updateCache(browserProfiles, browserProfile, this.browserSubject)
+          return
+        }
+
+        // console.log(totalPages)
         if (!browserProfiles || totalPages > 1)
           return
 
-        // keep 10 size data
-        if (browserProfiles.length >= 10)
+        // keep size data as pageSize value
+        if (browserProfiles.length >= pageSize)
           browserProfiles.pop()
         // maintaining sorted order
         browserProfiles.unshift(browserProfile)
@@ -226,7 +243,7 @@ export class PackService {
         // Update the Operations in the BehaviorSubject, 
         this.browserSubject.next(browserProfiles)
 
-        totalPages = browserProfiles.length > 10 ? 2 : 1
+        totalPages = browserProfiles.length > pageSize ? 2 : 1
         this.totalPagesBrowserSubject.next(totalPages)
       }),
       catchError((err) => {
@@ -235,8 +252,6 @@ export class PackService {
       })
     )
   }
-
-
 
   private getBrowserProfilesByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
     return from(httpsCallable(this.functions, "getBrowserProfilesPaging")
@@ -255,21 +270,25 @@ export class PackService {
       )
   }
 
-  storeCrawlConfig(crawlConfig: CrawlConfig) {
+  storeCrawlConfig(crawlConfig: CrawlConfig, pageSize: number = 10) {
     // get the user document
-    return from(storeCrawlConfig(this.userId, crawlConfig, this.firestore)).pipe(
+    return from(this.firestoreService.storeCrawlConfig(this.userId, crawlConfig)).pipe(
       tap(() => {
         // Get the current BehaviorSubject Value
         const crawlConfigs: CrawlConfig[] | null | undefined = this.configSubject.value
         let totalPages: number = this.totalPagesConfigSubject.value
 
+        if (crawlConfig?.id) {
+          this.updateCache(crawlConfigs, crawlConfig, this.configSubject)
+          return
+        }
 
         console.log(totalPages)
         if (!crawlConfigs || totalPages > 1)
           return
 
         // keep 10 size data
-        if (crawlConfigs.length >= 10)
+        if (crawlConfigs.length >= pageSize)
           crawlConfigs.pop()
         // maintaining sorted order
         crawlConfigs.unshift(crawlConfig)
@@ -277,7 +296,7 @@ export class PackService {
         // Update the Operations in the BehaviorSubject, 
         this.configSubject.next(crawlConfigs)
 
-        totalPages = crawlConfigs.length > 10 ? 2 : 1
+        totalPages = crawlConfigs.length > pageSize ? 2 : 1
         this.totalPagesConfigSubject.next(totalPages)
       }),
       catchError((err) => {
@@ -304,29 +323,34 @@ export class PackService {
       )
   }
 
-  storeCrawlResultConfig(crawlResultConfig: any) {
+  storeCrawlResultConfig(crawlResultConfig: CrawlResultConfig, pageSize: number = 10) {
     // get the user document
-    return from(storeCrawlResultsConfig(this.userId, crawlResultConfig, this.firestore)).pipe(
+    return from(this.firestoreService.storeCrawlResultsConfig(this.userId, crawlResultConfig)).pipe(
       tap(() => {
         // Get the current BehaviorSubject Value
-        const crawlConfigs: any[] | null | undefined = this.crawlResultsSubject.value
+        const crawlResultConfigs: CrawlResultConfig[] | null | undefined = this.crawlResultsSubject.value
         let totalPages: number = this.totalPagesResultsSubject.value
 
 
+        if (crawlResultConfig?.id) {
+          this.updateCache(crawlResultConfigs, crawlResultConfig, this.crawlResultsSubject)
+          return
+        }
+        
         console.log(totalPages)
-        if (!crawlConfigs || totalPages > 1)
+        if (!crawlResultConfigs || totalPages > 1)
           return
 
         // keep 10 size data
-        if (crawlConfigs.length >= 10)
-          crawlConfigs.pop()
+        if (crawlResultConfigs.length >= pageSize)
+          crawlResultConfigs.pop()
         // maintaining sorted order
-        crawlConfigs.unshift(crawlResultConfig)
+        crawlResultConfigs.unshift(crawlResultConfig)
 
         // Update the Operations in the BehaviorSubject, 
-        this.configSubject.next(crawlConfigs)
+        this.crawlResultsSubject.next(crawlResultConfigs)
 
-        totalPages = crawlConfigs.length > 10 ? 2 : 1
+        totalPages = crawlResultConfigs.length > pageSize ? 2 : 1
         this.totalPagesResultsSubject.next(totalPages)
       }),
       catchError((err) => {

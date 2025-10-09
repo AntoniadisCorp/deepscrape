@@ -1,7 +1,7 @@
 import { DestroyRef, inject, Injectable, OnInit } from '@angular/core'
 import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots, connectFirestoreEmulator } from '@angular/fire/firestore'
 import { openDB } from 'idb'
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs'
+import { BehaviorSubject, catchError, from, map, Observable, of, throwError } from 'rxjs'
 import { AuthService } from './auth.service'
 import { FirestoreService } from './firestore.service'
 import { BrowserConfig, BrowserProfile, CrawlConfig, CrawlPack, CrawlResult, CrawlResultConfig } from '../types'
@@ -17,7 +17,7 @@ export class CartService {
   private destroyRef = inject(DestroyRef)
 
   constructor(
-    private firestore: Firestore,
+    // private firestore: Firestore,
     private authService: AuthService,
     private firestoreService: FirestoreService
   ) {
@@ -27,7 +27,7 @@ export class CartService {
     })
     
     // set the firestore instance
-    this.firestore = this.firestoreService.getInstanceDB('easyscrape')
+    // this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 
     this.initDB()
     this.loadCartFromIndexedDB()
@@ -142,8 +142,10 @@ export class CartService {
     else item = { ...previousCart, ...item }
 
     this.cartItemSubject.next(item)
-    await this.saveToIndexedDB(item)
-    await this.saveToFirestore(item)
+    await Promise.all([
+      this.saveToIndexedDB(item),
+      this.saveToFirestore(item)
+    ])
   }
 
   // Remove crawlpack item from cart
@@ -164,24 +166,35 @@ export class CartService {
       // update to firestore
       await this.updateToFirestore(currentCartItem)
     }
-    // if current cart has only uid attribute, delete the cart from firestore
-    if (Object.keys(currentCartItem).length === 1 && currentCartItem.uid) {
-      this.deletFromIndexedDB(this.userId)
-      this.deleteFromFirestore()
+    // if current cart has only uid or type or both attribute, delete the cart from firestore
+    const keys = Object.keys(currentCartItem);
+    const hasUid = keys.includes('uid')
+    const hasType = keys.includes('type')
+    if (
+      (hasUid && hasType && keys.length === 2) ||
+      ((hasUid || hasType) && keys.length === 1)
+    ) {
+      await this.deletion()
     }
   }
 
   deleteCart(): Observable<boolean> {
+    return from(this.deletion()).pipe(
+      // If both promises resolve, emit true
+      // If any fails, error will be caught by catchError
+      map(() => true),
+      catchError((error) => {
+        console.log('Error deleting cart:', error)
+        return throwError(() => new Error('Failed to delete cart'))
+      })
+    )
+  }
 
-    try {
-      this.deletFromIndexedDB(this.userId)
+  private async deletion() {
+    await Promise.all([
+      this.deletFromIndexedDB(this.userId),
       this.deleteFromFirestore()
-      return of(true)
-    } catch (error) {
-      console.log('Error deleting cart:', error)
-      return throwError(() => new Error('Failed to delete cart'))
-    }
-
+    ])
   }
 
   ngOnDestroy(): void {
