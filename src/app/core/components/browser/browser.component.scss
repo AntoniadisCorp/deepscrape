@@ -1,0 +1,248 @@
+.browser-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  
+  .controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    .start-button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      
+      &:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      
+      &:hover:not(:disabled) {
+        background-color: #1565c0;
+      }
+    }
+    
+    .error-message {
+      margin-left: 1rem;
+      color: #f44336;
+      font-size: 14px;
+    }
+  }
+  
+  .video-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    
+    &.active {
+      border: 2px solid #4caf50;
+    }
+    
+    .remote-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      object-fit: contain;
+    }
+    
+    .interactive-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: default;
+      z-index: 10;
+      
+      &.active {
+        cursor: pointer;
+      }
+      
+      &:focus {
+        outline: none;
+      }
+      
+      .placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #757575;
+        
+        p {
+          font-size: 16px;
+        }
+      }
+    }
+    
+    .loading-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 20;
+      color: white;
+      
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 16px;
+      }
+      
+      p {
+        font-size: 16px;
+      }
+    }
+    
+    .autoplay-blocked-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      
+      .play-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s ease, background-color 0.2s ease;
+        
+        &:hover {
+          transform: scale(1.1);
+          background-color: rgba(25, 118, 210, 0.7);
+        }
+        
+        svg {
+          margin-bottom: 4px;
+        }
+        
+        span {
+          color: white;
+          font-size: 12px;
+          margin-top: 8px;
+          white-space: nowrap;
+          position: absolute;
+          bottom: -24px;
+        }
+      }
+    }
+    
+    .floating-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 5;
+      display: flex;
+      gap: 8px;
+      opacity: 0.3;
+      transition: opacity 0.3s ease;
+      
+      &:hover {
+        opacity: 1;
+      }
+    
+      .control-button {
+        background-color: rgba(0, 0, 0, 0.6);
+        border: none;
+        border-radius: 4px;
+        padding: 8px;
+        cursor: pointer;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        svg {
+          width: 20px;
+          height: 20px;
+          fill: white;
+        }
+      }
+    }
+  }
+  
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 14px;
+    color: #757575;
+    
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      
+      &.connected {
+        background-color: #4caf50;
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+      }
+    }
+  }
+}
+
+.autoplay-message {
+  color: white;
+  font-size: 14px;
+  margin-top: 48px;
+  text-align: center;
+  max-width: 80%;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

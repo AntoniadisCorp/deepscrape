@@ -2,7 +2,8 @@ export const environment = {
   "production": true,
   "emulators": false,
   "assetsUri": "https://deepscrape.dev/assets/",
-  "wsUrl": "ws://agent.deepscrape.dev",
+  "wsUrl": "wss://agent.deepscrape.dev",
+  "nekoUrl": "wss://neko-rtc.fly.dev",
   "firebaseConfig": {
     "apiKey": "AIzaSyC7GSMBH9_61g7x5LI_hj3vvGOeuvUAXaI",
     "authDomain": "libnet-d76db.firebaseapp.com",

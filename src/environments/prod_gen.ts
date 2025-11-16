@@ -7,7 +7,8 @@ const environment = {
     production: env["PRODUCTION"] === "true",
     emulators: env["EMULATORS"] === "true",
     assetsUri: "https://deepscrape.dev/assets/",
-    wsUrl: "ws://agent.deepscrape.dev", //  || "ws://crawlagent.fly.dev"
+    wsUrl: "wss://agent.deepscrape.dev", //  || "ws://crawlagent.fly.dev"
+    nekoUrl: "wss://neko-rtc.fly.dev",
     firebaseConfig: {
         apiKey: env["API_KEY"],
         authDomain: env["AUTH_DOMAIN"],
@@ -20,12 +21,12 @@ const environment = {
     },
     STRIPE_PUBLIC_KEY: env["STRIPE_PUBLIC_KEY"],
     RECAPTCHA_KEY: env["RECAPTCHA_KEY"],
-    // OPENAI_API_KEY: env["OPENAI_API_KEY"],
-    // ANTHROPIC_API_KEY: env["ANTHROPIC_API_KEY"],
-    // JINAAI_API_KEY: env["JINAAI_API_KEY"],
-    // GROQ_API_KEY: env["GROQ_API_KEY"],
-    // GOOGLE_API_KEY: env["GOOGLE_API_KEY"],
-    // CRAWL4AI_API_KEY: env["CRAWL4AI_API_KEY"],
+    OPENAI_API_KEY: "",// env["OPENAI_API_KEY"],
+    ANTHROPIC_API_KEY: "", // env["ANTHROPIC_API_KEY"],
+    JINAAI_API_KEY: "", // env["JINAAI_API_KEY"],
+    GROQ_API_KEY: "", // env["GROQ_API_KEY"],
+    GOOGLE_API_KEY: "", // env["GOOGLE_API_KEY"],
+    CRAWL4AI_API_KEY: "", // env["CRAWL4AI_API_KEY"],
     API_CRAWL4AI_URL: env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev",
     API_ARACHNEFLY_URL: env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev",
     API_ANTHROPIC: "https://api.anthropic.com",
