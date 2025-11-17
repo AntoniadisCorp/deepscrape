@@ -22,10 +22,10 @@ import { AuthService } from './auth.service';
 })
 export class AiAPIService {
 
-  private CLAUDE_API_KEY: string = environment.ANTHROPIC_API_KEY
-  private OPENAI_API_KEY: string = environment.OPENAI_API_KEY
+  private CLAUDE_API_KEY: string
+  private OPENAI_API_KEY: string
 
-  private GROQ_API_KEY: string = environment.GROQ_API_KEY
+  private GROQ_API_KEY: string
   private claudeAiEndpoint: string
   private openAiEndpoint: string
 
@@ -52,12 +52,12 @@ export class AiAPIService {
   sendToJinaAI(url: string, options: JinaOptions, cookies?: string): Observable<string> {
 
     const encodedUrl = environment.JINAAI_API_KEY !== '' ? url : customUrlEncoder(url);
-    console.log("encodedUrl: ", encodedUrl, environment.JINAAI_API_KEY)
+    console.log("encodedUrl: ", encodedUrl)
     const jinaAiReaderEndpoint: string = this.jinaAiEndpoint + encodedUrl
     const cookie = options.forwardCookies && cookies && cookies?.length ? { "X-Set-Cookie": cookies } : null // If cookies are provided, append them to the headers, )
     const headers = new HttpHeaders({
       'api-key': `Bearer ${this.authService.token}`, // Replace with your actual API key`,
-      'Authorization': `Bearer ${environment.JINAAI_API_KEY}`, // Replace with your actual API key
+      'Authorization': `Bearer ${'JINAAI_API_KEY'}`, // Replace with your actual API key
       'Accept': 'application/json',
       // "X-With-Links-Summary": "true",
       "X-With-Iframe": options.iframe,
