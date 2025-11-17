@@ -38,7 +38,7 @@ export class TooltipDirective implements OnInit, OnDestroy {
     private injector: Injector,
     private viewContainerRef: ViewContainerRef
   ) {}
-  @HostListener('mouseenter')
+  @HostListener('mouseenter', ['$event'])
   onMouseEnter(event: MouseEvent): void {
     // Cancel any pending destroy timer
     this.destroy$.next()
