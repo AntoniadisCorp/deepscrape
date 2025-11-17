@@ -1,3 +1,10 @@
+# [0.4.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.1...v0.4.0-beta.2) (2025-11-17)
+
+
+### Bug Fixes
+
+* **pr:** implement domain seeding, error logging, and client hydration ([f172ff9](https://github.com/AntoniadisCorp/deepscrape/commit/f172ff95aca27c073edd6e958e56479f0cc029e6))
+
 # [0.4.0-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.3.0...v0.4.0-beta.1) (2025-11-17)
 
 
