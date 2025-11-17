@@ -1,3 +1,10 @@
+# [0.3.0-beta.3](https://github.com/AntoniadisCorp/deepscrape/compare/v0.3.0-beta.2...v0.3.0-beta.3) (2025-11-17)
+
+
+### Features
+
+* **login:** make trackLoginAttempt method asynchronous for improved browser detection ([0be516d](https://github.com/AntoniadisCorp/deepscrape/commit/0be516dcdabb542a36686eb403486c2bb8179dcf))
+
 # [0.3.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.3.0-beta.1...v0.3.0-beta.2) (2025-11-17)
 
 
