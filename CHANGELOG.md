@@ -1,3 +1,25 @@
+# [0.3.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.3.0-beta.1...v0.3.0-beta.2) (2025-11-17)
+
+
+### Bug Fixes
+
+* **angular:** add bootstrapcontext parameter to bootstrap function, to fix bootstrapcontext error ([ba12dfb](https://github.com/AntoniadisCorp/deepscrape/commit/ba12dfbf088750b8283ac740950c504f64a989c4))
+* **api:** update endpoint paths for task management in crawl api service and seeding service ([6822d46](https://github.com/AntoniadisCorp/deepscrape/commit/6822d46b22815b89ad5b82218bd49b69cf04b8cd))
+* **components:** fix dropdown functionality and improve snackbar visibility ([c57b0fc](https://github.com/AntoniadisCorp/deepscrape/commit/c57b0fc6c93381f9a970b3c485a4b84196262197))
+* **config:** enable postcss-import plugin and comment out v4 tailwindcss import ([42c597c](https://github.com/AntoniadisCorp/deepscrape/commit/42c597cc3e9d54a25403ef3e71ad406ef739dcee))
+* refactor Firebase configuration to use environment variables and improve secret management ([f60979c](https://github.com/AntoniadisCorp/deepscrape/commit/f60979c772181a5d3aa6b5a2da749134167492a5))
+* update Angular SSR version and add loading bar dependencies ([c1d891a](https://github.com/AntoniadisCorp/deepscrape/commit/c1d891ae5d45a356b3815aa5ee42057825e406be))
+
+
+### Features
+
+* **components:** integrate websocket for task status updates and enhance operations management ([f1dda1f](https://github.com/AntoniadisCorp/deepscrape/commit/f1dda1ff6847cf613c745d636ffca9943c27a9dc))
+* **crawlpack:** improve service pack and ui components for improved profile and config management ([ad3b126](https://github.com/AntoniadisCorp/deepscrape/commit/ad3b1265267a3d1fc4d2727388495c1a5285bb6e))
+* **functions:** this commit introduces a new API endpoint for cancelling tasks ([405a533](https://github.com/AntoniadisCorp/deepscrape/commit/405a5335774dcda0f76b57a9768f49aa1dc347ab))
+* **neko:** integrate Neko browser and WebRTC communication ([67105b9](https://github.com/AntoniadisCorp/deepscrape/commit/67105b957f78c5dab61ccebf1528ebe1903dcfc9))
+* **seeder:** add seeder results component with new adimations and loggerservice ([4300e76](https://github.com/AntoniadisCorp/deepscrape/commit/4300e768c3062d0a7c39fbf66a15c85556fb665c))
+* **ui:** enhance tooltip component with animations and improved styling ([a85fa4f](https://github.com/AntoniadisCorp/deepscrape/commit/a85fa4fdee7c12feb6ef42af5a9f10cc1cee8e43))
+
 # [0.3.0-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.2.0...v0.3.0-beta.1) (2025-09-11)
 
 
