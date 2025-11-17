@@ -1,3 +1,10 @@
+# [0.4.0-beta.3](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.2...v0.4.0-beta.3) (2025-11-17)
+
+
+### Bug Fixes
+
+* **tooltip:** pass mouse event to onMouseEnter handler ([e29fe35](https://github.com/AntoniadisCorp/deepscrape/commit/e29fe3519e9b8d7e8be582f21d233c960b94cd88))
+
 # [0.4.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.1...v0.4.0-beta.2) (2025-11-17)
 
 
