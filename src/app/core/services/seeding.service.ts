@@ -50,7 +50,7 @@ export class SeedingService {
         }),
         catchError(error => {
           console.error('Error in Seeder Enqueue API call:', error)
-          throw throwError(() => error)
+          return throwError(() => error)
         }))
   }
 

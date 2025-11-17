@@ -21,7 +21,7 @@ export interface TaskStatus {
 export class WebSocketService {
   private destroyRef = inject(DestroyRef)
   private webSocketAPI_URL: string
-  private generalSocket$: WebSocketSubject<any>
+  private generalSocket$?: WebSocketSubject<any>
   private taskSocket$: WebSocketSubject<any> | null = null
 
   // General message subject
@@ -38,6 +38,9 @@ export class WebSocketService {
   }
 
   private connectToGeneralSocket() {
+    if (this.generalSocket$ && !this.generalSocket$.closed) {
+      return
+    }
     const serverUrl = `${this.webSocketAPI_URL}/ws/events?token=${this.authService.token}`
     this.generalSocket$ = webSocket(serverUrl)
 
@@ -56,7 +59,6 @@ export class WebSocketService {
         complete: () => console.warn('General WebSocket connection closed'),
       })
   }
-
   /**
    * Connect to WebSocket and track task statuses
    * @param taskIds Array of task IDs to track
@@ -106,11 +108,12 @@ export class WebSocketService {
 
   }
 
-  /**
-   * Send message to general WebSocket
-   */
+ 
   sendMessage(message: any) {
-    this.generalSocket$.next(message)
+    if (!this.generalSocket$ || this.generalSocket$.closed) {
+      this.connectToGeneralSocket()
+    }
+    this.generalSocket$?.next(message)
   }
 
   /**
@@ -135,7 +138,7 @@ export class WebSocketService {
    */
   closeAll() {
     this.disconnectTaskSocket()
-    this.generalSocket$.complete()
+    this.generalSocket$?.complete()
   }
 
   ngOnDestroy(): void {

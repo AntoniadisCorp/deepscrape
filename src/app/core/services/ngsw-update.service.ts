@@ -18,7 +18,11 @@ export class NgswUpdateService {
     }
   }
 
-  private activateUpdate() {
-    this.swUpdate.activateUpdate().then(() => this.document.location.reload())
-  }
+   private activateUpdate() {  
+    this.swUpdate.activateUpdate()  
+      .then(() => this.document.location.reload())  
+      .catch((error) => {  
+        console.error('Failed to activate service worker update:', error);  
+      });  
+  }  
 }

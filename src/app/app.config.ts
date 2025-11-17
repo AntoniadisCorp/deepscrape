@@ -61,9 +61,9 @@ export const appConfig: ApplicationConfig = {
     provideAnalytics(() => getAnalytics()),
     ScreenTrackingService, // track page views automatically
     UserTrackingService, // track unique users automatically
-    /* withHttpTransferCacheOptions({
-        includePostRequests: true
-      }) */
+    provideClientHydration(withHttpTransferCacheOptions({
+      includePostRequests: true
+    })),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'

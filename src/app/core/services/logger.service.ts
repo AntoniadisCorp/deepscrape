@@ -48,7 +48,25 @@ export class LoggerService {
       
       // Keep error logging
       console.error = function(...args) {
-        originalMethods.error.apply(console, args)
+        // Redact sensitive information before logging
+        const redactedArgs = args.map(arg => {
+          if (typeof arg === 'string') {
+            return arg
+              .replace(/apiKeys?\s*:\s*['"][^'"]+['"]/gi, 'apiKey: [REDACTED]')
+              .replace(/apiKeyId\s*:\s*['"][^'"]+['"]/gi, 'apiKeyId: [REDACTED]')
+              .replace(/apiKey\s*=\s*['"][^'"]+['"]/gi, 'apiKey=[REDACTED]');
+          }
+          if (typeof arg === 'object' && arg !== null) {
+            // Shallow clone and redact known keys
+            const clone = { ...arg };
+            ['apiKey', 'apiKeys', 'apiKeyId'].forEach(key => {
+              if (clone[key]) clone[key] = '[REDACTED]';
+            });
+            return clone;
+          }
+          return arg;
+        });
+        originalMethods.error.apply(console, redactedArgs)
         // Could add remote logging here
       };
       

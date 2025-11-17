@@ -63,7 +63,7 @@ export class CrawlAPIService {
         map((response: any) => response.data.content),
         catchError(error => {
           console.error('Error in Crawl4 AI API call:', error)
-          throw throwError(() => error)
+          return throwError(() => error)
         })
 
       )
@@ -71,7 +71,7 @@ export class CrawlAPIService {
 
   getTaskId(taskId: string): Observable<string> {
 
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint.replace('/crawl', '/job') + + "/" + taskId
+    const crawl4AiEndpoint: string = this.crawl4AiEndpoint.replace('/crawl', '/job') + "/" + taskId
 
 
     const headers = new HttpHeaders({

@@ -203,10 +203,10 @@ export class FirestoreService {
         const loginMetrics = loginMetricsSnap["data"]() as loginMetrics | undefined
 
         if (loginMetrics && loginMetrics.lastGuestId) {
-          let err2, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
+          let err, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
 
-          if (err2) {
-            console.warn("Failed to get guest data:", err2)
+          if (err) {
+            console.warn("Failed to get guest data:", err)
           } else if (guestSnap['exists']()) {
             guestInfo = guestSnap['data']() as Guest
             console.log("Guest info retrieved from lastGuestId:", guestInfo)

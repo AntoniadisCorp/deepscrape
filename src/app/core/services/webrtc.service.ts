@@ -661,7 +661,6 @@ export class WebRtcService {
           this[EVENT.CONTROL.REQUEST](payload);
           break;
         case EVENT.CONTROL.CLIPBOARD:
-        case EVENT.CONTROL.CLIPBOARD:
           // Already handled above
           break;
         default:

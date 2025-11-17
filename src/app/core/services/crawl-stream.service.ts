@@ -1,7 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CRAWL4AI_URL } from '../variables';
-import { options } from 'marked';
 import { AuthService } from './auth.service';
 import { HttpHeaders } from '@angular/common/http';
 
