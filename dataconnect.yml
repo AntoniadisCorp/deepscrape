@@ -3,11 +3,3 @@ dataConnect:
   id: "dataconnect-deepscrape"
   name: "DeepScrape DataConnect"
   description: "DataConnect for DeepScrape application"
-# firebase:
-#   apiKey: "AIzaSyC7GSMBH9_61g7x5LI_hj3vvGOeuvUAXaI"
-#   authDomain: "libnet-d76db.firebaseapp.com"
-#   databaseURL: "https://libnet-d76db-default-rtdb.europe-west1.firebasedatabase.app"
-#   projectId: "libnet-d76db"
-#   storageBucket: "libnet-d76db.appspot.com"
-#   messagingSenderId: "332716075857"
-#   appId: "1:332716075857:web:34793571e8aa3c3c308170"
