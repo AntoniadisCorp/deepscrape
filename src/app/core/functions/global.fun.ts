@@ -22,8 +22,8 @@ export function isArray(arr: any): boolean {
 }
 export function cleanAndParseJSON(dirtyJsonString: string): any | null {
     try {
-        // Use a regular expression to extract the JSON object match(/\[[^[\]]*\]|{[^}]*}/) //
-        const jsonMatch = dirtyJsonString.match(/(\[|\{)(?:[^[\]{}]|\{(?:[^{}]|\{[^{}]*\})*\}|\[(?:[^[\]]|\[.*?\])*\])*(\]|\})/)
+        // Use a regular expression to extract the JSON object or array, avoiding costly nested matching //
+        const jsonMatch = dirtyJsonString.match(/\{[^{}]*\}|\[[^\[\]]*\]/)
 
         if (!jsonMatch)
             return null
