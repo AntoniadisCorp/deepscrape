@@ -1,3 +1,10 @@
+# [0.4.0-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.4...v0.4.0-beta.5) (2025-11-19)
+
+
+### Bug Fixes
+
+* update background color in browser component and bump version to 0.4.0-beta.4 ([cde6646](https://github.com/AntoniadisCorp/deepscrape/commit/cde664652aa8bc206c7501d1a47a8ea5f810bba4))
+
 # [0.4.0-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.3...v0.4.0-beta.4) (2025-11-19)
 
 
