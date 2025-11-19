@@ -1,4 +1,6 @@
-import { Component, inject, Input } from '@angular/core';
+import { Component, DestroyRef, inject, Input } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { LocalStorage } from 'src/app/core/services';
 import { myIcons, themeStorageKey } from 'src/app/shared';
@@ -11,24 +13,29 @@ import { myIcons, themeStorageKey } from 'src/app/shared';
 })
 export class AppFooterComponent {
 
-    @Input() color = 'white';
+    @Input() color?: string = 'dark:bg-[#1a1a25]'
     readonly icons = myIcons
     private localStorage = inject(LocalStorage)
     protected footer = {
         github: myIcons['github'],
-        google: myIcons['google'],
         linkedin: myIcons['linkedin'],
         mail: myIcons['mail']
+    }
+
+    constructor() {
+        
     }
 
     ngOnInit(): void {
         //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
         //Add 'implements OnInit' to the class.
-        this.color = this.color? this.color : this.isThemeDark() ? 'dark:bg-[#1a1a25]' : 'white';
+        if (!this.color) {
+            this.color = this.isThemeDark() ? 'dark:bg-[#1a1a25]' : 'bg-[#f5f5f5]';
+        }
     }
 
 
-    isThemeDark(): boolean {
-        return this.localStorage.getItem(themeStorageKey) === 'dark';
-      }
+    private isThemeDark(): boolean {
+        return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark;
+    }
 }

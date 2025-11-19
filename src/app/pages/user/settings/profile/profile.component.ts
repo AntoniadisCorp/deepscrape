@@ -506,7 +506,7 @@ export class ProfileTabComponent {
   }
 
   themeIsDark(): boolean {
-    return this.localStorage.getItem(themeStorageKey) === 'dark'
+    return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
   }
 
   showSnackbar(

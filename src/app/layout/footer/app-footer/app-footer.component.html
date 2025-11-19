@@ -6,31 +6,44 @@
   Plugins:
     - @tailwindcss/forms
 -->
-    
-<footer class="px-auto max-w-screen px-4 sm:px-6 lg:px-8 rounded-lg text-white dark:text-white bg-white pb-16 pt-8 dark:bg-[#1a1a25] py-12">
-  <div class="max-w-7xl border-t border-slate-800 mt-8 pt-8 mx-auto px-4 sm:px-6 lg:px-8">
+
+<footer
+  [class]="color"
+  class="px-auto max-w-screen px-4 sm:px-6 lg:px-8 rounded-lg text-white dark:text-white pb-16 pt-8 py-12">
+  <div
+    class="max-w-7xl border-t border-slate-800 dark:border-slate-800 mt-8 pt-8 mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-center mb-8">
       <div class="flex space-x-6">
         <lucide-angular
           [img]="footer.github"
-          class="h-8 w-8 hover:text-white cursor-pointer transition-colors text-white dark:stroke-white fill-none"></lucide-angular>
-        <div class="h-8 w-8 hover:text-white cursor-pointer transition-colors text-white dark:stroke-white fill-none">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="r-4qtqp9 r-yyyyoo r-dnmrzs r-bnwqim r-lrvibr r-m6rgpd r-lrsllp r-1nao33i r-16y2uox r-8kz0gk"><g><path d="M21.742 21.75l-7.563-11.179 7.056-8.321h-2.456l-5.691 6.714-4.54-6.714H2.359l7.29 10.776L2.25 21.75h2.456l6.035-7.118 4.818 7.118h6.191-.008zM7.739 3.818L18.81 20.182h-2.447L5.29 3.818h2.447z"></path></g></svg>
+          class="h-8 w-8 dark:hover:text-[#c549a6] hover:text-[#3a0d2f] cursor-pointer transition-colors text-[#c549a6] dark:text-white fill-none"></lucide-angular>
+        <div
+          class="h-8 w-8 dark:hover:text-[#c549a6] hover:text-[#3a0d2f] cursor-pointer transition-colors text-[#c549a6] dark:text-white  fill-none">
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            class="r-4qtqp9 r-yyyyoo r-dnmrzs r-bnwqim r-lrvibr r-m6rgpd r-lrsllp r-1nao33i r-16y2uox r-8kz0gk">
+            <g>
+              <path
+                d="M21.742 21.75l-7.563-11.179 7.056-8.321h-2.456l-5.691 6.714-4.54-6.714H2.359l7.29 10.776L2.25 21.75h2.456l6.035-7.118 4.818 7.118h6.191-.008zM7.739 3.818L18.81 20.182h-2.447L5.29 3.818h2.447z"></path>
+            </g>
+          </svg>
         </div>
         <lucide-angular
           [img]="footer.linkedin"
-          class="h-8 w-8 hover:text-white cursor-pointer transition-colors text-white dark:stroke-white fill-none"></lucide-angular>
+          class="h-8 w-8 dark:hover:text-[#c549a6] hover:text-[#3a0d2f] cursor-pointer transition-colors text-[#c549a6] dark:text-white  fill-none"></lucide-angular>
         <lucide-angular
           [img]="footer.mail"
-          class="h-8 w-8 hover:text-white cursor-pointer transition-colors text-white dark:stroke-white fill-none"></lucide-angular>
+          class="h-8 w-8 dark:hover:text-[#c549a6] hover:text-[#3a0d2f] cursor-pointer transition-colors text-[#c549a6] dark:text-white  fill-none"></lucide-angular>
       </div>
     </div>
     <div class="text-center">
-      <p class="text-gray-400 text-sm mb-2">
+      <p class="dark:text-gray-400 text-gray6 text-sm mb-2">
         All rights reserved. Built with ❤️ using Angular.
       </p>
       <div class="flex justify-center">
-        <span class="inline-block text-xs text-gray-500 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-semibold tracking-wide rounded px-2 py-1">
+        <span
+          class="inline-block text-xs text-gray-500 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-semibold tracking-wide rounded px-2 py-1">
           © 2025-now el3m3nt4list – MIT License
         </span>
       </div>

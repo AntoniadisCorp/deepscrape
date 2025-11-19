@@ -34,10 +34,12 @@ export class AppUserLayoutComponent {
 
   private window: Window = inject(WindowToken)
   private localStorage = inject(LocalStorage)
-  @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900 min-h-svh'
+  
+  @HostBinding('class') classes = 'h-full w-full bg-gray-100 flex flex-col dark:bg-gray-900 min-h-svh'
   private firestoreService = inject(FirestoreService)
   size!: SCREEN_SIZE;
-
+  
+  footerColor: string = '';
   sizeSub: Subscription = new Subscription(); // Initialize sizeSub
 
   user: Users & { currProviderData: UserInfo | null } | null = null
@@ -119,6 +121,7 @@ export class AppUserLayoutComponent {
       }));
     }
 
+    this.footerColor = this.isThemeDark ? 'dark:bg-[#212121]' : 'bg-[#f5f5f5]';
     this.InitCloseSideBarOnSmallDevices()
   }
 
@@ -241,7 +244,6 @@ export class AppUserLayoutComponent {
       }
     })
   }
-
   getAnimationData(outlet: RouterOutlet) {
     // return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
     return this.currentRouteAnimation;

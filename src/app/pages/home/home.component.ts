@@ -26,7 +26,7 @@ export class HomeComponent implements OnInit {
   constructor() { }
 
   isThemeDark(): boolean {
-    return this.localStorage.getItem(themeStorageKey) === 'dark';
+    return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
   }
   ngOnInit() {
     // Check initial system preference or saved preference

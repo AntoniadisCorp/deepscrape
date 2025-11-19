@@ -301,7 +301,7 @@
    -->
 <div
   [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
-  class="w-full mt-20 px-4 pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2">
+  class="w-full mt-20 px-4 flex-grow pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2">
   <app-sidebar
     [barClosed]="closeAsideBar"
     [resizeScreen]="viewSmallDevices"
@@ -309,7 +309,15 @@
   <router-outlet [@routeAnimation]="currentRouteAnimation" #outlet="outlet"></router-outlet>
 </div>
 @if(!compIsLoading) {
-<app-footer></app-footer>
+<app-footer [color]="footerColor"></app-footer>
+
+<!-- <div  class="hidden">{{footerColor}}</div> -->
+} @else {
+  <span class="flex w-full items-center justify-center">
+    <mat-spinner
+      [diameter]="40"
+      class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
+  </span>
 }
 <!-- </div>
  [ngClass]="!closeAsideBar ? 'show' : 'hidden'"
