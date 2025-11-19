@@ -1,11 +1,12 @@
 import { NgFor } from '@angular/common';
 import { Component } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
+import { WithGradientBorderComponent } from 'src/app/core/components';
 import { myIcons } from 'src/app/shared';
 
 @Component({
   selector: 'app-features',
-  imports: [NgFor, LucideAngularModule],
+  imports: [NgFor, LucideAngularModule, WithGradientBorderComponent],
   templateUrl: './features.component.html',
   styleUrl: './features.component.scss'
 })

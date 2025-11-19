@@ -5,10 +5,11 @@ import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
 import { MatIcon } from '@angular/material/icon';
 import { FeaturesComponent, HeroComponent } from 'src/app/layout/landpage';
 import { LocalStorage } from 'src/app/core/services';
+import { AppFooterComponent } from 'src/app/layout/footer';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, ThemeToggleComponent, HeroComponent, FeaturesComponent, NgClass],
+  imports: [RouterLink, ThemeToggleComponent, HeroComponent, FeaturesComponent, AppFooterComponent, NgClass],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

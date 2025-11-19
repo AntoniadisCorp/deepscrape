@@ -175,7 +175,7 @@ export class TooltipDirective implements OnInit, OnDestroy {
     this.destroy()
     this.destroy$.next()
     this.destroy$.complete()
-    this.handleMouseMove?.unsubscribe()
+    this.handleMouseMove?.complete()
     
     // Unsubscribe from all subscriptions
     this.subscriptions.forEach(sub => sub.unsubscribe())

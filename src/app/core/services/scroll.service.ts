@@ -240,8 +240,8 @@ export class ScrollService implements OnDestroy {
   }
 
   removeStoredScrollInfo() {
-    this.storage.removeItem('scrollLocationHref')
-    this.storage.removeItem('scrollPosition')
+    this.storage?.removeItem('scrollLocationHref')
+    this.storage?.removeItem('scrollPosition')
   }
 
   /**
