@@ -1,3 +1,10 @@
+# [0.4.0-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.3...v0.4.0-beta.4) (2025-11-19)
+
+
+### Features
+
+* refactor API, landing page, and rate limiting ([3cb5e48](https://github.com/AntoniadisCorp/deepscrape/commit/3cb5e48713916ec13ebf65aaa441287be2bfaa1f))
+
 # [0.4.0-beta.3](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.2...v0.4.0-beta.3) (2025-11-17)
 
 ### Bug Fixes
