@@ -1,3 +1,10 @@
+# [0.4.0-beta.6](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.5...v0.4.0-beta.6) (2025-11-19)
+
+
+### Features
+
+* **footer:** implement dynamic theme colors and enhance icon styling ([5486533](https://github.com/AntoniadisCorp/deepscrape/commit/54865333251ed497c0be7d156c7881e0f3c89f0f))
+
 # [0.4.0-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.4...v0.4.0-beta.5) (2025-11-19)
 
 
