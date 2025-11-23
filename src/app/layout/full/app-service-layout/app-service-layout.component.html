@@ -19,10 +19,16 @@
         DeepScrape
       </h1>
     </a>
-    <!-- Theme Mode Switch -->
-    <!-- <app-theme-dark-toggle class="mr-[30px] mt-5 h-8 border-none"></app-theme-dark-toggle> -->
-    <!-- Theme Mode Switch -->
-    <app-theme-toggle></app-theme-toggle>
+    <div class="flex items-center justify-end gap-2 w-full">
+        <!-- Lang Mode Switch -->
+        <app-lang-picker></app-lang-picker>
+        <!-- Theme Mode Switch -->
+        <app-theme-toggle
+          [color]="{
+            dark: '#373737f0',
+            light: '#fff'
+          }"></app-theme-toggle>
+      </div>
   </div>
 </header>
 

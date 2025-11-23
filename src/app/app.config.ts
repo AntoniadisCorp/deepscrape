@@ -18,7 +18,7 @@ import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { browserProvider, BrowserToken, PLUTO_ID, STORAGE_PROVIDERS, windowProvider, WindowToken } from './core/services';
 import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
-import { provideImgixLoader } from '@angular/common';
+import { IMAGE_LOADER, ImageLoaderConfig } from '@angular/common';
 import { environment } from 'src/environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
 import { provideNgxStripe } from 'ngx-stripe';
@@ -27,8 +27,16 @@ import { NAVIGATOR_PROVIDER } from './core/providers';
 import { LogLevel, setLogLevel } from '@angular/fire';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import { myIcons } from './shared'
+import { provideI18n } from './core/i18n'; // Import provideI18n
 
 setLogLevel(LogLevel.VERBOSE)
+
+// Custom image loader that handles both dev and prod
+const customImageLoader = (config: ImageLoaderConfig) => {
+  const baseUri = environment.assetsUri.endsWith('/') ? environment.assetsUri : environment.assetsUri + '/';
+  return baseUri + config.src.replace(/^\//, '');
+};
+
 // const analytics = getAnalytics(app);
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -44,16 +52,15 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptorsFromDi(),
       // withXsrfConfiguration({ cookieName: 'csrf_', headerName: 'X-Csrf-Token' }),
-      withFetch(),
-
-      /* withInterceptors([
+      withFetch(),      /* withInterceptors([
         new TokenInterceptor().intercept,
         // new CsrfInterceptor().intercept
       ]), */
-    ),
-
-    // Call the function and add the result to the `providers` array:
-    provideImgixLoader(environment.assetsUri),
+    ),    // Custom image loader for dev and prod
+    {
+      provide: IMAGE_LOADER,
+      useValue: customImageLoader
+    },
 
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideExperimentalZonelessChangeDetection(),
@@ -124,5 +131,6 @@ export const appConfig: ApplicationConfig = {
       provide: PLUTO_ID,
       useValue: '449f8516-791a-49ab-a09d-50f79a0678b6',
     },
+    provideI18n(), // Add the i18n providers here
   ]
 }

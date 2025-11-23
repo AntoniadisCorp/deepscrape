@@ -1,7 +1,7 @@
 import { Component, ElementRef, inject, ViewChild, AfterViewInit, OnDestroy, DestroyRef, signal } from '@angular/core'
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormControl, FormsModule } from '@angular/forms'
 import { CrawlOperation, CrawlResult, CrawlStatus, CrawlStreamBatch, CrawlTask, Preset, SeederRequest, SeederResult, Users } from '../../types'
-import { LocalStorage, SeedingService, ScreenResizeService, WindowToken, CrawlAPIService, SnackbarService, OperationStatusService, AuthService, LoggerService } from '../../services'
+import { LocalStorage, SeedingService, ScreenResizeService, WindowToken, CrawlAPIService, SnackbarService, OperationStatusService, AuthService } from '../../services'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { concatMap, delay, Observable, of, shareReplay, Subject, Subscription, takeUntil, tap, timer } from 'rxjs'
 import { AsyncPipe, NgClass, NgFor, NgIf } from '@angular/common'

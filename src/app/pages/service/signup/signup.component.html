@@ -43,12 +43,12 @@
         <h1
           id="signup-title"
           class="text-xl font-extrabold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">
-          Create your account
+          {{ 'SIGNUP.CREATE_ACCOUNT_TITLE' | translate }}
         </h1>
         <p
           id="signup-subtitle"
           class="text-gray-600 dark:text-gray-300 text-xs">
-          Join us in just a few steps. It only takes a moment.
+          {{ 'SIGNUP.JOIN_MESSAGE' | translate }}
         </p>
       </div>
     </header>
@@ -89,14 +89,14 @@
           id="label-name"
           for="name"
           class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-          Full name
+          {{ 'SIGNUP.FULL_NAME_LABEL' | translate }}
         </label>
         <input
           id="name"
           type="text"
           formControlName="name"
           required
-          placeholder="Enter your full name"
+          placeholder="{{ 'SIGNUP.FULL_NAME_PLACEHOLDER' | translate }}"
           class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
           [ngClass]="{
             'border-red-500 dark:border-red-400':
@@ -114,10 +114,10 @@
           "
           class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
           <ng-container *ngIf="signupForm.get('name')?.errors?.['required']">
-            Name is required
+            {{ 'SIGNUP.FULL_NAME_REQUIRED' | translate }}
           </ng-container>
           <ng-container *ngIf="signupForm.get('name')?.errors?.['minlength']">
-            Name must be at least 2 characters
+            {{ 'SIGNUP.FULL_NAME_MINLENGTH' | translate }}
           </ng-container>
         </small>
       </div>
@@ -127,14 +127,14 @@
           id="label-email"
           for="email"
           class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-          Email address
+          {{ 'SIGNUP.EMAIL_LABEL' | translate }}
         </label>
         <input
           id="email"
           type="email"
           formControlName="email"
           required
-          placeholder="Enter your email"
+          placeholder="{{ 'SIGNUP.EMAIL_PLACEHOLDER' | translate }}"
           autocomplete="username"
           class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
           [ngClass]="{
@@ -154,10 +154,10 @@
           "
           class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
           <ng-container *ngIf="signupForm.get('email')?.errors?.['required']">
-            Email is required
+            {{ 'SIGNUP.EMAIL_REQUIRED' | translate }}
           </ng-container>
           <ng-container *ngIf="signupForm.get('email')?.errors?.['email']">
-            Invalid email format
+            {{ 'SIGNUP.INVALID_EMAIL' | translate }}
           </ng-container>
         </small>
       </div>
@@ -167,14 +167,14 @@
           id="label-password"
           for="password"
           class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-          Create password
+          {{ 'SIGNUP.PASSWORD_LABEL' | translate }}
         </label>
         <input
           id="password"
           type="password"
           formControlName="password"
           required
-          placeholder="Create a password"
+          placeholder="{{ 'SIGNUP.PASSWORD_PLACEHOLDER' | translate }}"
           autocomplete="new-password"
           class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
           [ngClass]="{
@@ -196,7 +196,7 @@
           class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
           <ng-container
             *ngIf="signupForm.get('password')?.errors?.['required']">
-            Password is required
+            {{ 'SIGNUP.PASSWORD_REQUIRED' | translate }}
           </ng-container>
           <ng-container
             *ngIf="signupForm.get('password')?.errors?.['passwordStrength']">
@@ -204,7 +204,7 @@
           </ng-container>
           <ng-container
             *ngIf="!signupForm.get('password')?.errors?.['passwordStrength'] && !signupForm.get('password')?.errors?.['required']">
-            Invalid format
+            {{ 'SIGNUP.INVALID_PASSWORD_FORMAT' | translate }}
           </ng-container>
         </small>
       </div>
@@ -214,14 +214,14 @@
           id="label-confirm-password"
           for="confirmPassword"
           class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-          Confirm password
+          {{ 'SIGNUP.CONFIRM_PASSWORD_LABEL' | translate }}
         </label>
         <input
           id="confirmPassword"
           type="password"
           formControlName="confirmPassword"
           required
-          placeholder="Confirm your password"
+          placeholder="{{ 'SIGNUP.CONFIRM_PASSWORD_PLACEHOLDER' | translate }}"
           autocomplete="new-password"
           class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
           [ngClass]="{
@@ -243,7 +243,7 @@
           class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
           <ng-container
             *ngIf="signupForm.get('confirmPassword')?.errors?.['passwordMismatch']">
-            Passwords do not match
+            {{ 'SIGNUP.PASSWORDS_DO_NOT_MATCH' | translate }}
           </ng-container>
         </small>
       </div>
@@ -253,13 +253,13 @@
           id="label-phone"
           for="phoneNumber"
           class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-          Phone number (optional)
+          {{ 'SIGNUP.PHONE_LABEL' | translate }}
         </label>
         <input
           id="phoneNumber"
           type="text"
           formControlName="phoneNumber"
-          placeholder="Enter your phone number (e.g., +1234567890)"
+          placeholder="{{ 'SIGNUP.PHONE_PLACEHOLDER' | translate }}"
           class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
           [ngClass]="{
             'border-red-500 dark:border-red-400':
@@ -280,7 +280,7 @@
           class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
           <ng-container
             *ngIf="signupForm.get('phoneNumber')?.errors?.['pattern']">
-            Invalid phone number format (e.g., +1234567890).
+            {{ 'SIGNUP.INVALID_PHONE_FORMAT' | translate }}
           </ng-container>
         </small>
       </div>
@@ -308,17 +308,17 @@
               fill="currentColor"
               d="M4 12a8 8 0 018-8v8z"></path>
           </svg>
-          <span id="signup-button-text">Create account</span>
+          <span id="signup-button-text">{{ 'SIGNUP.CREATE_ACCOUNT_BUTTON' | translate }}</span>
         </button>
       </div>
     </form>
     <footer class="mt-3 text-center text-xs text-gray-600 dark:text-gray-300">
       <span id="footer-main-text">
-        Already have an account?
+        {{ 'SIGNUP.ALREADY_HAVE_ACCOUNT' | translate }}
         <a
           [routerLink]="['/service/login']"
           class="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 cc-focus-ring">
-          Log in
+          {{ 'SIGNUP.LOGIN_LINK' | translate }}
         </a>
       </span>
     </footer>

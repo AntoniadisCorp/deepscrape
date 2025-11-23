@@ -9,10 +9,11 @@ import { delay, finalize, Subscription, timer } from 'rxjs';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Loading } from 'src/app/core/types';
 import { getErrorMessage } from 'src/app/core/functions';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-verification',
-  imports: [MatIcon, CommonModule, ReactiveFormsModule],
+  imports: [MatIcon, CommonModule, ReactiveFormsModule, TranslateModule],
   templateUrl: './verification.component.html',
   styleUrl: './verification.component.scss'
 })
@@ -47,7 +48,8 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     private firestoreService: FirestoreService,
     private fb: FormBuilder,
     @Inject(DOCUMENT) private document: Document,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private translate: TranslateService
   ) {
     this.phoneVerificationForm = this.fb.group({
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[1-9]\d{1,14}$/)]],
@@ -134,7 +136,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.cdr.detectChanges(); // Ensure the view updates with the new state
     } catch (error: any) {
       console.error('Error sending phone verification code:', error);
-      this.errorMessage = getErrorMessage(error);
+      this.errorMessage = getErrorMessage(error, this.translate);
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.phone = false;
@@ -176,7 +178,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     } catch (error: any) {
       console.error('Error verifying phone number code:', error);
-      this.errorMessage = getErrorMessage(error);
+      this.errorMessage = getErrorMessage(error, this.translate);
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.code = false;
@@ -202,7 +204,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     } catch (error) {
       console.error('Error sending verification email:', error);
-      this.errorMessage = getErrorMessage(error);
+      this.errorMessage = getErrorMessage(error, this.translate);
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.email = false;
@@ -224,7 +226,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (error) => {
         console.error('Logout error:', error);
-        this.showSnackbar(getErrorMessage(error), SnackBarType.error, '', 5000);
+        this.showSnackbar(getErrorMessage(error, this.translate), SnackBarType.error, '', 5000);
       }
     })
   }

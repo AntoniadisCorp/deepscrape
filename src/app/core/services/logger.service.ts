@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core'
-import { environment } from 'src/environments/environment'
-import { I18nService } from './i18n.service';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { environment } from 'src/environments/environment';
+import { I18nService } from '../i18n';
+
 
 declare global {
   interface Console {
@@ -9,28 +9,15 @@ declare global {
   }
 }
 
-// Language warning messages
-const LANG_WARNINGS: Record<string, string> = {
-  en: 'WARNING!\nUsing this console, attackers can impersonate you and steal your credentials using a method called Self-XSS. Avoid entering or pasting code you do not understand.',
-  el: 'ΠΡΟΕΙΔΟΠΟΙΗΣΗ!\nΧρησιμοποιώντας αυτή την κονσόλα οι εισβολείς μπορούν να παριστάνουν εσάς και να υποκλέψουν τα στοιχεία σας χρησιμοποιώντας μια μέθοδο που ονομάζεται Self-XSS.Αποφύγετε την εισαγωγή ή την επικόλληση κώδικα που δεν κατανοείτε.'
-};
-
-// Default language is English
-let currentLang = 'en';
-
-export function setLoggerLang(lang: string) {
-  currentLang = LANG_WARNINGS[lang] ? lang : 'en';
-}
-
 @Injectable({
   providedIn: 'root'
 })
 export class LoggerService {
-  private static i18nService: I18nService;
-  private static httpClient: HttpClient;
+  private static i18nService: I18nService
 
   // Static initialization - runs once when app starts
   static {
+    
     // Only modify console in production
     if (environment.production) {
       // Store original methods
@@ -66,11 +53,12 @@ export class LoggerService {
           return arg;
         });
         // Show i18n warning before error
-        let warning = 'WARNING!';
+        
+        let warning = '';
         if (LoggerService.i18nService) {
-          warning = LoggerService.i18nService.getTranslation('consoleWarning');
+          warning = LoggerService.i18nService.instant('consoleWarning');
         }
-        originalMethods.error.call(console, warning);
+        originalMethods.log.call(console, warning);
         originalMethods.error.apply(console, redactedArgs)
       };
       
@@ -79,11 +67,6 @@ export class LoggerService {
         originalMethods.log.apply(console, args)
       }
     }
-  }
-
-  constructor(i18nService: I18nService, http: HttpClient) {
-    LoggerService.i18nService = i18nService;
-    LoggerService.httpClient = http;
   }
 
   // Regular instance methods - these will maintain call stack
@@ -104,7 +87,7 @@ export class LoggerService {
   }
   
   error(...data: any[]): void {
-    console.error(...data)
+    console.error(...data);
   }
   
   // For critical logs that should appear even in production

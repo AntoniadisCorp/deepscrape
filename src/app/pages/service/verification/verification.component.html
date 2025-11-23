@@ -8,10 +8,8 @@
           <div id="recaptcha-verification" #recaptcha></div>
           <div
             class="text-center space-y-6 max-w-md text-gray-800 dark:text-gray-200">
-            <h2 class="text-3xl font-medium">Welcome</h2>
-            <p class="text-lg">
-              Please verify your account to access the dashboard.
-            </p>
+            <h2 class="text-3xl font-medium">{{ 'VERIFICATION.WELCOME' | translate }}</h2>
+            <p class="text-lg">{{ 'VERIFICATION.INSTRUCTION' | translate }}</p>
           </div>
           <div class="w-full px-4 max-w-2xl">
             <div
@@ -24,13 +22,9 @@
               </div>
               } @if (verificationMethod === 'email') {
               <div class="mb-3 text-center">
-                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                  Email Verification
-                </h1>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ 'VERIFICATION.EMAIL_TITLE' | translate }}</h1>
               </div>
-              <p class="text-center text-gray-600 dark:text-gray-400 mb-6">
-                A verification email has been sent to your inbox.
-              </p>
+              <p class="text-center text-gray-600 dark:text-gray-400 mb-6">{{ 'VERIFICATION.EMAIL_SENT' | translate }}</p>
               <div
                 class="px-6 [&:last-child]:pb-6 space-y-4 flex flex-col items-center justify-start w-full">
                 <div
@@ -80,22 +74,16 @@
               </div>
               } @else if (verificationMethod === 'phone') {
               <div class="mb-3 text-center">
-                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                  Phone Number Verification
-                </h1>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ 'VERIFICATION.PHONE_TITLE' | translate }}</h1>
               </div>
-              <p class="text-center text-gray-600 dark:text-gray-400 mb-6">
-                Please verify your phone number to access the dashboard.
-              </p>
+              <p class="text-center text-gray-600 dark:text-gray-400 mb-6">{{ 'VERIFICATION.PHONE_INSTRUCTION' | translate }}</p>
               <form
                 [formGroup]="phoneVerificationForm"
                 (ngSubmit)="sendPhoneVerificationCode()">
                 <div class="relative mb-3 w-full">
                   <label
                     class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
-                    for="phone-number-verify">
-                    Phone Number
-                  </label>
+                    for="phone-number-verify">{{ 'VERIFICATION.PHONE_LABEL' | translate }}</label>
                   <input
                     id="phone-number-verify"
                     formControlName="phoneNumber"

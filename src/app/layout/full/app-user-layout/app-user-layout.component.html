@@ -47,8 +47,16 @@
       <app-dropdown-cart class="fixed"></app-dropdown-cart>
       }
 
-      <!-- Theme Mode Switch -->
-      <app-theme-toggle></app-theme-toggle>
+      <div class="flex items-center justify-end gap-2 w-full">
+        <!-- Lang Mode Switch -->
+        <app-lang-picker></app-lang-picker>
+        <!-- Theme Mode Switch -->
+        <app-theme-toggle
+          [color]="{
+            dark: '#373737f0',
+            light: '#fff'
+          }"></app-theme-toggle>
+      </div>
       @if (user) {
       <!-- Profile Image Menu Button -->
       <button

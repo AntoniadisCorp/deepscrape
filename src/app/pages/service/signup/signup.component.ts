@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -15,6 +15,9 @@ import { SnackBarType } from 'src/app/core/components';
 import { Subscription } from 'rxjs';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 import { AnimatedBgComponent } from 'src/app/shared';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { I18nService } from 'src/app/core/i18n';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // First, create an interface for your form structure
 interface SignupForm {
@@ -33,6 +36,7 @@ interface SignupForm {
         RouterModule,
         MatIconModule,
         MatProgressSpinnerModule,
+        TranslateModule,
     ],
     templateUrl: './signup.component.html',
     styleUrl: './signup.component.scss'
@@ -52,6 +56,8 @@ export class SignupComponent implements OnInit, OnDestroy {
         
     };
     errorMessage = '';
+    private destroyRef = inject(DestroyRef);
+    private langChangeSubscription: Subscription;
 
     constructor(
         private fb: FormBuilder,
@@ -62,10 +68,18 @@ export class SignupComponent implements OnInit, OnDestroy {
         private snackbarService: SnackbarService,
         private authService: AuthService, // Inject AuthService
         private cookieService: CookieService, // Inject CookieService
+        private translate: TranslateService, // Inject TranslateService
+        private i18nService: I18nService, // Inject I18nService
     ) {
     }
 
     ngOnInit(): void {
+        this.translate.use(this.i18nService.currentLang());
+        this.langChangeSubscription = this.i18nService.currentLang$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((lang) => {
+                this.translate.use(lang);
+            });
         this.signupForm = this.fb.group<SignupForm>({
             name: this.fb.control('', {
                 validators: [Validators.required, Validators.minLength(2)],
@@ -128,11 +142,10 @@ export class SignupComponent implements OnInit, OnDestroy {
 
 
             // Check if the email already exists
-            this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({
-                next: async (response) => {
+            this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({                next: async (response) => {
                     try {
                         if (response.exists) {
-                            this.errorMessage = `Email already exists!`
+                            this.errorMessage = this.translate.instant('SIGNUP.EMAIL_ALREADY_EXISTS')
                             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                             return
                         }
@@ -168,12 +181,12 @@ export class SignupComponent implements OnInit, OnDestroy {
                             email: userCredential.user.email 
                         } });
                     } catch (error: any) {
-                        this.errorMessage = getErrorMessage(error)
+                        this.errorMessage = getErrorMessage(error, this.translate)
                         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                     }
                 },
                 error: (error) => {
-                    this.errorMessage = getErrorMessage(error)
+                    this.errorMessage = getErrorMessage(error, this.translate)
                     this.showSnackbar(error.message, SnackBarType.error, '', 5000)
                 }
 
@@ -188,11 +201,10 @@ export class SignupComponent implements OnInit, OnDestroy {
         duration: number = 3000) {
 
         this.snackbarService.showSnackbar(message, type, action, duration)
-    }
-
-    ngOnDestroy(): void {
+    }    ngOnDestroy(): void {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.emailCheckSubs?.unsubscribe()
+        this.langChangeSubscription?.unsubscribe()
     }
 }

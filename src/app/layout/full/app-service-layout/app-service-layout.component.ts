@@ -5,11 +5,13 @@ import { ChildrenOutletContexts, RouterLink, RouterOutlet } from '@angular/route
 import { Observable } from 'rxjs/internal/Observable';
 import { fadeInOutAnimation } from 'src/app/animations';
 import { LocalStorage, ThemeService } from 'src/app/core/services';
-import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
+import { LangPickerComponent, themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
 
 @Component({
   selector: 'app-service-layout',
-  imports: [RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe],
+  imports: [RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe,
+    LangPickerComponent
+  ],
   templateUrl: './app-service-layout.component.html',
   styleUrl: './app-service-layout.component.scss',
   animations: [fadeInOutAnimation]

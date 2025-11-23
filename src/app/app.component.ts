@@ -3,8 +3,8 @@ import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/r
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
-import { AuthService, SnackbarService, SvgIconService } from './core/services'
-import { AnimatedBgComponent, ThemeToggleComponent } from './shared'
+import { AuthService, LoggerService, SnackbarService, SvgIconService } from './core/services'
+import { AnimatedBgComponent, LangPickerComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
 import { map, Observable, of } from 'rxjs'
@@ -55,7 +55,7 @@ import { Analytics, logEvent } from '@angular/fire/analytics'
     SnackbarComponent, SizeDetectorComponent, AnimatedBgComponent
   ],
   // changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ThemeToggleComponent, NgswUpdateService],
+  providers: [ThemeToggleComponent, NgswUpdateService, LangPickerComponent, LoggerService],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   // host: {

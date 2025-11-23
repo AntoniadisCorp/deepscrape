@@ -1,10 +1,14 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core'
+import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ChangeDetectorRef, ChangeDetectionStrategy, inject, DestroyRef } from '@angular/core'
 import { FormGroup, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { MatIcon } from '@angular/material/icon'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 import { Guest, Loading, loginHistoryInfo, Users } from 'src/app/core/types'
-import { CommonModule, DOCUMENT, JsonPipe, NgIf } from '@angular/common'
+import { CommonModule, DOCUMENT, JsonPipe, NgIf } from '@angular/common';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { I18nService } from 'src/app/core/i18n';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 import {
   Auth, GithubAuthProvider, GoogleAuthProvider, OAuthProvider,
   linkWithCredential,
@@ -32,7 +36,6 @@ import { SnackBarType } from 'src/app/core/components'
 import { CookieService } from 'ngx-cookie-service' // Import CookieService
 import { NAVIGATOR } from 'src/app/core/providers'
 import { Analytics, logEvent, setUserId, setUserProperties } from '@angular/fire/analytics'
-import { AnimatedBgComponent } from 'src/app/shared'
 
 type loginCredentials = {
     mergeRequired: boolean
@@ -43,13 +46,14 @@ type loginCredentials = {
 }
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon, TranslateModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
 export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   private analytics = inject(Analytics) 
   private localStorage = inject(LocalStorage)
+  private DestroyRef = inject(DestroyRef)
   protected loading: Loading
   protected loginForm: FormGroup // Combined form for email/phone and password/code
 
@@ -60,9 +64,10 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   public phoneVerificationSent: boolean = false // Tracks if SMS code has been sent
   protected pendingCredential: AuthCredential | null = null // Stores credential for linking
 
-  private authSubs: Subscription
-  private signInSusbscribe: Subscription
-  private signInWithEmailSusbscribe: Subscription
+  private authSubs: Subscription;
+  private signInSusbscribe: Subscription;
+  private signInWithEmailSusbscribe: Subscription;
+  private langChangeSubscription: Subscription;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -71,6 +76,8 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     private firestoreService: FirestoreService,
     private auth: Auth,
     private authService: AuthService,
+    private i18nService: I18nService,
+    private translate: TranslateService,
 
     @Inject(NAVIGATOR) private navigator: Navigator,
     @Inject(DOCUMENT) private document: Document,
@@ -129,7 +136,12 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
 
 
   ngOnInit(): void {
-    // Any other ngOnInit logic can go here
+    this.translate.use(this.i18nService.currentLang());
+    this.langChangeSubscription = this.i18nService.currentLang$
+      .pipe(takeUntilDestroyed(this.DestroyRef))
+      .subscribe((lang) => {
+        this.translate.use(lang);
+      });
   }
 
   ngAfterViewInit(): void {
@@ -160,10 +172,9 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           if (this.currentAuthMethod === 'phone' && !this.phoneVerificationSent) {
             this.sendPhoneVerificationCode()
           }
-        },
-        'expired-callback': () => {
+        },        'expired-callback': () => {
           // Response expired. Ask user to solve reCAPTCHA again.
-          this.showSnackbar('Recaptcha expired, please try again.', SnackBarType.warning)
+          this.showSnackbar(this.translate.instant('LOGIN.RECAPTCHA_EXPIRED'), SnackBarType.warning)
         }
       })
       this.recaptchaVerifier.render()
@@ -198,21 +209,19 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
                 await this.trackLoginAttempt('email', true)
 
                 // login metrics
-                await this.loginMetrics(response.user.uid, 'password')
-
-                // user already exists and verified, store user data
+                await this.loginMetrics(response.user.uid, 'password')                // user already exists and verified, store user data
                 const isVerfied = await this.onLoginUpdate(response, 'password')
                 if (!isVerfied) return
                 
 
-                this.showSnackbar('Sign-in successful', SnackBarType.success, '', 3000)
+                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000)
                 const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
                 setUserId(this.analytics, response.user.uid)
                 this.router.navigateByUrl(returnUrl)
 
               } catch (error) {
                 await this.trackLoginAttempt('email', false)
-                this.errorMessage = getErrorMessage(error)
+                this.errorMessage = getErrorMessage(error, this.translate)
                 this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                 this.loading.email = false
                 return
@@ -222,7 +231,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           error: async (error) => {
             // this.extractFirebaseError(error)
             await this.trackLoginAttempt('email', false)
-            this.errorMessage = getErrorMessage(error)
+            this.errorMessage = getErrorMessage(error, this.translate)
             this.handleAccountExistsError(error, 'password')
             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
             this.loading.email = false
@@ -266,26 +275,25 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
             })
           }
 
-          try {
-            await this.trackLoginAttempt('google', true)
+          try {            await this.trackLoginAttempt('google', true)
             // login metrics
             await this.loginMetrics(response.user.uid, 'google.com')
 
             await this.firestoreService.storeUserData(response.user, "google.com", true)
-            this.showSnackbar('Sign-in successful', SnackBarType.success, '', 3000)
+            this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000)
             const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
             setUserId(this.analytics, response.user.uid)
             this.router.navigateByUrl(returnUrl)
           } catch (error) {
             await this.trackLoginAttempt('google.com', false)
-            this.errorMessage = getErrorMessage(error)
+            this.errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
             this.loading.google = false
             return
           }
         } else {
           await this.trackLoginAttempt('google.com', false)
-          this.errorMessage = 'User object is null after sign-in.'
+          this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN');
           this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
         }
       },
@@ -293,7 +301,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
         await this.trackLoginAttempt('google.com', false)
         // this.extractFirebaseError(error)
         this.handleAccountExistsError(error, 'google.com')
-        this.errorMessage = getErrorMessage(error)
+        this.errorMessage = getErrorMessage(error, this.translate)
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
         this.cdr.detectChanges() // Explicitly trigger change detection
         this.loading.google = false
@@ -327,17 +335,15 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           try {
             await this.trackLoginAttempt('github.com', true)
             // login metrics
-            await this.loginMetrics(response.user.uid, 'github.com')
-
-            // user already exists and verified, store user data
+            await this.loginMetrics(response.user.uid, 'github.com')            // user already exists and verified, store user data
             await this.firestoreService.storeUserData(response.user, "github.com", true)
-            this.showSnackbar('Sign-in successful', SnackBarType.success, '', 3000)
+            this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000)
             const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
             setUserId(this.analytics, response.user.uid)
             this.router.navigateByUrl(returnUrl)
           } catch (error) {
             await this.trackLoginAttempt('github.com', false)
-            this.errorMessage = getErrorMessage(error)
+            this.errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
             this.loading.github = false
             return
@@ -348,7 +354,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
         await this.trackLoginAttempt('github.com', false)
         // this.extractFirebaseError(error)
         this.handleAccountExistsError(error, 'github.com')
-        this.errorMessage = getErrorMessage(error)
+        this.errorMessage = getErrorMessage(error, this.translate)
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
         this.loading.github = false
       },
@@ -371,7 +377,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       //   this.errorMessage = `An account with this email already exists. Please sign in with your existing account to link it.`
       // } else
       //   this.errorMessage = 'Failed to get credential - login error.'
-      this.errorMessage = getErrorMessage(error)
+      this.errorMessage = getErrorMessage(error, this.translate)
       this.showSnackbar(this.errorMessage, SnackBarType.warning, '', 7000)
     }
   }
@@ -388,7 +394,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       return usercredential
     } catch (error: any) {
       console.error('Error linking account:', error)
-      this.errorMessage = getErrorMessage(error)
+      this.errorMessage = getErrorMessage(error, this.translate)
       // this.showSnackbar(`Error linking account: ${this.errorMessage}`, SnackBarType.error, '', 5000)
       this.pendingCredential = null // Clear the pending credential even on error
       return null // Return null to indicate no user credential
@@ -429,10 +435,10 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       }
       this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier)
       this.phoneVerificationSent = true
-      this.showSnackbar('Verification code sent to your phone.', SnackBarType.success)
+      this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT'), SnackBarType.success)
     } catch (error: any) {
       console.error('Error sending phone verification code:', error)
-      this.errorMessage = getErrorMessage(error)
+      this.errorMessage = getErrorMessage(error, this.translate)
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
       this.cdr.detectChanges() // Explicitly trigger change detection
       this.resetAuthFlow() // Reset on error
@@ -461,31 +467,31 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
 
           if (!userCredential.user.phoneNumber) {
             await this.trackLoginAttempt('phone', false)
-            this.showSnackbar('Phone number not found on user object after verification.', SnackBarType.error, '', 5000)
+            this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_NUMBER_NOT_FOUND'), SnackBarType.error, '', 5000)
             this.resetAuthFlow()
             return
           }
 
           // Check if phone number is verified in Firestore (or Firebase user object)
           // Firebase automatically marks phone number as verified on successful sign-in/link
-          this.showSnackbar('Phone number verified and signed in successfully!', SnackBarType.success)
+          this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFIED_SUCCESS'), SnackBarType.success)
           const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard'
           this.router.navigateByUrl(returnUrl)
         } else {
           await this.trackLoginAttempt('phone', false)
-          this.showSnackbar('Sign-in failed: User data not found after phone verification.', SnackBarType.error, '', 3000)
+          this.showSnackbar(this.translate.instant('AUTH_ERRORS.SIGN_IN_FAILED_USER_DATA_NOT_FOUND'), SnackBarType.error, '', 3000)
           this.resetAuthFlow()
         }
       } else {
         await this.trackLoginAttempt('phone', false)
-        this.errorMessage = 'User object is null after phone verification.'
+        this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_PHONE_VERIFICATION');
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
         this.resetAuthFlow()
       }
     } catch (error: any) {
       await this.trackLoginAttempt('phone', false)
       console.error('Error verifying phone number code:', error)
-      this.errorMessage = getErrorMessage(error)
+      this.errorMessage = getErrorMessage(error, this.translate)
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
       this.cdr.detectChanges() // Explicitly trigger change detection
       this.resetAuthFlow() // Reset on error
@@ -536,7 +542,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     // Redirect to verification page if neither email nor phone is verified
     if (!response.user.emailVerified || userData.phoneVerified === false) {
       this.showSnackbar(
-        'Your email or phone number is not verified. Please verify to proceed.',
+        this.translate.instant('AUTH_ERRORS.EMAIL_OR_PHONE_NOT_VERIFIED'),
         SnackBarType.warning,
         '',
         5000
@@ -596,11 +602,10 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy(): void {
-    this.authSubs?.unsubscribe()
-    this.signInSusbscribe?.unsubscribe()
-    this.signInWithEmailSusbscribe?.unsubscribe()
-
-    this.recaptchaVerifier?.clear()
-
+    this.authSubs?.unsubscribe();
+    this.signInSusbscribe?.unsubscribe();
+    this.signInWithEmailSusbscribe?.unsubscribe();
+    this.langChangeSubscription?.unsubscribe();
+    this.recaptchaVerifier?.clear();
   }
 }

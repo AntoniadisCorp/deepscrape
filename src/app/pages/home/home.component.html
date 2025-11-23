@@ -1,5 +1,5 @@
 <header
-  class="fixed z-[60] w-full dark:border-b  border-gray-200/[0.08] dark:border-gray-800/[0.08] transition-all duration-500 ease-out"
+  class="fixed z-[60] w-full dark:border-b border-gray-200/[0.08] dark:border-gray-800/[0.08] transition-all duration-500 ease-out"
   [ngClass]="{
     'shadow-lg shadow-purple-600/20 dark:opacity-[0.98] opacity-[0.98] h-[5rem] bg-gradient-to-br from-sky-400 via-blue-400 to-indigo-400 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900': isScrolled,
     'bg-transparent h-28': !isScrolled,
@@ -15,7 +15,11 @@
         <img
           src=""
           alt=""
-          [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
+          [srcset]="
+            (isDarkMode$ | async)
+              ? 'assets/logo-512x512_sky.png 2x'
+              : 'assets/logo-512x512.png 2x'
+          "
           class="mt-4 h-20 border-none max-h-[80%] xs:max-h-max" />
       </h1>
       <h1
@@ -28,16 +32,20 @@
       <a
         [routerLink]="['/dashboard']"
         routerLinkActive="active"
-        class="flex flex-row flex-nowrap gap-1 hover:bg-[#30bfd523] focus:bg-blue-900/[0.2] dark:bg-transparent dark:hover:bg-[#c730d523] text-gray-300 font-bold py-2 px-4 rounded-md transition duration-300">
+        class="flex flex-row flex-nowrap gap-1 hover:bg-[#3939393b] focus:bg-blue-900/[0.2] dark:bg-transparent dark:hover:bg-gray-700/30 text-gray-300 font-bold py-2 px-4 rounded-md transition duration-300">
         Dashboard
       </a>
 
-      <!-- Theme Mode Switch -->
-      <app-theme-toggle
-        [color]="{
-          dark: '#ED64FFFF',
-          light: '#fff'
-        }"></app-theme-toggle>
+      <div class="flex items-center justify-end gap-2 w-full">
+        <!-- Lang Mode Switch -->
+        <app-lang-picker></app-lang-picker>
+        <!-- Theme Mode Switch -->
+        <app-theme-toggle
+          [color]="{
+            dark: '#373737f0',
+            light: '#fff'
+          }"></app-theme-toggle>
+      </div>
     </div>
   </div>
 </header>

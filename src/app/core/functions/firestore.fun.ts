@@ -1,228 +1,229 @@
 import { writeBatch, collection, Firestore, setDoc, deleteDoc, doc, getDoc } from "@angular/fire/firestore"
 
-import { User, AuthError, AuthErrorCodes } from "@angular/fire/auth"
-import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types"
-import { MACHNINE_STATE } from "../enum"
+import { User, AuthError, AuthErrorCodes } from "@angular/fire/auth";
+import { BrowserProfile, CrawlConfig, FlyMachine, Users } from "../types";
+import { MACHNINE_STATE } from "../enum";
+import { TranslateService } from "@ngx-translate/core";
 
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: any, translate: TranslateService): string {
     const errorMessage: string = error?.code || error?.message || '';
 
     switch (errorMessage) {
         case AuthErrorCodes.EMAIL_EXISTS:
-            return 'Email address is already in use.';
+            return translate.instant('AUTH_ERRORS.EMAIL_EXISTS');
         case AuthErrorCodes.EXPIRED_POPUP_REQUEST:
-            return 'Popup request was cancelled. Please try again.';
+            return translate.instant('AUTH_ERRORS.EXPIRED_POPUP_REQUEST');
         case AuthErrorCodes.POPUP_CLOSED_BY_USER:
-            return 'Popup was closed by the user. Please try again.';
+            return translate.instant('AUTH_ERRORS.POPUP_CLOSED_BY_USER');
         case AuthErrorCodes.POPUP_BLOCKED:
-            return 'Popup was blocked by the browser. Please allow popups for this site.';
+            return translate.instant('AUTH_ERRORS.POPUP_BLOCKED');
         case AuthErrorCodes.INVALID_EMAIL:
-            return 'Invalid email address.';
+            return translate.instant('AUTH_ERRORS.INVALID_EMAIL');
         case AuthErrorCodes.TOO_MANY_ATTEMPTS_TRY_LATER:
-            return 'Too many attempts. Please try again later.';
+            return translate.instant('AUTH_ERRORS.TOO_MANY_ATTEMPTS_TRY_LATER');
         case AuthErrorCodes.WEAK_PASSWORD:
-            return 'Password is too weak.';
+            return translate.instant('AUTH_ERRORS.WEAK_PASSWORD');
         case AuthErrorCodes.USER_DELETED:
-            return 'User not found with the provided credentials.';
+            return translate.instant('AUTH_ERRORS.USER_DELETED');
         case AuthErrorCodes.INVALID_PASSWORD:
-            return 'Incorrect password.';
+            return translate.instant('AUTH_ERRORS.INVALID_PASSWORD');
         case 'auth/missing-Email':
-            return 'Missing email.';
+            return translate.instant('AUTH_ERRORS.MISSING_EMAIL');
         case AuthErrorCodes.NEED_CONFIRMATION:
-            return 'An account with this email already exists. Please sign in with your existing account to link it.';
+            return translate.instant('AUTH_ERRORS.NEED_CONFIRMATION');
         case AuthErrorCodes.NETWORK_REQUEST_FAILED:
-            return 'Network error. Please check your internet connection.';
+            return translate.instant('AUTH_ERRORS.NETWORK_REQUEST_FAILED');
         case AuthErrorCodes.INVALID_IDP_RESPONSE:
         case AuthErrorCodes.INVALID_LOGIN_CREDENTIALS:
-            return 'Invalid credentials provided.';
+            return translate.instant('AUTH_ERRORS.INVALID_LOGIN_CREDENTIALS');
         case AuthErrorCodes.OPERATION_NOT_SUPPORTED:
-            return 'This operation is not supported in the current environment.';
+            return translate.instant('AUTH_ERRORS.OPERATION_NOT_SUPPORTED');
         case AuthErrorCodes.INVALID_CODE:
-            return 'Invalid verification code.';
+            return translate.instant('AUTH_ERRORS.INVALID_CODE');
         case AuthErrorCodes.ARGUMENT_ERROR:
-            return 'Invalid argument provided.';
+            return translate.instant('AUTH_ERRORS.ARGUMENT_ERROR');
         case AuthErrorCodes.PROVIDER_ALREADY_LINKED:
-            return 'This provider is already linked to the user.';
+            return translate.instant('AUTH_ERRORS.PROVIDER_ALREADY_LINKED');
         case AuthErrorCodes.INVALID_PHONE_NUMBER:
-            return 'Invalid phone number format.';
+            return translate.instant('AUTH_ERRORS.INVALID_PHONE_NUMBER');
         case AuthErrorCodes.INVALID_ORIGIN:
-            return 'This domain is not authorized for OAuth operations.';
+            return translate.instant('AUTH_ERRORS.INVALID_ORIGIN');
         case AuthErrorCodes.NO_SUCH_PROVIDER:
-            return 'No such provider is linked to the user.';
+            return translate.instant('AUTH_ERRORS.NO_SUCH_PROVIDER');
         // --- BEGIN: ALL FIREBASE AUTH ERROR CODES ---
         case AuthErrorCodes.ADMIN_ONLY_OPERATION:
-            return 'This operation is restricted to administrators.';
+            return translate.instant('AUTH_ERRORS.ADMIN_ONLY_OPERATION');
         case AuthErrorCodes.APP_NOT_AUTHORIZED:
-            return 'This app is not authorized for authentication.';
+            return translate.instant('AUTH_ERRORS.APP_NOT_AUTHORIZED');
         case AuthErrorCodes.APP_NOT_INSTALLED:
-            return 'The app is not installed.';
+            return translate.instant('AUTH_ERRORS.APP_NOT_INSTALLED');
         case AuthErrorCodes.CAPTCHA_CHECK_FAILED:
-            return 'Captcha check failed.';
+            return translate.instant('AUTH_ERRORS.CAPTCHA_CHECK_FAILED');
         case AuthErrorCodes.CODE_EXPIRED:
-            return 'The code has expired.';
+            return translate.instant('AUTH_ERRORS.CODE_EXPIRED');
         case AuthErrorCodes.CORDOVA_NOT_READY:
-            return 'Cordova is not ready.';
+            return translate.instant('AUTH_ERRORS.CORDOVA_NOT_READY');
         case AuthErrorCodes.CORS_UNSUPPORTED:
-            return 'CORS is not supported by the browser.';
+            return translate.instant('AUTH_ERRORS.CORS_UNSUPPORTED');
         case AuthErrorCodes.CREDENTIAL_ALREADY_IN_USE:
-            return 'This credential is already associated with a different user account.';
+            return translate.instant('AUTH_ERRORS.CREDENTIAL_ALREADY_IN_USE');
         case AuthErrorCodes.CREDENTIAL_MISMATCH:
-            return 'Custom token does not match.';
+            return translate.instant('AUTH_ERRORS.CREDENTIAL_MISMATCH');
         case AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN:
-            return 'Please log in again to perform this operation.';
+            return translate.instant('AUTH_ERRORS.CREDENTIAL_TOO_OLD_LOGIN_AGAIN');
         case AuthErrorCodes.DEPENDENT_SDK_INIT_BEFORE_AUTH:
-            return 'A dependent SDK was initialized before Auth.';
+            return translate.instant('AUTH_ERRORS.DEPENDENT_SDK_INIT_BEFORE_AUTH');
         case AuthErrorCodes.DYNAMIC_LINK_NOT_ACTIVATED:
-            return 'Dynamic link is not activated.';
+            return translate.instant('AUTH_ERRORS.DYNAMIC_LINK_NOT_ACTIVATED');
         case AuthErrorCodes.EMAIL_CHANGE_NEEDS_VERIFICATION:
-            return 'Email change needs verification.';
+            return translate.instant('AUTH_ERRORS.EMAIL_CHANGE_NEEDS_VERIFICATION');
         case AuthErrorCodes.EMULATOR_CONFIG_FAILED:
-            return 'Emulator configuration failed.';
+            return translate.instant('AUTH_ERRORS.EMULATOR_CONFIG_FAILED');
         case AuthErrorCodes.EXPIRED_OOB_CODE:
-            return 'The action code has expired.';
+            return translate.instant('AUTH_ERRORS.EXPIRED_OOB_CODE');
         case AuthErrorCodes.INTERNAL_ERROR:
-            return 'An internal error occurred.';
+            return translate.instant('AUTH_ERRORS.INTERNAL_ERROR');
         case AuthErrorCodes.INVALID_API_KEY:
-            return 'Invalid API key.';
+            return translate.instant('AUTH_ERRORS.INVALID_API_KEY');
         case AuthErrorCodes.INVALID_APP_CREDENTIAL:
-            return 'Invalid app credential.';
+            return translate.instant('AUTH_ERRORS.INVALID_APP_CREDENTIAL');
         case AuthErrorCodes.INVALID_APP_ID:
-            return 'Invalid app ID.';
+            return translate.instant('AUTH_ERRORS.INVALID_APP_ID');
         case AuthErrorCodes.INVALID_AUTH:
-            return 'Invalid user token.';
+            return translate.instant('AUTH_ERRORS.INVALID_AUTH');
         case AuthErrorCodes.INVALID_AUTH_EVENT:
-            return 'Invalid authentication event.';
+            return translate.instant('AUTH_ERRORS.INVALID_AUTH_EVENT');
         case AuthErrorCodes.INVALID_CERT_HASH:
-            return 'Invalid certificate hash.';
+            return translate.instant('AUTH_ERRORS.INVALID_CERT_HASH');
         case AuthErrorCodes.INVALID_CONTINUE_URI:
-            return 'Invalid continue URI.';
+            return translate.instant('AUTH_ERRORS.INVALID_CONTINUE_URI');
         case AuthErrorCodes.INVALID_CORDOVA_CONFIGURATION:
-            return 'Invalid Cordova configuration.';
+            return translate.instant('AUTH_ERRORS.INVALID_CORDOVA_CONFIGURATION');
         case AuthErrorCodes.INVALID_CUSTOM_TOKEN:
-            return 'Invalid custom token.';
+            return translate.instant('AUTH_ERRORS.INVALID_CUSTOM_TOKEN');
         case AuthErrorCodes.INVALID_DYNAMIC_LINK_DOMAIN:
-            return 'Invalid dynamic link domain.';
+            return translate.instant('AUTH_ERRORS.INVALID_DYNAMIC_LINK_DOMAIN');
         case AuthErrorCodes.INVALID_EMULATOR_SCHEME:
-            return 'Invalid emulator scheme.';
+            return translate.instant('AUTH_ERRORS.INVALID_EMULATOR_SCHEME');
         case AuthErrorCodes.INVALID_MESSAGE_PAYLOAD:
-            return 'Invalid message payload.';
+            return translate.instant('AUTH_ERRORS.INVALID_MESSAGE_PAYLOAD');
         case AuthErrorCodes.INVALID_MFA_SESSION:
-            return 'Invalid multi-factor session.';
+            return translate.instant('AUTH_ERRORS.INVALID_MFA_SESSION');
         case AuthErrorCodes.INVALID_OAUTH_CLIENT_ID:
-            return 'Invalid OAuth client ID.';
+            return translate.instant('AUTH_ERRORS.INVALID_OAUTH_CLIENT_ID');
         case AuthErrorCodes.INVALID_OAUTH_PROVIDER:
-            return 'Invalid OAuth provider.';
+            return translate.instant('AUTH_ERRORS.INVALID_OAUTH_PROVIDER');
         case AuthErrorCodes.INVALID_OOB_CODE:
-            return 'Invalid action code.';
+            return translate.instant('AUTH_ERRORS.INVALID_OOB_CODE');
         case AuthErrorCodes.UNAUTHORIZED_DOMAIN:
-            return 'This domain is not authorized.';
+            return translate.instant('AUTH_ERRORS.UNAUTHORIZED_DOMAIN');
         case AuthErrorCodes.INVALID_PERSISTENCE:
-            return 'Invalid persistence type.';
+            return translate.instant('AUTH_ERRORS.INVALID_PERSISTENCE');
         case AuthErrorCodes.INVALID_PROVIDER_ID:
-            return 'Invalid provider ID.';
+            return translate.instant('AUTH_ERRORS.INVALID_PROVIDER_ID');
         case AuthErrorCodes.INVALID_RECIPIENT_EMAIL:
-            return 'Invalid recipient email.';
+            return translate.instant('AUTH_ERRORS.INVALID_RECIPIENT_EMAIL');
         case AuthErrorCodes.INVALID_SENDER:
-            return 'Invalid sender.';
+            return translate.instant('AUTH_ERRORS.INVALID_SENDER');
         case AuthErrorCodes.INVALID_SESSION_INFO:
-            return 'Invalid verification ID.';
+            return translate.instant('AUTH_ERRORS.INVALID_SESSION_INFO');
         case AuthErrorCodes.INVALID_TENANT_ID:
-            return 'Invalid tenant ID.';
+            return translate.instant('AUTH_ERRORS.INVALID_TENANT_ID');
         case AuthErrorCodes.MFA_INFO_NOT_FOUND:
-            return 'Multi-factor info not found.';
+            return translate.instant('AUTH_ERRORS.MFA_INFO_NOT_FOUND');
         case AuthErrorCodes.MFA_REQUIRED:
-            return 'Multi-factor authentication required.';
+            return translate.instant('AUTH_ERRORS.MFA_REQUIRED');
         case AuthErrorCodes.MISSING_ANDROID_PACKAGE_NAME:
-            return 'Missing Android package name.';
+            return translate.instant('AUTH_ERRORS.MISSING_ANDROID_PACKAGE_NAME');
         case AuthErrorCodes.MISSING_APP_CREDENTIAL:
-            return 'Missing app credential.';
+            return translate.instant('AUTH_ERRORS.MISSING_APP_CREDENTIAL');
         case AuthErrorCodes.MISSING_AUTH_DOMAIN:
-            return 'Auth domain configuration required.';
+            return translate.instant('AUTH_ERRORS.MISSING_AUTH_DOMAIN');
         case AuthErrorCodes.MISSING_CODE:
-            return 'Missing verification code.';
+            return translate.instant('AUTH_ERRORS.MISSING_CODE');
         case AuthErrorCodes.MISSING_CONTINUE_URI:
-            return 'Missing continue URI.';
+            return translate.instant('AUTH_ERRORS.MISSING_CONTINUE_URI');
         case AuthErrorCodes.MISSING_IFRAME_START:
-            return 'Missing iframe start.';
+            return translate.instant('AUTH_ERRORS.MISSING_IFRAME_START');
         case AuthErrorCodes.MISSING_IOS_BUNDLE_ID:
-            return 'Missing iOS bundle ID.';
+            return translate.instant('AUTH_ERRORS.MISSING_IOS_BUNDLE_ID');
         case AuthErrorCodes.MISSING_OR_INVALID_NONCE:
-            return 'Missing or invalid nonce.';
+            return translate.instant('AUTH_ERRORS.MISSING_OR_INVALID_NONCE');
         case AuthErrorCodes.MISSING_MFA_INFO:
-            return 'Missing multi-factor info.';
+            return translate.instant('AUTH_ERRORS.MISSING_MFA_INFO');
         case AuthErrorCodes.MISSING_MFA_SESSION:
-            return 'Missing multi-factor session.';
+            return translate.instant('AUTH_ERRORS.MISSING_MFA_SESSION');
         case AuthErrorCodes.MISSING_PHONE_NUMBER:
-            return 'Missing phone number.';
+            return translate.instant('AUTH_ERRORS.MISSING_PHONE_NUMBER');
         case AuthErrorCodes.MISSING_SESSION_INFO:
-            return 'Missing verification ID.';
+            return translate.instant('AUTH_ERRORS.MISSING_SESSION_INFO');
         case AuthErrorCodes.MODULE_DESTROYED:
-            return 'The app has been deleted.';
+            return translate.instant('AUTH_ERRORS.MODULE_DESTROYED');
         case AuthErrorCodes.NO_AUTH_EVENT:
-            return 'No authentication event.';
+            return translate.instant('AUTH_ERRORS.NO_AUTH_EVENT');
         case AuthErrorCodes.OPERATION_NOT_ALLOWED:
-            return 'This operation is not allowed.';
+            return translate.instant('AUTH_ERRORS.OPERATION_NOT_ALLOWED');
         case AuthErrorCodes.QUOTA_EXCEEDED:
-            return 'Quota exceeded. Please try again later.';
+            return translate.instant('AUTH_ERRORS.QUOTA_EXCEEDED');
         case AuthErrorCodes.REDIRECT_CANCELLED_BY_USER:
-            return 'Redirect cancelled by user.';
+            return translate.instant('AUTH_ERRORS.REDIRECT_CANCELLED_BY_USER');
         case AuthErrorCodes.REDIRECT_OPERATION_PENDING:
-            return 'A redirect operation is already pending.';
+            return translate.instant('AUTH_ERRORS.REDIRECT_OPERATION_PENDING');
         case AuthErrorCodes.REJECTED_CREDENTIAL:
-            return 'Credential was rejected.';
+            return translate.instant('AUTH_ERRORS.REJECTED_CREDENTIAL');
         case AuthErrorCodes.SECOND_FACTOR_ALREADY_ENROLLED:
-            return 'Second factor already in use.';
+            return translate.instant('AUTH_ERRORS.SECOND_FACTOR_ALREADY_ENROLLED');
         case AuthErrorCodes.SECOND_FACTOR_LIMIT_EXCEEDED:
-            return 'Maximum number of second factors exceeded.';
+            return translate.instant('AUTH_ERRORS.SECOND_FACTOR_LIMIT_EXCEEDED');
         case AuthErrorCodes.TENANT_ID_MISMATCH:
-            return 'Tenant ID mismatch.';
+            return translate.instant('AUTH_ERRORS.TENANT_ID_MISMATCH');
         case AuthErrorCodes.TIMEOUT:
-            return 'Operation timed out.';
+            return translate.instant('AUTH_ERRORS.TIMEOUT');
         case AuthErrorCodes.TOKEN_EXPIRED:
-            return 'User token has expired.';
+            return translate.instant('AUTH_ERRORS.TOKEN_EXPIRED');
         case AuthErrorCodes.UNAUTHORIZED_DOMAIN:
-            return 'Unauthorized continue URI.';
+            return translate.instant('AUTH_ERRORS.UNAUTHORIZED_DOMAIN');
         case AuthErrorCodes.UNSUPPORTED_FIRST_FACTOR:
-            return 'Unsupported first factor.';
+            return translate.instant('AUTH_ERRORS.UNSUPPORTED_FIRST_FACTOR');
         case AuthErrorCodes.UNSUPPORTED_PERSISTENCE:
-            return 'Unsupported persistence type.';
+            return translate.instant('AUTH_ERRORS.UNSUPPORTED_PERSISTENCE');
         case AuthErrorCodes.UNSUPPORTED_TENANT_OPERATION:
-            return 'Unsupported tenant operation.';
+            return translate.instant('AUTH_ERRORS.UNSUPPORTED_TENANT_OPERATION');
         case AuthErrorCodes.UNVERIFIED_EMAIL:
-            return 'Email address is not verified.';
+            return translate.instant('AUTH_ERRORS.UNVERIFIED_EMAIL');
         case AuthErrorCodes.USER_CANCELLED:
-            return 'User cancelled the operation.';
+            return translate.instant('AUTH_ERRORS.USER_CANCELLED');
         case AuthErrorCodes.USER_DISABLED:
-            return 'User account is disabled.';
+            return translate.instant('AUTH_ERRORS.USER_DISABLED');
         case AuthErrorCodes.USER_MISMATCH:
-            return 'User mismatch.';
+            return translate.instant('AUTH_ERRORS.USER_MISMATCH');
         case AuthErrorCodes.USER_SIGNED_OUT:
-            return 'User has signed out.';
+            return translate.instant('AUTH_ERRORS.USER_SIGNED_OUT');
         case AuthErrorCodes.WEB_STORAGE_UNSUPPORTED:
-            return 'Web storage is unsupported.';
+            return translate.instant('AUTH_ERRORS.WEB_STORAGE_UNSUPPORTED');
         case AuthErrorCodes.ALREADY_INITIALIZED:
-            return 'The app is already initialized.';
+            return translate.instant('AUTH_ERRORS.ALREADY_INITIALIZED');
         case AuthErrorCodes.RECAPTCHA_NOT_ENABLED:
-            return 'reCAPTCHA is not enabled.';
+            return translate.instant('AUTH_ERRORS.RECAPTCHA_NOT_ENABLED');
         case AuthErrorCodes.MISSING_RECAPTCHA_TOKEN:
-            return 'Missing reCAPTCHA token.';
+            return translate.instant('AUTH_ERRORS.MISSING_RECAPTCHA_TOKEN');
         case AuthErrorCodes.INVALID_RECAPTCHA_TOKEN:
-            return 'Invalid reCAPTCHA token.';
+            return translate.instant('AUTH_ERRORS.INVALID_RECAPTCHA_TOKEN');
         case AuthErrorCodes.INVALID_RECAPTCHA_ACTION:
-            return 'Invalid reCAPTCHA action.';
+            return translate.instant('AUTH_ERRORS.INVALID_RECAPTCHA_ACTION');
         case AuthErrorCodes.MISSING_CLIENT_TYPE:
-            return 'Missing client type.';
+            return translate.instant('AUTH_ERRORS.MISSING_CLIENT_TYPE');
         case AuthErrorCodes.MISSING_RECAPTCHA_VERSION:
-            return 'Missing reCAPTCHA version.';
+            return translate.instant('AUTH_ERRORS.MISSING_RECAPTCHA_VERSION');
         case AuthErrorCodes.INVALID_RECAPTCHA_VERSION:
-            return 'Invalid reCAPTCHA version.';
+            return translate.instant('AUTH_ERRORS.INVALID_RECAPTCHA_VERSION');
         case AuthErrorCodes.INVALID_REQ_TYPE:
-            return 'Invalid request type.';
+            return translate.instant('AUTH_ERRORS.INVALID_REQ_TYPE');
         case AuthErrorCodes.INVALID_HOSTING_LINK_DOMAIN:
-            return 'Invalid hosting link domain.';
+            return translate.instant('AUTH_ERRORS.INVALID_HOSTING_LINK_DOMAIN');
         // --- END: ALL FIREBASE AUTH ERROR CODES ---
         default:
-            return errorMessage || 'An error occurred during signup.';
+            return translate.instant('AUTH_ERRORS.UNKNOWN_ERROR');
     }
 }
 

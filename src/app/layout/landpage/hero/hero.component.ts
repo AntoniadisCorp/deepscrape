@@ -1,4 +1,4 @@
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgOptimizedImage } from '@angular/common';
 import { Component, inject, Inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
@@ -7,13 +7,14 @@ import { myIcons } from 'src/app/shared';
 
 @Component({
   selector: 'app-hero',
-  imports: [LucideAngularModule, RouterLink],
+  imports: [LucideAngularModule, RouterLink, NgOptimizedImage],
   templateUrl: './hero.component.html',
   styleUrl: './hero.component.scss'
 })
 export class HeroComponent {
 
   readonly icons = myIcons
+  readonly bgImagePath = 'images/bgland-optimized.webp'
   private scroll = inject(ScrollService);
   constructor(private router: Router, @Inject(DOCUMENT) private document: Document) { }
 

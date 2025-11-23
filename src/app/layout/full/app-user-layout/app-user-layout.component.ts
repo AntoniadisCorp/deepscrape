@@ -15,17 +15,22 @@ import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/cor
 import { ProviderPipe } from 'src/app/core/pipes'
 import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, ThemeService, WindowToken } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
-import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
+import { LangPickerComponent, themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
 import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
-
+/**
+ * TODO: comment Component
+ * @description Component for user layout including sidebar, header, and footer
+ */
 @Component({
   selector: 'app-user-layout',
   imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
     MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
-    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe],
+    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe,
+    LangPickerComponent
+  ],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'

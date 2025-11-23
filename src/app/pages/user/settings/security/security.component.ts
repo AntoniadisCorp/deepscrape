@@ -16,6 +16,7 @@ import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'sr
 import { Loading, Users } from 'src/app/core/types';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { myIcons, themeStorageKey } from 'src/app/shared';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-security-tab',
@@ -51,8 +52,8 @@ export class SecurityTabComponent {
 
   private authService = inject(AuthService)
   private firestoreService = inject(FirestoreService)
-
   private snackbarService = inject(SnackbarService)
+  private translate = inject(TranslateService)
 
   themeDarkMode: boolean
 
@@ -194,7 +195,7 @@ export class SecurityTabComponent {
           error: (error) => {
             // this.extractFirebaseError(error)
             // this.handleAccountExistsError(error, 'google.com')
-            const errorMessage = getErrorMessage(error)
+            const errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
             this.loading.google = false
             this.cdr.detectChanges()
@@ -246,7 +247,7 @@ export class SecurityTabComponent {
           error: (error) => {
             // this.extractFirebaseError(error)
             // this.handleAccountExistsError(error, 'github.com')
-            const errorMessage = getErrorMessage(error)
+            const errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
             this.loading.github = false
           },
@@ -316,7 +317,7 @@ export class SecurityTabComponent {
             this.loading.email = !(provider === 'password')
 
           // Handle errors and show an error message
-          const errorMessage = getErrorMessage(error);
+          const errorMessage = getErrorMessage(error, this.translate);
           this.showSnackbar(errorMessage, SnackBarType.error, '', 5000);
         },
         complete: () => {
@@ -361,7 +362,7 @@ export class SecurityTabComponent {
           this.password?.reset() 
         },
         error: (error) => {
-          const errorMessage = getErrorMessage(error)
+          const errorMessage = getErrorMessage(error, this.translate)
           this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
           this.loading.password = false
         },
