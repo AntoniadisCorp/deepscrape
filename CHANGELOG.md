@@ -1,3 +1,9 @@
+## 0.4.0-beta.7 (2025-11-23)
+
+* feat(i18n): implement i18n, custom image loader, logger service ([29c4e94](https://github.com/AntoniadisCorp/deepscrape/commit/29c4e94))
+* feat(signup): redesign signup component with enhanced UI and animations ([5579151](https://github.com/AntoniadisCorp/deepscrape/commit/5579151))
+* chore(i18n): introduce ngx-translate for internationalization support ([fe93c51](https://github.com/AntoniadisCorp/deepscrape/commit/fe93c51))
+
 # [0.4.0-beta.6](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.5...v0.4.0-beta.6) (2025-11-19)
 
 
