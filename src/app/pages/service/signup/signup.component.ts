@@ -14,6 +14,7 @@ import { createPasswordStrengthValidator } from 'src/app/core/directives';
 import { SnackBarType } from 'src/app/core/components';
 import { Subscription } from 'rxjs';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
+import { AnimatedBgComponent } from 'src/app/shared';
 
 // First, create an interface for your form structure
 interface SignupForm {
@@ -31,7 +32,7 @@ interface SignupForm {
         ReactiveFormsModule,
         RouterModule,
         MatIconModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
     ],
     templateUrl: './signup.component.html',
     styleUrl: './signup.component.scss'

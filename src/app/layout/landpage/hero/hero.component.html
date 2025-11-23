@@ -1,5 +1,5 @@
 <section
-  class="relative min-h-screen mt-20 xs:mt-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+  class="relative min-h-screen mt-20 xs:mt-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-sky-400 via-blue-400 to-indigo-400 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
   <div class="absolute bottom-0 top-0 left-1/2 opacity-35">
     <div
       class="absolute top-1/4 left-[10%] sm:left-1/4 w-48 sm:w-72 h-48 sm:h-72 bg-purple-500 dark:bg-purple-500/50 rounded-full filter blur-3xl animate-pulse"></div>
@@ -11,7 +11,7 @@
 
   <div class="relative z-10 text-center max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="animate-fade-in">
-      <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+      <h1 class="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
         Scrape the Web at
         <span
           class="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
@@ -20,10 +20,45 @@
       </h1>
 
       <p
-        class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+        class="text-xl md:text-xl text-gray-300 dark:text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
         Extract data from any website with our powerful, AI-driven scraping
         platform. Scale your data collection with enterprise-grade reliability.
       </p>
+
+      <!-- Figma-inspired floating orb effects -->
+      <div class="absolute bottom-0 pointer-events-none z-0">
+        <div
+          class="absolute top-10 left-1/2 w-16 h-16 bg-purple-400 rounded-full blur-2xl opacity-70 animate-pulse"></div>
+        <div
+          class="absolute top-1/2 left-1/2 w-10 h-10 bg-pink-400 rounded-full blur-xl opacity-60 animate-pulse"></div>
+        <div
+          class="absolute top-1/3 right-1/2 w-14 h-14 bg-blue-400 rounded-full blur-2xl opacity-60 animate-pulse"></div>
+        <div
+          class="absolute bottom-10 right-1/2 w-20 h-20 bg-cyan-400 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+        <div
+          class="absolute bottom-1/4 left-1/3 w-12 h-12 bg-indigo-400 rounded-full blur-xl opacity-60 animate-pulse"></div>
+      </div>
+
+      <div class="absolute bottom-0 right-0 pointer-events-none z-0">
+        <div
+          class="absolute top-10 left-1/2 w-16 h-16 bg-purple-400 rounded-full blur-2xl opacity-70 animate-pulse"></div>
+        <div
+          class="absolute top-1/2 left-1/2 w-10 h-10 bg-pink-400 rounded-full blur-xl opacity-60 animate-pulse"></div>
+        <div
+          class="absolute top-1/3 right-1/2 w-14 h-14 bg-blue-400 rounded-full blur-2xl opacity-60 animate-pulse"></div>
+        <div
+          class="absolute bottom-10 right-1/2 w-20 h-20 bg-cyan-400 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+        <div
+          class="absolute bottom-1/4 left-1/3 w-12 h-12 bg-indigo-400 rounded-full blur-xl opacity-60 animate-pulse"></div>
+      </div>
+
+      <div
+        class="absolute flex justify-center items-center w-full mt-8 mb-8 inset-0 top-full">
+        <img
+          src="assets/images/bgland.webp"
+          alt="DeepScrape Bots"
+          class="max-w-screen-lg magic-mask w-full h-auto mx-auto select-none pointer-events-none" />
+      </div>
 
       <div
         class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -35,15 +70,16 @@
           <span class="ml-2 h-5 w-5"></span>
         </button> -->
 
-        <button
+        <a
+          routerLink="/service/signup"
           variant="outline"
           size="lg"
           class="border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300">
           Try For Free
-        </button>
+        </a>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl sm:max-w-4xl mx-auto">
         <div class="flex items-center justify-center space-x-3 text-white">
           <lucide-angular
             [img]="icons['zap']"

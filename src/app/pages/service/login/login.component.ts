@@ -32,6 +32,7 @@ import { SnackBarType } from 'src/app/core/components'
 import { CookieService } from 'ngx-cookie-service' // Import CookieService
 import { NAVIGATOR } from 'src/app/core/providers'
 import { Analytics, logEvent, setUserId, setUserProperties } from '@angular/fire/analytics'
+import { AnimatedBgComponent } from 'src/app/shared'
 
 type loginCredentials = {
     mergeRequired: boolean
@@ -42,7 +43,7 @@ type loginCredentials = {
 }
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })

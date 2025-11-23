@@ -13,7 +13,7 @@ import { Subscription } from 'rxjs/internal/Subscription'
 import { asideBarAnimation, fadeInOutAnimation, PopupAnimation } from 'src/app/animations'
 import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, WindowToken } from 'src/app/core/services'
+import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, ThemeService, WindowToken } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
 import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
@@ -25,7 +25,7 @@ import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/com
   selector: 'app-user-layout',
   imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
     MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
-    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
+    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
@@ -34,8 +34,12 @@ export class AppUserLayoutComponent {
 
   private window: Window = inject(WindowToken)
   private localStorage = inject(LocalStorage)
-  
-  @HostBinding('class') classes = 'h-full w-full bg-gray-100 flex flex-col dark:bg-gray-900 min-h-svh'
+
+  private themePicker = inject(ThemeService)
+  isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
+
+  // bg-gray-100 dark:bg-gray-900
+  @HostBinding('class') classes = 'h-full w-full flex flex-col  min-h-svh'
   private firestoreService = inject(FirestoreService)
   size!: SCREEN_SIZE;
   
@@ -121,7 +125,7 @@ export class AppUserLayoutComponent {
       }));
     }
 
-    this.footerColor = this.isThemeDark ? 'dark:bg-[#212121]' : 'bg-[#f5f5f5]';
+    this.footerColor = 'userlayout';
     this.InitCloseSideBarOnSmallDevices()
   }
 

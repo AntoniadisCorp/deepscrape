@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
 import { getErrorMessage } from 'src/app/core/functions';
 import { FirestoreService } from 'src/app/core/services';
+import { AnimatedBgComponent } from 'src/app/shared';
 
 @Component({
     selector: 'app-resetpassword',
@@ -15,7 +16,7 @@ import { FirestoreService } from 'src/app/core/services';
         ReactiveFormsModule,
         RouterModule,
         MatIconModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
     ],
     templateUrl: './resetpassword.component.html',
     styleUrl: './resetpassword.component.scss'

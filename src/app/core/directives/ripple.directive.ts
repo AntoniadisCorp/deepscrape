@@ -52,7 +52,7 @@ export class RippleDirective {
 
   }
 
-  @HostListener('mouseleave', ['$event'])
+  @HostListener('mouseleave')
   onBlur() {
     if (this.focusedRippleElement) this.focusedRippleElement?.remove()
     this.el.nativeElement.querySelectorAll('.ripple').forEach((element: any) => this.el.nativeElement.removeChild(element))

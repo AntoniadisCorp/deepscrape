@@ -13,7 +13,7 @@ import { myIcons, themeStorageKey } from 'src/app/shared';
 })
 export class AppFooterComponent {
 
-    @Input() color?: string = 'dark:bg-[#1a1a25]'
+    @Input() color?: string = ''
     readonly icons = myIcons
     private localStorage = inject(LocalStorage)
     protected footer = {
@@ -30,7 +30,7 @@ export class AppFooterComponent {
         //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
         //Add 'implements OnInit' to the class.
         if (!this.color) {
-            this.color = this.isThemeDark() ? 'dark:bg-[#1a1a25]' : 'bg-[#f5f5f5]';
+            this.color = this.isThemeDark() ? 'dark:bg-[#1a1a25]' : 'bg-gray-200';
         }
     }
 

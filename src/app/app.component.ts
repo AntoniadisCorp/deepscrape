@@ -4,7 +4,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
 import { AuthService, SnackbarService, SvgIconService } from './core/services'
-import { ThemeToggleComponent } from './shared'
+import { AnimatedBgComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
 import { map, Observable, of } from 'rxjs'
@@ -51,8 +51,8 @@ import { Analytics, logEvent } from '@angular/fire/analytics'
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, SnackbarComponent,
-    SizeDetectorComponent
+  imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, 
+    SnackbarComponent, SizeDetectorComponent, AnimatedBgComponent
   ],
   // changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ThemeToggleComponent, NgswUpdateService],
@@ -74,6 +74,7 @@ export class AppComponent implements OnInit {
   protected snackbarDuration = 3000
 
   protected isLoading: boolean = true
+  protected route = ''
   protected isAuthState$: Observable<boolean | null> = of(null)
 
   private routerEventSubscription: Subscription
@@ -96,6 +97,7 @@ export class AppComponent implements OnInit {
         this.isLoading = true
       } else if (event instanceof NavigationEnd) {
         this.isLoading = false
+        this.route = event.urlAfterRedirects
         try {
           // Safely log event, won't crash if analytics isn't ready
           // logEvent(this.analytics, 'screen_view' as any, {

@@ -1,11 +1,32 @@
 {
   "branches": [
     "main",
-    { "name": "next", "prerelease": "beta" }
+    { "name": "next", "channel": "next", "prerelease": "beta" },
+    { "name": "develop", "channel": "dev", "prerelease": "alpha" }
   ],
   "plugins": [
     "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "Features" },
+            { "type": "fix", "section": "Bug Fixes" },
+            { "type": "docs", "section": "Docs" },
+            { "type": "style", "hidden": true },
+            { "type": "refactor", "section": "Refactor" },
+            { "type": "perf", "section": "Perf" },
+            { "type": "test", "section": "Test" },
+            { "type": "build", "section": "Build" },
+            { "type": "ci", "section": "CI" },
+            { "type": "chore", "section": "Chore" },
+            { "type": "revert", "section": "Reverts" }
+          ]
+        }
+      }
+    ],
     "@semantic-release/changelog",
     [
       "@semantic-release/git",
@@ -24,5 +45,6 @@
         "prTitle": "chore: release ${nextRelease.version}"
       }
     ]
-  ]
+  ],
+  "debug": true
 }

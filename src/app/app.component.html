@@ -16,18 +16,20 @@
 <app-size-detector></app-size-detector>
 
 
-<div [@routeAnimation]="getRouteAnimationData(outlet)" class="bg-gradient-to-br from-slate-700 via-purple-900/80
- to-deep-purple-800/80 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex flex-col">  
+<div [@routeAnimation]="getRouteAnimationData(outlet)"
+[class]="route === '/' ? 'from-sky-400 via-blue-400 to-indigo-400' : 'bg-gray-100'"
+class="relative bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex flex-col">
   <!-- min-h-screen overflow-hidden  -->
+   <app-animated-bg></app-animated-bg>
   @if(isLoading) {
-
-  <span class="flex h-screen w-full items-center justify-center">
-    <mat-spinner
-      [diameter]="40"
-      class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
-  </span>
+    
+    <span class="flex h-screen w-full items-center justify-center">
+      <mat-spinner
+        [diameter]="40"
+        class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
+    </span>
   }
-  <router-outlet #outlet="outlet" ></router-outlet>
+  <router-outlet #outlet="outlet"></router-outlet>
 </div>
 
 <app-snackbar

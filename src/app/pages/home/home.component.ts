@@ -1,35 +1,40 @@
-import { Component, OnInit, HostListener, inject } from '@angular/core';
+import { Component, OnInit, HostListener, inject, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CommonModule, NgClass, NgIf } from '@angular/common';
-import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
+import { AsyncPipe, CommonModule, NgClass, NgIf } from '@angular/common';
+import { themeStorageKey, ThemeToggleComponent, AnimatedBgComponent } from 'src/app/shared';
 import { MatIcon } from '@angular/material/icon';
 import { FeaturesComponent, HeroComponent } from 'src/app/layout/landpage';
-import { LocalStorage } from 'src/app/core/services';
+import { LocalStorage, ThemeService } from 'src/app/core/services';
 import { AppFooterComponent } from 'src/app/layout/footer';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, ThemeToggleComponent, HeroComponent, FeaturesComponent, AppFooterComponent, NgClass],
+  imports: [RouterLink, ThemeToggleComponent, HeroComponent, FeaturesComponent, AppFooterComponent, NgClass,
+    AsyncPipe, AnimatedBgComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
 
-  private localStorage = inject(LocalStorage)
+  private localStorage = inject(LocalStorage);
+  private themePicker = inject(ThemeService)
+  isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
+  isScrolled = false;
+  footerColor: string = '';
+
+  constructor() {}
+
   @HostListener('window:scroll', [])
   onWindowScroll() {
-    this.isScrolled = window.scrollY > 100; // Update the state based on scroll position
+    this.isScrolled = window.scrollY > 100;
   }
-  isDarkMode = false;
-  isScrolled = false; // New property to track scroll state
-
-  constructor() { }
 
   isThemeDark(): boolean {
-    return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
-  }
-  ngOnInit() {
-    // Check initial system preference or saved preference
+    return this.localStorage?.getItem(themeStorageKey) === 'true';
   }
 
+  ngOnInit() {
+    this.footerColor = 'landpage';
+  }
 }

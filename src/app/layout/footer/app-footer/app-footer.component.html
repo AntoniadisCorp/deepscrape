@@ -8,10 +8,14 @@
 -->
 
 <footer
-  [class]="color"
-  class="px-auto max-w-screen px-4 sm:px-6 lg:px-8 rounded-lg text-white dark:text-white pb-16 pt-8 py-12">
+  [class]="{
+    'bg-gradient-to-br from-sky-300 via-blue-200 to-indigo-400 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900': color === 'primary',
+    'bg-gray-200 dark:bg-gray-900': color === 'userlayout',
+    'bg-langpage': color === 'landpage',
+  }"
+  class="px-auto max-w-screen px-4 sm:px-6 lg:px-8 text-white dark:text-white pb-16 pt-8 py-12 ">
   <div
-    class="max-w-7xl border-t border-slate-800 dark:border-slate-800 mt-8 pt-8 mx-auto px-4 sm:px-6 lg:px-8">
+    class="max-w-7xl border-t border-[#d2d3f4] dark:border-slate-800 mt-8 pt-8 mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-center mb-8">
       <div class="flex space-x-6">
         <lucide-angular
