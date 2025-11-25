@@ -3,7 +3,7 @@ import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/r
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
-import { AuthService, LoggerService, SnackbarService, SvgIconService } from './core/services'
+import { AuthService, LoggerService, SnackbarService, SvgIconService, HeartbeatService } from './core/services'
 import { AnimatedBgComponent, LangPickerComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
@@ -11,7 +11,7 @@ import { map, Observable, of } from 'rxjs'
 import { isPlatformBrowser, isPlatformServer } from '@angular/common'
 import { fadeInOutAnimation } from './animations'
 import { HttpClient } from '@angular/common/http'
-import { Inject, OnInit } from '@angular/core'
+import { Inject, OnInit, OnDestroy } from '@angular/core'
 import { environment } from 'src/environments/environment'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { NgswUpdateService } from './core/services/ngsw-update.service'
@@ -64,9 +64,10 @@ import { Analytics, logEvent } from '@angular/fire/analytics'
   //  }, // Set background color to transparent when loading
   animations: [fadeInOutAnimation]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   private destroyRef = inject(DestroyRef)
   private analytics = inject(Analytics)
+  private heartbeatService = inject(HeartbeatService)
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent
   protected snackbarMessage = ''
   protected snackbarAction = ''
@@ -127,6 +128,7 @@ export class AppComponent implements OnInit {
     const isBrowser = isPlatformBrowser(this.platformId)
     // Make a request to the status endpoint to trigger guestTracker
     if (isBrowser) {
+      // HeartbeatService will be started only for authenticated users
       this.http.get(`/status`)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
@@ -175,6 +177,7 @@ export class AppComponent implements OnInit {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.routerEventSubscription?.unsubscribe()
+    this.heartbeatService.stop() // Stop heartbeat when app is destroyed
   }
 
 }

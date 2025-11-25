@@ -12,13 +12,15 @@ import morgan from "morgan"
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
 // import { existsSync } from "node:fs"
-import { limiter, statusCheck } from "./handlers"
+import { heartbeat, limiter, statusCheck } from "./handlers"
 import * as dotenv from "dotenv"
 import { AuthAPIProxy, ReverseAPIProxy, UploadAPIProxy } from "./infrastructure"
 // import { geoDBManager, guestTracker, IP2LocationManager } from "./gfunctions"
 import cookieParser from "cookie-parser"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
 import { existsSync } from "node:fs"
+import crypto from "crypto"
+
 // import { createNodeRequestHandler } from "@angular/ssr/node"
 dotenv.config({ quiet: true })
 // import { existsSync } from "node:fs"
@@ -69,10 +71,31 @@ function serveapp() {
   server.set("trust proxy", process.env.PRODUCTION === "true")
 
   // Security and logging middleware
-  server.use(helmet())
+  server.use(helmet({
+    contentSecurityPolicy: false, // We'll set CSP manually for nonce support
+  }))
   server.use(morgan("combined"))
   server.use(corss)
   server.use(cookieParser())
+
+  // Optimized security headers middleware
+  server.use((req, res, next) => {
+    // Generate a nonce for each request
+    const nonce = crypto.randomBytes(16).toString("base64")
+    // Set all recommended security headers
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+    res.setHeader("X-Content-Type-Options", "nosniff")
+    res.setHeader("X-Frame-Options", "DENY")
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin")
+    res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()")
+    // Set CSP header with nonce for style-src and script-src
+    res.setHeader("Content-Security-Policy",
+      `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://apis.google.com; style-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com https://fonts.googleapis.com; connect-src 'self' https://firebase.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://www.googleapis.com https://securetoken.googleapis.com https://us-central1-libnet-d76db.cloudfunctions.net https://region1-google-analytics.com https://cdnjs.cloudflare.com https://deepscrape.dev https://fonts.gstatic.com https://www.googletagmanager.com https://apis.google.com https://ui-avatars.com https://firebasestorage.googleapis.com https://firebaseinstallations.googleapis.com; img-src 'self' data: https: https://ui-avatars.com https://firebasestorage.googleapis.com https://www.googletagmanager.com https://www.gstatic.com https://www.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; object-src 'none'; base-uri 'self'; frame-src 'self' https://libnet-d76db.firebaseapp.com;`
+    )
+    // Make nonce available for downstream rendering
+    res.locals.nonce = nonce
+    next()
+  })
 
   server.use(guestTracker) // Custom middleware to track guest users
 
@@ -103,13 +126,18 @@ function serveapp() {
     limiter, oauthProxy.router)
   // server.use("/", limiter)
 
+  // Heartbeat endpoint for guests and users
+  server.post("/api/heartbeat",
+    express.json({ limit: "1mb" }), heartbeat
+  )
+
   // Serve static files from /browser
   server.get("*.*", express.static(browserDistFolder, {
     maxAge: "1y",
     index: "index.html",
   }))
   // All regular routes use the Angular engine **
-  server.get("*", limiter, (req: express.Request, res, next: NextFunction) => {
+  server.get("*", limiter, (req: express.Request, res: Response) => {
     const { protocol, originalUrl, baseUrl, headers } = req
     console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
 
@@ -119,34 +147,6 @@ function serveapp() {
     } else {
       res.status(404).sendFile(resolve(publicDistFolder, "404.html"))
     }
-    // console.log(
-    //   chalk.bgYellow('Request Method:'), req.method,
-    //   chalk.bgYellow('Request URL:'), req.url,
-    //   chalk.bgGreen('Status Code:'), req.statusCode,
-    //   chalk.bgYellow('Protocol:'), req.protocol,
-    //   chalk.bgGreen('Original URL:'), req.originalUrl,
-    //   chalk.bgYellow('Base URL:'), req.baseUrl,
-    //   chalk.bgBlue.black('IP:'), req.ip,
-    //   chalk.bgBlue.black('Host:'), req.hostname
-    // )
-
-    // commonEngine
-    // .render({
-    //   bootstrap,
-    //   documentFilePath: indexHtml,
-    //   url: `${protocol}://${headers.host}${originalUrl}`,
-    //   publicPath: browserDistFolder,
-    //   providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
-    // })
-    // .then((html) => res.send(html))
-    // .catch((err) => next(err))
-
-    /* angularNodeAppEngine
-    .handle(req, { server: "express" })
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next()
-    )
-    .catch(next) */
   })
 
   // Set up graceful shutdown

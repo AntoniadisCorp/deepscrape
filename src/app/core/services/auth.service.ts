@@ -34,6 +34,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CookieService } from 'ngx-cookie-service';
 import { LocalStorage } from './storage.service';
 import { Analytics, logEvent } from '@angular/fire/analytics';
+import { HeartbeatService } from './heartbeat.service';
 
 @Injectable({
   providedIn: 'root'
@@ -44,6 +45,7 @@ export class AuthService {
   private analytics = inject(Analytics)
   private cookieService = inject(CookieService)
   private localStorage = inject(LocalStorage)
+  private heartbeatService = inject(HeartbeatService)
   token: string | undefined = ''
 
   private authStateResolved = new BehaviorSubject<boolean>(false)
@@ -69,6 +71,7 @@ export class AuthService {
           this.authStateResolved.next(false);
           this.userSubject.next(null);
           this.token = undefined;
+          this.heartbeatService.stop(); // Stop heartbeat if not authenticated
           return { isAuthenticated: false, user: null }; // Ensure consistent return type
         }
 
@@ -94,6 +97,7 @@ export class AuthService {
 
         // Mark auth as resolved
         this.authStateResolved.next(true);
+        this.heartbeatService.start(); // Start heartbeat when authenticated
 
         // Return user data
         return { isAuthenticated: true, user: this.userSubject.value }
@@ -369,6 +373,8 @@ export class AuthService {
     this.userSubject.next(null);
     this.authStateResolved.next(false);
     this.token = undefined;
+
+    this.heartbeatService.stop(); // Stop heartbeat on logout
 
     return from(this.fireService.setSignOutMetrics(userId, loginId)).pipe(
       switchMap(() => from(this.fireService.signOut())),

@@ -126,6 +126,7 @@ export type Guest = {
   latitude: number
   longitude: number
   location: string
+  fingerprint: string // Unique fingerprint for guest tracking
   createdAt: Date
   lastSeen: Date
   linkedAt?: Date | null

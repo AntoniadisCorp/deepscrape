@@ -127,41 +127,51 @@ function getContinentFromTimezone(timezone: string): string {
 
 // IP2LOCATION-LITE-DB11.BIN
 /* eslint-disable @typescript-eslint/ban-types */
+// Guest tracking middleware for Express
+// Ensures unique guest analytics using fingerprinting and Redis/Firestore
 export async function guestTracker(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
   const user = req.app.locals["user"] as string | null
   const isUser = !!user
 
-  console.log("Guest Tracker Invoked - Guest ID:", guestId, "User:", user)
-
+  // Only track guests, skip if authenticated or has aid cookie
   if (isUser || req.cookies["aid"]) {
-    // TODO: Update the user's geo details in Firestore if logged in
-    // If 'aid' cookie exists, skip guest tracking
-    // res.status(200).send({ status: true, message: "Authenticated user, skipping guest tracking" })
     return next()
   }
 
+  // Get IP and fingerprint
+  const { ipv4, ipv6, raw } = await getClientIps(req)
+  const ip = raw as string
+  const agent = useragent.parse(req.headers["user-agent"] || "")
+  const fingerprint = `${ip}|${agent.family}|${agent.os.family}|${agent.device.family}`
+
+  // Check Redis for fingerprint
+  const existingGuestId = await redis.get(`guestfp:${fingerprint}`)
+  if (!guestId && existingGuestId) {
+    guestId = existingGuestId
+    res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
+    // Update lastSeen in Redis
+    await redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ lastSeen: new Date() }))
+    // Update lastSeen in Firestore (throttled)
+    await db.collection("guests").doc(guestId).set({ lastSeen: new Date() }, { merge: true })
+    return next()
+  }
+
+  // If no guestId, create new guest and store fingerprint
   if (!guestId) {
-    guestId = db.collection("guests").doc().id // Generate a new Firestore ID
-    // Set secure flag conditionally
-    res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 }) // 1 year
-
-    const { ipv4, ipv6, raw } = await getClientIps(req) // Prefer IPv6 if available
-
-    const ip = (raw) as string // Fallback to IPv4 if IPv6 is not available
-    const agent = useragent.parse(req.headers["user-agent"] || "")
+    guestId = db.collection("guests").doc().id
+    res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
     const geo = await getGeolocation(ip)
-
     const guestData: Guest = {
       id: guestId,
-      uid: "", // Will be set when linked to a user
+      uid: "",
       ip: { ipv4, ipv6: ipv6 || null, raw },
-      userAgent: agent.toString(), // Store full user agent string
+      userAgent: agent.toString(),
       browser: agent.family,
       os: agent.os.family,
       device: agent.device.family,
       language: geo.language || req.headers["accept-language"]?.split(",")[0] || "en",
-      timezone: geo.timezone || "UTC", // Use timezone from geo if available
+      timezone: geo.timezone || "UTC",
       country: geo.country || "Unknown",
       geo: geo.geo || { continent: "Unknown", region: "Unknown" },
       region: geo.region || "Unknown",
@@ -170,26 +180,14 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
       location: geo.location || "Unknown",
       createdAt: new Date(),
       lastSeen: new Date(),
+      fingerprint,
     }
-
-    req.clientIp = ip // Attach IP to request object for downstream use
-
-    // Store in Redis (fast access)
-    await redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData)) // 1 hour expiration
-
-    // Write to Firestore (long-term analytics)
+    req.clientIp = ip
+    await redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData))
+    await redis.set(`guestfp:${fingerprint}`, guestId)
     await db.collection("guests").doc(guestId).set(guestData, { merge: true })
-
     res.setHeader("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Form-Factors, x-forwarded-for'")
-
-    // res.status(200).send({ status: true, guestId, message: "New guest tracked" })
-  } /* else {
-    // // Guest already exists, update lastSeen timestamp
-    // await db.collection("guests").doc(guestId).update({
-    //   lastSeen: new Date(),
-    // })
-    // res.status(200).send({ status: true, guestId, message: "Guest activity updated" })
-  } */
+  }
   return next()
 }
 
