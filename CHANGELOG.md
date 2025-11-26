@@ -1,3 +1,8 @@
+## 0.4.0-beta.8 (2025-11-26)
+
+* feat(analytics): hash guest fingerprints for privacy ([0fdd119](https://github.com/AntoniadisCorp/deepscrape/commit/0fdd119))
+* feat(platform): update security, analytics, and UI components ([be3878e](https://github.com/AntoniadisCorp/deepscrape/commit/be3878e))
+
 ## 0.4.0-beta.7 (2025-11-23)
 
 * feat(i18n): implement i18n, custom image loader, logger service ([29c4e94](https://github.com/AntoniadisCorp/deepscrape/commit/29c4e94))
