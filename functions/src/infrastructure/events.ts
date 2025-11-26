@@ -5,12 +5,10 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable max-len */
 import { NextFunction, Request, Response, Router } from "express"
-import {
-    anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl,
-    arachnefly,
-} from "../handlers"
 import { auth } from "../app/config"
 import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier"
+import { analyticsEventHandler, batchAnalyticsEventHandler, guestFingerprintHandler } from "../gfunctions"
+import { heartbeat } from "../handlers"
 
 declare module "express-serve-static-core" {
     interface Request {
@@ -18,7 +16,7 @@ declare module "express-serve-static-core" {
     }
 }
 
-class ReverseAPIProxy {
+class EventsAPIProxy {
     public router: Router
 
     constructor() {
@@ -63,39 +61,7 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesGets(): void {
-        /* Jina AI */
-        // this.router.get("/jina", helloWorld)
-        this.router.get("/jina/:url", jinaAICrawl)
 
-        /**
-         * Machines by Arachnefly
-         */
-
-        // Get Machine Details
-        this.router.get("/machines/machine/:id", arachnefly.getMachine)
-
-        // Check if the image is deployable
-        this.router.get("/machines/check-image", arachnefly.checkImageDeployability)
-
-        // wait for a machine to stabilize a specific state and return the machine details
-        this.router.get("/machines/machine/waitforstate/:machineId", arachnefly.waitForState)
-
-
-        /**
-         * Crawler by crawlagent
-         */
-
-        // Get New Temporary Task Id
-        // this.router.get("/crawl/job/temp-task-id", crawlagent.getTempTaskId)
-
-        // // Get the Task Id
-        // this.router.get("/crawl/job/:tempTaskId", crawlagent.getTaskId)
-
-        // // Get the Task Status
-        // this.router.get("/crawl/stream/job/status/:taskId", crawlagent.getTaskStatus)
-
-        // // Stream the Task Results
-        // this.router.get("/crawl/stream/job/:taskId", crawlagent.streamTaskResults)
     }
 
     /**
@@ -103,44 +69,27 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesPosts(): void {
-        this.router.post("/anthropic/messages", anthropicAICore) // Search for Markets
-        this.router.post("/openai/chat/completions", openaiAICore)
-        this.router.post("/groq/chat/completions", groqAICore)
-
-        /**
-         * Crawler Management by crawlagent
-        */
-
-        this.router.post("/crawl", crawl4aiCore)
-
-        // Enqueue a stream Crawl Task
-        // this.router.post("/crawl/stream/job", crawlagent.multiCrawlEnqueue)
-
-        /* Machines by Arachnefly */
-
-        // Deploy a new Machine
-        this.router.post("/machines/deploy", arachnefly.deployMachine)
         // this.router.post('/api/machines/logs', receiveLogs)
 
         /* Heartbeats and Analytics */
+        // Guest fingerprint endpoint
+        this.router.post("/guest-fingerprint", guestFingerprintHandler)
+
+
+        // Analytics event endpoint
+        this.router.post("/analytics/event", analyticsEventHandler)
+
+        // Analytics batch event endpoint
+        this.router.post("/analytics/batch", batchAnalyticsEventHandler)
+
+        // Heartbeat endpoint for guests and users
+        this.router.post("/heartbeat", heartbeat)
     }
     /**
            * https Router Put
            */
 
     private httpRoutesPut(): void {
-        /**
-         * Machines by Arachnefly
-         */
-
-        // Start a Machine
-        this.router.put("/machines/machine/:machineId/start", arachnefly.startMachine)
-
-        // Suspend a Machine
-        this.router.put("/machines/machine/:machineId/suspend", arachnefly.suspendMachine)
-
-        // Stop a Machine
-        this.router.put("/machines/machine/:machineId/stop", arachnefly.stopMachine)
 
 
         /**
@@ -159,8 +108,7 @@ class ReverseAPIProxy {
         /**
          * Machines by Arachnefly
          */
-        // Destroy a Machine
-        this.router.delete("/machines/machine/:machineId", arachnefly.destroyMachine)
+
     }
 }
 
@@ -183,4 +131,4 @@ class ReverseAPIProxy {
 //   }
 // }
 
-export { ReverseAPIProxy }
+export { EventsAPIProxy }

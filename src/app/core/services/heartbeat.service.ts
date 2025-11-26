@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { interval, Subscription, merge, fromEvent, timer, Subject } from 'rxjs';
-import { takeUntil, switchMap, filter, startWith, tap } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { interval, Subscription, merge, fromEvent, timer, Subject, of } from 'rxjs';
+import { takeUntil, switchMap, filter, startWith, tap, map } from 'rxjs/operators';
 import { WindowToken } from './window.service';
 
 @Injectable({ providedIn: 'root' })
@@ -20,7 +20,7 @@ export class HeartbeatService {
         this.window.addEventListener('online', () => this.resume('online'));
     }
 
-    start(intervalMs: number = 60000) {
+    start(token?: string, intervalMs: number = 60000) {
         this.stop();
         this.isPaused = false;
 
@@ -42,12 +42,26 @@ export class HeartbeatService {
             takeUntil(this.stop$)
         ).subscribe();
 
+        const headers = new HttpHeaders({
+            'Authorization': `Bearer ${token || ''}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        });
+
         // Heartbeat interval
         this.intervalSub = interval(intervalMs).pipe(
             filter(() => !this.isPaused && navigator.onLine),
-            takeUntil(this.stop$)
-        ).subscribe(() => {
-            this.http.post('/api/heartbeat', {}).subscribe();
+            takeUntil(this.stop$),
+            switchMap( () => this.http.post('/event/heartbeat', 
+                {headers}
+            )),
+        ).subscribe({
+          next(value) {
+              console.log('Heartbeat successful')
+          }, 
+          error(err) {
+                console.error('Heartbeat error:', err);
+          }, 
         });
     }
 

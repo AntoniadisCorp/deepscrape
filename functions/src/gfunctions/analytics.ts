@@ -11,6 +11,7 @@ import { redis } from "../app/cacheConfig"
 import { db } from "../app/config"
 import path from "node:path"
 import net from "node:net"
+import crypto from "crypto"
 
 // Determine if running in production based on environment variable
 const isProduction = process.env["PRODUCTION"] === "true"
@@ -31,33 +32,33 @@ const isProduction = process.env["PRODUCTION"] === "true"
 // The BIN database file should be placed in the 'databases' folder at the root of the project
 
 export type IP2LocationRecord ={
-        ip: string
-        ipNo: string
-        countryShort: string
-        countryLong: string
-        region: string
-        city: string
-        isp: string
-        domain: string
-        zipCode: string
-        latitude: string | number
-        longitude: string | number
-        timeZone: string
-        netSpeed: string
-        iddCode: string
-        areaCode: string
-        weatherStationCode: string
-        weatherStationName: string
-        mcc: string
-        mnc: string
-        mobileBrand: string
-        elevation: string
-        usageType: string
-        addressType: string
-        category: string
-        district: string
-        asn: string
-        as: string
+        ip: string,
+        ipNo: string,
+        countryShort: string,
+        countryLong: string,
+        region: string,
+        city: string,
+        isp: string,
+        domain: string,
+        zipCode: string,
+        latitude: string | number,
+        longitude: string | number,
+        timeZone: string,
+        netSpeed: string,
+        iddCode: string,
+        areaCode: string,
+        weatherStationCode: string,
+        weatherStationName: string,
+        mcc: string,
+        mnc: string,
+        mobileBrand: string,
+        elevation: string,
+        usageType: string,
+        addressType: string,
+        category: string,
+        district: string,
+        asn: string,
+        as: string,
     }
 export class IP2LocationManager {
   private ip2location: IP2Location.IP2Location | null = null
@@ -140,11 +141,12 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
   }
 
   // Get IP and fingerprint
-  const { ipv4, ipv6, raw } = await getClientIps(req)
+  const { raw } = await getClientIps(req)
   const ip = raw as string
   const agent = useragent.parse(req.headers["user-agent"] || "")
-  const fingerprint = `${ip}|${agent.family}|${agent.os.family}|${agent.device.family}`
-
+  const fingerstring = `${ip}|${agent.family}|${agent.os.family}|${agent.device.family}`
+  // Create SHA-256 hash of the fingerprint for privacy
+  const fingerprint = crypto.createHash("sha256").update(fingerstring).digest("hex")
   // Check Redis for fingerprint
   const existingGuestId = await redis.get(`guestfp:${fingerprint}`)
   if (!guestId && existingGuestId) {
@@ -159,19 +161,25 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
 
   // If no guestId, create new guest and store fingerprint
   if (!guestId) {
-    guestId = db.collection("guests").doc().id
-    res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
+    guestId = db.collection("guests").doc().id // Generate a new Firestore ID
+    // Set secure flag conditionally
+    res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 }) // 1 year
+
+    const { ipv4, ipv6, raw } = await getClientIps(req) // Prefer IPv6 if available
+
+    const ip = (raw) as string // Fallback to IPv4 if IPv6 is not available
+    const agent = useragent.parse(req.headers["user-agent"] || "")
     const geo = await getGeolocation(ip)
     const guestData: Guest = {
       id: guestId,
-      uid: "",
+      uid: "", // Will be set when linked to a user
       ip: { ipv4, ipv6: ipv6 || null, raw },
-      userAgent: agent.toString(),
+      userAgent: agent.toString(), // Store full user agent string
       browser: agent.family,
       os: agent.os.family,
       device: agent.device.family,
       language: geo.language || req.headers["accept-language"]?.split(",")[0] || "en",
-      timezone: geo.timezone || "UTC",
+      timezone: geo.timezone || "UTC", // Use timezone from geo if available
       country: geo.country || "Unknown",
       geo: geo.geo || { continent: "Unknown", region: "Unknown" },
       region: geo.region || "Unknown",
@@ -183,12 +191,107 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
       fingerprint,
     }
     req.clientIp = ip
-    await redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData))
-    await redis.set(`guestfp:${fingerprint}`, guestId)
-    await db.collection("guests").doc(guestId).set(guestData, { merge: true })
+    try {
+      await Promise.all([
+        redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData)),
+        redis.set(`guestfp:${fingerprint}`, guestId),
+        db.collection("guests").doc(guestId).set(guestData, { merge: true }),
+      ])
+    } catch (error) {
+      console.error("Error storing guest data:", error)
+    }
     res.setHeader("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Form-Factors, x-forwarded-for'")
-  }
+
+    // res.status(200).send({ status: true, guestId, message: "New guest tracked" })
+  } /* else {
+    // // Guest already exists, update lastSeen timestamp
+    // await db.collection("guests").doc(guestId).update({
+    //   lastSeen: new Date(),
+    // })
+    // res.status(200).send({ status: true, guestId, message: "Guest activity updated" })
+  } */
   return next()
+}
+
+// API endpoint to receive guest fingerprint data from frontend
+export async function guestFingerprintHandler(req: Request, res: Response) {
+  try {
+    const fingerprintData = req.body
+    // Hash the fingerprint for privacy
+    const fingerprintString = JSON.stringify(fingerprintData)
+    const fingerprintHash = crypto.createHash("sha256").update(fingerprintString).digest("hex")
+    // Attach to session or cookie for guest tracking
+    res.cookie("guest_fp", fingerprintHash, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
+    res.status(200).json({ success: true, fingerprint: fingerprintHash })
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ success: false, error: errorMsg })
+  }
+}
+
+// Standardized analytics event schema
+export type AnalyticsEvent = {
+  timestamp: number,
+  userId?: string,
+  guestId?: string,
+  eventType: string,
+  metadata?: Record<string, unknown>,
+}
+
+// API endpoint to receive analytics events from frontend
+export async function analyticsEventHandler(req: Request, res: Response) {
+  try {
+    const event: AnalyticsEvent = {
+      timestamp: Date.now(),
+      ...req.body,
+    }
+    // Store event in Redis list for batching
+    await redis.lpush("analytics:events", JSON.stringify(event))
+    res.status(200).json({ success: true })
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ success: false, error: errorMsg })
+  }
+}
+
+export async function batchAnalyticsEventHandler(req: Request, res: Response) {
+  try {
+    const { events } = req.body
+    if (!Array.isArray(events) || events.length === 0) {
+      return res.status(400).json({ error: "No events provided" })
+    }
+    const analyticsEvents = events.map((event) => JSON.stringify({
+      timestamp: Date.now(),
+      ...event,
+    }))
+    await redis.lpush("analytics:events", ...analyticsEvents)
+    return res.status(200).json({ success: true, processed: analyticsEvents.length })
+  } catch (err) {
+    console.error("Batch analytics error:", err)
+    return res.status(500).json({ error: "Failed to process batch analytics events" })
+  }
+}
+
+// Batch sync function (to be called by background job/Cloud Function)
+export async function batchSyncAnalyticsEvents() {
+  try {
+    // Get all events from Redis
+    const events = await redis.lrange("analytics:events", 0, -1)
+    if (!events.length) return
+    // Prepare batch write to Firestore
+    const batch = db.batch()
+    events.forEach((eventStr) => {
+      const event = JSON.parse(eventStr)
+      const ref = db.collection("analyticsEvents").doc()
+      batch.set(ref, event)
+    })
+    await batch.commit()
+    // Clear Redis list after sync
+    await redis.del("analytics:events")
+    console.log(`Synced ${events.length} analytics events to Firestore.`)
+  } catch (error) {
+    console.error("Error syncing analytics events:", error)
+  }
 }
 
 async function getClientIps(req: Request): Promise<{ ipv4: string | null, ipv6: string | null, raw: string | null }> {

@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable } from '@angular/core';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
-import { filter } from 'rxjs/internal/operators/filter';
+import { filter } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'

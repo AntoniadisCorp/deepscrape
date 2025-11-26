@@ -4,22 +4,19 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable linebreak-style */
 // Initialize Express App and Middleware //
-import express, { NextFunction, Response, Request } from "express"
+import express, { NextFunction, Response, Request, json } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
-
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
-// import { existsSync } from "node:fs"
-import { heartbeat, limiter, statusCheck } from "./handlers"
+import { limiter, statusCheck } from "./handlers"
 import * as dotenv from "dotenv"
-import { AuthAPIProxy, ReverseAPIProxy, UploadAPIProxy } from "./infrastructure"
-// import { geoDBManager, guestTracker, IP2LocationManager } from "./gfunctions"
+import { AuthAPIProxy, EventsAPIProxy, ReverseAPIProxy } from "./infrastructure"
 import cookieParser from "cookie-parser"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
 import { existsSync } from "node:fs"
-import crypto from "crypto"
+import crypto from "node:crypto"
 
 // import { createNodeRequestHandler } from "@angular/ssr/node"
 dotenv.config({ quiet: true })
@@ -42,12 +39,12 @@ function serveapp() {
   // Create an instance of the Express application
   const server: express.Application = express()
   const aiProxy = new ReverseAPIProxy()
+  const eventsProxy = new EventsAPIProxy()
   const oauthProxy = new AuthAPIProxy()
-  const uploadProxy = new UploadAPIProxy()
+  // const uploadProxy = new UploadAPIProxy()
 
   // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
   // const commonEngine = new CommonEngine()
-
 
   // The code snippet you provided is setting up different folder paths
   // for the Express server to serve static files from
@@ -74,6 +71,7 @@ function serveapp() {
   server.use(helmet({
     contentSecurityPolicy: false, // We'll set CSP manually for nonce support
   }))
+
   server.use(morgan("combined"))
   server.use(corss)
   server.use(cookieParser())
@@ -106,11 +104,16 @@ function serveapp() {
     }
     next()
   })
+
   // Public API status route (no authentication)
   server.get("/status",
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
     limiter, statusCheck) // aiProxy.router now contains the /status route
+
+  server.use("/event", json({ limit: "1mb" }),
+    limiter, eventsProxy.router)
+
   // Register the API routes (with authentication)
   server.use("/api",
     express.urlencoded({ limit: "3mb", extended: false }),
@@ -118,18 +121,12 @@ function serveapp() {
     process.env.PRODUCTION === "true" ? limiter : (req: Request, res: Response, next: NextFunction) => next(),
     aiProxy.isJwtAuth, aiProxy.router)
 
-  server.use("/upload", uploadProxy.router)
+  // server.use("/upload", uploadProxy.router)
 
   server.use("/oauth",
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
     limiter, oauthProxy.router)
-  // server.use("/", limiter)
-
-  // Heartbeat endpoint for guests and users
-  server.post("/api/heartbeat",
-    express.json({ limit: "1mb" }), heartbeat
-  )
 
   // Serve static files from /browser
   server.get("*.*", express.static(browserDistFolder, {
@@ -152,10 +149,6 @@ function serveapp() {
   // Set up graceful shutdown
   setupGracefulShutdown(server, geoDBManager)
 
-  // This is the important stuff
-  // s.keepAliveTimeout = (60 * 1000) + 1000
-  // s.headersTimeout = (60 * 1000) + 2000
-
   return server
 }
 
@@ -166,7 +159,7 @@ function setupGracefulShutdown(server: express.Application, geoDBManager: IP2Loc
   // server.on("listening", onListening)
   onListening()
 
-
+  // Graceful Shutdown Function
   const shutdown = async () => {
     console.log("Shutting down gracefully...")
 

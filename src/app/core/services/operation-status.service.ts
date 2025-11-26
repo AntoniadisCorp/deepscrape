@@ -39,7 +39,7 @@ export class OperationStatusService {
           showSnackbar(message, type);
         }
       }),
-      takeWhile((obj) => obj.status !== '')
+      takeWhile((obj) => (obj?.status ?? '') !== '')
     );
   }
 }

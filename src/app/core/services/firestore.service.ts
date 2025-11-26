@@ -19,6 +19,7 @@ import {
   fromTask, uploadBytesResumable, TaskEvent
 } from '@angular/fire/storage'
 import { createSessionKey } from '../functions'
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -34,6 +35,7 @@ export class FirestoreService {
   constructor(
     private afAuth: Auth,
     private ngZone: NgZone, // Inject NgZone
+    private http: HttpClient
   ) {
     // this.app = initializeApp(environment.firebaseConfig)
     this.firestore = this.getInstanceDB('easyscrape')

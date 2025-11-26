@@ -1,10 +1,12 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, HostListener, Inject, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser, NgFor } from '@angular/common';
-import { ScreenResizeService, WindowToken } from 'src/app/core/services';
+import { AuthService, ScreenResizeService, WindowToken } from 'src/app/core/services';
 import { SCREEN_SIZE } from 'src/app/core/enum';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { timer } from 'rxjs/internal/observable/timer';
-
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { of } from 'rxjs/internal/observable/of';
+import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 
 @Component({
   selector: 'app-size-detector',
@@ -15,7 +17,7 @@ import { timer } from 'rxjs/internal/observable/timer';
 // size-detector.component.ts
 
 export class SizeDetectorComponent implements AfterViewInit {
-
+  private authService = inject(AuthService)
   private isBrowser: boolean
   private destroyRef = inject(DestroyRef)
   private _window = inject(WindowToken); // or window = inject(WINDOW);
@@ -50,8 +52,8 @@ export class SizeDetectorComponent implements AfterViewInit {
 
   ];
 
-  @HostListener("window:resize", ['$event'])
-  private onResize() {
+  @HostListener("window:resize")
+  public onResize() {
     if (this.animationFrameId) {
       this._window.cancelAnimationFrame(this.animationFrameId);
     }
@@ -64,7 +66,8 @@ export class SizeDetectorComponent implements AfterViewInit {
   constructor(
     private elementRef: ElementRef,
     private resizeSvc: ScreenResizeService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private http: HttpClient
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId)
   }
@@ -93,7 +96,27 @@ export class SizeDetectorComponent implements AfterViewInit {
       return isVisible;
     })
 
-    if (currentSize)
-      this.resizeSvc.onResize(currentSize.id)
+    if (currentSize) {
+      this.resizeSvc.onResize(currentSize.id);
+      // Emit fingerprint data for analytics
+      const fingerprintData = this.resizeSvc.getFingerprintData()
+
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${this.authService.token}`,
+        'Accept': 'application/json',
+      });
+
+      // Debounce HTTP requests using rjsx's debounceTime
+      of(fingerprintData)
+        .pipe(
+        debounceTime(500), // adjust debounce time as needed
+        takeUntilDestroyed(this.destroyRef)
+        )
+        .subscribe(data => {
+        this.http.post('/event/guest-fingerprint', data, { headers })
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe();
+      });
+    }
   }
 }

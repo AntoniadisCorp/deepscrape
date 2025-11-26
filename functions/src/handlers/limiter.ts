@@ -32,7 +32,15 @@ const apiLimitOptions: Partial<Options> = {
     max: 100, // Limit each IP to 100 requests per windowMs
     message: "Too many requests from this IP, please try again after 15 minutes",
     handler: (req, res) => {
-        const retryAfter = Math.round(req?.rateLimit?.resetTime ? req.rateLimit.resetTime / 1000 : 15)
+        const defaultWindowMs = 15 * 60 * 1000
+        const resetTime = req?.rateLimit?.resetTime
+        const retryAfterMs =
+            typeof resetTime === "number"?
+            resetTime - Date.now(): defaultWindowMs
+        const retryAfterSec = Math.max(1, Math.round(retryAfterMs / 1000))
+        const minutes = Math.floor(retryAfterSec / 60).toString().padStart(2, "0")
+        const seconds = (retryAfterSec % 60).toString().padStart(2, "0")
+
         res.status(429)
             .set("Content-Type", "text/html")
             .send(`
@@ -54,7 +62,7 @@ const apiLimitOptions: Partial<Options> = {
       <h2 class="text-[#111318] text-3xl md:text-4xl font-bold leading-tight text-center pb-3 pt-5">Too Many Requests</h2>
       <p class="text-[#111318] text-base font-normal leading-normal pb-3 pt-1 text-center">
         You've sent too many requests in a short period. Please wait before trying again.<br>
-        <span class="text-blue-600 font-semibold">Retry-After: ${retryAfter} seconds</span>
+        <span class="text-blue-600 font-semibold">Retry-After: ${retryAfterSec} seconds</span>
       </p>
       <div class="flex gap-4 py-6 justify-center">
         <div class="flex flex-col items-center">
@@ -65,13 +73,13 @@ const apiLimitOptions: Partial<Options> = {
         </div>
         <div class="flex flex-col items-center">
           <div class="flex h-14 w-16 items-center justify-center rounded-lg bg-[#f0f2f4]">
-            <p class="text-[#111318] text-lg font-bold">${Math.floor(retryAfter / 60).toString().padStart(2, "0")}</p>
+            <p class="text-[#111318] text-lg font-bold">${minutes}</p>
           </div>
           <p class="text-[#111318] text-sm">Minutes</p>
         </div>
         <div class="flex flex-col items-center">
           <div class="flex h-14 w-16 items-center justify-center rounded-lg bg-[#f0f2f4]">
-            <p class="text-[#111318] text-lg font-bold">${(retryAfter % 60).toString().padStart(2, "0")}</p>
+            <p class="text-[#111318] text-lg font-bold">${seconds}</p>
           </div>
           <p class="text-[#111318] text-sm">Seconds</p>
         </div>
@@ -85,7 +93,7 @@ const apiLimitOptions: Partial<Options> = {
             `)
     },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    legacyHeaders: true, // Disable the `X-RateLimit-*` headers
     validate: { trustProxy: true, ip: process.env.PRODUCTION === "true" },
     store: redisStore, // Use Redis as the store for rate limiting if available
 }

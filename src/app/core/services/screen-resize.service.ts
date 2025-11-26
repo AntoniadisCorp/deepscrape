@@ -28,5 +28,17 @@ export class ScreenResizeService {
     return { screenWidth: this.window.innerWidth, screenHeight: this.window.innerHeight }
   }
 
-
+  /**
+   * Returns screen resolution and device info for fingerprinting
+   */
+  getFingerprintData() {
+    return {
+      screenWidth: this.window.innerWidth,
+      screenHeight: this.window.innerHeight,
+      devicePixelRatio: this.window.devicePixelRatio,
+      platform: this.window.navigator.platform,
+      userAgent: this.window.navigator.userAgent,
+      language: this.window.navigator.language,
+    }
+  }
 }

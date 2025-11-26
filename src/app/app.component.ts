@@ -3,19 +3,17 @@ import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/r
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
-import { AuthService, LoggerService, SnackbarService, SvgIconService, HeartbeatService } from './core/services'
+import { LoggerService, SnackbarService, SvgIconService, HeartbeatService, FirestoreService, AnalyticsService, AuthService } from './core/services'
 import { AnimatedBgComponent, LangPickerComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
-import { map, Observable, of } from 'rxjs'
+import { forkJoin, map, Observable, of } from 'rxjs'
 import { isPlatformBrowser, isPlatformServer } from '@angular/common'
 import { fadeInOutAnimation } from './animations'
-import { HttpClient } from '@angular/common/http'
 import { Inject, OnInit, OnDestroy } from '@angular/core'
-import { environment } from 'src/environments/environment'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { NgswUpdateService } from './core/services/ngsw-update.service'
-import { Analytics, logEvent } from '@angular/fire/analytics'
+import { Analytics } from '@angular/fire/analytics'
 
 /* 
                      ,//@@@.
@@ -35,7 +33,7 @@ import { Analytics, logEvent } from '@angular/fire/analytics'
  ,//////                                 @@@@@@&
  .//////                                 @@@@@@/
   //////.      @@@  @@@  @@  @ @@@@     .@@@@@@.
-  //////,     @    @   @ @ @ @ @==      (@@@@@@
+  //////,     @    @   @ @ @ @ @==      (@@@@@@)
   .//////      @@@  @@@  @  @@ @        &@@@@@@
   .///////.                           %@@@@@@@&
    ///////////                    ,@@@@@@@@@@@(
@@ -87,7 +85,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private snackbarService: SnackbarService,
     private authService: AuthService,
     private ngswUpdate: NgswUpdateService,
-    private http: HttpClient, // Inject HttpClient
+    private analyticsService: AnalyticsService,
+    private fireService: FirestoreService // Inject FirestoreService
     // Inject ActivatedRoute to access route data
     // private activatedRoute: ActivatedRoute,
   ) {
@@ -100,10 +99,13 @@ export class AppComponent implements OnInit, OnDestroy {
         this.isLoading = false
         this.route = event.urlAfterRedirects
         try {
-          // Safely log event, won't crash if analytics isn't ready
-          // logEvent(this.analytics, 'screen_view' as any, {
-          //   screen_name: event.urlAfterRedirects,
-          // })
+          // Log page view event to Google Analytics
+          this.analyticsService.trackEvent('page_view', {
+            page: event.urlAfterRedirects,
+            timestamp: new Date().toISOString()
+          }).pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe()
+
         } catch (e) {
           console.warn('Analytics not ready:', e)
         }
@@ -129,16 +131,21 @@ export class AppComponent implements OnInit, OnDestroy {
     // Make a request to the status endpoint to trigger guestTracker
     if (isBrowser) {
       // HeartbeatService will be started only for authenticated users
-      this.http.get(`/status`)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (response) => {
-            console.log('API Status Check:', response)
-          },
-          error: (error) => {
-            console.error('Error checking API status:', error)
-          }
-        })
+      // Send custom analytics event to backend
+      forkJoin([
+        this.analyticsService.sendStatus(),
+      ])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ([statusResponse]) => {
+          console.log('API Status Check:', statusResponse)
+        },
+        error: (error) => {
+          console.error('Error checking API status or sending analytics event:', error)
+        }
+      })
+      
+    
     }
 
   }

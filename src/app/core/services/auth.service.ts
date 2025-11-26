@@ -33,8 +33,9 @@ import { Functions, httpsCallable } from '@angular/fire/functions';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CookieService } from 'ngx-cookie-service';
 import { LocalStorage } from './storage.service';
-import { Analytics, logEvent } from '@angular/fire/analytics';
+import { Analytics } from '@angular/fire/analytics';
 import { HeartbeatService } from './heartbeat.service';
+import { AnalyticsService } from './analytics.service';
 
 @Injectable({
   providedIn: 'root'
@@ -57,7 +58,11 @@ export class AuthService {
 
   constructor(
     private auth: Auth, private fireService: FirestoreService,
-    private http: HttpClient, private functions: Functions) {
+    private http: HttpClient, private functions: Functions,
+
+    private analyticsService: AnalyticsService
+  
+  ) {
     this.initAuth()
   }
 
@@ -97,7 +102,7 @@ export class AuthService {
 
         // Mark auth as resolved
         this.authStateResolved.next(true);
-        this.heartbeatService.start(); // Start heartbeat when authenticated
+        this.heartbeatService.start(this.token); // Start heartbeat when authenticated
 
         // Return user data
         return { isAuthenticated: true, user: this.userSubject.value }
@@ -354,6 +359,19 @@ export class AuthService {
     );
   }
 
+  /**
+   * Link guest to user only once per session.
+   * Uses localStorage/sessionStorage to ensure single call per session.
+   */
+  async linkGuestToUserOncePerSession(userId: string, guestId: string): Promise<Guest | null> {
+    const key = `guest-link-${userId}-${guestId}`;
+    if (sessionStorage.getItem(key)) return null; // Already linked this session
+    sessionStorage.setItem(key, 'true');
+    // Call existing linkGuestToUser logic
+    const { err, guestInfo } = await this.linkGuestToUser(userId, guestId);
+    if (err) throw err;
+    return guestInfo || null;
+  }
   
   async linkGuestToUser(uid: string, guestId: string) {
 
@@ -389,11 +407,13 @@ export class AuthService {
   }
 
   private trackingLogout(method: string, withError: boolean = false) {
-    logEvent(this.analytics, 'logout', {
+    this.analyticsService.trackEvent('logout', {
       method: 'logout',
       withError,
       timestamp: new Date().toISOString()
-    })
+    }, this.token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe()
   }
 
   private getLoginIdFromStorage() {
@@ -401,12 +421,12 @@ export class AuthService {
     const aid = this.cookieService.get('aid')
 
     // parse loginId from aid cookie if exists
-    let { loginId, userId } = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string }
+    let { loginId, userId, guestId } = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string }
 
     // Fallback to localStorage if not found in cookie
     loginId = loginId || this.localStorage.getItem('loginId') || '' as string
 
-    return {loginId, userId}
+    return {loginId, userId, guestId}
   }
 
   ngOnDestroy() {

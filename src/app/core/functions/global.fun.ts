@@ -255,13 +255,46 @@ export function checkPasswordStrength(password: string) {
         )
 }
 
-export async function getBrowser(navigator: any) {
+export async function getBrowser(navigator: any): Promise<string> {
+    // Check for Brave browser
+    if ((navigator as any).brave && typeof (navigator as any).brave.isBrave === 'function') {
+        if (await (navigator as any).brave.isBrave()) return 'brave';
+    }
+    const ua = navigator.userAgent.toLowerCase();
 
-return (navigator as any).brave && (navigator as any).brave.isBrave && 
-        (await (navigator as any).brave.isBrave()) ? 'brave' : 
-          navigator.userAgent.match(/chrome|chromium|crios/i) ? 'chrome' : 
-            navigator.userAgent.match(/firefox|fxios/i) ? 'firefox' : 
-              navigator.userAgent.match(/safari/i) ? 'safari' : navigator.userAgent.match(/opr\//i) ? 
-                'opera' : navigator.userAgent.match(/edg/i) ? 'edge' : 
-                  'other'
+    if (ua.includes('chrome') && !ua.includes('edg') && !ua.includes('opr') && !ua.includes('brave')) return 'chrome';
+    if (ua.includes('chromium')) return 'chromium';
+    if (ua.includes('crios')) return 'chrome-ios';
+    if (ua.includes('firefox')) return 'firefox';
+    if (ua.includes('fxios')) return 'firefox-ios';
+    if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('chromium')) return 'safari';
+    if (ua.includes('opr') || ua.includes('opera')) return 'opera';
+    if (ua.includes('edg')) return 'edge';
+    if (ua.includes('msie') || ua.includes('trident')) return 'ie';
+    if (ua.includes('vivaldi')) return 'vivaldi';
+    if (ua.includes('yabrowser')) return 'yandex';
+    if (ua.includes('ucbrowser')) return 'ucbrowser';
+    if (ua.includes('qqbrowser')) return 'qqbrowser';
+    if (ua.includes('baidubrowser')) return 'baidubrowser';
+    if (ua.includes('maxthon')) return 'maxthon';
+    if (ua.includes('samsungbrowser')) return 'samsung';
+    if (ua.includes('puffin')) return 'puffin';
+    if (ua.includes('palemoon')) return 'palemoon';
+    if (ua.includes('waterfox')) return 'waterfox';
+    if (ua.includes('seamonkey')) return 'seamonkey';
+    if (ua.includes('avant browser')) return 'avant';
+    if (ua.includes('sleipnir')) return 'sleipnir';
+    if (ua.includes('epiphany')) return 'epiphany';
+    if (ua.includes('konqueror')) return 'konqueror';
+    if (ua.includes('midori')) return 'midori';
+    if (ua.includes('lunascape')) return 'lunascape';
+    if (ua.includes('comodo')) return 'comodo';
+    if (ua.includes('icecat')) return 'icecat';
+    if (ua.includes('iceweasel')) return 'iceweasel';
+    if (ua.includes('qutebrowser')) return 'qutebrowser';
+    if (ua.includes('torbrowser')) return 'tor';
+    if (ua.includes('falkon')) return 'falkon';
+    if (ua.includes('netscape')) return 'netscape';
+
+    return 'other';
 }
