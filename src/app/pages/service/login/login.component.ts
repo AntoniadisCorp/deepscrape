@@ -50,13 +50,12 @@ import { HttpClient } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 
 import { I18nService } from 'src/app/core/i18n';
-import { Guest, Loading, loginHistoryInfo, Users } from 'src/app/core/types';
 import { cleanAndParseJSON, CookieUtil, getBrowser, getErrorMessage } from 'src/app/core/functions';
-import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services';
+import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { NAVIGATOR } from 'src/app/core/providers';
-
+import { loginHistoryInfo, Guest, Loading } from 'src/app/core/types';
 /**
  * @description Represents the credentials obtained after a login attempt,
  * including information about whether a merge is required, the user object,
@@ -119,6 +118,13 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   private analyticsDebounceTimer: any = null;
   /** Analytics event queue for batching. */
   private analyticsEventQueue: any[] = [];
+  private window = inject(WindowToken);
+
+  /**
+   * Preload Google and GitHub providers on init for faster popup.
+   */
+  private googleProvider: GoogleAuthProvider;
+  private githubProvider: GithubAuthProvider;
 
   /**
    * @description Constructor for LoginComponent.
@@ -305,6 +311,17 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe((lang) => {
         this.translate.use(lang);
       });
+
+    // Preload providers
+    this.googleProvider = new GoogleAuthProvider();
+    this.googleProvider.addScope('email');
+    this.googleProvider.addScope('profile');
+    this.googleProvider.addScope('openid');
+    this.googleProvider.setCustomParameters({ prompt: 'select_account' });
+    this.githubProvider = new GithubAuthProvider();
+    this.githubProvider.addScope('user:email');
+    this.githubProvider.addScope('read:user');
+    this.githubProvider.setCustomParameters({ prompt: 'select_account' });
   }
 
   /**
@@ -349,11 +366,18 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
+   * Debounce login button to prevent rapid submissions.
+   */
+  private loginInProgress = false;
+
+  /**
    * @description Handles the login process, determining whether the user is
    * attempting to log in with email/password.
    * Removed phone login path from here as it's not fully implemented.
    */
-  public login(): void {
+  public async login(): Promise<void> {
+    if (this.loginInProgress) return;
+    this.loginInProgress = true;
     this.errorMessage = ''; // Clear any previous error messages.
     const identifier = this.loginForm.get('identifier')?.value;
     const password = this.loginForm.get('password')?.value;
@@ -361,67 +385,58 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     // Determine if the identifier is an email (contains '@').
     const isEmail = identifier?.includes('@');
 
-    if (isEmail) {
-      this.currentAuthMethod = 'email'; // Set authentication method to email.
-      this.loading.email = true; // Set loading state for email login.
+    try {
+      if (isEmail) {
+        this.currentAuthMethod = 'email'; // Set authentication method to email.
+        this.loading.email = true; // Set loading state for email login.
 
-      // Subscribe to the email sign-in observable from AuthService.
-      this.authService
-        .signInWithEmail(identifier, password)
-        .pipe(takeUntil(this.destroy$)) // No operators needed here, as further handling is in the subscribe block.
-        .subscribe({
-          next: async (response) => {
-            // If user data is received, proceed with post-login actions.
-            if (response.user) {
-              try {
-                const token = await response.user.getIdToken(); // Get Firebase ID token.
+        // Subscribe to the email sign-in observable from AuthService.
+        this.authService
+          .signInWithEmail(identifier, password)
+          .pipe(takeUntil(this.destroy$)) // No operators needed here, as further handling is in the subscribe block.
+          .subscribe({
+            next: async (response) => {
+              // If user data is received, proceed with post-login actions.
+              if (response.user) {
+                try {
+                  const token = await response.user.getIdToken(); // Get Firebase ID token.
 
-                // Perform parallel tracking and metric logging.
-                await Promise.all([
-                  this.trackLoginAttempt('email', true, token),
-                  this.loginMetrics(response.user.uid, 'password'),
-                ]);
+                  // Perform parallel tracking and metric logging.
+                  await Promise.all([
+                    this.trackLoginAttempt('email', true, token),
+                    this.loginMetrics(response.user.uid, 'password'),
+                  ]);
 
-                // Update user data and check verification status.
-                const isVerified = await this.onLoginUpdate(response, 'password');
-                if (!isVerified) return; // If not verified, stop here (redirection handled in onLoginUpdate).
+                  // Update user data and check verification status.
+                  const isVerified = await this.onLoginUpdate(response, 'password');
+                  if (!isVerified) return; // If not verified, stop here (redirection handled in onLoginUpdate).
 
-                setUserId(this.analytics, response.user.uid); // Set user ID for analytics.
+                  setUserId(this.analytics, response.user.uid); // Set user ID for analytics.
 
-                // Show success snackbar and navigate to the dashboard or return URL.
-                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                this.router.navigateByUrl(returnUrl);
-              } catch (error) {
-                // Handle errors during token generation or post-login updates.
-                await this.trackLoginAttempt('email', false);
-                this.errorMessage = getErrorMessage(error, this.translate);
-                this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
-                this.loading.email = false;
-                return;
+                  // Show success snackbar and navigate to the dashboard or return URL.
+                  this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
+                  const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+                  this.router.navigateByUrl(returnUrl);
+                } catch (error) {
+                  // Handle errors during token generation or post-login updates.
+                  this.handleError(error, 'login:email', 'email');
+                  return;
+                }
               }
+            },
+            error: async (error) => {
+              this.handleError(error, 'login:email', 'email');
+              this.handleAccountExistsError(error, 'password');
+            },
+            complete: () => {
+              this.loading.email = false; // Always reset loading state on completion.
+              this.loginInProgress = false;
             }
-          },
-          error: async (error) => {
-            this.handleError(error, 'login:email', 'email');
-            this.handleAccountExistsError(error, 'password');
-          },
-          complete: () => {
-            this.loading.email = false; // Always reset loading state on completion.
-          }
-        });
-    }
-    // Commented out phone login logic as per requirements.
-    /*
-    else {
-      this.currentAuthMethod = 'phone';
-      if (!this.phoneVerificationSent) {
-        this.sendPhoneVerificationCode();
-      } else {
-        this.verifyPhoneNumberCode();
+          });
       }
+    } finally {
+      this.loginInProgress = false;
     }
-    */
   }
 
   /**
@@ -429,71 +444,69 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
    * Uses Firebase's GoogleAuthProvider to sign in with a popup.
    */
   public async loginWithGoogle(): Promise<void> {
+    if (this.loginInProgress) return;
+    this.loginInProgress = true;
     this.loading.google = true; // Set loading state for Google login.
     this.errorMessage = ''; // Clear any previous error messages.
 
-    const provider = new GoogleAuthProvider();
-    // Add necessary scopes for email, profile, and openid.
-    provider.addScope('email');
-    provider.addScope('profile');
-    provider.addScope('openid');
-    // Set custom parameters to always prompt for account selection.
-    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      // Use the AuthService to handle Google sign-in.
+      this.authService.signInWithGoogle(this.googleProvider)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response) => {
+            // If user data is received, proceed with post-login actions.
+            if (response.user) {
+              try {
+                // Update user profile with display name and photo URL if available.
+                if (response.user.displayName || response.user.photoURL) {
+                  await updateProfile(response.user, {
+                    displayName: response.user.displayName,
+                    photoURL: response.user.photoURL || DEFAULT_PROFILE_URL, // Use default if photoURL is null.
+                  });
+                }
 
-    // Use the AuthService to handle Google sign-in.
-    this.authService.signInWithGoogle(provider)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: async (response) => {
-        // If user data is received, proceed with post-login actions.
-        if (response.user) {
-          // Update user profile with display name and photo URL if available.
-          if (response.user.displayName || response.user.photoURL) {
-            await updateProfile(response.user, {
-              displayName: response.user.displayName,
-              photoURL: response.user.photoURL || DEFAULT_PROFILE_URL, // Use default if photoURL is null.
-            });
+                const token = await response.user.getIdToken(); // Get Firebase ID token.
+
+                // Perform parallel tracking, metric logging, and user data storage.
+                await Promise.all([
+                  this.trackLoginAttempt('google.com', true, token),
+                  this.loginMetrics(response.user.uid, 'google.com'),
+                  this.firestoreService.storeUserData(response.user, 'google.com', true),
+                  setUserId(this.analytics, response.user.uid) // Set user ID for analytics.
+                ]);
+
+                // Show success snackbar and navigate to the dashboard or return URL.
+                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
+                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+                this.router.navigateByUrl(returnUrl);
+              } catch (error) {
+                // Handle errors during token generation or post-login updates.
+                this.handleError(error, 'login:google', 'google.com');
+                return;
+              }
+            } else {
+              // Handle cases where no user is returned after sign-in.
+              await this.trackLoginAttempt('google.com', false);
+              this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN');
+              this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
+            }
+          },
+          error: async (error) => {
+            this.handleError(error, 'login:google', 'google.com');
+            this.handleAccountExistsError(error, 'google.com');
+            this.cdr.detectChanges();
+          },
+          complete: () => {
+            this.loading.google = false; // Always reset loading state on completion.
+            this.loginInProgress = false;
           }
-
-          try {
-            const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-            // Perform parallel tracking, metric logging, and user data storage.
-            await Promise.all([
-              this.trackLoginAttempt('google.com', true, token),
-              this.loginMetrics(response.user.uid, 'google.com'),
-              this.firestoreService.storeUserData(response.user, 'google.com', true),
-              setUserId(this.analytics, response.user.uid) // Set user ID for analytics.
-            ]);
-
-            // Show success snackbar and navigate to the dashboard or return URL.
-            this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-            const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-            this.router.navigateByUrl(returnUrl);
-          } catch (error) {
-            // Handle errors during token generation or post-login updates.
-            await this.trackLoginAttempt('google.com', false);
-            this.errorMessage = getErrorMessage(error, this.translate);
-            this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
-            this.loading.google = false;
-            return;
-          }
-        } else {
-          // Handle cases where no user is returned after sign-in.
-          await this.trackLoginAttempt('google.com', false);
-          this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN');
-          this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
-        }
-      },
-      error: async (error) => {
-        this.handleError(error, 'login:google', 'google.com');
-        this.handleAccountExistsError(error, 'google.com');
-        this.cdr.detectChanges();
-      },
-      complete: () => {
-        this.loading.google = false; // Always reset loading state on completion.
-      }
-    });
+        });
+    } catch (error) {
+      this.handleError(error, 'login:google', 'google.com');
+    } finally {
+      this.loginInProgress = false;
+    }
   }
 
   /**
@@ -501,63 +514,62 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
    * Uses Firebase's GithubAuthProvider to sign in with a popup.
    */
   public async loginWithGithub(): Promise<void> {
+    if (this.loginInProgress) return;
+    this.loginInProgress = true;
     this.loading.github = true; // Set loading state for GitHub login.
     this.errorMessage = ''; // Clear any previous error messages.
 
-    const provider = new GithubAuthProvider();
-    // Add necessary scopes for email and reading user profile.
-    provider.addScope('user:email');
-    provider.addScope('read:user');
-    // Set custom parameters to always prompt for account selection.
-    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      // Use the AuthService to handle GitHub sign-in.
+      this.authService.signInWithGitHub(this.githubProvider)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response) => {
+            // If user data is received, proceed with post-login actions.
+            if (response.user) {
+              try {
+                // Update user profile with display name and photo URL if available.
+                if (response.user.displayName || response.user.photoURL) {
+                  await updateProfile(response.user, {
+                    displayName: response.user.displayName,
+                    photoURL: response.user.photoURL ? response.user.photoURL : DEFAULT_PROFILE_URL, // Use default if photoURL is null.
+                  });
+                }
+                const token = await response.user.getIdToken(); // Get Firebase ID token.
 
-    // Use the AuthService to handle GitHub sign-in.
-    this.authService.signInWithGitHub(provider)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: async (response) => {
-        // If user data is received, proceed with post-login actions.
-        if (response.user) {
-          // Update user profile with display name and photo URL if available.
-          if (response.user.displayName || response.user.photoURL) {
-            await updateProfile(response.user, {
-              displayName: response.user.displayName,
-              photoURL: response.user.photoURL ? response.user.photoURL : DEFAULT_PROFILE_URL, // Use default if photoURL is null.
-            });
+                // Perform parallel tracking, metric logging, and user data storage.
+                await Promise.all([
+                  this.trackLoginAttempt('github.com', true, token),
+                  this.loginMetrics(response.user.uid, 'github.com'),
+                  this.firestoreService.storeUserData(response.user, 'github.com', true),
+                  setUserId(this.analytics, response.user.uid) // Set user ID for analytics.
+                ]);
+
+                // Show success snackbar and navigate to the dashboard or return URL.
+                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
+                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+                this.router.navigateByUrl(returnUrl);
+              } catch (error) {
+                // Handle errors during token generation or post-login updates.
+                this.handleError(error, 'login:github', 'github.com');
+                return;
+              }
+            }
+          },
+          error: async (error) => {
+            this.handleError(error, 'login:github', 'github.com');
+            this.handleAccountExistsError(error, 'github.com');
+          },
+          complete: () => {
+            this.loading.github = false; // Always reset loading state on completion.
+            this.loginInProgress = false;
           }
-          try {
-            const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-            // Perform parallel tracking, metric logging, and user data storage.
-            await Promise.all([
-              this.trackLoginAttempt('github.com', true, token),
-              this.loginMetrics(response.user.uid, 'github.com'),
-              this.firestoreService.storeUserData(response.user, 'github.com', true),
-              setUserId(this.analytics, response.user.uid) // Set user ID for analytics.
-            ]);
-
-            // Show success snackbar and navigate to the dashboard or return URL.
-            this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-            const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-            this.router.navigateByUrl(returnUrl);
-          } catch (error) {
-            // Handle errors during token generation or post-login updates.
-            await this.trackLoginAttempt('github.com', false);
-            this.errorMessage = getErrorMessage(error, this.translate);
-            this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
-            this.loading.github = false;
-            return;
-          }
-        }
-      },
-      error: async (error) => {
-        this.handleError(error, 'login:github', 'github.com');
-        this.handleAccountExistsError(error, 'github.com');
-      },
-      complete: () => {
-        this.loading.github = false; // Always reset loading state on completion.
-      }
-    });
+        });
+    } catch (error) {
+      this.handleError(error, 'login:github', 'github.com');
+    } finally {
+      this.loginInProgress = false;
+    }
   }
 
   /**
@@ -801,6 +813,20 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     let guestId = this.getAidCookie();
     let aid = this.getAidCookie();
     let guestInfo: Guest | null = null;
+    let deviceFingerprintHash = '';
+    try {
+      // Get device fingerprint from localStorage or generate
+      const fingerprintData = this.localStorage.getItem('deviceFingerprint');
+      if (fingerprintData) {
+        // Hash the fingerprint for privacy
+        const encoder = new TextEncoder();
+        const data = encoder.encode(fingerprintData);
+        const hashBuffer = await this.window.crypto.subtle.digest('SHA-256', data);
+        deviceFingerprintHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+    } catch (e) {
+      deviceFingerprintHash = '';
+    }
     if (guestId) {
       guestInfo = await this.authService.linkGuestToUserOncePerSession(userId, guestId);
       this.deleteGidCookie();
@@ -813,7 +839,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     const userAgent = this.navigator.userAgent || 'Unknown';
     const location = 'Unknown'; // Placeholder, ideally obtained from a geolocation service.
     const deviceType = this.navigator?.platform || 'Unknown';
-    const metrics: Partial<loginHistoryInfo> = { ipAddress, browser, userAgent, location, deviceType, connection, providerId };
+    const metrics: Partial<loginHistoryInfo> = { ipAddress, browser, userAgent, location, deviceType, connection, providerId, deviceFingerprintHash };
 
     // Record login metrics in Firestore.
     const currlogin = await this.authService.recordLoginMetrics(userId, metrics, guestInfo || undefined);

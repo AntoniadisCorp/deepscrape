@@ -379,7 +379,11 @@ export class AuthService {
   }
 
   async recordLoginMetrics(userId: string, metrics: Partial<loginHistoryInfo>, guestInfo?: Guest) {
-    return await this.fireService.setUserLoginMetrics(userId, metrics, guestInfo)
+    if (!metrics.providerId) {
+      throw new Error("providerId is required for loginHistoryInfo");
+    }
+    // Cast metrics to loginHistoryInfo after ensuring required fields are present
+    return await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo)
   }
 
   logout() {

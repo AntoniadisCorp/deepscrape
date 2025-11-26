@@ -102,6 +102,7 @@ export type loginHistoryInfo = {
     guestId?: string // Optional field to store geolocation data
     signOutTime?: Date // Optional field to store sign out time
     sessionKey?: string // Optional field to link to a session
+    deviceFingerprintHash?: string
 }
 
 export type Guest = {

@@ -172,8 +172,9 @@ export class FirestoreService {
     }
   }
 
-  async setUserLoginMetrics(userId: string, metrics: any, guestInfo?: Guest) {
-    const { ipAddress, userAgent, location, deviceType, connection, providerId, browser } = metrics
+  async setUserLoginMetrics(userId: string, metrics: loginHistoryInfo, guestInfo?: Guest) {
+    // deviceFingerprintHash
+    const { ipAddress, userAgent, location, deviceType, connection, providerId, browser, deviceFingerprintHash } = metrics
 
     if (!userId || !ipAddress || !userAgent) {
       throw new Error('UID, IP Address, and User Agent are required.')
@@ -221,7 +222,7 @@ export class FirestoreService {
       // Prepare login history entry
       const ip = guestInfo?.ip.raw || ipAddress;
       const currentLocation = guestInfo?.location || location || 'Unknown'
-      const currentBrowser = browser || guestInfo?.browser
+      const currentBrowser = browser || guestInfo?.browser || 'Unknown'
       const currentOS = guestInfo?.os || 'Unknown'
       const currDeviceType = deviceType || guestInfo?.device || 'Unknown'
       const currUserAgent = userAgent || guestInfo?.userAgent || 'Unknown'
@@ -243,6 +244,7 @@ export class FirestoreService {
         sessionKey,
         // Only include guestInfo if it's defined and not undefined
         ...(guestInfo ? { guestId: guestInfo.id } : {}),
+        deviceFingerprintHash
       }
 
 
