@@ -1,3 +1,8 @@
+## 0.4.0-beta.9 (2025-11-26)
+
+* Merge branch 'next' of https://github.com/antoniadisCorp/deepscrape into next ([7834a03](https://github.com/AntoniadisCorp/deepscrape/commit/7834a03))
+* feat(auth): add device fingerprint hash to login metrics ([620421b](https://github.com/AntoniadisCorp/deepscrape/commit/620421b))
+
 ## 0.4.0-beta.8 (2025-11-26)
 
 * feat(analytics): hash guest fingerprints for privacy ([0fdd119](https://github.com/AntoniadisCorp/deepscrape/commit/0fdd119))
