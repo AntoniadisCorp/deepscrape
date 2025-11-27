@@ -1,3 +1,7 @@
+## 0.4.0-beta.10 (2025-11-27)
+
+* fix(security): add csrf protection, update dependencies, and correct csp domain ([166e251](https://github.com/AntoniadisCorp/deepscrape/commit/166e251))
+
 ## 0.4.0-beta.9 (2025-11-26)
 
 * Merge branch 'next' of https://github.com/antoniadisCorp/deepscrape into next ([7834a03](https://github.com/AntoniadisCorp/deepscrape/commit/7834a03))
