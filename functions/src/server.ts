@@ -17,7 +17,7 @@ import cookieParser from "cookie-parser"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
-import csurf from "csurf"
+// import csurf from "csurf"
 
 // import { createNodeRequestHandler } from "@angular/ssr/node"
 dotenv.config({ quiet: true })
@@ -71,7 +71,7 @@ function serveapp() {
 
   // Security and logging middleware
   server.use(helmet({
-    contentSecurityPolicy: false, /* {
+    contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: [
@@ -80,6 +80,8 @@ function serveapp() {
           "'strict-dynamic'",
           "https://www.googletagmanager.com",
           "https://apis.google.com",
+          "https://www.google.com",
+          "https://www.gstatic.com",
         ],
         styleSrc: [
           "'self'",
@@ -128,28 +130,28 @@ function serveapp() {
           "https://libnet-d76db.firebaseapp.com",
         ],
       },
-    }, */
+    },
   }))
 
   server.use(morgan("combined"))
   server.use(corss)
   server.use(cookieParser())
   // Add CSRF protection middleware
-  server.use(csurf({ cookie: true }))
+  // server.use(csurf({ cookie: true }))
   // Optimized security headers middleware
   server.use((req, res, next) => {
     // Generate a nonce for each request
     const nonce = crypto.randomBytes(16).toString("base64")
     // Set all recommended security headers
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
-    res.setHeader("X-Content-Type-Options", "nosniff")
-    res.setHeader("X-Frame-Options", "DENY")
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin")
-    res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()")
-    // Set CSP header with nonce for style-src and script-src
-    res.setHeader("Content-Security-Policy",
-      `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://apis.google.com; style-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com https://fonts.googleapis.com; connect-src 'self' https://firebase.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://www.googleapis.com https://securetoken.googleapis.com https://us-central1-libnet-d76db.cloudfunctions.net https://region1-google-analytics.com https://cdnjs.cloudflare.com https://deepscrape.dev https://fonts.gstatic.com https://www.googletagmanager.com https://apis.google.com https://ui-avatars.com https://firebasestorage.googleapis.com https://firebaseinstallations.googleapis.com; img-src 'self' data: https: https://ui-avatars.com https://firebasestorage.googleapis.com https://www.googletagmanager.com https://www.gstatic.com https://www.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; object-src 'none'; base-uri 'self'; frame-src 'self' https://libnet-d76db.firebaseapp.com;`
-    )
+    // res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+    // res.setHeader("X-Content-Type-Options", "nosniff")
+    // res.setHeader("X-Frame-Options", "DENY")
+    // res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin")
+    // res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()")
+    // // Set CSP header with nonce for style-src and script-src
+    // res.setHeader("Content-Security-Policy",
+    //   `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://apis.google.com; style-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com https://fonts.googleapis.com; connect-src 'self' https://firebase.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://www.googleapis.com https://securetoken.googleapis.com https://us-central1-libnet-d76db.cloudfunctions.net https://region1.google-analytics.com https://cdnjs.cloudflare.com https://deepscrape.dev https://fonts.gstatic.com https://www.googletagmanager.com https://apis.google.com https://ui-avatars.com https://firebasestorage.googleapis.com https://firebaseinstallations.googleapis.com; img-src 'self' data: https: https://ui-avatars.com https://firebasestorage.googleapis.com https://www.googletagmanager.com https://www.gstatic.com https://www.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; object-src 'none'; base-uri 'self'; frame-src 'self' https://libnet-d76db.firebaseapp.com;`
+    // )
     // Make nonce available for downstream rendering
     res.locals.nonce = nonce
     next()

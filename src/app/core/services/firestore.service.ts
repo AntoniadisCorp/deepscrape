@@ -820,4 +820,66 @@ export class FirestoreService {
   runInsideAngular<T>(fn: () => T): T { // Helper function
     return this.ngZone.run(fn)
   }
+
+  /**
+ * Get total guest count efficiently
+ */
+  async getGuestCount(): Promise<number> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests count:", err);
+      return 0;
+    }
+    return querySnapshot.size;
+  }
+
+  /**
+   * Get total authenticated user count efficiently
+   */
+  async getAuthenticatedUserCount(): Promise<number> {
+    const metricsCollection = this.collection(this.firestore, 'login_metrics');
+    const q = this.query(metricsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get login_metrics count:", err);
+      return 0;
+    }
+    return querySnapshot.size;
+  }
+
+  /**
+   * Get total login count and logins per day (aggregated)
+   */
+  async getLoginCountsByDay(limitDays: number = 7): Promise<{ [date: string]: number }> {
+    // This assumes each login_metrics/{userId}/login_history_Info contains login events with a timestamp
+    const metricsCollection = this.collection(this.firestore, 'login_metrics');
+    const q = this.query(metricsCollection);
+    let err, metricsSnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get login_metrics:", err);
+      return {};
+    }
+    const result: { [date: string]: number } = {};
+    for (const doc of metricsSnapshot.docs) {
+      const userId = doc.id;
+      const historyCollection = this.collection(this.firestore, `login_metrics/${userId}/login_history_Info`);
+      const historyQ = this.query(historyCollection);
+      let err2, historySnapshot = await this.getDocs(historyQ);
+      if (err2) continue;
+      for (const loginDoc of historySnapshot.docs) {
+        const data = loginDoc.data();
+        const ts = data['timestamp'] instanceof Date ? data['timestamp'] : (data['timestamp']?.toDate?.() ?? null);
+        if (!ts) continue;
+        const dateStr = ts.toISOString().slice(0, 10);
+        result[dateStr] = (result[dateStr] || 0) + 1;
+      }
+    }
+    // Optionally limit to last N days
+    const sortedDates = Object.keys(result).sort().slice(-limitDays);
+    const limitedResult: { [date: string]: number } = {};
+    for (const date of sortedDates) limitedResult[date] = result[date];
+    return limitedResult;
+  }
 }

@@ -107,7 +107,7 @@ export class AppComponent implements OnInit, OnDestroy {
           .subscribe()
 
         } catch (e) {
-          console.warn('Analytics not ready:', e)
+          // console.warn('Analytics not ready:', e)
         }
       }
     })

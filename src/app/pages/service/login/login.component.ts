@@ -7,7 +7,9 @@ import {
   ChangeDetectorRef,
   ChangeDetectionStrategy,
   inject,
-  DestroyRef
+  DestroyRef,
+  ViewChild,
+  ElementRef
 } from '@angular/core';
 import { FormGroup, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -80,8 +82,9 @@ type loginCredentials = {
   styleUrl: './login.component.scss',
   // Removed ChangeDetectionStrategy.OnPush as it requires manual change detection for async operations
 })
-export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
+export class LoginComponent  {
   // Injected services using Angular's inject function for better testability and type safety.
+  @ViewChild('recaptchaContainer', { static: false }) recaptchaContainer!: ElementRef<HTMLDivElement>;
 
   /** Analytics service for tracking user interactions. */
   private analytics = inject(Analytics);
@@ -249,6 +252,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     this.showSnackbar(errorMsg, SnackBarType.error, '', 5000);
     this.trackLoginAttempt(provider, false, undefined, errorMsg, context);
     this.setLoading(provider, false);
+    this.loginInProgress = false;
   }
 
   /**
@@ -259,7 +263,12 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     this.analyticsEventQueue.push(event);
     if (this.analyticsDebounceTimer) clearTimeout(this.analyticsDebounceTimer);
     this.analyticsDebounceTimer = setTimeout(() => {
-      this.analyticsService.batchTrackEvents([...this.analyticsEventQueue]);
+      this.analyticsService
+        .batchTrackEvents([...this.analyticsEventQueue])
+        .pipe(takeUntilDestroyed(this.DestroyRef))
+        .subscribe({
+          error: (err) => console.error('Failed to send analytics batch', err),
+        });
       this.analyticsEventQueue = [];
     }, 500); // 500ms debounce
   }
@@ -324,7 +333,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
     this.githubProvider = new GithubAuthProvider();
     this.githubProvider.addScope('user:email');
     this.githubProvider.addScope('read:user');
-    this.githubProvider.setCustomParameters({ prompt: 'select_account' });
+    this.githubProvider.setCustomParameters({ prompt: 'select_account' })    
   }
 
   /**
@@ -333,7 +342,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   ngAfterViewInit(): void {
     // Recaptcha initialization might be placed here if it depends on DOM elements being present.
-    this.initializeRecaptcha();
+    this.initializeRecaptcha()
   }
 
 
@@ -343,11 +352,11 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   private initializeRecaptcha(): void {
     // Check if the reCAPTCHA container element exists in the DOM.
-    if (this.document.getElementById('recaptcha-container')) {
-      // Initialize RecaptchaVerifier with the Firebase Auth instance and container ID.
-      this.recaptchaVerifier = new RecaptchaVerifier(this.auth, 'recaptcha-container', {
+    if (this.recaptchaContainer && this.recaptchaContainer.nativeElement) {
+      // Initialize RecaptchaVerifier with the Firebase Auth instance and container element (not id).
+      this.recaptchaVerifier = new RecaptchaVerifier(this.auth, this.recaptchaContainer.nativeElement, {
         'size': 'invisible', // Set to invisible to avoid user interaction initially.
-        'callback': (response: any) => {
+        callback: (response: any) => {
           // Callback function when reCAPTCHA is successfully solved.
           console.log('Recaptcha solved:', response);
           // If the current authentication method is phone and the verification code hasn't been sent,
@@ -571,7 +580,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     } catch (error) {
       this.handleError(error, 'login:github', 'github.com');
-    } finally {
+      this.loading.github = false;
       this.loginInProgress = false;
     }
   }

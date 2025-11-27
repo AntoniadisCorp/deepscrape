@@ -48,6 +48,7 @@ export class AuthService {
   private localStorage = inject(LocalStorage)
   private heartbeatService = inject(HeartbeatService)
   token: string | undefined = ''
+  isAdmin: boolean = false
 
   private authStateResolved = new BehaviorSubject<boolean>(false)
 
@@ -88,6 +89,9 @@ export class AuthService {
         // Save token
         this.token = await user.getIdToken();
         const userData = await this.fireService.getUserData(user.uid) as Users;
+        const getTokenResult = await user.getIdTokenResult()
+        this.isAdmin = !!getTokenResult.claims?.['admin']
+
 
         if (!userData) throw new Error('No user data found');
 
@@ -390,7 +394,8 @@ export class AuthService {
 
     let {userId, loginId} = this.getLoginIdFromStorage()
     userId = userId || this.userSubject.value?.uid || ''
-    
+    const logoutToken = this.token; // Capture token before clearing
+
     // Immediately clear user state to prevent race conditions with Firestore listeners
     this.userSubject.next(null);
     this.authStateResolved.next(false);
@@ -400,22 +405,22 @@ export class AuthService {
 
     return from(this.fireService.setSignOutMetrics(userId, loginId)).pipe(
       switchMap(() => from(this.fireService.signOut())),
-      tap( () => this.trackingLogout('logout')),
+      tap(() => this.trackingLogout('logout', false, logoutToken)),
       catchError(async (error) => { 
         console.error('Logout error:', error)
-        this.trackingLogout('logout', true)
+        this.trackingLogout('logout', true, logoutToken)
         await this.fireService.signOut()
         return throwError(() => error) 
       }
     ))
   }
 
-  private trackingLogout(method: string, withError: boolean = false) {
+  private trackingLogout(method: string, withError: boolean = false, token?: string) {
     this.analyticsService.trackEvent('logout', {
       method: 'logout',
       withError,
       timestamp: new Date().toISOString()
-    }, this.token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
+    }, token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
     .pipe(takeUntilDestroyed(this.destroyRef))
     .subscribe()
   }

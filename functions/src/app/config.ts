@@ -21,6 +21,7 @@ export const db = admin.firestore()
 db.settings({ databaseId: dbName })
 
 export const auth = admin.auth()
+
 /* config().stripe?.secret */
 export const stripeSecret = process.env["STRIPE_PUBLIC_KEY"] ||
     serviceAccount.stripe.secret
@@ -35,7 +36,10 @@ export function generateApiKey() {
 
 
 // Helper: Store API key in Cloud Secret Manager
-export async function saveToSecretManager(secretId: any, apiKey: any) {
+export async function saveToSecretManager(
+    secretId: string | null | undefined,
+    apiKey: string
+) {
     // Create a new secret
     const [secret] = await secretManager.createSecret({
         parent: `projects/${process.env["GCP_PROJECT_ID"]}`,
@@ -73,7 +77,7 @@ export async function saveToSecretManager(secretId: any, apiKey: any) {
     return secret.name
 }
 
-export async function getSecretFromManager(secretPath: any) {
+export async function getSecretFromManager(secretPath: string) {
     // Get the secret version
     const [version] = await secretManager.accessSecretVersion({
         name: secretPath + "/versions/latest",
@@ -81,3 +85,4 @@ export async function getSecretFromManager(secretPath: any) {
     // Return the API key to show the user
     return version.payload?.data?.toString()
 }
+

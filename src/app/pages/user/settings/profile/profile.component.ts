@@ -34,6 +34,8 @@ export class ProfileTabComponent {
   private firestore = inject(FirestoreService)
   private authService = inject(AuthService)
   private snackbarService = inject(SnackbarService)
+
+  protected isAdmin: boolean = false
   profileForm: FormGroup
 
   protected user: Users & { currProviderData: UserInfo | null } | null = null
@@ -80,6 +82,9 @@ export class ProfileTabComponent {
     //Add 'implements OnInit' to the class.
     this.initProfileForm()
     this.initPhotoPreview()
+
+    this.isAdmin = this.authService.isAdmin
+    console.log('isAdmin:', this.isAdmin)
   }
 
 

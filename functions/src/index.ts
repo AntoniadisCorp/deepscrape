@@ -25,6 +25,10 @@ export const deepscrape = app.deepscrape
 // User Management - Functions
 // export const linkGuestToUser = auth.linkGuestToUser
 
+// ADMIN USER MANAGEMENT - Function TRIGGERS
+export const setDefaultAdminRole = auth.setDefaultAdminRole
+
+
 // STRIPE Functions
 export const newStripeCustomer = stripe.newStripeCustomer
 export const createPaymentIntent = stripe.createPaymentIntent

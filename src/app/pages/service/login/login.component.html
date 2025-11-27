@@ -95,7 +95,6 @@
             <ng-container *ngIf="loginForm.get('verificationCode')?.errors?.['minlength'] || loginForm.get('verificationCode')?.errors?.['maxlength']">{{ 'LOGIN.VERIFICATION_CODE_LENGTH' | translate }}</ng-container>
           </small>
         </div>
-        <div id="recaptcha-container"></div>
         <button type="button" (click)="resetAuthFlow()" class="mt-3 w-full rounded bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 shadow transition-all duration-150 outline-none">{{ 'LOGIN.BACK_RESEND_BUTTON' | translate }}</button>
       </ng-template>
       <!-- Links -->
@@ -104,6 +103,7 @@
         <span class="flex-1"></span>
         <a [routerLink]="['/service/signup']" class="text-xs text-gray-500 dark:text-gray-50 hover:underline">{{ 'LOGIN.CREATE_NEW_ACCOUNT' | translate }}</a>
       </div>
+      
       <!-- Submit Button -->
       <div class="mt-4">
         <button type="submit" [disabled]="!loginForm.valid || loading.email" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white font-bold py-2 px-3 shadow-xl transition-all duration-200 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 cc-focus-ring text-sm">
@@ -115,5 +115,6 @@
       </div>
     </form>
   </section>
+  <div hidden #recaptchaContainer id="recaptcha-container"></div>
 </main>
 <!-- Tailwind-based animated background and card structure, Angular form bindings, and error messages integrated. Light and dark mode supported. -->

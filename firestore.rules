@@ -39,5 +39,22 @@ service cloud.firestore {
     function resourceMatchesUID() {
         return request.auth.uid == resource.data.uid;
     }
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    match /login_metrics/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+      match /login_history_Info/{historyId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+    match /guests/{guestId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
   }
 }

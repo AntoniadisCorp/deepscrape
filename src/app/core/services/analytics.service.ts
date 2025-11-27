@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, Inject } from '@angular/core';
 import { AuthService } from './auth.service';
-import { Analytics, logEvent } from '@angular/fire/analytics';
+import { Analytics, logEvent, AnalyticsInstances } from '@angular/fire/analytics';
 import { FirestoreService } from './firestore.service';
 
 @Injectable({
@@ -10,7 +10,7 @@ import { FirestoreService } from './firestore.service';
 export class AnalyticsService {
 
   constructor(
-    private analytics: Analytics,
+    @Inject(AnalyticsInstances) private analytics: Analytics,
     private http: HttpClient, 
   ) { }
 

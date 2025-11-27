@@ -2,7 +2,7 @@
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
 import { FieldPath } from "firebase-admin/firestore"
-import { db, dbName, getSecretFromManager, saveToSecretManager/* , auth as adminAuth */ } from "./config"
+import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
 import { auth, firestore } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 // import { redis } from "./cacheConfig"
@@ -41,6 +41,28 @@ export const trackGuest = auth
             console.log(`User ${user.uid} created with analytics merged.`)
         } catch (err) {
             console.error("Error merging guest data into user:", err)
+        }
+    })
+
+
+export const setDefaultAdminRole = auth
+    .user()
+    .beforeSignIn(async () => {
+        try {
+            const { emails } = { emails: [
+                "prokopis123@gmail.com",
+                "prokopis3@gmail.com",
+            ] } as { emails: string[] }
+
+            if (Array.isArray(emails) && emails.length > 0) {
+                for (const email of emails) {
+                    // set defaults Admin Claim by email
+                    const userRecord = await adminAuth.getUserByEmail(email)
+                    await adminAuth.setCustomUserClaims(userRecord.uid, { admin: true })
+                }
+            }
+        } catch (error) {
+            console.error("Error setting default admin role:", error)
         }
     })
 

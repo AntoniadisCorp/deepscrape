@@ -36,7 +36,7 @@ const customImageLoader = (config: ImageLoaderConfig) => {
   const baseUri = environment.assetsUri.endsWith('/') ? environment.assetsUri : environment.assetsUri + '/';
   return baseUri + config.src.replace(/^\//, '');
 };
-
+const app = initializeApp(environment.firebaseConfig)
 // const analytics = getAnalytics(app);
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -65,7 +65,7 @@ export const appConfig: ApplicationConfig = {
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
-    provideAnalytics(() => getAnalytics()),
+    provideAnalytics(() => getAnalytics(app)),
     ScreenTrackingService, // track page views automatically
     UserTrackingService, // track unique users automatically
     provideClientHydration(withHttpTransferCacheOptions({
@@ -75,8 +75,7 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
     }),
-    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-
+    provideFirebaseApp(() => app),
     provideAuth(() => getAuth()),
     provideFirestore(() =>
     {
@@ -98,15 +97,15 @@ export const appConfig: ApplicationConfig = {
       return functions;
     }),
     provideMessaging(() => getMessaging()),
-    providePerformance(() => getPerformance(initializeApp(environment.firebaseConfig))),
+    providePerformance(() => getPerformance(app)),
     provideStorage(() => getStorage()),
     {
       provide: 'APP_CHECK',
       useFactory: () => {
         if (typeof window !== 'undefined') {
           try {
-            return initializeAppCheck(undefined, {
-              provider: new ReCaptchaV3Provider(environment.RECAPTCHA_KEY),
+            return initializeAppCheck(app, {
+              provider: new ReCaptchaV3Provider(environment.RECAPTCHA_KEY), // ReCaptchaEnterpriseProvider
               isTokenAutoRefreshEnabled: true
             })
           }

@@ -154,3 +154,22 @@ export const verifyLogin = async (req: Request, res: Response) => {
         .send({ error: "Internal Server Error", message: error.message })
     }
 }
+
+export const setAdminClaimsByEmails = async (req: Request, res: Response) => {
+    const { emails } = req.body as { emails: string[] }
+    if (!Array.isArray(emails) || emails.length === 0) {
+        return res.status(400).send({ error: "No emails provided" })
+    }
+    const results = []
+    for (const email of emails) {
+        try {
+            const user = await auth.getUserByEmail(email)
+            await auth.setCustomUserClaims(user.uid, { admin: true })
+            results.push({ email, uid: user.uid, success: true })
+        } catch (err) {
+            // eslint-disable-next-line max-len
+            results.push({ email, error: (err as Error).message, success: false })
+        }
+    }
+    return res.status(200).send({ results })
+}
