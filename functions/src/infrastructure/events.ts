@@ -4,8 +4,7 @@
 /* eslint-disable require-jsdoc */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable max-len */
-import { NextFunction, Request, Response, Router } from "express"
-import { auth } from "../app/config"
+import { Router } from "express"
 import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier"
 import { analyticsEventHandler, batchAnalyticsEventHandler, guestFingerprintHandler } from "../gfunctions"
 import { heartbeat } from "../handlers"
@@ -28,31 +27,6 @@ class EventsAPIProxy {
     }
 
     // ------------------- Node JS Security -------------------
-    // Middleware to verify Firebase JWT
-    async isJwtAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const authHeader = req.headers["authorization"] as string
-
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            res.status(401).json({ error: "Unauthorized: Missing or invalid token" })
-            return
-        }
-
-        const token = authHeader.split(" ")[1]
-
-        try {
-            const decodedToken = await auth.verifyIdToken(token)
-            if (decodedToken) {
-                req.user = decodedToken
-                req.app.locals["user"] = token // Add user info to the request
-                next()
-            } else {
-                throw new Error("Invalid token")
-            }
-        } catch (error) {
-            console.error("JWT Verification Error:", error)
-            res.status(401).json({ error: "Unauthorized: Invalid token" })
-        }
-    }
 
     // ------------------- Node JS Routes -------------------
 

@@ -6,12 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
 import { getErrorMessage } from 'src/app/core/functions';
-import { FirestoreService } from 'src/app/core/services';
+import { FirestoreService, ThemeService } from 'src/app/core/services';
 import { AnimatedBgComponent } from 'src/app/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { I18nService } from 'src/app/core/i18n';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-resetpassword',
@@ -31,7 +31,9 @@ export class ResetPasswordComponent implements OnInit {
     loading = false;
     resetEmailSent = false;
     errorMessage = '';
-    private destroyRef = inject(DestroyRef);
+    private destroyRef = inject(DestroyRef)
+    private themePicker = inject(ThemeService)
+    protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$;
     private langChangeSubscription: Subscription;
 
     constructor(

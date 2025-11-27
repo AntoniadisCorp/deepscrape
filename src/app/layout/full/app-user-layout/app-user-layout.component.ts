@@ -41,7 +41,7 @@ export class AppUserLayoutComponent {
   private localStorage = inject(LocalStorage)
 
   private themePicker = inject(ThemeService)
-  isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
+  isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$
 
   // bg-gray-100 dark:bg-gray-900
   @HostBinding('class') classes = 'h-full w-full flex flex-col  min-h-svh'

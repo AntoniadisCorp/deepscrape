@@ -17,6 +17,7 @@ import cookieParser from "cookie-parser"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
+import csurf from "csurf"
 
 // import { createNodeRequestHandler } from "@angular/ssr/node"
 dotenv.config({ quiet: true })
@@ -26,7 +27,8 @@ dotenv.config({ quiet: true })
 // and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
   origin: process.env["PRODUCTION"] === "true" ? [
-    "https://deepscrape.dev", "https://deepscrape.web.app"] : ["http://127.0.0.1:5000", "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"], // Allow all origins or specify your frontend URL
+    "https://deepscrape.dev", "https://deepscrape.web.app"] : ["http://127.0.0.1:5000",
+      "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"], // Allow all origins or specify your frontend URL
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], // Specify allowed methods "OPTIONS"
   allowedHeaders: ["content-type", "Authorization", "Accept", "anthropic-version", "x-with-iframe",
     "x-return-format", "x-target-selector", "x-with-generated-alt", "x-set-cookie", "x-api-key"], // Specify allowed headers
@@ -69,13 +71,71 @@ function serveapp() {
 
   // Security and logging middleware
   server.use(helmet({
-    contentSecurityPolicy: false, // We'll set CSP manually for nonce support
+    contentSecurityPolicy: false, /* {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          (req, res) => `'nonce-${(res as Response).locals.nonce}'`,
+          "'strict-dynamic'",
+          "https://www.googletagmanager.com",
+          "https://apis.google.com",
+        ],
+        styleSrc: [
+          "'self'",
+          (req, res) => `'nonce-${(res as Response).locals.nonce}'`,
+          "https://cdnjs.cloudflare.com",
+          "https://fonts.googleapis.com",
+        ],
+        connectSrc: [
+          "'self'",
+          "https://firebase.googleapis.com",
+          "https://firestore.googleapis.com",
+          "https://identitytoolkit.googleapis.com",
+          "https://www.googleapis.com",
+          "https://securetoken.googleapis.com",
+          "https://us-central1-libnet-d76db.cloudfunctions.net",
+          "https://region1.google-analytics.com",
+          "https://cdnjs.cloudflare.com",
+          "https://deepscrape.dev",
+          "https://fonts.gstatic.com",
+          "https://www.googletagmanager.com",
+          "https://apis.google.com",
+          "https://ui-avatars.com",
+          "https://firebasestorage.googleapis.com",
+          "https://firebaseinstallations.googleapis.com",
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https:",
+          "https://ui-avatars.com",
+          "https://firebasestorage.googleapis.com",
+          "https://www.googletagmanager.com",
+          "https://www.gstatic.com",
+          "https://www.googleapis.com",
+        ],
+        fontSrc: [
+          "'self'",
+          "https://cdnjs.cloudflare.com",
+          "https://fonts.gstatic.com",
+          "https://fonts.googleapis.com",
+        ],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameSrc: [
+          "'self'",
+          "https://libnet-d76db.firebaseapp.com",
+        ],
+      },
+    }, */
   }))
 
   server.use(morgan("combined"))
   server.use(corss)
   server.use(cookieParser())
-
+  // Add CSRF protection middleware
+  server.use(csurf({ cookie: true }))
   // Optimized security headers middleware
   server.use((req, res, next) => {
     // Generate a nonce for each request
@@ -94,7 +154,7 @@ function serveapp() {
     res.locals.nonce = nonce
     next()
   })
-
+  // Custom middleware to track guest users
   server.use(guestTracker) // Custom middleware to track guest users
 
   // *PWA Service Worker (if running in production)

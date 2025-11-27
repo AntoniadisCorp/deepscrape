@@ -24,6 +24,7 @@
     "chalk": "^5.5.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csurf": "^1.11.0",
     "dotenv": "^17.2.1",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.9",
+    "@types/csurf": "^1.11.5",
     "@types/geoip-lite": "^1.4.4",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",

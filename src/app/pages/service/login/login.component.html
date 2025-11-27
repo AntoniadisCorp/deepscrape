@@ -4,7 +4,10 @@
   <section class="w-full max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-2xl rounded-xl p-4 flex flex-col gap-4 relative z-10 border border-gray-100 dark:border-gray-800 transition-all duration-300">
     <!-- Logo/Icon placeholder -->
     <div class="flex justify-center mb-1">
-      <img src="assets/logo-512x512.png" alt="Logo" class="h-9 w-9 rounded-full shadow-md" loading="lazy" />
+      <img
+            alt="Logo"
+            [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
+            class="mt-4 h-9 w-9 rounded-full shadow-md border-none max-h-[80%] xs:max-h-max" loading="lazy" />
     
     </div>
     <header class="flex gap-2 mb-2 items-center justify-center text-center">
@@ -17,15 +20,15 @@
       </div>
     </header>
     <form [formGroup]="loginForm" (ngSubmit)="login()" autocomplete="off" novalidate class="flex flex-col gap-3">
-      <div *ngIf="errorMessage" class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-2 py-2 rounded-lg relative mb-2 font-semibold flex items-center gap-2 animate-pulse text-xs" role="alert">
+      <div *ngIf="errorMessage" class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-600 dark:text-red-100 px-2 py-2 rounded-lg relative mb-2 font-medium flex items-center gap-2 text-xs" role="alert">
         <svg class="w-4 h-4 text-red-500 dark:text-red-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"/></svg>
         <span class="block sm:inline">{{ errorMessage }}</span>
       </div>
       <!-- Social Login Buttons -->
       <div class="flex gap-2 mb-1">
         <button type="button" [disabled]="loading.github" (click)="loginWithGithub()"
-          class="flex-1 flex items-center justify-center gap-2 rounded bg-white dark:bg-gray-800 px-2 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 shadow transition-all duration-150 hover:shadow-md active:bg-gray-100 dark:active:bg-gray-700 outline-none
-            hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600">
+          class="flex-1 flex items-center justify-center gap-2 rounded bg-white dark:bg-gray-800 px-2 py-2 text-xs xs:text-base md:text-lg font-bold text-gray-800 dark:text-gray-200 shadow transition-all duration-150 hover:shadow-md active:bg-gray-100 dark:active:bg-gray-700 outline-none
+            hover:bg-[#3939393b] hover:text-gray-900 dark:hover:bg-gray-700/30 dark:hover:text-white focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600">
           <ng-container *ngIf="!loading.github; else githubSpinner">
             <mat-icon aria-label="github" svgIcon="github" class="w-5 h-5 text-gray-700 dark:text-gray-200 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
             <span>{{ 'LOGIN.GITHUB_BUTTON' | translate }}</span>
@@ -37,8 +40,8 @@
           </ng-template>
         </button>
         <button type="button" [disabled]="loading.google" (click)="loginWithGoogle()"
-          class="flex-1 flex items-center justify-center gap-2 rounded bg-white dark:bg-gray-800 px-2 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 shadow transition-all duration-150 hover:shadow-md active:bg-gray-100 dark:active:bg-gray-700
-            hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600">
+          class="flex-1 flex items-center justify-center gap-2 rounded bg-white dark:bg-gray-800 px-2 py-2 text-xs xs:text-base md:text-lg font-bold text-gray-800 dark:text-gray-200 shadow transition-all duration-150 hover:shadow-md active:bg-gray-100 dark:active:bg-gray-700
+            hover:bg-[#3939393b] hover:text-gray-900 dark:hover:bg-gray-700/30 dark:hover:text-white focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600">
           <ng-container *ngIf="!loading.google; else googleSpinner">
             <mat-icon aria-label="google" svgIcon="google" class="w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
             <span>{{ 'LOGIN.GOOGLE_BUTTON' | translate }}</span>
@@ -59,7 +62,7 @@
       <div>
         <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
         <input id="identifier" autocomplete="off" formControlName="identifier" required type="text" placeholder="{{ 'LOGIN.IDENTIFIER_PLACEHOLDER' | translate }}"
-          class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+          class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
           [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('identifier')?.valid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)}"
         />
         <small *ngIf="loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)" class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
@@ -72,7 +75,7 @@
         <div>
           <label for="password" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.PASSWORD_LABEL' | translate }}</label>
           <input id="password" type="password" formControlName="password" required placeholder="{{ 'LOGIN.PASSWORD_PLACEHOLDER' | translate }}" autocomplete="current-password"
-            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
             [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('password')?.valid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)}"
           />
           <small *ngIf="loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)" class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
@@ -84,7 +87,7 @@
         <div>
           <label for="verificationCode" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.VERIFICATION_CODE_LABEL' | translate }}</label>
           <input id="verificationCode" type="text" formControlName="verificationCode" required placeholder="{{ 'LOGIN.VERIFICATION_CODE_PLACEHOLDER' | translate }}"
-            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
             [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('verificationCode')?.valid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)}"
           />
           <small *ngIf="loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)" class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">

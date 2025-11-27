@@ -20,11 +20,13 @@ import {
 } from '@angular/fire/storage'
 import { createSessionKey } from '../functions'
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Analytics, logEvent, setUserId } from '@angular/fire/analytics'
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
+  private analytics = inject(Analytics)
   private firestore = inject(Firestore) // inject()
 
   private storage = inject(Storage)
@@ -503,7 +505,7 @@ export class FirestoreService {
   }
 
   async storeCrawlConfig(userId: string, config: CrawlConfig): Promise<void> {
-   return this.storeUserConfig(userId, config, 'crawlconfigs', 'Crawl Config')
+    return this.storeUserConfig(userId, config, 'crawlconfigs', 'Crawl Config')
   }
 
   async storeCrawlResultsConfig(userId: string, config: CrawlResultConfig): Promise<void> {
@@ -519,29 +521,29 @@ export class FirestoreService {
  * @param itemName Human-readable name for logging
  * @returns Promise that resolves when the operation completes
  */
-async storeUserConfig<T extends { id?: string; uid?: string }>(
-  userId: string, 
-  data: T, 
-  collectionPath: string,
-  itemName: string
-): Promise<void> {
-  try {
-    const configCollection = this.collection(this.firestore, `users/${userId}/${collectionPath}`);
-    data.uid = userId
+  async storeUserConfig<T extends { id?: string; uid?: string }>(
+    userId: string,
+    data: T,
+    collectionPath: string,
+    itemName: string
+  ): Promise<void> {
+    try {
+      const configCollection = this.collection(this.firestore, `users/${userId}/${collectionPath}`);
+      data.uid = userId
 
-    const configRef = data.id
-      ? this.docRef(configCollection, data.id) // Update existing item
-      : this.newDocRef(configCollection) // Create new item
-    
-    // Exclude 'id' property when storing the data
-    const { id, ...dataWithoutId } = data as any
-    await this.setDoc(configRef, dataWithoutId, { merge: !!data.id })
-    console.log(`${data.id ? `${itemName} updated` : `New ${itemName} created`} in Firestore.`)
-  } catch (error) {
-    console.error(`Error storing user ${itemName.toLowerCase()} data:`, error)
-    throw error
+      const configRef = data.id
+        ? this.docRef(configCollection, data.id) // Update existing item
+        : this.newDocRef(configCollection) // Create new item
+
+      // Exclude 'id' property when storing the data
+      const { id, ...dataWithoutId } = data as any
+      await this.setDoc(configRef, dataWithoutId, { merge: !!data.id })
+      console.log(`${data.id ? `${itemName} updated` : `New ${itemName} created`} in Firestore.`)
+    } catch (error) {
+      console.error(`Error storing user ${itemName.toLowerCase()} data:`, error)
+      throw error
+    }
   }
-}
 
 
 

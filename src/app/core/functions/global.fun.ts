@@ -298,3 +298,21 @@ export async function getBrowser(navigator: any): Promise<string> {
 
     return 'other';
 }
+
+
+export async function getDeviceFingerprintHash(fingerprintData: string | null, window: Window): Promise<string> {
+    let deviceFingerprintHash = '';
+    try {
+      if (fingerprintData) {
+        // Hash the fingerprint for privacy
+        const encoder = new TextEncoder();
+        const data = encoder.encode(fingerprintData);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data)
+        deviceFingerprintHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+    } catch (e) {
+      deviceFingerprintHash = '';
+    }
+
+    return deviceFingerprintHash
+}

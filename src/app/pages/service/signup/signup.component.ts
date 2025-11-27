@@ -8,11 +8,11 @@ import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPop
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Users, Loading } from 'src/app/core/types';
 import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
-import { FirestoreService, SnackbarService, AuthService } from 'src/app/core/services';
+import { FirestoreService, SnackbarService, AuthService, ThemeService } from 'src/app/core/services';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { createPasswordStrengthValidator } from 'src/app/core/directives';
 import { SnackBarType } from 'src/app/core/components';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 import { AnimatedBgComponent } from 'src/app/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -53,10 +53,12 @@ export class SignupComponent implements OnInit, OnDestroy {
         code: false,
         password: false,
         mfa: false
-        
+
     };
     errorMessage = '';
-    private destroyRef = inject(DestroyRef);
+    private destroyRef = inject(DestroyRef)
+    private themePicker = inject(ThemeService)
+    protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$;
     private langChangeSubscription: Subscription;
 
     constructor(
@@ -127,7 +129,7 @@ export class SignupComponent implements OnInit, OnDestroy {
         }
     }
 
-   
+
     protected checkPasswordStrength(password: string): string {
 
         return checkPasswordStrength(password)
@@ -142,7 +144,8 @@ export class SignupComponent implements OnInit, OnDestroy {
 
 
             // Check if the email already exists
-            this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({                next: async (response) => {
+            this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({
+                next: async (response) => {
                     try {
                         if (response.exists) {
                             this.errorMessage = this.translate.instant('SIGNUP.EMAIL_ALREADY_EXISTS')
@@ -175,11 +178,13 @@ export class SignupComponent implements OnInit, OnDestroy {
                         }
 
                         // Redirect or show success message
-                        this.router.navigate(['/service/verification'], { state: { 
-                            verificationId: confirmationResult?.verificationId, 
-                            phoneNumber, 
-                            email: userCredential.user.email 
-                        } });
+                        this.router.navigate(['/service/verification'], {
+                            state: {
+                                verificationId: confirmationResult?.verificationId,
+                                phoneNumber,
+                                email: userCredential.user.email
+                            }
+                        });
                     } catch (error: any) {
                         this.errorMessage = getErrorMessage(error, this.translate)
                         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
@@ -201,7 +206,7 @@ export class SignupComponent implements OnInit, OnDestroy {
         duration: number = 3000) {
 
         this.snackbarService.showSnackbar(message, type, action, duration)
-    }    ngOnDestroy(): void {
+    } ngOnDestroy(): void {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.emailCheckSubs?.unsubscribe()

@@ -16,7 +16,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule, DOCUMENT, JsonPipe, NgIf } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 
 import {
   Auth,
@@ -50,8 +50,8 @@ import { HttpClient } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 
 import { I18nService } from 'src/app/core/i18n';
-import { cleanAndParseJSON, CookieUtil, getBrowser, getErrorMessage } from 'src/app/core/functions';
-import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, WindowToken } from 'src/app/core/services';
+import { cleanAndParseJSON, CookieUtil, getBrowser, getDeviceFingerprintHash, getErrorMessage } from 'src/app/core/functions';
+import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { NAVIGATOR } from 'src/app/core/providers';
@@ -90,7 +90,10 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
   /** Local storage service for storing key-value pairs. */
   private localStorage = inject(LocalStorage);
   /** A service for handling component destruction, used with `takeUntilDestroyed`. */
-  private DestroyRef = inject(DestroyRef);
+  private DestroyRef = inject(DestroyRef)
+
+  private themePicker = inject(ThemeService)
+  protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
 
   // Component properties
   /** Manages the loading state for various authentication methods. */
@@ -330,6 +333,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   ngAfterViewInit(): void {
     // Recaptcha initialization might be placed here if it depends on DOM elements being present.
+    this.initializeRecaptcha();
   }
 
 
@@ -810,22 +814,16 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
    * @returns {Promise<void>} A promise that resolves when metrics are recorded and cookies updated.
    */
   public async loginMetrics(userId: string, providerId: string): Promise<void> {
-    let guestId = this.getAidCookie();
     let aid = this.getAidCookie();
+    let guestId = '';
     let guestInfo: Guest | null = null;
-    let deviceFingerprintHash = '';
-    try {
-      // Get device fingerprint from localStorage or generate
-      const fingerprintData = this.localStorage.getItem('deviceFingerprint');
-      if (fingerprintData) {
-        // Hash the fingerprint for privacy
-        const encoder = new TextEncoder();
-        const data = encoder.encode(fingerprintData);
-        const hashBuffer = await this.window.crypto.subtle.digest('SHA-256', data);
-        deviceFingerprintHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-      }
-    } catch (e) {
-      deviceFingerprintHash = '';
+    // Get device fingerprint from localStorage or generate
+    const fingerprintData = this.localStorage.getItem('deviceFingerprint')
+
+    let deviceFingerprintHash = await getDeviceFingerprintHash(fingerprintData, this.window)
+    if (aid) {
+      const aidData = cleanAndParseJSON(aid) as { userId: string, guestId: string, loginId?: string };
+      guestId = aidData.guestId || '';
     }
     if (guestId) {
       guestInfo = await this.authService.linkGuestToUserOncePerSession(userId, guestId);

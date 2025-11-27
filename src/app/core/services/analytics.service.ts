@@ -2,13 +2,17 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Analytics, logEvent } from '@angular/fire/analytics';
+import { FirestoreService } from './firestore.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AnalyticsService {
 
-  constructor(private http: HttpClient, private analytics: Analytics) { }
+  constructor(
+    private analytics: Analytics,
+    private http: HttpClient, 
+  ) { }
 
   sendStatus() {
     return this.http.get(`/status`)
@@ -29,10 +33,8 @@ export class AnalyticsService {
     }
     const headers = new HttpHeaders({
       'Accept': 'application/json',
-    })
-    if (token) {
-      headers.append('Authorization', `Bearer ${token}`)
-    }
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    });
     return this.http.post('/event/analytics/event', event, { headers })
   }
 
