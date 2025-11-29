@@ -26,13 +26,16 @@ export class HeartbeatService {
 
         // User activity observable
         const activity$ = merge(
-            fromEvent(this.window, 'mousemove'),
+            fromEvent(this.window, 'mousemove', { passive: true }),
             fromEvent(this.window, 'keydown'),
-            fromEvent(this.window, 'touchstart')
+            fromEvent(this.window, 'touchstart', { passive: true })
         );
 
         // Inactivity logic using RxJS
         this.inactivitySub = activity$.pipe(
+            tap(() => {
+                if (this.isPaused) this.resume('activity');
+            }),
             startWith(null),
             switchMap(() =>
                 timer(this.inactivityMs).pipe(
@@ -52,17 +55,16 @@ export class HeartbeatService {
         this.intervalSub = interval(intervalMs).pipe(
             filter(() => !this.isPaused && navigator.onLine),
             takeUntil(this.stop$),
-            switchMap( () => this.http.post('/event/heartbeat', 
-                {headers}
-            )),
+            switchMap(() => this.http.post('/event/heartbeat', {}, { headers })),
         ).subscribe({
-          next(value) {
-              console.log('Heartbeat successful')
-          }, 
-          error(err) {
+            next(value) {
+                console.log('Heartbeat successful')
+            },
+            error(err) {
                 console.error('Heartbeat error:', err);
-          }, 
+            },
         });
+        console.log('Heartbeat successful')
     }
 
     stop() {

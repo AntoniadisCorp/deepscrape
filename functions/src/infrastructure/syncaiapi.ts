@@ -121,8 +121,6 @@ class ReverseAPIProxy {
         // Deploy a new Machine
         this.router.post("/machines/deploy", arachnefly.deployMachine)
         // this.router.post('/api/machines/logs', receiveLogs)
-
-        /* Heartbeats and Analytics */
     }
     /**
            * https Router Put

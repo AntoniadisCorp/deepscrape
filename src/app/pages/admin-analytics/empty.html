@@ -1,0 +1,610 @@
+<!-- Admin Analytics Dashboard -->
+<div class="mt-10 min-h-screen bg-slate-50 dark:bg-gray6 p-4 sm:p-6 lg:p-8 shadow-md rounded-md">
+  <!-- Header -->
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+      Admin Analytics Dashboard
+    </h1>
+    <p class="text-base text-slate-600 dark:text-slate-300">
+      Real-time insights and metrics
+    </p>
+  </header>
+
+  <!-- Loading State -->
+  <div
+    *ngIf="loading"
+    class="flex flex-col items-center justify-center py-16 gap-4">
+    <div
+      class="w-12 h-12 border-4 border-slate-200 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div>
+    <p class="text-base text-slate-600 dark:text-slate-300">
+      Loading analytics data...
+    </p>
+  </div>
+
+  <!-- Error State -->
+  <div
+    *ngIf="error"
+    class="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/60 rounded-lg text-red-700 dark:text-red-300">
+    <lucide-angular [img]="icons['circle-check-big']" class="w-6 h-6 flex-shrink-0 text-red-700 dark:text-red-300" aria-label="Error"></lucide-angular>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Analytics Content -->
+  <div *ngIf="!loading && !error" class="space-y-8">
+    <!-- KPI OVERVIEW SECTION -->
+    <section class="space-y-6">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+          Analytics Overview
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          Key performance indicators and real-time metrics
+        </p>
+      </div>
+
+      <!-- KPI Grid (4 Cards) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+        <!-- Total Visitors -->
+        <div
+          class="bg-white dark:bg-gray7/80 border border-slate-200/60 dark:border-gray7/60 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-gray6/80 transition-all duration-200 flex items-center gap-4">
+          <div
+            class="w-14 h-14 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 shadow-lg flex items-center justify-center flex-shrink-0">
+            <lucide-angular [img]="icons['user-round']" class="w-8 h-8 text-white fill-none" aria-label="Total Visitors"></lucide-angular>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4
+              class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              Total Visitors
+            </h4>
+            <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
+              {{ guestCount + userCount | number }}
+            </p>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              All time unique visitors
+            </span>
+          </div>
+        </div>        <!-- Active Users -->
+        <div
+          class="bg-white dark:bg-gray7/80 border border-slate-200/60 dark:border-gray6/60 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-gray6/80 transition-all duration-200 flex items-center gap-4">
+          <div
+            class="w-14 h-14 rounded-lg bg-gradient-to-br from-emerald-600 to-emerald-700 dark:from-emerald-500 dark:to-emerald-600 shadow-lg flex items-center justify-center flex-shrink-0">
+            <lucide-angular [img]="icons['shieldcheck']" class="w-8 h-8 text-white fill-none" aria-label="Active Users"></lucide-angular>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4
+              class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              Active Users
+            </h4>
+            <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
+              {{ userCount | number }}
+            </p>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              Registered & authenticated
+            </span>
+          </div>
+        </div>        <!-- Guest Visitors -->
+        <div
+          class="bg-white dark:bg-gray7/80 border border-slate-200/60 dark:border-gray6/60 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-gray6/80 transition-all duration-200 flex items-center gap-4">
+          <div
+            class="w-14 h-14 rounded-lg bg-gradient-to-br from-violet-600 to-violet-700 dark:from-violet-500 dark:to-violet-600 shadow-lg flex items-center justify-center flex-shrink-0">
+            <lucide-angular [img]="icons['user-round']" class="w-8 h-8 text-white fill-none" aria-label="Guest Visitors"></lucide-angular>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4
+              class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              Guest Visitors
+            </h4>
+            <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
+              {{ guestCount | number }}
+            </p>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              Anonymous sessions
+            </span>
+          </div>
+        </div>        <!-- Total Logins -->
+        <div
+          class="bg-white dark:bg-gray7/80 border border-slate-200/60 dark:border-gray6/60 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-gray6/80 transition-all duration-200 flex items-center gap-4">
+          <div
+            class="w-14 h-14 rounded-lg bg-gradient-to-br from-amber-600 to-amber-700 dark:from-amber-500 dark:to-amber-600 shadow-lg flex items-center justify-center flex-shrink-0">
+            <lucide-angular [img]="icons['fingerprint']" class="w-8 h-8 text-white fill-none" aria-label="Total Logins"></lucide-angular>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4
+              class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              Total Logins
+            </h4>
+            <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
+              {{ totalLogins | number }}
+            </p>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              Last 7 days
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONVERSION FUNNEL & ENGAGEMENT SECTION -->
+    <section class="space-y-6">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+          Conversion & Engagement
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          Funnel performance and user behavior metrics
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Conversion Funnel -->
+        <div
+          class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Conversion Funnel
+            </h3>
+            <lucide-angular [img]="icons['gauge']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Conversion Funnel"></lucide-angular>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <div
+                class="h-8 bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-500 dark:to-violet-500 rounded flex-1 flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm">
+                <span>Visitors</span>
+                <span>{{ guestCount + userCount | number }}</span>
+              </div>
+              <span
+                class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
+                100%
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div
+                class="h-8 bg-gradient-to-r from-emerald-600 to-emerald-700 dark:from-emerald-500 dark:to-emerald-600 rounded flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm"
+                [style.width.%]="
+                  (registeredGuestsCount / (guestCount || 1)) * 100
+                ">
+                <span>Signed Up</span>
+                <span>{{ registeredGuestsCount | number }}</span>
+              </div>
+              <span
+                class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
+                {{ guestConversionRate | number : '1.1-1' }}%
+              </span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div
+                class="h-8 bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-500 dark:to-indigo-600 rounded flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm"
+                [style.width.%]="
+                  (userCount / (guestCount + userCount || 1)) * 100
+                ">
+                <span>Active Users</span>
+                <span>{{ userCount | number }}</span>
+              </div>
+              <span
+                class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
+                {{ conversionRate | number : '1.0-0' }}%
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- Engagement Metrics -->
+        <div
+          class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Engagement
+            </h3>
+            <lucide-angular [img]="icons['zap']" class="w-5 h-5 text-slate-500 dark:text-slate-400" aria-label="Engagement"></lucide-angular>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div
+              class="p-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200/50 dark:border-slate-600/50 rounded-lg">
+              <p
+                class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                Avg Logins/Day
+              </p>
+              <p
+                class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                {{ totalLogins / 7 | number : '1.0-0' }}
+              </p>
+            </div>
+            <div
+              class="p-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200/50 dark:border-slate-600/50 rounded-lg">
+              <p
+                class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                Guest Conv.
+              </p>
+              <p
+                class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                {{ guestConversionRate | number : '1.1-1' }}%
+              </p>
+            </div>
+            <div
+              class="p-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200/50 dark:border-slate-600/50 rounded-lg">
+              <p
+                class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                User Ratio
+              </p>
+              <p
+                class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                {{ userCount }}:{{ guestCount }}
+              </p>
+            </div>
+            <div
+              class="p-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200/50 dark:border-slate-600/50 rounded-lg">
+              <p
+                class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                Conversion
+              </p>
+              <p class="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                {{ conversionRate }}%
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Quick Stats -->
+        <div
+          class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Quick Stats
+            </h3>
+            <lucide-angular [img]="icons['gauge']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Quick Stats"></lucide-angular>
+          </div>
+          <div class="space-y-3">
+            <!-- Sessions/User -->
+            <div class="flex items-center justify-between py-2 border-l-4 border-blue-600 dark:border-blue-500 pl-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-r-lg">
+              <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <lucide-angular [img]="icons['user-round']" class="w-4 h-4 text-blue-600 dark:text-blue-400 fill-none" aria-label="Sessions/User"></lucide-angular>
+                Sessions/User
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ totalLogins / (userCount || 1) | number : '1.1-1' }}</span>
+                <div class="w-20 h-2 bg-blue-200 dark:bg-blue-900 rounded-full overflow-hidden">
+                  <div [style.width.%]="Math.min((totalLogins / (userCount || 1)) * 10, 100)" class="h-2 bg-blue-600 dark:bg-blue-400"></div>
+                </div>
+              </div>
+            </div>
+            <!-- New Visitors/Day -->
+            <div class="flex items-center justify-between py-2 border-l-4 border-emerald-600 dark:border-emerald-500 pl-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-r-lg">
+              <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <lucide-angular [img]="icons['user-plus']" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 fill-none" aria-label="New Visitors/Day"></lucide-angular>
+                New Visitors/Day
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ (guestCount + userCount) / 7 | number : '1.0-0' }}</span>
+                <div class="w-20 h-2 bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden">
+                  <div [style.width.%]="Math.min(((guestCount + userCount) / 7) * 5, 100)" class="h-2 bg-emerald-600 dark:bg-emerald-400"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Retention Rate -->
+            <div class="flex items-center justify-between py-2 border-l-4 border-violet-600 dark:border-violet-500 pl-3 bg-violet-50/50 dark:bg-violet-950/20 rounded-r-lg">
+              <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <lucide-angular [img]="icons['repeat']" class="w-4 h-4 text-violet-600 dark:text-violet-400 fill-none" aria-label="Retention Rate"></lucide-angular>
+                Retention Rate
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ (userCount / (guestCount + userCount || 1)) * 100 | number : '1.0-0' }}%</span>
+                <div class="w-20 h-2 bg-violet-200 dark:bg-violet-900 rounded-full overflow-hidden">
+                  <div [style.width.%]="Math.min((userCount / (guestCount + userCount || 1)) * 100, 100)" class="h-2 bg-violet-600 dark:bg-violet-400"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Global Reach -->
+            <div class="flex items-center justify-between py-2 border-l-4 border-amber-600 dark:border-amber-500 pl-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-r-lg">
+              <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <lucide-angular [img]="icons['globe']" class="w-4 h-4 text-amber-600 dark:text-amber-400 fill-none" aria-label="Global Reach"></lucide-angular>
+                Global Reach
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ guestCount + userCount | number }}</span>
+                <div class="w-20 h-2 bg-amber-200 dark:bg-amber-900 rounded-full overflow-hidden">
+                  <div [style.width.%]="Math.min(((guestCount + userCount) / 1000) * 100, 100)" class="h-2 bg-amber-600 dark:bg-amber-400"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- CHARTS SECTION -->
+    <section class="space-y-8">
+      <!-- Login Analytics -->
+      <div class="space-y-6">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+            Login Analytics
+          </h2>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            User behavior and authentication patterns
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <!-- Logins Over Time Chart -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                Logins Over Time
+              </h3>
+              <button
+                (click)="refreshData()"
+                title="Refresh analytics data"
+                aria-label="Refresh analytics data"
+                class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200">
+                <lucide-angular [img]="icons['refresh-ccw']" class="w-5 h-5 fill-none" aria-label="Refresh"></lucide-angular>
+              </button>
+            </div>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="lineChartData"
+                [options]="lineChartOptions"
+                [type]="lineChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- User Distribution Chart -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              User Distribution
+              <lucide-angular [img]="icons['user-distribution']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="User Distribution"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="pieChartData"
+                [options]="pieChartOptions"
+                [type]="pieChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Login Methods Chart -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-50 flex items-center justify-between">
+              Login Methods
+              <lucide-angular [img]="icons['login-methods']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Login Methods"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="doughnutChartData"
+                [options]="doughnutChartOptions"
+                [type]="doughnutChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Daily Activity Chart -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 lg:col-span-2">
+            <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-50 flex items-center justify-between">
+              Daily Activity Comparison
+              <lucide-angular [img]="icons['daily-activity']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Daily Activity Comparison"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="barChartData"
+                [options]="barChartOptions"
+                [type]="barChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Peak Hours Chart -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-50 flex items-center justify-between">
+              Peak Activity Hours
+              <lucide-angular [img]="icons['peak-hours']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Peak Activity Hours"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="radarChartData"
+                [options]="radarChartOptions"
+                [type]="radarChartType"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guest Analytics -->
+      <div class="space-y-6">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+            Guest Analytics
+          </h2>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Visitor insights and conversion tracking
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <!-- Guest Conversion Chart -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Guest Conversion
+              <lucide-angular [img]="icons['guest-conversion']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Guest Conversion"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="guestConversionChartData"
+                [options]="guestConversionChartOptions"
+                [type]="guestConversionChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Guest Activity Over Time -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Guest Activity (7d)
+              <lucide-angular [img]="icons['guest-activity']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Guest Activity (7d)"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="guestActivityChartData"
+                [options]="guestActivityChartOptions"
+                [type]="guestActivityChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Browser Distribution -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Browser Distribution
+              <lucide-angular [img]="icons['browser-distribution']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Browser Distribution"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="guestBrowserChartData"
+                [options]="guestBrowserChartOptions"
+                [type]="guestBrowserChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Device Types -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Device Types
+              <lucide-angular [img]="icons['device-types']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Device Types"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="guestDeviceChartData"
+                [options]="guestDeviceChartOptions"
+                [type]="guestDeviceChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Top 10 Countries -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 lg:col-span-2">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Top 10 Countries
+              <lucide-angular [img]="icons['top-countries']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Top 10 Countries"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="guestCountryChartData"
+                [options]="guestCountryChartOptions"
+                [type]="guestCountryChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Operating Systems -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 xl:col-span-3">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Operating Systems
+              <lucide-angular [img]="icons['operating-systems']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Operating Systems"></lucide-angular>
+            </h3>
+            <div
+              class="h-64 bg-slate-50/30 dark:bg-gray7/80 rounded-lg p-2">
+              <canvas
+                baseChart
+                [data]="guestOSChartData"
+                [options]="guestOSChartOptions"
+                [type]="guestOSChartType"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Recent Activity Table -->
+    <section class="space-y-6">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2 flex items-center justify-between">
+          Recent Activity
+          <lucide-angular [img]="icons['recent-activity']" class="w-6 h-6 text-slate-500 dark:text-slate-400 fill-none" aria-label="Recent Activity"></lucide-angular>
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          Daily login trends and user activity
+        </p>
+      </div>
+
+      <div
+        class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead
+              class="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600">
+              <tr>
+                <th
+                  class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  Date
+                </th>
+                <th
+                  class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  Logins
+                </th>
+                <th
+                  class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  New Users
+                </th>
+                <th
+                  class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  Trend
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-600/50">
+              <tr
+                *ngFor="let day of recentActivity"
+                class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors duration-150">
+                <td
+                  class="py-3 px-6 text-sm text-slate-900 dark:text-slate-50 font-medium">
+                  {{ day.date }}
+                </td>
+                <td class="py-3 px-6 text-sm text-slate-900 dark:text-slate-50">
+                  {{ day.logins }}
+                </td>
+                <td class="py-3 px-6 text-sm text-slate-900 dark:text-slate-50">
+                  {{ day.newUsers }}
+                </td>
+                <td class="py-3 px-6">
+                  <span
+                    [ngClass]="{
+                      'text-emerald-700 bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800':
+                        day.trend > 0,
+                      'text-red-700 bg-red-100 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800':
+                        day.trend < 0,
+                      'text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600':
+                        day.trend === 0
+                    }"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border">
+                    {{ day.trend > 0 ? '↑' : day.trend < 0 ? '↓' : '→' }}
+                    {{ Math.abs(day.trend) }}%
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

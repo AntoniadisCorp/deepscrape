@@ -4,11 +4,11 @@ import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModu
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, linkWithPhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider, RecaptchaVerifier } from '@angular/fire/auth';
+import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, linkWithPhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider, RecaptchaVerifier, ActionCodeSettings } from '@angular/fire/auth';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Users, Loading } from 'src/app/core/types';
 import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
-import { FirestoreService, SnackbarService, AuthService, ThemeService } from 'src/app/core/services';
+import { FirestoreService, SnackbarService, AuthService, ThemeService, WindowToken } from 'src/app/core/services';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { createPasswordStrengthValidator } from 'src/app/core/directives';
 import { SnackBarType } from 'src/app/core/components';
@@ -45,6 +45,7 @@ export class SignupComponent implements OnInit, OnDestroy {
     @ViewChild('recaptchaContainer', { static: false }) recaptchaContainer!: ElementRef<HTMLDivElement>;
     /** Instance of Firebase RecaptchaVerifier for phone authentication. */
     public recaptchaVerifier!: RecaptchaVerifier;
+    private window = inject(WindowToken)
     signupForm: FormGroup
     emailCheckSubs: Subscription
     loading: Loading = {
@@ -220,8 +221,24 @@ export class SignupComponent implements OnInit, OnDestroy {
                             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                             return
                         }
-                        const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential
-                        await sendEmailVerification(userCredential.user)
+                        const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential                        // Configure email verification with proper action code settings
+                        const actionCodeSettings: ActionCodeSettings = {
+                            url: `${this.window.location.origin}/service/verification?mode=verifyEmail`,
+                            // linkDomain: this.window.location.host,
+                            // handleCodeInApp: true, // Important: Tells Firebase to handle code in app
+                            // Only add linkDomain if you plan to support Android/iOS appslinkDomain: 'deepscrape.page.link', // Firebase Hosting domain configured in Firebase Console
+                            // iOS: {
+                            //     bundleId: 'com.deepscrape.ios',
+                            // },
+                            // android: {
+                            //     packageName: 'com.deepscrape.android',
+                            //     installApp: true,
+                            //     minimumVersion: '21',
+                            // },
+                        }
+
+                        console.log('📧 Sending email verification with actionCodeSettings:', actionCodeSettings);
+                        await sendEmailVerification(userCredential.user, actionCodeSettings)
                         if (userCredential.user) {
                             await updateProfile(userCredential.user, {
                                 displayName: name || userCredential.user.email?.split('@')[0] || '',

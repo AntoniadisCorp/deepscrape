@@ -78,9 +78,9 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
           if (this.verificationMethod === 'phone' && this.phoneVerificationForm.get('phoneNumber')?.valid) {
             this.sendPhoneVerificationCode();
           }
-        },
-        'expired-callback': () => {
-          this.showSnackbar('Recaptcha expired, please try again.', SnackBarType.warning);
+        },        'expired-callback': () => {
+          const message = this.translate.instant('VERIFICATION.RECAPTCHA_EXPIRED');
+          this.showSnackbar(message, SnackBarType.warning);
         }
       });
       this.recaptchaVerifier.render();
@@ -130,9 +130,9 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
         // This case should ideally not happen if user is redirected from signup/login
         // but as a fallback, try to sign in with phone
         this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier);
-      }
-      console.log('Phone verification code sent:', this.confirmationResult)
-      this.showSnackbar('Verification code sent to your phone.', SnackBarType.success);
+      }      console.log('Phone verification code sent:', this.confirmationResult)
+      const message = this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT');
+      this.showSnackbar(message, SnackBarType.success);
       this.cdr.detectChanges(); // Ensure the view updates with the new state
     } catch (error: any) {
       console.error('Error sending phone verification code:', error);
@@ -150,10 +150,8 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       const verificationCode = this.phoneVerificationForm.get('verificationCode')?.value;
       if (!verificationCode) {
         throw new Error('Verification code is required.');
-      }
-
-      if (!this.confirmationResult) {
-        throw new Error('No verification process initiated. Please send code first.');
+      }      if (!this.confirmationResult) {
+        throw new Error(this.translate.instant('VERIFICATION.NO_CODE_INITIATED'));
       }
 
       const credential = PhoneAuthProvider.credential(this.confirmationResult.verificationId, verificationCode);
@@ -165,16 +163,14 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       } else {
         // If no user is logged in, sign in with the credential
         userCredential = await this.authService.verifyPhoneCode(this.confirmationResult.verificationId, verificationCode);
-      }
-
-      if (userCredential.user) {
+      }      if (userCredential.user) {
         // FIXME: Update Firestore user data to mark phone as verified
         await this.firestoreService.storeUserData(userCredential.user, "phone", true, null, true); // Update Firestore with phone number and verified status
-        this.showSnackbar('Phone number verified successfully!', SnackBarType.success);
-        this.router.navigate(['/dashboard']);
-      } else {
-        this.errorMessage = 'User object is null after phone verification.';
-        this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
+        const message = this.translate.instant('VERIFICATION.PHONE_VERIFIED_SUCCESS');
+        this.showSnackbar(message, SnackBarType.success);
+        this.router.navigate(['/dashboard']);      } else {
+        const message = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_PHONE_VERIFICATION');
+        this.showSnackbar(message, SnackBarType.error, '', 5000);
       }
     } catch (error: any) {
       console.error('Error verifying phone number code:', error);
@@ -194,11 +190,11 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   async resendVerificationEmail() {
-    this.loading.email = true;
-    try {
+    this.loading.email = true;    try {
       if (this.auth.currentUser) {
         await sendEmailVerification(this.auth.currentUser);
-        this.showSnackbar('Verification Email sent!', SnackBarType.info, '', 5000);
+        const message = this.translate.instant('VERIFICATION.EMAIL_SENT_SUCCESS');
+        this.showSnackbar(message, SnackBarType.info, '', 5000);
       } else {
         this.router.navigate(['/service/login']);
       }

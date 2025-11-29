@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { DomSanitizer, provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
-import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { FirebaseApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, provideFunctions } from '@angular/fire/functions';
 import { getMessaging, provideMessaging } from '@angular/fire/messaging';
@@ -28,16 +28,19 @@ import { LogLevel, setLogLevel } from '@angular/fire';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import { myIcons } from './shared'
 import { provideI18n } from './core/i18n'; // Import provideI18n
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
-setLogLevel(LogLevel.VERBOSE)
+setLogLevel(
+  environment.production ? LogLevel.SILENT : LogLevel.VERBOSE
+)
 
 // Custom image loader that handles both dev and prod
 const customImageLoader = (config: ImageLoaderConfig) => {
   const baseUri = environment.assetsUri.endsWith('/') ? environment.assetsUri : environment.assetsUri + '/';
   return baseUri + config.src.replace(/^\//, '');
-};
-const app = initializeApp(environment.firebaseConfig)
-// const analytics = getAnalytics(app);
+}
+const app: FirebaseApp = initializeApp(environment.firebaseConfig)
+
 export const appConfig: ApplicationConfig = {
   providers: [
     NAVIGATOR_PROVIDER,
@@ -122,10 +125,10 @@ export const appConfig: ApplicationConfig = {
       const provider = new ReCaptchaEnterpriseProvider("");
       return initializeAppCheck(undefined, { provider, isTokenAutoRefreshEnabled: true });
     }),
- */
-    provideAnimationsAsync(),
+ */ provideAnimationsAsync(),
     importProvidersFrom(ReactiveFormsModule),
     provideNgxStripe(),
+    provideCharts(withDefaultRegisterables()), // Add ng2-charts providers
     {
       provide: PLUTO_ID,
       useValue: '449f8516-791a-49ab-a09d-50f79a0678b6',

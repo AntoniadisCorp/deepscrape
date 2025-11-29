@@ -52,7 +52,7 @@ import { HttpClient } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 
 import { I18nService } from 'src/app/core/i18n';
-import { cleanAndParseJSON, CookieUtil, getBrowser, getDeviceFingerprintHash, getErrorMessage } from 'src/app/core/functions';
+import { cleanAndParseJSON, getBrowser, getDeviceFingerprintHash, getErrorMessage } from 'src/app/core/functions';
 import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
@@ -197,7 +197,6 @@ export class LoginComponent  {
       // rememberMe: [false],
     });
 
-    CookieUtil.injectService(this.cookieService);
   }
 
   /**
@@ -294,19 +293,6 @@ export class LoginComponent  {
       context: context || null
     };
     this.debounceTrackEvent(payload);
-  }
-
-  /**
-   * @description Optimized cookie handling using utility.
-   */
-  private setAidCookie(data: any) {
-    CookieUtil.set('aid', JSON.stringify(data), 90, '/', '', true, 'Lax');
-  }
-  private getAidCookie() {
-    return CookieUtil.get('aid');
-  }
-  private deleteGidCookie() {
-    CookieUtil.delete('gid');
   }
 
   /**
@@ -823,42 +809,57 @@ export class LoginComponent  {
    * @returns {Promise<void>} A promise that resolves when metrics are recorded and cookies updated.
    */
   public async loginMetrics(userId: string, providerId: string): Promise<void> {
-    let aid = this.getAidCookie();
-    let guestId = '';
+    let guestId = this.cookieService.get('gid'); // Get guest_id from cookies
+    let aid = this.cookieService.get('aid'); // Get authenticated user cookie
+    let guestfp = this.cookieService.get('guest_fp'); // Get guest fingerprint from cookies
+
     let guestInfo: Guest | null = null;
     // Get device fingerprint from localStorage or generate
-    const fingerprintData = this.localStorage.getItem('deviceFingerprint')
+    const fingerprintData = guestfp
 
-    let deviceFingerprintHash = await getDeviceFingerprintHash(fingerprintData, this.window)
-    if (aid) {
-      const aidData = cleanAndParseJSON(aid) as { userId: string, guestId: string, loginId?: string };
-      guestId = aidData.guestId || '';
-    }
     if (guestId) {
-      guestInfo = await this.authService.linkGuestToUserOncePerSession(userId, guestId);
-      this.deleteGidCookie();
-      this.setAidCookie({ userId, guestId });
+      const { err, guestInfo: GuestData } = await this.authService.linkGuestToUser(userId, guestId);
+
+      guestInfo = GuestData;
+      if (err) {
+        console.error('Error linking guest to user:', err);
+        throw err; // Propagate the error
+      }
+
+      this.cookieService.delete('gid'); // Clear the guest_id cookie
+      this.cookieService.set('aid', JSON.stringify({ userId, guestId }), 90, "/", "", true, "Lax"); // Set authenticated user cookie for 1 year
     }
-    // Record various login metrics.
-    const connection = (this.navigator as any)?.connection?.effectiveType || null; // e.g., "wifi", "4g".
-    const ipAddress = '0.0.0.0'; // Placeholder, ideally obtained from a backend service.
+
+    // Record login metrics
+    const connection = (this.navigator as any)?.connection?.effectiveType || null; // e.g. "wifi", "4g"
+    const ipAddress = '0.0.0.0'; // Placeholder, ideally obtained from a backend service
     const browser = await getBrowser(this.navigator) || 'Unknown';
     const userAgent = this.navigator.userAgent || 'Unknown';
-    const location = 'Unknown'; // Placeholder, ideally obtained from a geolocation service.
+    const location = 'Unknown'; // Placeholder, ideally obtained from a geolocation service
     const deviceType = this.navigator?.platform || 'Unknown';
-    const metrics: Partial<loginHistoryInfo> = { ipAddress, browser, userAgent, location, deviceType, connection, providerId, deviceFingerprintHash };
+    const deviceFingerprintHash = await getDeviceFingerprintHash(fingerprintData, this.window);
 
-    // Record login metrics in Firestore.
+    const metrics: Partial<loginHistoryInfo> = {
+      ipAddress,
+      browser,
+      userAgent,
+      location,
+      deviceType,
+      connection,
+      providerId,
+      deviceFingerprintHash,
+    };
+
     const currlogin = await this.authService.recordLoginMetrics(userId, metrics, guestInfo || undefined);
 
     if (currlogin?.success && currlogin?.loginId) {
-      // Store loginId in localStorage for future reference (e.g., logout).
+      // Store loginId in localStorage for future reference (e.g., logout)
       this.localStorage.setItem('loginId', currlogin.loginId);
       if (aid) {
-        // Update existing 'aid' cookie with the new loginId.
         const aidData = cleanAndParseJSON(aid) as { userId: string, guestId: string, loginId?: string };
         const newAidData = { ...aidData, loginId: currlogin.loginId };
-        this.setAidCookie(newAidData); // Only extend on successful login
+        // Extend authenticated user cookie expiration if exists
+        this.cookieService.set('aid', JSON.stringify(newAidData), 90, '/', "", true, "Lax");
       }
     }
   }

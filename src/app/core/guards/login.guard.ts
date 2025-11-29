@@ -13,21 +13,26 @@ export const LoginGuard: CanActivateFn = (route, state) => {
       const { isAuthenticated, user } = authData
 
       if (isAuthenticated && user) {
+        // ✅ Single source of truth: Firestore
         const isEmailVerified = user.emailVerified || false
-        const isPhoneVerified = user.phoneVerified ?? null // Assuming phoneVerified is updated in AuthService.user
+        const isPhoneVerified = user.phoneVerified || false
+        const provider = user.currProviderData?.providerId || ''
 
         console.log('LoginGuard - Authenticated:', isAuthenticated, 'User:', user)
 
+        // Social providers (Google, GitHub) don't need email verification
         const isVerified = 
-          ['google.com', 'github.com'].includes(user.currProviderData?.providerId || '') || 
+          ['google.com', 'github.com'].includes(provider) || 
           isEmailVerified || 
           isPhoneVerified
 
         if (isVerified) {
+          // Already verified, go to dashboard
           const returnUrl = route.queryParams['returnUrl'] || '/dashboard'
           router.navigateByUrl(returnUrl)
           return false
         } else {
+          // Not verified, go to verification page
           router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
           return false
         }
@@ -53,7 +58,8 @@ export const verifyGuard: CanActivateFn = (route, state) => {
         return false
       }
 
-      const isVerified = user.emailVerified || auth.currentUser?.emailVerified || user.phoneVerified || false
+      // ✅ Single source of truth: Firestore
+      const isVerified = user.emailVerified || user.phoneVerified || false
 
       if (isVerified) {
         const returnUrl = route.queryParams['returnUrl'] || '/dashboard'

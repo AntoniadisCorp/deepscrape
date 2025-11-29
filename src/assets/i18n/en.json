@@ -113,7 +113,8 @@
     "SIGN_IN_FAILED_USER_DATA_NOT_FOUND": "Sign-in failed: User data not found after phone verification.",
     "USER_NULL_AFTER_PHONE_VERIFICATION": "User object is null after phone verification.",
     "EMAIL_OR_PHONE_NOT_VERIFIED": "Your email or phone number is not verified. Please verify to proceed.",
-    "UNKNOWN_ERROR": "An unknown error occurred during authentication."
+    "UNKNOWN_ERROR": "An unknown error occurred during authentication.",
+    "INVALID_OR_MISSING_ACTION": "Invalid or missing action link. Please use the link from your email."
   },
   "LOGIN": {
     "SIGN_IN_TITLE": "Sign in to your account",
@@ -166,8 +167,7 @@
     "LOGIN_LINK": "Log in",
     "EMAIL_ALREADY_EXISTS": "Email already exists!",
     "SIGNUP_SUCCESS": "Account created successfully! Please verify your email.",
-    "WEAK_PASSWORD": "Password is too weak. Must contain uppercase, lowercase, numbers, and special characters.",
-    "WEAK_PASSWORD_LOWERCASE": "Password must contain at least one lowercase letter.",
+    "WEAK_PASSWORD": "Password is too weak. Must contain uppercase, lowercase, numbers, and special characters.",    "WEAK_PASSWORD_LOWERCASE": "Password must contain at least one lowercase letter.",
     "WEAK_PASSWORD_UPPERCASE": "Password must contain at least one uppercase letter.",
     "WEAK_PASSWORD_NUMBER": "Password must contain at least one number.",
     "WEAK_PASSWORD_SPECIAL": "Password must contain at least one special character."
@@ -184,15 +184,55 @@
     "LOGIN_LINK": "Log in",
     "RESET_EMAIL_SENT": "Password reset email has been sent. Check your inbox.",
     "EMAIL_REQUIRED": "Email is required",
-    "EMAIL_INVALID": "Invalid email format"
-  },
+    "EMAIL_INVALID": "Invalid email format",
+    "NEW_PASSWORD_TITLE": "Set a new password",
+    "NEW_PASSWORD_INSTRUCTION": "Enter your new password below.",
+    "NEW_PASSWORD_LABEL": "New password",
+    "NEW_PASSWORD_PLACEHOLDER": "Enter new password",
+    "NEW_PASSWORD_MINLENGTH": "Password must be at least 6 characters.",
+    "NEW_PASSWORD_BUTTON": "Set New Password",    "CONFIRM_PASSWORD_LABEL": "Confirm new password",
+    "CONFIRM_PASSWORD_PLACEHOLDER": "Confirm your new password",
+    "CONFIRM_PASSWORD_REQUIRED": "Please confirm your password",    "PASSWORDS_NOT_MATCH": "Passwords do not match",
+    "PASSWORDS_MATCH": "Passwords match",
+    "PASSWORD_STRENGTH_VALID": "Password is strong",
+    "PASSWORD_STRENGTH_STRONG": "Strong as it gets",
+    "SET_NEW_PASSWORD_BTN": "Set New Password",
+    "SETTING_PASSWORD": "Setting password...",
+    "FORM_INVALID": "Please fill in all fields correctly",
+    "INVALID_OR_EXPIRED_LINK": "The reset link is invalid or expired.",
+    "NO_CODE_FOUND": "No reset code found in the link.",
+    "SUCCESS": "Your password has been reset successfully!",
+    "FAILED": "Failed to reset password. Please try again."
+  },  
   "VERIFICATION": {
     "WELCOME": "Welcome",
     "INSTRUCTION": "Please verify your account to access the dashboard.",
     "EMAIL_TITLE": "Email Verification",
     "EMAIL_SENT": "A verification email has been sent to your inbox.",
+    "EMAIL_SENT_TO": "Verification email sent to",
+    "RESEND_EMAIL": "Resend Verification Email",
+    "GO_TO_LOGIN": "Go to Login",
     "PHONE_TITLE": "Phone Number Verification",
     "PHONE_INSTRUCTION": "Please verify your phone number to access the dashboard.",
-    "PHONE_LABEL": "Phone Number"
+    "PHONE_LABEL": "Phone Number",
+    "PHONE_REQUIRED": "Phone number is required.",
+    "PHONE_FORMAT_INVALID": "Invalid phone number format (e.g., +1234567890).",
+    "SEND_CODE": "SEND VERIFICATION CODE",
+    "CODE_LABEL": "Verification Code",
+    "CODE_PLACEHOLDER": "Enter 6-digit code",
+    "CODE_REQUIRED": "Verification code is required.",
+    "CODE_LENGTH": "Code must be 6 digits.",
+    "VERIFY_CODE": "VERIFY CODE",
+    "CANCEL": "BACK / CANCEL",
+    "NO_CODE_INITIATED": "No verification process initiated. Please send code first.",
+    "PHONE_VERIFIED_SUCCESS": "Phone number verified successfully!",
+    "RECAPTCHA_EXPIRED": "Recaptcha expired, please try again."
+  },
+  "EMAIL_VERIFICATION": {
+    "SUCCESS": "Your email has been verified successfully!",
+    "FAILED": "Email verification failed. The link may be invalid or expired.",
+    "NO_CODE_FOUND": "No verification code found in the link.",
+    "VERIFYING": "Verifying your email...",
+    "REDIRECTING": "Redirecting to login in a few seconds..."
   }
 }

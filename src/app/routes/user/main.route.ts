@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { AdminGuard } from 'src/app/core/guards';
 import { UserResolver } from 'src/app/core/services';
 
 export const MainRoutes: Routes = [
@@ -36,5 +37,11 @@ export const MainRoutes: Routes = [
         loadComponent: () => import('../../pages').then(m => m.AccountSettingsComponent),
         loadChildren: () => import('./settings.route').then(m => m.settingsRoutes),
     },
-
+    {
+        path: 'admin',
+        data: { title: 'Admin', animation: 'admin' },
+        loadComponent: () => import('../../pages').then(m => m.AccountSettingsComponent),
+        loadChildren: () => import('./admin.route').then(m => m.AdminRoutes),
+        canActivate: [AdminGuard],
+    },
 ]

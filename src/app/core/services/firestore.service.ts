@@ -127,7 +127,6 @@ export class FirestoreService {
 
   }
 
-
   async setUserData(userId: string, data: Partial<Users>, merge: boolean = true): Promise<boolean | Error> {
 
     try {
@@ -138,6 +137,50 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error storing user data:', error)
       throw error as any
+    }
+  }
+
+  /**
+   * Updates email verification status in Firestore
+   * Should be called after Firebase Auth email is verified via applyActionCode()
+   * This ensures Firestore stays in sync with Firebase Auth
+   * 
+   * @param uid - User's UID
+   * @param emailVerified - Email verification status
+   */
+  async updateEmailVerificationStatus(uid: string, emailVerified: boolean): Promise<void> {
+    try {
+      const userRef = this.doc('users', uid);
+      await this.setDoc(userRef, {
+        emailVerified,
+        updated_At: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log(`Email verification status updated for user ${uid}: ${emailVerified}`);
+    } catch (error) {
+      console.error('Error updating email verification status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refreshes user data from Firestore
+   * Used after profile changes (like email verification) to get fresh data
+   * 
+   * @param uid - User's UID
+   * @returns Fresh user data from Firestore or null if not found
+   */
+  async refreshUserFromFirestore(uid: string): Promise<Users | null> {
+    try {
+      const userData = await this.getUserData(uid);
+      if (!userData) {
+        throw new Error(`User data not found for UID: ${uid}`);
+      }
+      console.log(`User data refreshed from Firestore for ${uid}`);
+      return userData;
+    } catch (error) {
+      console.error('Error refreshing user data from Firestore:', error);
+      throw error;
     }
   }
 
@@ -546,7 +589,307 @@ export class FirestoreService {
   }
 
 
+   // ============================================================================
+  // GUEST ANALYTICS METHODS
+  // ============================================================================
 
+  /**
+   * Get guest analytics by country (Top N countries)
+   * INDEX REQUIRED: Collection: guests, Fields: country (Ascending)
+   */
+  async getGuestsByCountry(topN: number = 10): Promise<{ [country: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const countryMap: { [country: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const country = data['country'] || 'Unknown';
+      countryMap[country] = (countryMap[country] || 0) + 1;
+    });
+
+    // Sort and get top N
+    const sorted = Object.entries(countryMap)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, topN);
+    
+    return Object.fromEntries(sorted);
+  }
+
+  /**
+   * Get guest analytics by browser
+   * INDEX REQUIRED: Collection: guests, Fields: browser (Ascending)
+   */
+  async getGuestsByBrowser(): Promise<{ [browser: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const browserMap: { [browser: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const browser = data['browser'] || 'Unknown';
+      browserMap[browser] = (browserMap[browser] || 0) + 1;
+    });
+
+    return browserMap;
+  }
+
+  /**
+   * Get guest analytics by device type
+   * INDEX REQUIRED: Collection: guests, Fields: device (Ascending)
+   */
+  async getGuestsByDevice(): Promise<{ [device: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const deviceMap: { [device: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const device = data['device'] || 'Unknown';
+      deviceMap[device] = (deviceMap[device] || 0) + 1;
+    });
+
+    return deviceMap;
+  }
+
+  /**
+   * Get guest analytics by OS
+   * INDEX REQUIRED: Collection: guests, Fields: os (Ascending)
+   */
+  async getGuestsByOS(): Promise<{ [os: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const osMap: { [os: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const os = data['os'] || 'Unknown';
+      osMap[os] = (osMap[os] || 0) + 1;
+    });
+
+    return osMap;
+  }
+
+  /**
+   * Get conversion metrics: Guests who registered vs unregistered
+   * COMPOSITE INDEX REQUIRED: Collection: guests, Fields: linkedAt (Ascending), uid (Ascending)
+   * 
+   * Guests with uid field populated have registered/logged in
+   */
+  async getGuestConversionMetrics(): Promise<{
+    registered: number;
+    unregistered: number;
+    conversionRate: number;
+  }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return { registered: 0, unregistered: 0, conversionRate: 0 };
+    }
+
+    let registered = 0;
+    let unregistered = 0;
+
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      // Check if guest has been linked to a user (has uid or linkedAt)
+      if (data['uid'] || data['linkedAt']) {
+        registered++;
+      } else {
+        unregistered++;
+      }
+    });
+
+    const total = registered + unregistered;
+    const conversionRate = total > 0 ? (registered / total) * 100 : 0;
+
+    return {
+      registered,
+      unregistered,
+      conversionRate: Math.round(conversionRate * 100) / 100
+    };
+  }
+
+  /**
+   * Get guest activity over time (by creation date)
+   * INDEX REQUIRED: Collection: guests, Fields: createdAt (Ascending)
+   */
+  async getGuestActivityByDay(limitDays: number = 7): Promise<{ [date: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const result: { [date: string]: number } = {};
+
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const createdAt = data['createdAt'];
+      if (createdAt) {
+        // Handle Firestore Timestamp
+        const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+        const dateKey = date.toISOString().split('T')[0];
+        result[dateKey] = (result[dateKey] || 0) + 1;
+      }
+    });
+
+    // Limit to last N days
+    const sortedDates = Object.keys(result).sort().slice(-limitDays);
+    const limitedResult: { [date: string]: number } = {};
+    for (const date of sortedDates) {
+      limitedResult[date] = result[date];
+    }
+
+    return limitedResult;
+  }
+
+  /**
+   * Get guest analytics by timezone (Top N timezones)
+   * INDEX REQUIRED: Collection: guests, Fields: timezone (Ascending)
+   */
+  async getGuestsByTimezone(topN: number = 10): Promise<{ [timezone: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const timezoneMap: { [timezone: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const timezone = data['timezone'] || 'Unknown';
+      timezoneMap[timezone] = (timezoneMap[timezone] || 0) + 1;
+    });
+
+    // Sort and get top N
+    const sorted = Object.entries(timezoneMap)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, topN);
+    
+    return Object.fromEntries(sorted);
+  }
+
+  /**
+   * Get guest analytics by language
+   * INDEX REQUIRED: Collection: guests, Fields: language (Ascending)
+   */
+  async getGuestsByLanguage(): Promise<{ [language: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const languageMap: { [language: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const language = data['language'] || 'Unknown';
+      languageMap[language] = (languageMap[language] || 0) + 1;
+    });
+
+    return languageMap;
+  }
+
+  /**
+   * Get comprehensive guest analytics in one call
+   * This reduces the number of round trips to Firestore
+   */
+  async getComprehensiveGuestAnalytics() {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return null;
+    }
+
+    const analytics = {
+      total: querySnapshot.size,
+      byCountry: {} as { [key: string]: number },
+      byBrowser: {} as { [key: string]: number },
+      byDevice: {} as { [key: string]: number },
+      byOS: {} as { [key: string]: number },
+      byLanguage: {} as { [key: string]: number },
+      byTimezone: {} as { [key: string]: number },
+      registered: 0,
+      unregistered: 0,
+      byDay: {} as { [key: string]: number }
+    };
+
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+
+      // Country
+      const country = data['country'] || 'Unknown';
+      analytics.byCountry[country] = (analytics.byCountry[country] || 0) + 1;
+
+      // Browser
+      const browser = data['browser'] || 'Unknown';
+      analytics.byBrowser[browser] = (analytics.byBrowser[browser] || 0) + 1;
+
+      // Device
+      const device = data['device'] || 'Unknown';
+      analytics.byDevice[device] = (analytics.byDevice[device] || 0) + 1;
+
+      // OS
+      const os = data['os'] || 'Unknown';
+      analytics.byOS[os] = (analytics.byOS[os] || 0) + 1;
+
+      // Language
+      const language = data['language'] || 'Unknown';
+      analytics.byLanguage[language] = (analytics.byLanguage[language] || 0) + 1;
+
+      // Timezone
+      const timezone = data['timezone'] || 'Unknown';
+      analytics.byTimezone[timezone] = (analytics.byTimezone[timezone] || 0) + 1;
+
+      // Conversion
+      if (data['uid'] || data['linkedAt']) {
+        analytics.registered++;
+      } else {
+        analytics.unregistered++;
+      }
+
+      // Activity by day
+      const createdAt = data['createdAt'];
+      if (createdAt) {
+        const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+        const dateKey = date.toISOString().split('T')[0];
+        analytics.byDay[dateKey] = (analytics.byDay[dateKey] || 0) + 1;
+      }
+    });
+
+    return analytics;
+  }
 
   /**
    * This TypeScript function returns an observable that emits user data indicating whether a user is
@@ -882,4 +1225,121 @@ export class FirestoreService {
     for (const date of sortedDates) limitedResult[date] = result[date];
     return limitedResult;
   }
+  // ============================================================================
+  // ANALYTICS METRICS METHODS (NEW ARCHITECTURE)
+  // ============================================================================
+
+  /**
+   * Get dashboard summary (single read from metrics_summary/global)
+   */
+  async getDashboardSummary(): Promise<any | null> {
+    try {
+      const docRef = this.doc('metrics_summary/global');
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting dashboard summary:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get metrics for a specific date
+   */
+  async getMetricsForDate(date: string): Promise<any | null> {
+    try {
+      const docRef = this.doc(`metrics_daily/${date}`);
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting metrics for date:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get metrics for date range (efficient query)
+   */
+  async getMetricsByDateRange(startDate: string, endDate: string): Promise<any[]> {
+    try {
+      const metricsCollection = this.collection(this.firestore, 'metrics_daily');
+      const q = this.query(
+        metricsCollection,
+        this.where('date', '>=', startDate),
+        this.where('date', '<=', endDate)
+      );
+      const snapshot = await this.getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting metrics by date range:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get pre-computed range metrics (single read)
+   * @param rangeId - 'last-7d', 'last-30d', 'last-90d', etc.
+   */
+  async getRangeMetrics(rangeId: string): Promise<any | null> {
+    try {
+      const docRef = this.doc(`metrics_range/${rangeId}`);
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting range metrics:', error);
+      return null;
+    }
+  }
+  /**
+   * Get login history for user (with pagination)
+   * Reads from login_metrics/{userId}/login_history_Info subcollection
+   */
+  async getLoginHistoryNew(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    limitCount: number = 50
+  ): Promise<any[]> {
+    try {
+      const historyCollection = this.collection(
+        this.firestore,
+        `login_metrics/${userId}/login_history_Info`
+      );
+      
+      const constraints: QueryConstraint[] = [this.limit(limitCount)];
+      
+      if (startDate) {
+        constraints.push(this.where('timestamp', '>=', new Date(startDate)));
+      }
+      if (endDate) {
+        constraints.push(this.where('timestamp', '<=', new Date(endDate)));
+      }
+
+      const q = this.query(historyCollection, ...constraints);
+      const snapshot = await this.getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting login history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get user login metrics summary (single read)
+   * Reads from login_metrics/{userId} document
+   */
+  async getUserLoginMetricsNew(userId: string): Promise<any | null> {
+    try {
+      const docRef = this.doc(`login_metrics/${userId}`);
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting user login metrics:', error);
+      return null;
+    }
+  }
+
+  // ============================================================================
+  // END ANALYTICS METRICS METHODS
+  // ============================================================================
 }

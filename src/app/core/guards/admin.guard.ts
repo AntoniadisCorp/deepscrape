@@ -29,9 +29,13 @@ export class AdminGuard implements CanActivate {
                 return tokenResult;
             }),
             map(tokenResult => {
-                console.log('AdminGuard - Token Result:', tokenResult)
+                // console.log('AdminGuard - Token Result:', tokenResult)
                 if (tokenResult && typeof tokenResult !== 'boolean') {
-                    return !!tokenResult.claims?.['admin'];
+                    const role = tokenResult.claims?.['role'];
+                    if (typeof role === 'string') {
+                        return role === 'admin';
+                    }
+                    return false;
                 }
                 return false;
             }),

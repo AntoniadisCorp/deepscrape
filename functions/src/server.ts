@@ -156,8 +156,6 @@ function serveapp() {
     res.locals.nonce = nonce
     next()
   })
-  // Custom middleware to track guest users
-  server.use(guestTracker) // Custom middleware to track guest users
 
   // *PWA Service Worker (if running in production)
   server.use((req, res, next,) => {
@@ -189,6 +187,9 @@ function serveapp() {
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
     limiter, oauthProxy.router)
+
+  // Custom middleware to track guest users
+  server.use(guestTracker) // Custom middleware to track guest users
 
   // Serve static files from /browser
   server.get("*.*", express.static(browserDistFolder, {

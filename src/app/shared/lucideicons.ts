@@ -27,6 +27,14 @@ import {
     Twitter,
     Linkedin,
     Mail,
+    RefreshCcw,
+    BarChart,
+    PieChart,
+    Activity,
+    Users,
+    ListOrdered,
+    LineChart,
+    LayoutGrid,
 } from 'lucide-angular'
 
 export let myIcons: LucideIcons = {
@@ -55,5 +63,16 @@ export let myIcons: LucideIcons = {
     x: Twitter,
     linkedin: Linkedin,
     mail: Mail,
-
+    'refresh-ccw': RefreshCcw,
+    'guest-conversion': PieChart,
+    'guest-activity': Activity,
+    'browser-distribution': Globe,
+    'device-types': Monitor,
+    'top-countries': ListOrdered,
+    'operating-systems': LayoutGrid,
+    'recent-activity': LineChart,
+    'daily-activity': BarChart,
+    'peak-hours': Activity,
+    'login-methods': Users,
+    'user-distribution': Users,
 }

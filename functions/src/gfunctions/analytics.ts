@@ -31,35 +31,35 @@ const isProduction = process.env["PRODUCTION"] === "true"
 // The LITE version is free and updated monthly, the commercial version is updated weekly and has more data fields
 // The BIN database file should be placed in the 'databases' folder at the root of the project
 
-export type IP2LocationRecord ={
-        ip: string,
-        ipNo: string,
-        countryShort: string,
-        countryLong: string,
-        region: string,
-        city: string,
-        isp: string,
-        domain: string,
-        zipCode: string,
-        latitude: string | number,
-        longitude: string | number,
-        timeZone: string,
-        netSpeed: string,
-        iddCode: string,
-        areaCode: string,
-        weatherStationCode: string,
-        weatherStationName: string,
-        mcc: string,
-        mnc: string,
-        mobileBrand: string,
-        elevation: string,
-        usageType: string,
-        addressType: string,
-        category: string,
-        district: string,
-        asn: string,
-        as: string,
-    }
+export type IP2LocationRecord = {
+  ip: string,
+  ipNo: string,
+  countryShort: string,
+  countryLong: string,
+  region: string,
+  city: string,
+  isp: string,
+  domain: string,
+  zipCode: string,
+  latitude: string | number,
+  longitude: string | number,
+  timeZone: string,
+  netSpeed: string,
+  iddCode: string,
+  areaCode: string,
+  weatherStationCode: string,
+  weatherStationName: string,
+  mcc: string,
+  mnc: string,
+  mobileBrand: string,
+  elevation: string,
+  usageType: string,
+  addressType: string,
+  category: string,
+  district: string,
+  asn: string,
+  as: string,
+}
 export class IP2LocationManager {
   private ip2location: IP2Location.IP2Location | null = null
   private databasePath: string
@@ -136,9 +136,7 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
   const isUser = !!user
 
   // Only track guests, skip if authenticated or has aid cookie
-  if (isUser || req.cookies["aid"]) {
-    return next()
-  }
+  if (isUser || req.cookies["aid"]) return next()
 
   // Get IP and fingerprint
   const { raw } = await getClientIps(req)
@@ -147,7 +145,7 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
   const fingerstring = `${ip}|${agent.family}|${agent.os.family}|${agent.device.family}`
   // Create SHA-256 hash of the fingerprint for privacy
   const fingerprint = crypto.createHash("sha256").update(fingerstring).digest("hex")
-  // Check Redis for fingerprint
+  // Always check Redis for fingerprint mapping
   const existingGuestId = await redis.get(`guestfp:${fingerprint}`)
   if (!guestId && existingGuestId) {
     guestId = existingGuestId
@@ -155,19 +153,25 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
     // Update lastSeen in Redis
     await redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ lastSeen: new Date() }))
     // Update lastSeen in Firestore (throttled)
-    await db.collection("guests").doc(guestId).set({ lastSeen: new Date() }, { merge: true })
+    const docRef = db.collection("guests").doc(guestId)
+    const doc = await docRef.get()
+    const docData = doc.exists ? doc.data() as Guest : undefined
+    const lastSeen = docData && docData.lastSeen ? new Date(docData.lastSeen) : undefined
+    const now = new Date()
+    if (!lastSeen || (now.getTime() - lastSeen.getTime() > 300000)) {
+      await docRef.set({ lastSeen: now }, { merge: true })
+    }
     return next()
   }
 
-  // If no guestId, create new guest and store fingerprint
+  // If no guestId and no fingerprint mapping, create new guest and store fingerprint
   if (!guestId) {
     guestId = db.collection("guests").doc().id // Generate a new Firestore ID
     // Set secure flag conditionally
     res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 }) // 1 year
 
     const { ipv4, ipv6, raw } = await getClientIps(req) // Prefer IPv6 if available
-
-    const ip = (raw) as string // Fallback to IPv4 if IPv6 is not available
+    const ip = raw as string // Fallback to IPv4 if IPv6 is not available
     const agent = useragent.parse(req.headers["user-agent"] || "")
     const geo = await getGeolocation(ip)
     const guestData: Guest = {
@@ -201,15 +205,7 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
       console.error("Error storing guest data:", error)
     }
     res.setHeader("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Form-Factors, x-forwarded-for'")
-
-    // res.status(200).send({ status: true, guestId, message: "New guest tracked" })
-  } /* else {
-    // // Guest already exists, update lastSeen timestamp
-    // await db.collection("guests").doc(guestId).update({
-    //   lastSeen: new Date(),
-    // })
-    // res.status(200).send({ status: true, guestId, message: "Guest activity updated" })
-  } */
+  }
   return next()
 }
 
@@ -346,7 +342,7 @@ async function getGeolocation(ip: string) {
         "UTC"
 
     // Map country code to continent (fallback to 'Unknown' if not found)
-    const continent = {continent: getContinentFromTimezone(geoData.timeZone) || "Unknown", region: geoData.countryShort || "Unknown"}
+    const continent = { continent: getContinentFromTimezone(geoData.timeZone) || "Unknown", region: geoData.countryShort || "Unknown" }
 
     return {
       ip: geoData.ip,

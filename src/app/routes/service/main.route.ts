@@ -35,5 +35,14 @@ export const MainRoutes: Routes = [
             animation: 'verification'
         },
         canActivate: [verifyGuard],
+    },
+    {
+        path: 'action',
+        loadComponent: () => import('../../pages').then(m => m.ActionHandlerComponent),
+        data: {
+            title: 'action',
+            animation: 'action'
+        },
+        canActivate: [verifyGuard]
     }
 ]

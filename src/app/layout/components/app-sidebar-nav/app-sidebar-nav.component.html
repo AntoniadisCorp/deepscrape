@@ -15,7 +15,7 @@
         </div>
         <div
           *ngIf="!isDivider(navitem) && !isTitle(navitem)"
-          [ngClass]="{ 'mb-10': index === navitems.length - 1 }">
+          [ngClass]="{ 'mb-0': index === navitems.length - 1 }">
           <app-sidebar-nav-item
             [item]="navitem"
             [sidebarTemp]="sidebarNavTemplate"></app-sidebar-nav-item>
@@ -26,7 +26,7 @@
       <ng-container
         *ngTemplateOutlet="
           sidebarNavTemplate;
-          context: { $implicit: navigation }
+          context: { $implicit: filteredNavigation }
         "></ng-container>
     </li>
   </ul>

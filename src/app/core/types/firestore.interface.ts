@@ -14,6 +14,7 @@ export type Users = {
     providerData: UserInfo[]
     mfa_enabled?: boolean
     emailVerified: boolean
+    lastSeen?: Date
     last_login_at: any // Timestamp | null
     created_At: Date
     updated_At?:Date
@@ -31,10 +32,9 @@ export type Users = {
     balance?: number
     itemId?: string
 
-    // User Authorization fields
+    // User Authorization fieldsrole
     role?: string
     plan?: 'free' | 'pro' | 'enterprise'
-    isAdmin?: boolean
 
     // Profile status
     profileStatus?: ProfileStatus
@@ -77,6 +77,9 @@ export type ProfileStatus = {
 
 export type loginMetrics = {
     id?: string
+    
+    // Guest tracking
+    guestId: string // created by guestId
     lastGuestId: string
     /** Time the user was created. */
     creationTime?: string
@@ -124,6 +127,7 @@ export type Guest = {
   latitude: number
   longitude: number
   location: string
+  fingerprint?: string // Unique fingerprint for guest tracking
   createdAt: Date
   lastSeen: Date
   linkedAt?: Date | null

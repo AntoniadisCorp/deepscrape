@@ -12,6 +12,8 @@
 /out-tsc
 /bazel-out
 
+/src/assets/fontawesome
+
 # Node
 /node_modules
 npm-debug.log

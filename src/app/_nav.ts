@@ -7,6 +7,26 @@ export const navigation = [
         },
         identity: true,
     },
+    {
+        name: 'Admin',
+        url: '',
+        icon: {
+            matIcon: 'admin_panel_settings'
+        },
+        children: [
+            {
+                name: 'Analytics',
+                url: '/admin/analytics',
+                icon: {
+                    matIcon: 'pie_chart'
+                },
+                badge: {
+                    variant: 'info',
+                    text: 'new'
+                },
+            },
+        ]
+    },
     /* Posts Management  */
     {
         name: 'Playground',

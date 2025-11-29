@@ -3,6 +3,7 @@
 import { Request, Response } from "express"
 import { redis } from "../app/cacheConfig"
 import { db } from "../app/config"
+import { Users } from "../domain"
 
 export const helloWorld = async (req: Request, res: Response) => {
     try {
@@ -26,8 +27,10 @@ export const statusCheck = async (req: Request, res: Response) => {
 
 export const heartbeat = async (req: Request, res: Response) => {
     try {
-        const guestId = req.cookies["gid"]
-        const userId = req.cookies["aid"] || req.app.locals["user"]
+        const parsedData = JSON.parse(req.cookies["aid"]) ||
+            req.app.locals["user"]
+        const userId = parsedData.userId
+        const guestId = parsedData.guestId || req.cookies["gid"]
         const now = new Date()
         let key
         let firestoreCollection
@@ -49,13 +52,13 @@ export const heartbeat = async (req: Request, res: Response) => {
         }
         // Update Redis (fast access)
         await redis.setex(key, 3600, JSON.stringify({ lastSeen: now }))
-        // Throttle Firestore writes: only update if lastSeen > 1 min ago
+        // Throttle Firestore writes: only update if lastSeen > 5 min ago
         const docRef = db.collection(firestoreCollection).doc(id)
         const doc = await docRef.get()
-        const docData = doc.exists ? doc.data() : undefined
+        const docData = doc.exists ? doc.data() as Users : undefined
         const lastSeen = docData && docData.lastSeen ?
             new Date(docData.lastSeen) : undefined
-        if (!lastSeen || (now.getTime() - lastSeen.getTime() > 60000)) {
+        if (!lastSeen || (now.getTime() - lastSeen.getTime() > 300000)) {
             await docRef.set({ lastSeen: now }, { merge: true })
         }
         return res.json({ success: true, lastSeen: now })

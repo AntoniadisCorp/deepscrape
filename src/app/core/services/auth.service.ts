@@ -90,9 +90,9 @@ export class AuthService {
         this.token = await user.getIdToken();
         const userData = await this.fireService.getUserData(user.uid) as Users;
         const getTokenResult = await user.getIdTokenResult()
-        this.isAdmin = !!getTokenResult.claims?.['admin']
-
-
+        
+        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims['role'] === 'admin'
+        console.log('User is admin:', this.isAdmin, getTokenResult.claims)
         if (!userData) throw new Error('No user data found');
 
         // Determine current login provider user info
@@ -120,14 +120,56 @@ export class AuthService {
       })
     )
   }
-
   get isAuthStateResolved() {
     return this.authStateResolved.asObservable();
   }
   get user$(): Observable<Users & { currProviderData: UserInfo | null } | null> {
     return this.userSubject.asObservable();
   }
-
+  /**
+   * Refreshes user data after external changes (like email verification)
+   * This updates the userSubject with fresh data from Firestore
+   * If userId is provided, it refreshes that specific user, otherwise uses the current authenticated user
+   * Useful when user profile changes outside of regular login flow
+   * 
+   * @param userId - Optional user ID to refresh. If not provided, uses current authenticated user
+   * @throws Error if no user is found or data fetch fails
+   */
+  async refreshUserData(userId?: string): Promise<void | any> {
+    try {
+      const uid = userId || this.auth.currentUser?.uid;
+      
+      if (!uid) {
+        throw new Error('No user ID provided and no authenticated user found');
+      }
+      
+      // Refresh Firebase Auth user to get updated emailVerified flag (only if current user)
+      if (!userId && this.auth.currentUser) {
+        await this.auth.currentUser.reload();
+      }
+      
+      // Get fresh user data from Firestore
+      const userData = await this.fireService.refreshUserFromFirestore(uid) as Users;
+      
+      if (!userData) {
+        throw new Error('User data not found in Firestore');
+      }
+      
+      // Determine current login provider user info
+      const currProviderLogin = userData.providerId || null;
+      const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null;
+      
+      // Update the user subject with fresh data
+      const updatedUser = { ...userData, currProviderData };
+      this.userSubject.next(updatedUser);
+      
+      console.log('User data refreshed after email verification');
+      return updatedUser;
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      throw error;
+    }
+  }
 
   // Sign in with Google
   signInWithGoogle(provider: GoogleAuthProvider) {
@@ -265,27 +307,10 @@ export class AuthService {
       // Connect to Firebase Emulators if running on localhost and not in production
       console.log('🔥 Connecting Auth Service to Firebase Emulators');
       connectAuthEmulator(this.auth, 'http://localhost:9099');
-    }
-
-    return null
+    }    return null
     
   }
 
-  async refreshUserData(userId: string) {
-    try {
-      const userData = await this.fireService.getUserData(userId);
-      if (!userData) throw new Error('No user data found')
-
-      const currProviderLogin = userData.providerId || null;
-      const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null;
-
-      this.userSubject.next({ ...userData, currProviderData })
-      return this.userSubject.value
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
-      return null;
-    }
-  }
   checkUserEmailForDifferentProvider(email: string): Observable<{
     exists: boolean,
     providers: string[],
@@ -391,38 +416,43 @@ export class AuthService {
   }
 
   logout() {
-
+    const tokenTemp = this.token
     let {userId, loginId} = this.getLoginIdFromStorage()
     userId = userId || this.userSubject.value?.uid || ''
-    const logoutToken = this.token; // Capture token before clearing
 
     // Immediately clear user state to prevent race conditions with Firestore listeners
     this.userSubject.next(null);
     this.authStateResolved.next(false);
-    this.token = undefined;
 
     this.heartbeatService.stop(); // Stop heartbeat on logout
 
     return from(this.fireService.setSignOutMetrics(userId, loginId)).pipe(
+      tap(() => this.trackingLogout('logout', false, this.token), this.token = undefined),
       switchMap(() => from(this.fireService.signOut())),
-      tap(() => this.trackingLogout('logout', false, logoutToken)),
       catchError(async (error) => { 
         console.error('Logout error:', error)
-        this.trackingLogout('logout', true, logoutToken)
-        await this.fireService.signOut()
+        this.trackingLogout('logout', true, tokenTemp)
+        // await this.fireService.signOut()
         return throwError(() => error) 
       }
     ))
   }
 
   private trackingLogout(method: string, withError: boolean = false, token?: string) {
-    this.analyticsService.trackEvent('logout', {
-      method: 'logout',
-      withError,
-      timestamp: new Date().toISOString()
-    }, token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
-    .pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe()
+    try {
+      // Only track if analyticsService and destroyRef are available
+      if (this.analyticsService && this.destroyRef) {
+        this.analyticsService.trackEvent('logout', {
+          method: 'logout',
+          withError,
+          timestamp: new Date().toISOString()
+        }, token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe();
+      }
+    } catch (err) {
+      console.warn('Analytics tracking failed during logout:', err);
+    }
   }
 
   private getLoginIdFromStorage() {
