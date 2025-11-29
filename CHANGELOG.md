@@ -1,3 +1,9 @@
+## 0.4.0-beta.11 (2025-11-29)
+
+* feat(auth): add robust user and admin management features ([f5fc987](https://github.com/AntoniadisCorp/deepscrape/commit/f5fc987))
+* feat(auth): implement internationalization and refactor user features ([ef959ed](https://github.com/AntoniadisCorp/deepscrape/commit/ef959ed))
+* feat(firestore): update csp and add firestore indexes ([8d5cc42](https://github.com/AntoniadisCorp/deepscrape/commit/8d5cc42))
+
 ## 0.4.0-beta.10 (2025-11-27)
 
 * fix(security): add csrf protection, update dependencies, and correct csp domain ([166e251](https://github.com/AntoniadisCorp/deepscrape/commit/166e251))
