@@ -41,14 +41,46 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && request.auth.token.role == 'admin';
     }
 
+    function isModerator() {
+      return request.auth != null && request.auth.token.role == 'moderator';
+    }
+
+    function isManager() {
+      return request.auth != null && request.auth.token.role == 'manager';
+    }
+
+    function isUser() {
+      return request.auth != null && request.auth.token.role == 'user';
+    }
+
+    function isGuest() {
+      return request.auth != null && request.auth.token.role == 'guest';
+    }
+
+    function isTeamLeader(teamId) {
+      return request.auth != null && request.auth.token.teams.hasAny([teamId]) && request.auth.token.role == 'team_leader';
+    }
+
+    function isTeamMember(teamId) {
+      return request.auth != null && request.auth.token.teams.hasAny([teamId]);
+    }
+
+    function isOrganizationAdmin(orgId) {
+      return request.auth != null && request.auth.token.organization == orgId && request.auth.token.role == 'org_admin';
+    }
+
+    function isOrganizationMember(orgId) {
+      return request.auth != null && request.auth.token.organization == orgId;
+    }
+    
     match /login_metrics/{docId} {
-      allow read: if isAdmin();
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId)
       allow write: if false;
       match /login_history_Info/{historyId} {
-        allow read: if isAdmin();
+        allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId);
         allow write: if false;
       }
     }
@@ -56,5 +88,26 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+      // Analytics collections - Admin read only, Cloud Functions write
+    match /metrics_daily/{date} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    match /metrics_hourly/{datetime} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    
+    match /metrics_summary/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    
+    match /metrics_range/{rangeId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    
   }
 }

@@ -8,6 +8,7 @@ https://medium.com/@unravel-technologies/angular-loading-performance-deploying-s
 import * as app from "./server"
 import * as auth from "./app/auth"
 import * as stripe from "./app/stripe"
+import * as analyticsRealtime from "./gfunctions/analytics-realtime"
 // import path, { join } from "node:path"
 // import { fileURLToPath } from "node:url"
 
@@ -27,6 +28,7 @@ export const deepscrape = app.deepscrape
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole
+export const setDefaultRole = auth.setDefaultRole
 
 
 // STRIPE Functions
@@ -58,3 +60,11 @@ export const getCrawlResultConfigsPaging = auth.getCrawlResultConfigsPaging
 
 // MACHINES - Function TRIGGERS
 export const getMachinesPaging = auth.getMachinesPaging
+
+// ANALYTICS - Function TRIGGERS & SCHEDULED (Optimized Real-time System)
+export const onGuestCreated = analyticsRealtime.onGuestCreated
+export const onUserCreated = analyticsRealtime.onUserRegistered
+export const onUserLogin = analyticsRealtime.onLoginEvent
+export const computeDailyTrends = analyticsRealtime.computeDailyTrends
+export const computeRangeMetrics = analyticsRealtime.computeRangeMetrics
+export const cleanupOldMetrics = analyticsRealtime.cleanupOldAnalytics

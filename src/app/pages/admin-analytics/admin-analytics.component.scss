@@ -1,0 +1,39 @@
+/* Minimal SCSS - Most styling is now handled by Tailwind CSS */
+
+/* Only keep essential custom animations and components that Tailwind doesn't provide */
+
+/* Custom animations not available in Tailwind */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Any component-specific styling that needs to override Tailwind */
+.chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.toggle-checkbox {
+  @apply sr-only;
+}
+
+.toggle-checkbox + span::before {
+  content: '';
+  @apply w-10 h-6 bg-gray-300 rounded-full inline-block relative transition-all duration-200 cursor-pointer;
+}
+
+.toggle-checkbox + span::after {
+  content: '';
+  @apply w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all duration-200;
+  transform: translateX(0);
+}
+
+.toggle-checkbox:checked + span::before {
+  @apply bg-blue-500;
+}
+
+.toggle-checkbox:checked + span::after {
+  transform: translateX(16px);
+}

@@ -1,9 +1,9 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
-import { FieldPath } from "firebase-admin/firestore"
+import { FieldPath, FieldValue } from "firebase-admin/firestore"
 import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
-import { auth, firestore } from "firebase-functions/v1"
+import { auth, EventContext, firestore } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 // import { redis } from "./cacheConfig"
 
@@ -14,11 +14,21 @@ export const trackGuest = auth
         try {
             // Assume we store guest_id in Firestore temp or pass it during signup
             const guestId = user.customClaims?.guestId || null
+            const today = new Date().toISOString().split("T")[0]
+            const hour = new Date().getHours()
+
             const userDoc = {
                 analytics: {},
+                // Store creation timestamp for analytics
+                created_At: new Date(),
+                loginMetricsId: guestId, // Link to guest if conversion
             }
 
+            // Use batch for atomic updates to ensure consistency
+            const batch = db.batch()
+
             if (guestId) {
+                // Mark guest as converted
                 const guestRef = db.collection("guests").doc(guestId)
                 const guestSnap = await guestRef.get()
                 if (guestSnap.exists) {
@@ -29,40 +39,114 @@ export const trackGuest = auth
                         mergedAt: Date.now(),
                     }
 
-                    // Mark guest as converted
-                    await guestRef.update({
+                    batch.update(guestRef, {
                         uid: user.uid,
-                        linked: new Date(),
+                        linkedAt: new Date(),
                     })
                 }
             }
-            await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
 
-            console.log(`User ${user.uid} created with analytics merged.`)
+            // Create user document
+            const userRef = db.collection("users").doc(user.uid)
+            batch.set(userRef, userDoc, { merge: true })
+
+            // Update daily analytics metrics for real-time dashboard
+            const dailyRef = db.collection("metrics_daily").doc(today)
+            const dailyUpdate: any = {
+                date: today,
+                timestamp: FieldValue.serverTimestamp(),
+                newUsers: FieldValue.increment(1),
+                totalUsers: FieldValue.increment(1),
+                activeUsers: FieldValue.increment(1),
+                [`usersByHour.${hour}`]: FieldValue.increment(1),
+                updatedAt: FieldValue.serverTimestamp(),
+            }
+
+            if (guestId) {
+                dailyUpdate.guestConversions = FieldValue.increment(1)
+            }
+
+            batch.set(dailyRef, dailyUpdate, { merge: true })
+
+            // Update dashboard summary for real-time UI updates
+            const summaryRef = db.collection("metrics_summary").doc("dashboard")
+            const summaryUpdate: any = {
+                totalUsers: FieldValue.increment(1),
+                activeUsers: FieldValue.increment(1),
+                lastUpdated: FieldValue.serverTimestamp(),
+                computedAt: FieldValue.serverTimestamp(),
+            }
+
+            if (guestId) {
+                summaryUpdate.guestConversions = FieldValue.increment(1)
+            }
+
+            batch.set(summaryRef, summaryUpdate, { merge: true })
+
+            // Initialize user login metrics
+            const userMetricsRef = db.collection("users").doc(user.uid).collection("login_metrics").doc("summary")
+            batch.set(userMetricsRef, {
+                userId: user.uid,
+                totalLogins: 0,
+                loginStreak: 0,
+                longestStreak: 0,
+                wasGuest: !!guestId,
+                guestId: guestId || null,
+                linkedAt: guestId ? FieldValue.serverTimestamp() : null,
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+            })
+
+            await batch.commit()
+            console.log(`✅ User ${user.uid} created with real-time analytics updated (conversion: ${!!guestId})`)
         } catch (err) {
-            console.error("Error merging guest data into user:", err)
+            console.error("❌ Error merging guest data into user:", err)
         }
     })
 
 
 export const setDefaultAdminRole = auth
     .user()
-    .beforeSignIn(async () => {
+    .onCreate(async (user, context: EventContext) => {
         try {
-            const { emails } = { emails: [
+            const emails = [
                 "prokopis123@gmail.com",
                 "prokopis3@gmail.com",
-            ] } as { emails: string[] }
+                "admin@deepscrape.dev",
+            ]
+            const role = "admin"
 
-            if (Array.isArray(emails) && emails.length > 0) {
-                for (const email of emails) {
-                    // set defaults Admin Claim by email
-                    const userRecord = await adminAuth.getUserByEmail(email)
-                    await adminAuth.setCustomUserClaims(userRecord.uid, { admin: true })
+            if (user.email && emails.includes(user.email)) {
+                await adminAuth.setCustomUserClaims(user.uid, { role })
+                // Only set role in Firestore if defined
+                const userDoc: Record<string, unknown> = {}
+                if (role !== undefined) {
+                    userDoc.role = role
                 }
+                await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
             }
         } catch (error) {
             console.error("Error setting default admin role:", error)
+            throw new HttpsError("internal", "Error setting default admin role", error)
+        }
+    })
+
+export const setDefaultRole = auth
+    .user()
+    .onCreate(async (user, context: EventContext) => {
+        try {
+            const role = "user"
+
+            await adminAuth.setCustomUserClaims(user.uid, { role })
+            // Only set role in Firestore if defined
+            const userDoc: Record<string, unknown> = {}
+            if (role !== undefined) {
+                userDoc.role = role
+            }
+            await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
+        } catch (error) {
+            console.error("Error setting default role:", error)
+            throw new HttpsError("internal", "Error setting default role", error)
         }
     })
 
@@ -244,8 +328,8 @@ export const getOperationsPaging = onCallv2(
             const operationsRef = db.collection(`users/${userId}/operations`)
 
             const [totalSnapshot, firstPageSnapshot] = await Promise.all([
-            operationsRef.count().get(),
-            operationsRef
+                operationsRef.count().get(),
+                operationsRef
                     .orderBy("created_At", "desc")
                     .limit(pageSize)
                     .get(),
@@ -306,8 +390,8 @@ export const getOperationsPaging = onCallv2(
                 const batchIds = operationIds.slice(i, i + BATCH_SIZE)
                 metricsPromises.push(
                     db.collection("operation_metrics")
-                    .where(FieldPath.documentId(), "in", batchIds)
-                    .get()
+                        .where(FieldPath.documentId(), "in", batchIds)
+                        .get()
                 )
             }
 
