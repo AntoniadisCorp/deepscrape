@@ -8,6 +8,7 @@ import { cors } from '@elysiajs/cors'
 // import { AngularAppEngine, createRequestHandler } from '@angular/ssr'
 import { APP_BASE_HREF } from '@angular/common'
 import bootstrap from 'src/main.server'
+import { env } from './src/config/env'
 // import { node } from '@elysiajs/node'
 // import swagger from '@elysiajs/swagger'
 const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
@@ -88,14 +89,14 @@ function serveapp(): Elysia {
         .group('/api', (api) => {
             return api
                 .get('/example', () => `just an example`)
-                .get('/test', async (req: any, res: any) => {
+                .get('/test', async (context) => {
                     try {
                         // const models = await SyncAIapis.getModels()
-                        // return res.json(models)
+                        // return { data: models }
                         return 'Hello from Elysia!'
                     } catch (error) {
                         console.error('Error fetching models:', error)
-                        return res.status(500).json({ error: 'Internal Server Error' })
+                        return { error: 'Internal Server Error' }
                     }
                 })
 
@@ -205,11 +206,11 @@ function serveapp(): Elysia {
 }
 
 // function run(): void {
-const host = process.env['HOST'] || 'localhost'
+const host = env.HOST
 // Start up the Node server
 const app = serveapp()
 if (isMainModule(import.meta.url)) {
-    const port = process.env['PORT'] || 4000
+    const port = env.PORT
 
     app.listen({ port, hostname: host }, () => {
         console.log(

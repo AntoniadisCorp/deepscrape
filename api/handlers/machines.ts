@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import fetch, { RequestInit } from 'node-fetch'
+import { env } from "../../src/config/env"
 // import { URLSearchParams } from 'node:url'
 class MachinesHandler {
 
-    private apiUrl
+    private apiUrl: string
     constructor() {
-        this.apiUrl = process.env['API_ARACHNEFLY_URL'] || 'http://localhost:3000'
+        this.apiUrl = env.API_ARACHNEFLY_URL
     }
 
     async checkImageDeployability(req: Request, res: Response, next: NextFunction) {

@@ -35,6 +35,8 @@ import {
     ListOrdered,
     LineChart,
     LayoutGrid,
+    UserPlus,
+    Repeat,
 } from 'lucide-angular'
 
 export let myIcons: LucideIcons = {
@@ -75,4 +77,6 @@ export let myIcons: LucideIcons = {
     'peak-hours': Activity,
     'login-methods': Users,
     'user-distribution': Users,
+    'user-plus': UserPlus,
+    'repeat': Repeat,
 }

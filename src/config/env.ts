@@ -1,0 +1,48 @@
+/**
+ * Typed environment variables
+ * All variables are validated and accessible with full type safety and dot notation
+ */
+import * as dotenv from "dotenv"
+dotenv.config()
+
+const getEnv = () => {
+  const env = {
+    // Environment configuration
+    PRODUCTION: (process.env['PRODUCTION'] || 'false') as 'true' | 'false',
+    HOST: process.env['HOST'] || 'localhost',
+    PORT: parseInt(process.env['PORT'] || '4000', 10),
+
+    // Upstash Redis configuration (for rate limiting)
+    UPSTASH_REDIS_REST_URL: process.env['UPSTASH_REDIS_REST_URL'] || '',
+    UPSTASH_REDIS_REST_TOKEN: process.env['UPSTASH_REDIS_REST_TOKEN'] || '',
+    UPSTASH_REDIS_REST_PORT: process.env['UPSTASH_REDIS_REST_PORT'] || '30766',
+    UPSTASH_REDIS_REST_USER: process.env['UPSTASH_REDIS_REST_USER'] || 'default',
+    UPSTASH_REDIS_REST_PASSWORD: process.env['UPSTASH_REDIS_REST_PASSWORD'] || '',
+
+    // API configuration
+    API_ARACHNEFLY_URL: process.env['API_ARACHNEFLY_URL'] || 'http://localhost:3000',
+    API_CRAWL4AI_URL: process.env['API_CRAWL4AI_URL'] || '',
+
+    // Third-party API Keys
+    JINAAI_API_KEY: process.env['JINAAI_API_KEY'] || '',
+    ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'] || '',
+    OPENAI_API_URL: process.env['OPENAI_API_URL'] || 'https://api.openai.com/v1/chat/completions',
+    OPENAI_API_KEY: process.env['OPENAI_API_KEY'] || '',
+    GROQ_API_KEY: process.env['GROQ_API_KEY'] || '',
+  } as const
+
+  // Validate required variables in production
+  if (env.PRODUCTION === 'true') {
+    const required = ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] as const
+    required.forEach(key => {
+      if (!env[key]) {
+        console.warn(`⚠️  Missing required environment variable in production: ${key}`)
+      }
+    })
+  }
+
+  return env
+}
+
+export const env = getEnv()
+export type Env = typeof env

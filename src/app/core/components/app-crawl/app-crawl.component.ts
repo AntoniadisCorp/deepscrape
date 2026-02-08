@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, DestroyRef, HostBinding, inject, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectorRef, ChangeDetectionStrategy, Component, DestroyRef, HostBinding, inject, signal, WritableSignal } from '@angular/core';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { GinputComponent } from '../ginput/ginput.component';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -41,7 +41,8 @@ const DEFAULT_CRAWL_PACK_SELECTION = { name: "select a crawlpack", code: "defaul
   ],
   animations: [expandCollapseAnimation],
   templateUrl: './app-crawl.component.html',
-  styleUrl: './app-crawl.component.scss'
+  styleUrl: './app-crawl.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppCrawlComponent {
   @HostBinding('class') classes = 'flex items-center flex-col relative';
@@ -198,6 +199,7 @@ export class AppCrawlComponent {
               setCrawlPackList(pack, this.crawlConfigPack)
 
             this.localStorage.setItem("crawlpack", JSON.stringify(pack))
+            this.cdr.markForCheck() // Notify Angular of the change
 
           },
           error: (err: any) => {
@@ -260,6 +262,7 @@ export class AppCrawlComponent {
           }
           // add data to the dom as they coming to the frontend
           this.addCrawlResult(taskResult)
+          this.cdr.markForCheck() // Mark for check after data updates
         },
         complete: () => {
           // reset the processing status
@@ -270,6 +273,7 @@ export class AppCrawlComponent {
           // reset the form
           this.enableForm()
           this.latestTaskId.set(null)
+          this.cdr.markForCheck() // Mark for check on completion
           // detect changes
           // this.cdr?.detectChanges()
         },
@@ -281,6 +285,7 @@ export class AppCrawlComponent {
           this.errorMessage = error.message || 'Error processing data. Please check console for details.';
 
           this.latestTaskId.set(null)
+          this.cdr.markForCheck() // Mark for check on error
           // show snackbar Error
           this.showSnackbar(this.errorMessage || "", SnackBarType.error, '', 5000)
         }
@@ -339,6 +344,7 @@ export class AppCrawlComponent {
     else {
       this.stream?.setValue(isConfigStreamON)
     }
+    this.cdr.markForCheck() // Mark for check after dropdown selection
 
   }
 

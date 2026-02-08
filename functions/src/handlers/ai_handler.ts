@@ -7,6 +7,7 @@ import fetch, { RequestInit } from "node-fetch"
 // import { pipeline } from "node:stream"
 // import { promisify } from "node:util"
 import { customUrlDecoder } from "../gfunctions"
+import { env } from "../config/env"
 
 // const streamPipeline = promisify(pipeline)
 
@@ -47,7 +48,7 @@ import { customUrlDecoder } from "../gfunctions"
  */
 export const crawl4aiCore = async (req: Request, res: Response) => {
     // const decodedUrl = decodeURIComponent(url) // decode the URL
-    const apiUrl = `${process.env["API_CRAWL4AI_URL"]}/crawl`
+    const apiUrl = `${env.API_CRAWL4AI_URL}/crawl`
     const { urls, priority } = req.body
     const body = {
         urls,
@@ -102,7 +103,7 @@ export const crawl4aiCore = async (req: Request, res: Response) => {
 
 export const jinaAICrawl = async (req: Request, res: Response) => {
     const { url /* token */ } = req.params
-    const apiKey = process.env["JINAAI_API_KEY"]
+    const apiKey = env.JINAAI_API_KEY
 
     const headers: JinaHeader = {
         "Authorization": `Bearer ${apiKey}`,
@@ -149,7 +150,7 @@ export const jinaAICrawl = async (req: Request, res: Response) => {
 
 export const anthropicAICore = async (req: Request, res: Response) => {
     const apiUrl = "https://api.anthropic.com/v1/messages"
-    const apiKey = process.env["ANTHROPIC_API_KEY"]
+    const apiKey = env.ANTHROPIC_API_KEY
     // console.log(apiKey,)
     try {
         const fetchOptions: RequestInit = {
@@ -227,8 +228,8 @@ export const anthropicAICore = async (req: Request, res: Response) => {
 }
 
 export const openaiAICore = async (req: Request, res: Response) => {
-    const apiUrl = process.env["OPENAI_API_URL"] || "https://api.openai.com/v1/chat/completions"
-    const apiKey = process.env["OPENAI_API_KEY"]
+    const apiUrl = env.OPENAI_API_URL
+    const apiKey = env.OPENAI_API_KEY
     try {
         const fetchOptions: RequestInit = {
             method: "POST",
@@ -300,7 +301,7 @@ export const openaiAICore = async (req: Request, res: Response) => {
 
 export const groqAICore = async (req: Request, res: Response) => {
     const apiUrl = "https://api.groq.com/openai/v1/chat/completions"
-    const apiKey = process.env["GROQ_API_KEY"]
+    const apiKey = env.GROQ_API_KEY
     try {
         const fetchOptions: RequestInit = {
             method: "POST",

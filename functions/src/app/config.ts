@@ -9,6 +9,7 @@ import serviceAccount from "../credentials.json"
 import { defineSecret } from "firebase-functions/params"
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
+import { env } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
 export const stripeSecretDef = defineSecret("stripeSecretTest")
@@ -23,7 +24,7 @@ db.settings({ databaseId: dbName })
 export const auth = admin.auth()
 
 /* config().stripe?.secret */
-export const stripeSecret = process.env["STRIPE_PUBLIC_KEY"] ||
+export const stripeSecret = env.STRIPE_PUBLIC_KEY ||
     serviceAccount.stripe.secret
 // export const stripePublishable = serviceAccount.stripe.publishable;
 // export const stripeClientId = serviceAccount.stripe.clientid;
@@ -42,7 +43,7 @@ export async function saveToSecretManager(
 ) {
     // Create a new secret
     const [secret] = await secretManager.createSecret({
-        parent: `projects/${process.env["GCP_PROJECT_ID"]}`,
+        parent: `projects/${env.GCP_PROJECT_ID}`,
         secretId,
         secret: {
             replication: {

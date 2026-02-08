@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AdminAnalyticsComponent } from './admin-analytics.component';
+import { AdminAnalyticsComponent } from './admin-analytics1.component';
 
 
 describe('AdminAnalyticsComponent', () => {

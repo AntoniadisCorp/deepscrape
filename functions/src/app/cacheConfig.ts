@@ -5,14 +5,11 @@
 import { Redis } from "@upstash/redis"
 import {RedisOptions, Redis as IORedis} from "ioredis"
 import chalk from "chalk"
-
-import * as dotenv from "dotenv"
-dotenv.config()
-
+import {env} from "../config/env"
 
 // Initialize Upstash Redis client
-const upstashUrl = process.env["UPSTASH_REDIS_REST_URL"]
-const upstashToken = process.env["UPSTASH_REDIS_REST_TOKEN"]
+const upstashUrl = env.UPSTASH_REDIS_REST_URL
+const upstashToken = env.UPSTASH_REDIS_REST_TOKEN
 const redis = new Redis({
     url: upstashUrl || "",
     token: upstashToken || "",
@@ -22,9 +19,9 @@ const redis = new Redis({
 // Configure your Redis client.  IMPORTANT: Use environment variables
 // for sensitive information like host, port, password.
 const httpHost = upstashUrl
-const port = process.env["UPSTASH_REDIS_REST_PORT"]
-const username = process.env["UPSTASH_REDIS_REST_USER"] // Default username for Redis
-const p4ss = process.env["UPSTASH_REDIS_REST_PASSWORD"]
+const port = env.UPSTASH_REDIS_REST_PORT
+const username = env.UPSTASH_REDIS_REST_USER // Default username for Redis
+const p4ss = env.UPSTASH_REDIS_REST_PASSWORD
 
 let client: IORedis | null = null
 

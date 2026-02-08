@@ -1,13 +1,14 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
+import { env } from "../config/env"
 /* import * as genericPool from "generic-pool"
 import Redis from "ioredis"
 
 // Configuration for Redis
 const redisConfig = {
-    host: process.env["dasdsa"] || "sas", // Redis host
-    port: process.env["dasdsa"] || 6379, // Redis port
-    password: process.env["dasdsa"] || "dsd", // Optional password
+    host: env.UPSTASH_REDIS_REST_URL || "localhost", // Redis host
+    port: parseInt(env.UPSTASH_REDIS_REST_PORT) || 6379, // Redis port
+    password: env.UPSTASH_REDIS_REST_PASSWORD || "", // Optional password
     db: 0, // Default database
 }
 

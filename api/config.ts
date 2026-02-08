@@ -2,6 +2,8 @@
 import { RedisOptions, Redis } from 'ioredis'
 import chalk from 'chalk'
 import { config } from 'dotenv'
+import { env } from '../src/config/env'
+
 // Load environment variables from .env file
 config()
 
@@ -10,10 +12,10 @@ config()
 //     url: process.env["UPSTASH_REDIS_REST_URL"] || "",
 //     token: process.env["UPSTASH_REDIS_REST_TOKEN"] || "",
 // })
-const HttpHost = process.env['UPSTASH_REDIS_REST_URL']
-const port = process.env['UPSTASH_REDIS_REST_PORT']
-const username = process.env['UPSTASH_REDIS_REST_USER'] // Default username for Redis
-const p4ss = process.env['UPSTASH_REDIS_REST_PASSWORD']
+const HttpHost = env.UPSTASH_REDIS_REST_URL
+const port = env.UPSTASH_REDIS_REST_PORT
+const username = env.UPSTASH_REDIS_REST_USER // Default username for Redis
+const p4ss = env.UPSTASH_REDIS_REST_PASSWORD
 
 
 let client: Redis | null = null

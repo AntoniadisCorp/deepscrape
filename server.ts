@@ -6,8 +6,9 @@ import { dirname, join, resolve } from 'node:path'
 import chalk from 'chalk'
 // import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
-import { apiLimiter, limiter } from 'api/handlers'
+import { upstashApiLimiter, upstashGeneralLimiter } from 'api/handlers'
 import { fileURLToPath } from 'node:url'
+import { env } from './src/config/env'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -35,12 +36,15 @@ function serveapp(): express.Application {
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
-  server.set('trust proxy', false)
+  server.set('trust proxy', false) // Enable trust proxy for accurate IP detection in production
 
   server.use(express.urlencoded({ limit: '3mb', extended: false }))
-  server.use(express.json({ limit: '3mb' })) // To pars
+  server.use(express.json({ limit: '3mb' })) // Parse JSON bodies
 
-  // Use Routers for API
+  // Apply advanced Upstash rate limiter to all requests (except /api which has its own limiter)
+  server.use(upstashGeneralLimiter)
+
+  // Use Routers for API with stricter Upstash rate limiting
   server.use('/api', (req: Request, res: Response, next: NextFunction) => {
 
     console.log(
@@ -54,8 +58,7 @@ function serveapp(): express.Application {
       chalk.bgBlue.black('Host:'), req.hostname
     )
     next()
-  }, apiLimiter, AI.isJwtAuth, AI.router)
-  server.use(limiter)
+  }, upstashApiLimiter, AI.isJwtAuth, AI.router)
 
   // *PWA Service Worker (if running in production)
   server.use((req: Request, res: Response, next: NextFunction) => {
@@ -123,10 +126,10 @@ function serveapp(): express.Application {
 const server = serveapp()
 
 function run(): void {
-  const host = process.env['HOST'] || 'localhost'
+  const host = env.HOST
 
   if (isMainModule(import.meta.url)) {
-    const port = process.env['PORT'] || 4000
+    const port = env.PORT
     server.listen(port, () => {
       console.log(`%s server listening on %s`, chalk.yellow('Node Express'), chalk.green(`http://${host}:${port}`))
       return host
@@ -141,10 +144,10 @@ function run(): void {
 
 let reqHandler: express.Application
 
-// if (process.env['PRODUCTION'] === 'false') {
-run()
-// } 
-console.log(chalk.blue('Environment:'), process.env['PRODUCTION'] === 'true' ? chalk.green('Production') : chalk.red('Development'))
+if (env.PRODUCTION === 'true') {
+  run()
+} 
+console.log(chalk.blue('Environment:'), env.PRODUCTION === 'true' ? chalk.green('Production') : chalk.red('Development'))
 
 reqHandler = createNodeRequestHandler(server)
 

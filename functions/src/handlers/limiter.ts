@@ -3,6 +3,7 @@
 /* eslint-disable max-len */
 // src/middleware/rateLimit.ts
 import { Options, rateLimit, RateLimitRequestHandler } from "express-rate-limit"
+import { env } from "../config/env"
 import { RedisStore, type RedisReply } from "rate-limit-redis"
 import { redisClient } from "../app/cacheConfig" // Adjust the import path as necessary
 
@@ -28,11 +29,19 @@ if (redisClient) {
 
 // Use Redis store if available, otherwise default to in-memory
 const apiLimitOptions: Partial<Options> = {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: "Too many requests from this IP, please try again after 15 minutes",
+    windowMs: env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000, // 15 min (prod) or 1 min (dev)
+    max: env.PRODUCTION === "true" ? 100 : 50, // 100 req (prod) or 50 req (dev) per window
+    message: "Too many requests from this IP, please try again after the window expires",
+    skip: (req) => {
+        // Skip rate limiting for health checks
+        return req.path === "/health" || req.path === "/ping"
+    },
+    keyGenerator: (req) => {
+        // Use IP address as the key, fallback to user ID if authenticated
+        return req.user?.uid || req.ip || "unknown"
+    },
     handler: (req, res) => {
-        const defaultWindowMs = 15 * 60 * 1000
+        const defaultWindowMs = env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000
         const resetTime = req?.rateLimit?.resetTime
         const retryAfterMs =
             typeof resetTime === "number"?
@@ -94,9 +103,10 @@ const apiLimitOptions: Partial<Options> = {
     },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: true, // Disable the `X-RateLimit-*` headers
-    validate: { trustProxy: true, ip: process.env.PRODUCTION === "true" },
+    validate: { trustProxy: true, ip: env.PRODUCTION === "true" },
     store: redisStore, // Use Redis as the store for rate limiting if available
 }
+
 
 const limiter: RateLimitRequestHandler = rateLimit(apiLimitOptions)
 

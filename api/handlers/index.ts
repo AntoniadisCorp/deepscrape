@@ -1,4 +1,5 @@
 export * from './ai_handler'
 export * from './home_handler'
 export * from './limiter'
+export * from './upstash-limiter'
 export * from './machines'

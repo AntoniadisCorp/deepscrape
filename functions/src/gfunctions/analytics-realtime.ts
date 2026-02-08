@@ -10,6 +10,14 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore"
 import { Guest, loginHistoryInfo, MetricsDaily, Users } from "../domain"
 import { db } from "../app/config"
 
+const mapToTop = (source: Record<string, number> | undefined, key: string, limit = 10) => {
+  if (!source) return [] as Array<Record<string, unknown>>
+  return Object.entries(source)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .slice(0, limit)
+    .map(([name, count]) => ({ [key]: name, count }))
+}
+
 // ============================================================================
 // REAL-TIME TRIGGERS - Atomic Updates for Live Dashboard
 // ============================================================================
@@ -213,6 +221,57 @@ export const onLoginEvent = onDocumentCreated("users/{userId}/login_history/{log
     console.log(`✅ Login metrics updated for user ${loginInfo.uid}`)
   } catch (error) {
     console.error("❌ Error updating login metrics:", error)
+  }
+})
+
+// ============================================================================
+// BACKFILL - Ensure dashboard summary exists even without new events
+// ============================================================================
+
+/**
+ * 🧹 Backfill dashboard summary from existing metrics
+ * Runs every 30 minutes to ensure metrics_summary/dashboard exists
+ */
+export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
+  try {
+    const latestDailySnap = await db.collection("metrics_daily")
+      .orderBy("date", "desc")
+      .limit(1)
+      .get()
+
+    const latestDaily = latestDailySnap.docs[0]?.data() as MetricsDaily | undefined
+
+    const rangeSnap = await db.doc("metrics_range/last-30d").get()
+    const rangeData = rangeSnap.exists ? rangeSnap.data() as any : null
+
+    const totalGuests = latestDaily?.totalGuests || 0
+    const totalUsers = latestDaily?.totalUsers || 0
+    const totalLogins = latestDaily?.totalLogins || 0
+    const guestConversions = latestDaily?.guestConversions || 0
+    const conversionRate = totalGuests > 0
+      ? Math.round((guestConversions / totalGuests) * 100)
+      : 0
+
+    const summaryRef = db.doc("metrics_summary/dashboard")
+    await summaryRef.set({
+      totalGuests: totalGuests,
+      activeGuests: latestDaily?.activeGuests || 0,
+      totalUsers: totalUsers,
+      activeUsers: latestDaily?.activeUsers || 0,
+      totalLogins: totalLogins,
+      guestConversions: guestConversions,
+      conversionRate: conversionRate,
+      topCountries: mapToTop(rangeData?.byCountry || latestDaily?.byCountry, "country"),
+      topBrowsers: mapToTop(rangeData?.byBrowser || latestDaily?.byBrowser, "browser"),
+      topDevices: mapToTop(rangeData?.byDevice || latestDaily?.byDevice, "device"),
+      topProviders: mapToTop(rangeData?.byProvider || latestDaily?.byProvider, "provider"),
+      lastUpdated: Timestamp.now(),
+      computedAt: Timestamp.now(),
+    }, { merge: true })
+
+    console.log("✅ Backfill dashboard summary completed")
+  } catch (error) {
+    console.error("❌ Backfill dashboard summary failed:", error)
   }
 })
 

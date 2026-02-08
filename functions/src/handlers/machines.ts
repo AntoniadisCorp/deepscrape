@@ -7,6 +7,7 @@
 import { Request, Response, NextFunction } from "express"
 import fetch, { RequestInit } from "node-fetch"
 import { Buffer } from "node:buffer" // Import Buffer for file handling
+import { env } from "../config/env"
 // import FormData from "form-data" // Import FormData for handling form data
 import { pipeline } from "node:stream"
 import { createGunzip } from "node:zlib"
@@ -29,8 +30,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true"?
-        process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev": "http://localhost:8080"
+        const apiUrl = env.PRODUCTION === "true"?
+        env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev": "http://localhost:8080"
         const url = new URL(`${apiUrl}/api/check-image`)
         url.searchParams.set("name", imageName)
 
@@ -103,7 +104,7 @@ class MachinesHandler {
         }
 
         // const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}`)
         const headers = req.headers as any
 
@@ -152,7 +153,7 @@ class MachinesHandler {
 
         // get tken from request include in locals
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
         // const authHeader = req.headers["api-key"] as string
         // eslint-disable-next-line prefer-const
@@ -236,7 +237,7 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/waitforstate/${machineId}`)
 
         url.searchParams.set("state", state as string)
@@ -294,8 +295,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
 
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}/start`)
@@ -349,8 +350,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}/suspend`)
         const headers = {
@@ -399,8 +400,8 @@ class MachinesHandler {
             return
         }
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}/stop`)
         const headers = {
@@ -452,8 +453,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}`)
         url.searchParams.set("force", force.toString())
 

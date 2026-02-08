@@ -2,6 +2,7 @@
 import { redisClient } from '../../api/config'
 import { Options, rateLimit, RateLimitRequestHandler } from 'express-rate-limit'
 import { RedisStore } from 'rate-limit-redis'
+import { env } from "../../src/config/env"
 
 // Extend Express Request type to include rateLimit property
 declare module 'express-serve-static-core' {
@@ -30,23 +31,40 @@ if (redisClient) {
     })
 }
 
+/**
+ * General rate limiter for all requests
+ * Development: 1 min window, 500 requests
+ * Production: 15 min window, 1000 requests
+ */
 const limmitOptions: Partial<Options> = {
-    windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 1000, // Limit each IP to 1000 requests per windowMs
-    limit: 100, // Limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again after 15 minutes',
+    windowMs: env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000, // 15 min (prod) or 1 min (dev)
+    max: env.PRODUCTION === "true" ? 1000 : 500, // 1000 req (prod) or 500 req (dev) per window
+    limit: env.PRODUCTION === "true" ? 100 : 50, // Stricter secondary limit
+    message: 'Too many requests from this IP, please try again after the window expires',
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    validate: { trustProxy: false }, // Trust the reverse proxy
+    validate: { 
+        trustProxy: env.PRODUCTION === "true", // Trust proxy in production only
+        ip: env.PRODUCTION === "true" // Validate IP in production
+    },
     store: redis_store, // Use Redis as the store for rate limiting
+    skip: (req) => {
+        // Skip rate limiting for health checks
+        return req.path === '/health' || req.path === '/ping'
+    },
+    keyGenerator: (req) => {
+        // Use authenticated user UID if available, otherwise use IP
+        return req.user?.uid || req.ip || 'unknown'
+    },
     handler: (req, res /*, next */) => {
         // Calculate retry-after in seconds
-        const retryAfterMs = req?.rateLimit?.resetTime ? req.rateLimit.resetTime - Date.now() : 15 * 60 * 1000;
+        const retryAfterMs = req?.rateLimit?.resetTime ? req.rateLimit.resetTime - Date.now() : (env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000);
         const retryAfterSec = Math.max(1, Math.round(retryAfterMs / 1000));
         const minutes = Math.floor(retryAfterSec / 60).toString().padStart(2, '0');
         const seconds = (retryAfterSec % 60).toString().padStart(2, '0');
         res.status(429)
             .set("Content-Type", "text/html")
+            .set("Retry-After", String(retryAfterSec)) // Set standard retry-after header
             .send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -98,24 +116,40 @@ const limmitOptions: Partial<Options> = {
     }
 }
 
-// Create a rate limiter middleware for api routes
+/**
+ * Stricter rate limiter for API endpoints
+ * Development: 1 min window, 50 requests
+ * Production: 15 min window, 100 requests
+ */
 const apiLimmitOptions: Partial<Options> = {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 1000 requests per windowMs
-    message: 'Too many requests from this IP, please try again after 15 minutes',
-    limit: 100, // Limit each IP to 100 requests per windowMs
+    windowMs: env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000, // 15 min (prod) or 1 min (dev)
+    max: env.PRODUCTION === "true" ? 100 : 50, // 100 req (prod) or 50 req (dev) per window
+    limit: env.PRODUCTION === "true" ? 100 : 50, // Same as max for API
+    message: 'Too many API requests, please try again after the window expires',
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    validate: { trustProxy: false }, // Trust the reverse proxy
+    validate: { 
+        trustProxy: env.PRODUCTION === "true", // Trust proxy in production only
+        ip: env.PRODUCTION === "true" // Validate IP in production
+    },
     store: redis_store_api, // Use Redis as the store for rate limiting
+    skip: (req) => {
+        // Skip rate limiting for authentication and health endpoints
+        return req.path === '/auth' || req.path === '/login' || req.path === '/health'
+    },
+    keyGenerator: (req) => {
+        // Use authenticated user UID if available, otherwise use IP
+        return req.user?.uid || req.ip || 'unknown'
+    },
     handler: (req, res /*, next */) => {
         // Calculate retry-after in seconds
-        const retryAfterMs = req?.rateLimit?.resetTime ? req.rateLimit.resetTime - Date.now() : 15 * 60 * 1000;
+        const retryAfterMs = req?.rateLimit?.resetTime ? req.rateLimit.resetTime - Date.now() : (env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000);
         const retryAfterSec = Math.max(1, Math.round(retryAfterMs / 1000));
         const minutes = Math.floor(retryAfterSec / 60).toString().padStart(2, '0');
         const seconds = (retryAfterSec % 60).toString().padStart(2, '0');
         res.status(429)
             .set("Content-Type", "text/html")
+            .set("Retry-After", String(retryAfterSec)) // Set standard retry-after header
             .send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -134,7 +168,7 @@ const apiLimmitOptions: Partial<Options> = {
     <div class="relative z-10 w-full max-w-xl mx-auto flex flex-col items-center justify-center py-10">
       <h2 class="text-[#111318] text-3xl md:text-4xl font-bold leading-tight text-center pb-3 pt-5">Too Many Requests</h2>
       <p class="text-[#111318] text-base font-normal leading-normal pb-3 pt-1 text-center">
-        You've sent too many requests in a short period. Please wait before trying again.<br>
+        You've sent too many API requests in a short period. Please wait before trying again.<br>
         <span class="text-blue-600 font-semibold">Retry-After: ${minutes}:${seconds} minutes</span>
       </p>
       <div class="flex gap-4 py-6 justify-center">

@@ -7,6 +7,7 @@ import { pipeline } from "node:stream"
 import { createGunzip } from "node:zlib"
 import fetch, { RequestInit } from "node-fetch"
 import { Request, Response } from "express"
+import { env } from "../config/env"
 
 class CrawlerHandler {
     constructor() {
@@ -18,8 +19,8 @@ class CrawlerHandler {
         // res.type("application/json")
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true" ?
-            process.env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev" : "http://localhost:8000"
+        const apiUrl = env.PRODUCTION === "true" ?
+            env.API_CRAWL4AI_URL || "https://crawlagent.fly.dev" : "http://localhost:8000"
         const url = new URL(`${apiUrl}/crawl/job/temp-task-id`)
 
         const headers = {
@@ -89,8 +90,8 @@ class CrawlerHandler {
         res.type("application/json")
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true" ?
-            process.env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev" : "http://localhost:8000"
+        const apiUrl = env.PRODUCTION === "true" ?
+            env.API_CRAWL4AI_URL || "https://crawlagent.fly.dev" : "http://localhost:8000"
         const url = new URL(`${apiUrl}/crawl/job/${tempTaskId}`)
 
         const headers = {
@@ -156,8 +157,8 @@ class CrawlerHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true" ?
-            process.env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev" : "http://localhost:8000"
+        const apiUrl = env.PRODUCTION === "true" ?
+            env.API_CRAWL4AI_URL || "https://crawlagent.fly.dev" : "http://localhost:8000"
         const url = new URL(`${apiUrl}/crawl/stream/job/status/${taskId}`)
 
         const headers = {
@@ -213,8 +214,8 @@ class CrawlerHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true" ?
-            process.env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev" : "http://localhost:8000"
+        const apiUrl = env.PRODUCTION === "true" ?
+            env.API_CRAWL4AI_URL || "https://crawlagent.fly.dev" : "http://localhost:8000"
         const url = new URL(`${apiUrl}/crawl/stream/job/${taskId}`)
 
         const headers = {
@@ -273,8 +274,8 @@ class CrawlerHandler {
         res.type("application/json")
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true" ?
-            process.env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev" : "http://localhost:8000"
+        const apiUrl = env.PRODUCTION === "true" ?
+            env.API_CRAWL4AI_URL || "https://crawlagent.fly.dev" : "http://localhost:8000"
         const url = new URL(`${apiUrl}/crawl/job/${tempTaskId}/cancel`)
 
         const headers = {
@@ -349,8 +350,8 @@ class CrawlerHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true" ?
-            process.env["API_CRAWL4AI_URL"] || "https://crawlagent.fly.dev" : "http://localhost:8000"
+        const apiUrl = env.PRODUCTION === "true" ?
+            env.API_CRAWL4AI_URL || "https://crawlagent.fly.dev" : "http://localhost:8000"
         const url = new URL(`${apiUrl}/crawl/stream/job`)
 
         const headers = {

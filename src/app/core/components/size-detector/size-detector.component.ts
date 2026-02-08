@@ -5,8 +5,8 @@ import { SCREEN_SIZE } from 'src/app/core/enum';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { timer } from 'rxjs/internal/observable/timer';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { of } from 'rxjs/internal/observable/of';
-import { debounceTime } from 'rxjs/internal/operators/debounceTime';
+import { Subject, of } from 'rxjs';
+import { debounceTime, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-size-detector',
@@ -22,6 +22,7 @@ export class SizeDetectorComponent implements AfterViewInit {
   private destroyRef = inject(DestroyRef)
   private _window = inject(WindowToken); // or window = inject(WINDOW);
   private animationFrameId: number | null = null;
+  private fingerprint$ = new Subject<any>();
 
   prefix = 'is-';
   sizes = [
@@ -70,6 +71,22 @@ export class SizeDetectorComponent implements AfterViewInit {
     private http: HttpClient
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId)
+    // Set up fingerprint posting pipeline once
+    this.fingerprint$
+      .pipe(
+        debounceTime(500),
+        switchMap(data => {
+          const token = this.authService.token;
+          if (!token) return of(null); // Skip if no token
+          const headers = new HttpHeaders({
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Accept': 'application/json',
+          });
+          return this.http.post('/event/guest-fingerprint', data, { headers });
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe();
   }
 
   ngAfterViewInit() {
@@ -99,24 +116,8 @@ export class SizeDetectorComponent implements AfterViewInit {
     if (currentSize) {
       this.resizeSvc.onResize(currentSize.id);
       // Emit fingerprint data for analytics
-      const fingerprintData = this.resizeSvc.getFingerprintData()
-
-      const headers = new HttpHeaders({
-        'Authorization': `Bearer ${this.authService.token}`,
-        'Accept': 'application/json',
-      });
-
-      // Debounce HTTP requests using rjsx's debounceTime
-      of(fingerprintData)
-        .pipe(
-        debounceTime(500), // adjust debounce time as needed
-        takeUntilDestroyed(this.destroyRef)
-        )
-        .subscribe(data => {
-        this.http.post('/event/guest-fingerprint', data, { headers })
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe();
-      });
+      const fingerprintData = this.resizeSvc.getFingerprintData();
+      this.fingerprint$.next(fingerprintData);
     }
   }
 }

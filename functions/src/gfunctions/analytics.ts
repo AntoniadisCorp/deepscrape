@@ -12,9 +12,10 @@ import { db } from "../app/config"
 import path from "node:path"
 import net from "node:net"
 import crypto from "crypto"
+import { env } from "../config/env"
 
 // Determine if running in production based on environment variable
-const isProduction = process.env["PRODUCTION"] === "true"
+const isProduction = env.PRODUCTION === "true"
 
 // Class to manage IP2Location database connection
 // https://github.com/onramper/fast-geoip is a faster alternative but less detailed

@@ -14,7 +14,8 @@ export class AnalyticsService {
 
   constructor(
     private analytics: Analytics,
-    private http: HttpClient, 
+    private http: HttpClient,
+    private fireService: FirestoreService,
   ) { }
 
   sendStatus() {
@@ -26,7 +27,7 @@ export class AnalyticsService {
    */
   trackEvent(eventType: string, metadata: any = {}, token?: string, userId?: string, guestId?: string) {
     // Google Analytics logEvent
-    logEvent(this.analytics, eventType, metadata)
+    this.fireService.logEvent(eventType, metadata)
     // Send event to backend
     const event = {
       eventType,

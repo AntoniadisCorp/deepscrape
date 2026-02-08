@@ -10,13 +10,14 @@ import helmet from "helmet"
 import morgan from "morgan"
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
-import { limiter, statusCheck } from "./handlers"
+import { upstashFunctionLimiter, limiter, statusCheck } from "./handlers"
 import * as dotenv from "dotenv"
 import { AuthAPIProxy, EventsAPIProxy, ReverseAPIProxy } from "./infrastructure"
 import cookieParser from "cookie-parser"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
+import { env } from "./config/env"
 // import csurf from "csurf"
 
 // import { createNodeRequestHandler } from "@angular/ssr/node"
@@ -26,7 +27,7 @@ dotenv.config({ quiet: true })
 // see here: https://reddit.com/r/reactjs/comments/fsw405/firebase_cloud_functions_cors_policy_error/?rdt=47413
 // and: https://github.com/firebase/functions-samples/issues/395#issuecomment-605025572
 export const corss = cors({
-  origin: process.env["PRODUCTION"] === "true" ? [
+  origin: env.PRODUCTION === "true" ? [
     "https://deepscrape.dev", "https://deepscrape.web.app"] : ["http://127.0.0.1:5000",
       "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"], // Allow all origins or specify your frontend URL
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], // Specify allowed methods "OPTIONS"
@@ -67,7 +68,7 @@ function serveapp() {
   })) */
   server.set("view engine", "html")
   server.set("views", browserDistFolder)
-  server.set("trust proxy", process.env.PRODUCTION === "true")
+  server.set("trust proxy", env.PRODUCTION === "true")
 
   // Security and logging middleware
   server.use(helmet({
@@ -169,16 +170,16 @@ function serveapp() {
   server.get("/status",
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
-    limiter, statusCheck) // aiProxy.router now contains the /status route
+    upstashFunctionLimiter, statusCheck) // aiProxy.router now contains the /status route
 
   server.use("/event", json({ limit: "1mb" }),
-    limiter, eventsProxy.router)
+    upstashFunctionLimiter, eventsProxy.router)
 
   // Register the API routes (with authentication)
   server.use("/api",
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
-    process.env.PRODUCTION === "true" ? limiter : (req: Request, res: Response, next: NextFunction) => next(),
+    env.PRODUCTION === "true" ? upstashFunctionLimiter : (req: Request, res: Response, next: NextFunction) => next(),
     aiProxy.isJwtAuth, aiProxy.router)
 
   // server.use("/upload", uploadProxy.router)
@@ -186,7 +187,7 @@ function serveapp() {
   server.use("/oauth",
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
-    limiter, oauthProxy.router)
+    upstashFunctionLimiter, oauthProxy.router)
 
   // Custom middleware to track guest users
   server.use(guestTracker) // Custom middleware to track guest users

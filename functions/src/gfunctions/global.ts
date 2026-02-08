@@ -3,7 +3,8 @@
 /* eslint-disable valid-jsdoc */
 /* eslint-disable linebreak-style */
 import {geoDBManager} from "./analytics"
-const port = process.env.PORT || 4000
+import {env} from "../config/env"
+const port = env.PORT || 4000
 /**
  * Soft Decryption Algorithm: Reverses the soft encryption process.
  * @param input - The transformed string to decrypt.
