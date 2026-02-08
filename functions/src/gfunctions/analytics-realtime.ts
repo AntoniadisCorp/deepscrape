@@ -248,9 +248,8 @@ export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
     const totalUsers = latestDaily?.totalUsers || 0
     const totalLogins = latestDaily?.totalLogins || 0
     const guestConversions = latestDaily?.guestConversions || 0
-    const conversionRate = totalGuests > 0
-      ? Math.round((guestConversions / totalGuests) * 100)
-      : 0
+    const conversionRate = totalGuests > 0 ?
+      Math.round((guestConversions / totalGuests) * 100) : 0
 
     const summaryRef = db.doc("metrics_summary/dashboard")
     await summaryRef.set({

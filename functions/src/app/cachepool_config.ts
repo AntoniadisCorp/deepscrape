@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
-import { env } from "../config/env"
+// import { env } from "../config/env"
 /* import * as genericPool from "generic-pool"
 import Redis from "ioredis"
 
