@@ -76,7 +76,7 @@
               Active Users
             </h4>
             <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
-              {{ userCount | number }}
+              {{ activeUsersNow | number }}
             </p>
             <span class="text-xs text-slate-500 dark:text-slate-400">
               Registered & authenticated
@@ -178,7 +178,7 @@
                   (userCount / (guestCount + userCount || 1)) * 100
                 ">
                 <span>Active Users</span>
-                <span>{{ userCount | number }}</span>
+                <span>{{ activeUsersNow | number }}</span>
               </div>
               <span
                 class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
@@ -275,6 +275,19 @@
                 <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ (guestCount + userCount) / 7 | number : '1.0-0' }}</span>
                 <div class="w-20 h-2 bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden">
                   <div [style.width.%]="Math.min(((guestCount + userCount) / 7) * 5, 100)" class="h-2 bg-emerald-600 dark:bg-emerald-400"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Online Now (5m) -->
+            <div class="flex items-center justify-between py-2 border-l-4 border-cyan-600 dark:border-cyan-500 pl-3 bg-cyan-50/50 dark:bg-cyan-950/20 rounded-r-lg">
+              <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <lucide-angular [img]="icons['zap']" class="w-4 h-4 text-cyan-600 dark:text-cyan-400 fill-none" aria-label="Online Now"></lucide-angular>
+                Online Now (5m)
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ onlineNow | number }}</span>
+                <div class="w-20 h-2 bg-cyan-200 dark:bg-cyan-900 rounded-full overflow-hidden">
+                  <div [style.width.%]="Math.min((onlineNow / 50) * 100, 100)" class="h-2 bg-cyan-600 dark:bg-cyan-400"></div>
                 </div>
               </div>
             </div>

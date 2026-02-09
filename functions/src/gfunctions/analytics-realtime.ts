@@ -2,13 +2,16 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable require-jsdoc */
 
-import { onDocumentCreated } from "firebase-functions/v2/firestore"
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
 import { FieldValue, Timestamp } from "firebase-admin/firestore"
 
 
 import { Guest, loginHistoryInfo, MetricsDaily, Users } from "../domain"
-import { db } from "../app/config"
+import { db, dbName } from "../app/config"
+
+// ⭐ CRITICAL: Specify named database for v2 triggers
+const DATABASE_NAME = dbName || "easyscrape"
 
 const mapToTop = (source: Record<string, number> | undefined, key: string, limit = 10) => {
   if (!source) return [] as Array<Record<string, unknown>>
@@ -26,203 +29,218 @@ const mapToTop = (source: Record<string, number> | undefined, key: string, limit
  * 🔥 CRITICAL: This trigger updates analytics in real-time when guests are created
  * Updates: metrics_daily, metrics_hourly, metrics_summary/dashboard
  */
-export const onGuestCreated = onDocumentCreated("guests/{guestId}", async (event) => {
-  const guest = event.data?.data() as Guest
-  if (!guest) return
+export const onGuestCreated = onDocumentCreated(
+  {
+    document: "guests/{guestId}",
+    database: DATABASE_NAME, // ⭐ v2 requires database parameter for named databases
+  },
+  async (event) => {
+    const guest = event.data?.data() as Guest
+    if (!guest) return
 
-  const now = new Date()
-  const today = now.toISOString().split("T")[0]
-  const hour = now.getHours()
-  const hourKey = `${today}-${hour.toString().padStart(2, "0")}`
+    const now = new Date()
+    const today = now.toISOString().split("T")[0]
+    const hour = now.getHours()
+    const hourKey = `${today}-${hour.toString().padStart(2, "0")}`
 
-  try {
+    try {
     // Single batch transaction for consistency
-    const batch = db.batch()
+      const batch = db.batch()
 
-    // 1. Update daily metrics
-    const dailyRef = db.doc(`metrics_daily/${today}`)
-    batch.set(dailyRef, {
-      date: today,
-      timestamp: Timestamp.now(),
-      newGuests: FieldValue.increment(1),
-      totalGuests: FieldValue.increment(1),
-      activeGuests: FieldValue.increment(1),
-      [`byCountry.${guest.country}`]: FieldValue.increment(1),
-      [`byBrowser.${guest.browser}`]: FieldValue.increment(1),
-      [`byDevice.${guest.device}`]: FieldValue.increment(1),
-      [`byOS.${guest.os}`]: FieldValue.increment(1),
-      [`byTimezone.${guest.timezone}`]: FieldValue.increment(1),
-      [`guestsByHour.${hour}`]: FieldValue.increment(1),
-      updatedAt: Timestamp.now(),
-    }, { merge: true })
+      // 1. Update daily metrics
+      const dailyRef = db.doc(`metrics_daily/${today}`)
+      batch.set(dailyRef, {
+        date: today,
+        timestamp: Timestamp.now(),
+        newGuests: FieldValue.increment(1),
+        totalGuests: FieldValue.increment(1),
+        activeGuests: FieldValue.increment(1),
+        [`byCountry.${guest.country}`]: FieldValue.increment(1),
+        [`byBrowser.${guest.browser}`]: FieldValue.increment(1),
+        [`byDevice.${guest.device}`]: FieldValue.increment(1),
+        [`byOS.${guest.os}`]: FieldValue.increment(1),
+        [`byTimezone.${guest.timezone}`]: FieldValue.increment(1),
+        [`guestsByHour.${hour}`]: FieldValue.increment(1),
+        updatedAt: Timestamp.now(),
+      }, { merge: true })
 
-    // 2. Update hourly metrics
-    const hourlyRef = db.doc(`metrics_hourly/${hourKey}`)
-    batch.set(hourlyRef, {
-      datetime: hourKey,
-      date: today,
-      hour: hour,
-      timestamp: Timestamp.now(),
-      newGuests: FieldValue.increment(1),
-      activeGuests: FieldValue.increment(1),
-      updatedAt: Timestamp.now(),
-    }, { merge: true })
+      // 2. Update hourly metrics
+      const hourlyRef = db.doc(`metrics_hourly/${hourKey}`)
+      batch.set(hourlyRef, {
+        datetime: hourKey,
+        date: today,
+        hour: hour,
+        timestamp: Timestamp.now(),
+        newGuests: FieldValue.increment(1),
+        activeGuests: FieldValue.increment(1),
+        updatedAt: Timestamp.now(),
+      }, { merge: true })
 
-    // 3. Update dashboard summary (for real-time UI)
-    const summaryRef = db.doc("metrics_summary/dashboard")
-    batch.set(summaryRef, {
-      totalGuests: FieldValue.increment(1),
-      activeGuests: FieldValue.increment(1),
-      lastUpdated: Timestamp.now(),
-      computedAt: Timestamp.now(),
-    }, { merge: true })
+      // 3. Update dashboard summary (for real-time UI)
+      const summaryRef = db.doc("metrics_summary/dashboard")
+      batch.set(summaryRef, {
+        totalGuests: FieldValue.increment(1),
+        activeGuests: FieldValue.increment(1),
+        lastUpdated: Timestamp.now(),
+        computedAt: Timestamp.now(),
+      }, { merge: true })
 
-    await batch.commit()
-    console.log(`✅ Guest ${event.params.guestId} metrics updated successfully`)
-  } catch (error) {
-    console.error(`❌ Error updating guest metrics for ${event.params.guestId}:`, error)
+      await batch.commit()
+      console.log(`✅ Guest ${event.params.guestId} metrics updated successfully`)
+    } catch (error) {
+      console.error(`❌ Error updating guest metrics for ${event.params.guestId}:`, error)
     // Don't throw - let the guest creation succeed even if analytics fail
-  }
-})
+    }
+  })
 
 /**
  * 🔥 User registration trigger - Updates user metrics and conversion tracking
  */
-export const onUserRegistered = onDocumentCreated("users/{userId}", async (event) => {
-  const user = event.data?.data() as Users
-  if (!user) return
+export const onUserRegistered = onDocumentCreated(
+  {
+    document: "users/{userId}",
+    database: DATABASE_NAME, // ⭐ v2 requires database parameter for named databases
+  },
+  async (event) => {
+    const user = event.data?.data() as Users
+    if (!user) return
 
-  const now = new Date()
-  const today = now.toISOString().split("T")[0]
-  const hour = now.getHours()
+    const now = new Date()
+    const today = now.toISOString().split("T")[0]
+    const hour = now.getHours()
 
-  try {
-    const batch = db.batch()
+    try {
+      const batch = db.batch()
 
-    // Check if this was a guest conversion
-    const guestId = user.loginMetricsId // Assuming this links to guest
-    let isConversion = false
+      // Check if this was a guest conversion
+      const guestId = user.loginMetricsId // Assuming this links to guest
+      let isConversion = false
 
-    if (guestId) {
+      if (guestId) {
       // Check if guest exists and update linkedAt
-      const guestRef = db.doc(`guests/${guestId}`)
-      const guestDoc = await guestRef.get()
+        const guestRef = db.doc(`guests/${guestId}`)
+        const guestDoc = await guestRef.get()
 
-      if (guestDoc.exists && !guestDoc.data()?.linkedAt) {
-        batch.update(guestRef, {
-          linkedAt: Timestamp.now(),
-          uid: user.uid,
-        })
-        isConversion = true
+        if (guestDoc.exists && !guestDoc.data()?.linkedAt) {
+          batch.update(guestRef, {
+            linkedAt: Timestamp.now(),
+            uid: user.uid,
+          })
+          isConversion = true
+        }
       }
+
+      // 1. Update daily metrics
+      const dailyRef = db.doc(`metrics_daily/${today}`)
+      const dailyUpdate: Record<string, FieldValue | Timestamp> = {
+        newUsers: FieldValue.increment(1),
+        totalUsers: FieldValue.increment(1),
+        activeUsers: FieldValue.increment(1),
+        [`usersByHour.${hour}`]: FieldValue.increment(1),
+        updatedAt: Timestamp.now(),
+      }
+
+      if (isConversion) {
+        dailyUpdate.guestConversions = FieldValue.increment(1)
+      }
+
+      batch.set(dailyRef, dailyUpdate, { merge: true })
+
+      // 2. Update dashboard summary
+      const summaryRef = db.doc("metrics_summary/dashboard")
+      const summaryUpdate: Record<string, FieldValue | Timestamp> = {
+        totalUsers: FieldValue.increment(1),
+        activeUsers: FieldValue.increment(1),
+        lastUpdated: Timestamp.now(),
+        computedAt: Timestamp.now(),
+      }
+
+      if (isConversion) {
+        summaryUpdate.guestConversions = FieldValue.increment(1)
+      }
+
+      batch.set(summaryRef, summaryUpdate, { merge: true })
+
+      // 3. Initialize user login metrics
+      const userMetricsRef = db.doc(`users/${user.uid}/login_metrics`)
+      batch.set(userMetricsRef, {
+        userId: user.uid,
+        totalLogins: 0,
+        loginStreak: 0,
+        longestStreak: 0,
+        firstLogin: null,
+        lastLogin: null,
+        wasGuest: isConversion,
+        guestId: isConversion ? guestId : null,
+        linkedAt: isConversion ? Timestamp.now() : null,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      })
+
+      await batch.commit()
+      console.log(`✅ User ${user.uid} registration metrics updated (conversion: ${isConversion})`)
+    } catch (error) {
+      console.error(`❌ Error updating user registration metrics for ${event.params.userId}:`, error)
     }
-
-    // 1. Update daily metrics
-    const dailyRef = db.doc(`metrics_daily/${today}`)
-    const dailyUpdate: Record<string, FieldValue | Timestamp> = {
-      newUsers: FieldValue.increment(1),
-      totalUsers: FieldValue.increment(1),
-      activeUsers: FieldValue.increment(1),
-      [`usersByHour.${hour}`]: FieldValue.increment(1),
-      updatedAt: Timestamp.now(),
-    }
-
-    if (isConversion) {
-      dailyUpdate.guestConversions = FieldValue.increment(1)
-    }
-
-    batch.set(dailyRef, dailyUpdate, { merge: true })
-
-    // 2. Update dashboard summary
-    const summaryRef = db.doc("metrics_summary/dashboard")
-    const summaryUpdate: Record<string, FieldValue | Timestamp> = {
-      totalUsers: FieldValue.increment(1),
-      activeUsers: FieldValue.increment(1),
-      lastUpdated: Timestamp.now(),
-      computedAt: Timestamp.now(),
-    }
-
-    if (isConversion) {
-      summaryUpdate.guestConversions = FieldValue.increment(1)
-    }
-
-    batch.set(summaryRef, summaryUpdate, { merge: true })
-
-    // 3. Initialize user login metrics
-    const userMetricsRef = db.doc(`users/${user.uid}/login_metrics`)
-    batch.set(userMetricsRef, {
-      userId: user.uid,
-      totalLogins: 0,
-      loginStreak: 0,
-      longestStreak: 0,
-      firstLogin: null,
-      lastLogin: null,
-      wasGuest: isConversion,
-      guestId: isConversion ? guestId : null,
-      linkedAt: isConversion ? Timestamp.now() : null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    })
-
-    await batch.commit()
-    console.log(`✅ User ${user.uid} registration metrics updated (conversion: ${isConversion})`)
-  } catch (error) {
-    console.error(`❌ Error updating user registration metrics for ${event.params.userId}:`, error)
-  }
-})
+  })
 
 /**
  * 🔥 Login event trigger - Updates login analytics and user metrics
  */
-export const onLoginEvent = onDocumentCreated("users/{userId}/login_history/{loginId}", async (event) => {
-  const loginInfo = event.data?.data() as loginHistoryInfo
-  if (!loginInfo) return
+export const onLoginEvent = onDocumentUpdated(
+  {
+    document: "users/{userId}/login_history/{loginId}",
+    database: DATABASE_NAME, // ⭐ v2 requires database parameter for named databases
+  },
+  async (event) => {
+    const loginInfo = event.data?.after.data() as loginHistoryInfo
+    if (!loginInfo) return
 
-  const now = new Date()
-  const today = now.toISOString().split("T")[0]
-  const hour = now.getHours()
+    const now = new Date()
+    const today = now.toISOString().split("T")[0]
+    const hour = now.getHours()
 
-  try {
-    const batch = db.batch()
+    try {
+      const batch = db.batch()
 
-    // 1. Update daily metrics
-    const dailyRef = db.doc(`metrics_daily/${today}`)
-    batch.set(dailyRef, {
-      totalLogins: FieldValue.increment(1),
-      [`loginsByHour.${hour}`]: FieldValue.increment(1),
-      [`byProvider.${loginInfo.providerId}`]: FieldValue.increment(1),
-      updatedAt: Timestamp.now(),
-    }, { merge: true })
+      // 1. Update daily metrics
+      const dailyRef = db.doc(`metrics_daily/${today}`)
+      batch.set(dailyRef, {
+        totalLogins: FieldValue.increment(1),
+        [`loginsByHour.${hour}`]: FieldValue.increment(1),
+        [`byProvider.${loginInfo.providerId}`]: FieldValue.increment(1),
+        updatedAt: Timestamp.now(),
+      }, { merge: true })
 
-    // 2. Update hourly metrics
-    const hourKey = `${today}-${hour.toString().padStart(2, "0")}`
-    const hourlyRef = db.doc(`metrics_hourly/${hourKey}`)
-    batch.set(hourlyRef, {
-      totalLogins: FieldValue.increment(1),
-      updatedAt: Timestamp.now(),
-    }, { merge: true })
+      // 2. Update hourly metrics
+      const hourKey = `${today}-${hour.toString().padStart(2, "0")}`
+      const hourlyRef = db.doc(`metrics_hourly/${hourKey}`)
+      batch.set(hourlyRef, {
+        totalLogins: FieldValue.increment(1),
+        updatedAt: Timestamp.now(),
+      }, { merge: true })
 
-    // 3. Update dashboard summary
-    const summaryRef = db.doc("metrics_summary/dashboard")
-    batch.set(summaryRef, {
-      totalLogins: FieldValue.increment(1),
-      lastUpdated: Timestamp.now(),
-    }, { merge: true })
+      // 3. Update dashboard summary
+      const summaryRef = db.doc("metrics_summary/dashboard")
+      batch.set(summaryRef, {
+        totalLogins: FieldValue.increment(1),
+        lastUpdated: Timestamp.now(),
+      }, { merge: true })
 
-    // 4. Update user login metrics
-    const userMetricsRef = db.doc(`users/${loginInfo.uid}/login_metrics`)
-    batch.set(userMetricsRef, {
-      totalLogins: FieldValue.increment(1),
-      lastLogin: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    }, { merge: true })
+      // 4. Update user login metrics
+      const userMetricsRef = db.doc(`users/${loginInfo.uid}/login_metrics`)
+      batch.set(userMetricsRef, {
+        totalLogins: FieldValue.increment(1),
+        lastLogin: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      }, { merge: true })
 
-    await batch.commit()
-    console.log(`✅ Login metrics updated for user ${loginInfo.uid}`)
-  } catch (error) {
-    console.error("❌ Error updating login metrics:", error)
-  }
-})
+      await batch.commit()
+      console.log(`✅ Login metrics updated for user ${loginInfo.uid}`)
+    } catch (error) {
+      console.error("❌ Error updating login metrics:", error)
+    }
+  })
 
 // ============================================================================
 // BACKFILL - Ensure dashboard summary exists even without new events
@@ -332,7 +350,9 @@ export const computeDailyTrends = onSchedule("5 0 * * *", async () => {
  * 📈 Range metrics computation - Pre-computes common date ranges
  * Runs every day at 01:00 UTC
  */
-export const computeRangeMetrics = onSchedule("0 1 * * *", async () => {
+export const computeRangeMetrics = onSchedule({
+  schedule: "0 1 * * *",
+}, async () => {
   const ranges = [
     { id: "last-7d", days: 7 },
     { id: "last-30d", days: 30 },

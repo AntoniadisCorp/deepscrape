@@ -30,6 +30,9 @@ export class AdminAnalyticsComponent implements OnInit {
     registeredGuestsCount = 0;
     unregisteredGuestsCount = 0;
     userCount = 0;
+    activeUsersNow = 0;
+    activeGuestsNow = 0;
+    onlineNow = 0;
     totalLogins = 0;
     conversionRate = 0;
     guestConversionRate = 0;
@@ -317,6 +320,9 @@ export class AdminAnalyticsComponent implements OnInit {
         // Extract metrics from single document
         this.guestCount = dashboardSummary.totalGuests || 0;
         this.userCount = dashboardSummary.totalUsers || 0;
+        this.activeUsersNow = dashboardSummary.activeUsersNow || 0;
+        this.activeGuestsNow = dashboardSummary.activeGuestsNow || 0;
+        this.onlineNow = dashboardSummary.onlineNow || (this.activeUsersNow + this.activeGuestsNow);
         this.totalLogins = dashboardSummary.totalLogins || 0;
         this.conversionRate = dashboardSummary.conversionRate || 0;
         

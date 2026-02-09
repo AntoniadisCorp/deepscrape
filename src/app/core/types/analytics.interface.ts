@@ -21,6 +21,11 @@ export interface DashboardSummary {
   totalUsers: number
   activeUsers: number       // Last 24h
   totalLogins: number
+
+  // Live online counts (last 5 minutes)
+  activeGuestsNow?: number
+  activeUsersNow?: number
+  onlineNow?: number
   
   // Conversion metrics
   guestConversions: number
