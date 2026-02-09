@@ -20,7 +20,7 @@ export type Users = {
     updated_At?:Date
 
     // Phone authentication fields
-    phoneNumber?: string
+    phoneNumber?: string | null
     phoneVerified?: boolean | null // Optional, may not be present in all user objects
 
     // Stripe customer ID
