@@ -9,13 +9,14 @@ import {
   inject,
   DestroyRef,
   ViewChild,
-  ElementRef
+  ElementRef,
+  PLATFORM_ID
 } from '@angular/core';
 import { FormGroup, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CommonModule, DOCUMENT, JsonPipe, NgIf } from '@angular/common';
+import { CommonModule, DOCUMENT, JsonPipe, NgIf, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Observable, Subject, takeUntil } from 'rxjs';
@@ -92,6 +93,8 @@ export class LoginComponent  {
   private analyticsService = inject(AnalyticsService);
   /** Local storage service for storing key-value pairs. */
   private localStorage = inject(LocalStorage);
+  /** Platform identifier for SSR detection */
+  private platformId = inject<Object>(PLATFORM_ID);
   /** A service for handling component destruction, used with `takeUntilDestroyed`. */
   private DestroyRef = inject(DestroyRef)
 
@@ -171,6 +174,7 @@ export class LoginComponent  {
       github: false,
       logout: false,
       google: false,
+      remove: false,
       email: false,
       phone: false,
       code: false,
@@ -444,6 +448,13 @@ export class LoginComponent  {
    */
   public async loginWithGoogle(): Promise<void> {
     if (this.loginInProgress) return;
+    
+    // Check if running in browser environment
+    if (!isPlatformBrowser(this.platformId)) {
+      console.warn('Google sign-in not available during SSR');
+      return;
+    }
+    
     this.loginInProgress = true;
     this.loading.google = true; // Set loading state for Google login.
     this.errorMessage = ''; // Clear any previous error messages.
@@ -514,6 +525,13 @@ export class LoginComponent  {
    */
   public async loginWithGithub(): Promise<void> {
     if (this.loginInProgress) return;
+    
+    // Check if running in browser environment
+    if (!isPlatformBrowser(this.platformId)) {
+      console.warn('GitHub sign-in not available during SSR');
+      return;
+    }
+    
     this.loginInProgress = true;
     this.loading.github = true; // Set loading state for GitHub login.
     this.errorMessage = ''; // Clear any previous error messages.

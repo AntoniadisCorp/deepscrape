@@ -17,7 +17,7 @@ import { getAuth, provideAuth } from '@angular/fire/auth';
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { browserProvider, BrowserToken, PLUTO_ID, STORAGE_PROVIDERS, windowProvider, WindowToken } from './core/services';
-import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi, withXsrfConfiguration } from '@angular/common/http';
 import { IMAGE_LOADER, ImageLoaderConfig } from '@angular/common';
 import { environment } from 'src/environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
@@ -54,7 +54,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideHttpClient(
       withInterceptorsFromDi(),
-      // withXsrfConfiguration({ cookieName: 'csrf_', headerName: 'X-Csrf-Token' }),
+      withXsrfConfiguration({ cookieName: '_csrf', headerName: 'csrf-token' }),
       withFetch(),      /* withInterceptors([
         new TokenInterceptor().intercept,
         // new CsrfInterceptor().intercept

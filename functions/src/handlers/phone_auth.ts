@@ -149,7 +149,7 @@ export const updatePhoneVerificationStatus = async (
 
 export const checkPhoneNumberExists = async (req: Request, res: Response) => {
     res.type("application/json")
-    const { phoneNumber } = req.params as { phoneNumber: string }
+    const { phoneNumber } = req.body as { phoneNumber: string }
 
     try {
         if (!phoneNumber || !PHONE_REGEX.test(phoneNumber)) {

@@ -163,6 +163,37 @@ export class FirestoreService {
     }
   }
 
+  async updatePhoneVerificationStatus(uid: string, phoneVerified: boolean): Promise<void> {
+    try {
+      const userRef = this.doc('users', uid);
+      await this.setDoc(userRef, {
+        phoneVerified,
+        updated_At: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log(`Phone verification status updated for user ${uid}: ${phoneVerified}`);
+    } catch (error) {
+      console.error('Error updating phone verification status:', error);
+      throw error;
+    }
+  }
+
+  async updateUserPhoneNumber(uid: string, phoneNumber: string, phoneVerified: boolean = false): Promise<void> {
+    try {
+      const userRef = this.doc('users', uid);
+      await this.setDoc(userRef, {
+        phoneNumber,
+        phoneVerified,
+        updated_At: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log(`Phone number updated for user ${uid}: ${phoneNumber}`);
+    } catch (error) {
+      console.error('Error updating phone number:', error);
+      throw error;
+    }
+  }
+
   /**
    * Refreshes user data from Firestore
    * Used after profile changes (like email verification) to get fresh data
@@ -1130,6 +1161,15 @@ export class FirestoreService {
     )
   }
 
+  public logEvent(eventName: string, eventParams?: { [key: string]: any }): void {
+    runInInjectionContext(
+      this._injector,
+      (): void => {
+        logEvent(this.analytics, eventName, eventParams)
+      },
+    )
+  }
+
   private increment(value: number): FieldValue {
     return runInInjectionContext(
       this._injector,
@@ -1234,7 +1274,7 @@ export class FirestoreService {
    */
   async getDashboardSummary(): Promise<any | null> {
     try {
-      const docRef = this.doc('metrics_summary/global');
+      const docRef = this.doc('metrics_summary/dashboard');
       const docSnap = await this.getDoc(docRef);
       return docSnap['exists']() ? docSnap['data']() : null;
     } catch (error) {

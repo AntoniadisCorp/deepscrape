@@ -30,12 +30,12 @@ class AuthAPIProxy {
     private httpRoutesGets(): void {
         // Check if user email exists and which provider is used
         this.router.get("/provider/email/:email", checkUserEmailForDifferentProvider)
-
-        // Check if phone number exists
-        this.router.get("/provider/phone/:phoneNumber", checkPhoneNumberExists)
     }
 
     private httpRoutesPosts(): void {
+        // Check if phone number exists (moved from GET to POST for security)
+        this.router.post("/provider/phone/check", checkPhoneNumberExists)
+
         // Verify and link provider
         // This is used to link a new provider to an existing user account
         this.router.post("/verify-login", verifyLogin)

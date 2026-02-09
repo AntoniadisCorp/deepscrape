@@ -14,6 +14,7 @@ import { upstashFunctionLimiter, limiter, statusCheck } from "./handlers"
 import * as dotenv from "dotenv"
 import { AuthAPIProxy, EventsAPIProxy, ReverseAPIProxy } from "./infrastructure"
 import cookieParser from "cookie-parser"
+import csurf from "csurf"
 import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } from "./gfunctions"
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
@@ -137,8 +138,22 @@ function serveapp() {
   server.use(morgan("combined"))
   server.use(corss)
   server.use(cookieParser())
-  // Add CSRF protection middleware
-  // server.use(csurf({ cookie: true }))
+  // Add CSRF protection middleware with exceptions for API routes using JWT auth
+  server.use(csurf({
+    cookie: true,
+    ignoreMethods: ["HEAD", "OPTIONS"], // Ignore CSRF for safe HTTP methods
+    // Skip CSRF for routes that use JWT authentication
+    value: (req) => {
+      // Skip CSRF check for JWT-authenticated API routes
+      if (req.path.startsWith("/api") || req.path.startsWith("/status") || req.path.startsWith("/event")) {
+        return "skip-csrf";
+      }
+      // Check for CSRF token in header or body
+      return req.headers["csrf-token"] as string ||
+             req.body?._csrf ||
+             req.query?._csrf as string;
+    },
+  }))
   // Optimized security headers middleware
   server.use((req, res, next) => {
     // Generate a nonce for each request
