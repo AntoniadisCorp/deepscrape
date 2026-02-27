@@ -82,6 +82,11 @@ export interface MetricsDaily {
 
     // Dimensional breakdowns
     byCountry: { [country: string]: number }
+    byRegion?: { [region: string]: number }
+    byLocation?: { [location: string]: number }
+    byGeoCell?: { [geoCell: string]: number }
+    byLatitudeBand?: { [latitudeBand: string]: number }
+    byLongitudeBand?: { [longitudeBand: string]: number }
     byBrowser: { [browser: string]: number }
     byDevice: { [device: string]: number }
     byOS: { [os: string]: number }
@@ -143,6 +148,11 @@ export interface MetricsRange {
 
     // Dimensional aggregations
     byCountry: { [country: string]: number }
+    byRegion?: { [region: string]: number }
+    byLocation?: { [location: string]: number }
+    byGeoCell?: { [geoCell: string]: number }
+    byLatitudeBand?: { [latitudeBand: string]: number }
+    byLongitudeBand?: { [longitudeBand: string]: number }
     byBrowser: { [browser: string]: number }
     byDevice: { [device: string]: number }
     byProvider: { [provider: string]: number }
@@ -169,7 +179,7 @@ export interface MetricsRange {
 
 /**
  * Individual user login events
- * Collection: users/{userId}/login_history/{loginId}
+ * Collection: login_metrics/{userId}/login_history_Info/{loginId}
  */
 export interface LoginHistory {
     id: string

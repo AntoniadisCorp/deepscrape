@@ -1,10 +1,9 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable, Inject } from '@angular/core';
-import { AuthService } from './auth.service';
-import { Analytics, logEvent, AnalyticsInstances } from '@angular/fire/analytics';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { FirestoreService } from './firestore.service';
 import { catchError } from 'rxjs/operators';
 import { of, throwError, Observable } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 
 
 @Injectable({
@@ -13,7 +12,7 @@ import { of, throwError, Observable } from 'rxjs';
 export class AnalyticsService {
 
   constructor(
-    private analytics: Analytics,
+    @Inject(PLATFORM_ID) private platformId: Object,
     private http: HttpClient,
     private fireService: FirestoreService,
   ) { }
@@ -26,6 +25,10 @@ export class AnalyticsService {
    * Send analytics event to Google Analytics and backend for aggregation
    */
   trackEvent(eventType: string, metadata: any = {}, token?: string, userId?: string, guestId?: string) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return of(null)
+    }
+
     // Google Analytics logEvent
     this.fireService.logEvent(eventType, metadata)
     // Send event to backend
@@ -50,9 +53,13 @@ export class AnalyticsService {
    * Batch send analytics events to backend (for debounced/batched writes)
    */
   batchTrackEvents(events: any[], token?: string) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return of(null)
+    }
+
     // Optionally batch logEvent to Google Analytics (not supported natively, so log individually)
     events.forEach(ev => {
-      logEvent(this.analytics, ev.method || ev.eventType, ev);
+      this.fireService.logEvent(ev.method || ev.eventType, ev)
     });
     // Send batch to backend
     const headers = new HttpHeaders({ 'Accept': 'application/json' });

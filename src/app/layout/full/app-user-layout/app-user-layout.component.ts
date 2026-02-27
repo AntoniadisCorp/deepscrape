@@ -4,7 +4,7 @@ import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
-import { ActivatedRoute, ChildrenOutletContexts, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router'
+import { ActivatedRoute, ChildrenOutletContexts, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
 import { catchError, delay, finalize, from, map, switchMap, throwError, timer, fromEvent } from 'rxjs' // Added fromEvent
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
@@ -88,8 +88,12 @@ export class AppUserLayoutComponent {
   ) {
 
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
+      if (event instanceof NavigationStart) {
+        this.compIsLoading = true
+      }
+
       if (event instanceof NavigationEnd) {
-        setTimeout(() => { this.compIsLoading = false; }, 1000)
+        this.compIsLoading = false
         // Update the animation state when navigation ends
         const outlet = this.contexts.getContext('primary')?.outlet;
         if (outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']) {
@@ -97,6 +101,10 @@ export class AppUserLayoutComponent {
         } else {
           this.currentRouteAnimation = undefined;
         }
+      }
+
+      if (event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.compIsLoading = false
       }
     })
 
@@ -131,6 +139,7 @@ export class AppUserLayoutComponent {
     }
 
     this.footerColor = 'userlayout';
+    this.compIsLoading = !this.router.navigated
     this.InitCloseSideBarOnSmallDevices()
   }
 

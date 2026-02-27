@@ -1,0 +1,198 @@
+<section class="admin-migration-theme space-y-6">
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Analytics Migration</h2>
+      <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+        Migrate data from <strong>guests</strong> into <strong>metrics_daily</strong>, <strong>metrics_hourly</strong>, <strong>metrics_range</strong>, and <strong>metrics_summary</strong>
+      </p>
+    </div>
+
+    <div class="inline-flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-1">
+      <span class="text-xs uppercase tracking-wide text-amber-800 dark:text-amber-300">Estimated Cost</span>
+      <span class="text-sm font-semibold text-amber-900 dark:text-amber-200">{{ costBadge }}</span>
+    </div>
+  </header>
+
+  <form [formGroup]="form" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="xl:col-span-2 space-y-6">
+      <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+        <h3 class="font-semibold text-gray5 dark:text-gray-100">Basic Options</h3>
+
+        <div class="max-w-xs">
+          <app-dropdown
+            [control]="quickRangeDropdownControl"
+            [options]="quickRangeDropdownOptions"
+            [dropDownName]="'Quick Range'"
+            (select)="onQuickRangeSelected($event)"></app-dropdown>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label class="text-sm text-gray5 dark:text-gray-300">
+            Start Date
+            <input formControlName="startDate" type="date" class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray5 bg-white dark:bg-gray6 px-3 py-2" />
+          </label>
+
+          <label class="text-sm text-gray5 dark:text-gray-300">
+            End Date
+            <input formControlName="endDate" type="date" class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray5 bg-white dark:bg-gray6 px-3 py-2" />
+          </label>
+
+          <label class="text-sm text-gray5 dark:text-gray-300">
+            Chunk Size
+            <input formControlName="chunkSize" type="number" min="100" max="1000" class="mt-1 w-full rounded-md border border-gray-300 dark:border-gray5 bg-white dark:bg-gray6 px-3 py-2" />
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm text-gray5 dark:text-gray-300">
+          <label class="inline-flex items-center gap-2"><input formControlName="includeDaily" type="checkbox" /> metrics_daily</label>
+          <label class="inline-flex items-center gap-2"><input formControlName="includeHourly" type="checkbox" /> metrics_hourly</label>
+          <label class="inline-flex items-center gap-2"><input formControlName="includeRange" type="checkbox" /> metrics_range</label>
+          <label class="inline-flex items-center gap-2"><input formControlName="includeSummary" type="checkbox" /> metrics_summary</label>
+          <label class="inline-flex items-center gap-2"><input formControlName="backupBeforeWrite" type="checkbox" /> backup for fallback</label>
+        </div>
+
+        <div class="text-xs text-gray5/60 dark:text-gray-400">
+          Pricing baseline (us-central1 docs): reads $0.03 / 100k, writes $0.09 / 100k, deletes $0.01 / 100k.
+        </div>
+      </div>
+
+      <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+        <h3 class="font-semibold text-gray5 dark:text-gray-100">Execution Controls</h3>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            (click)="refreshEstimate()"
+            class="admin-material-btn admin-material-btn--ghost px-4 py-2 rounded-lg border border-gray-300 dark:border-gray5 text-sm text-gray5 dark:text-gray-200">
+            Refresh Estimate
+          </button>
+
+          <button
+            type="button"
+            (click)="startMigration()"
+            [disabled]="running"
+            class="admin-material-btn admin-material-btn--primary px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white text-sm font-medium">
+            Start Migration
+          </button>
+
+          <button
+            type="button"
+            (click)="stopMigration()"
+            [disabled]="!running"
+            class="admin-material-btn admin-material-btn--warn px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white text-sm font-medium">
+            Stop
+          </button>
+
+          <button
+            type="button"
+            (click)="validateMigration()"
+            [disabled]="running"
+            class="admin-material-btn admin-material-btn--ghost px-4 py-2 rounded-lg border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-sm font-medium">
+            Validation Check (Optional)
+          </button>
+
+          <button
+            type="button"
+            (click)="fallbackFromBackup()"
+            [disabled]="running || !lastCompletedRunId"
+            class="admin-material-btn admin-material-btn--ghost px-4 py-2 rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-medium">
+            Fallback / Revert
+          </button>
+        </div>
+
+        <div *ngIf="validationMessage" class="rounded-lg p-3 text-sm" [ngClass]="validationOk ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-rose-50 text-rose-800 dark:bg-rose-900/20 dark:text-rose-300'">
+          {{ validationMessage }}
+        </div>
+      </div>
+    </div>
+
+    <aside class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+      <h3 class="font-semibold text-gray5 dark:text-gray-100">Estimate & Progress</h3>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+          <p class="text-gray5/60 dark:text-gray-400">Source Guests</p>
+          <p class="font-semibold">{{ sourceGuestCount | number }}</p>
+        </div>
+        <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+          <p class="text-gray5/60 dark:text-gray-400">Target Docs</p>
+          <p class="font-semibold">{{ writeTargets | number }}</p>
+        </div>
+        <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+          <p class="text-gray5/60 dark:text-gray-400">Reads</p>
+          <p class="font-semibold">{{ estimate.reads | number }}</p>
+        </div>
+        <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+          <p class="text-gray5/60 dark:text-gray-400">Writes</p>
+          <p class="font-semibold">{{ estimate.writes | number }}</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between text-xs text-gray5/60 dark:text-gray-400 mb-1">
+          <span>{{ progressLabel }}</span>
+          <span>{{ progressPercent }}%</span>
+        </div>
+        <div class="admin-progress-track h-2 rounded-full bg-gray-200 dark:bg-gray6 overflow-hidden">
+          <div class="admin-progress-fill h-2 bg-indigo-600 transition-all duration-300" [style.width.%]="progressPercent"></div>
+        </div>
+      </div>
+
+      <div class="text-xs text-gray5/60 dark:text-gray-400">
+        Processed guests: {{ processedGuests | number }}
+      </div>
+
+      <div class="text-xs text-gray5/60 dark:text-gray-400" *ngIf="lastCompletedRunId">
+        Latest completed run: <span class="font-mono">{{ lastCompletedRunId }}</span>
+      </div>
+    </aside>
+  </form>
+
+  <section class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
+    <h3 class="font-semibold text-gray5 dark:text-gray-100 mb-3">Process Log</h3>
+    <div class="max-h-64 overflow-auto rounded-lg border border-gray-300/70 dark:border-gray5 bg-gray-50 dark:bg-gray6 p-3">
+      <p *ngIf="logs.length === 0" class="text-sm text-gray5/60 dark:text-gray-400">No migration activity yet.</p>
+      <p *ngFor="let log of logs" class="text-xs font-mono text-gray5 dark:text-gray-300 mb-1">{{ log }}</p>
+    </div>
+  </section>
+</section>
+
+<app-slideinmodal
+  [isOpen]="leaveWarningModalOpen"
+  [title]="'Migration is running'"
+  [position]="'center'"
+  [maxWidth]="'max-w-xl'"
+  [loading]="leaveActionInProgress"
+  [hasBlur]="true">
+  <div class="space-y-4 text-sm text-gray5 dark:text-gray-300">
+    <p>
+      Migration is still in progress. Leaving now can interrupt visibility while writes are being finalized.
+    </p>
+    <p class="text-amber-700 dark:text-amber-300 font-medium">
+      Choose an action before leaving this page.
+    </p>
+
+    <div class="flex flex-wrap gap-2 justify-end pt-2">
+      <button
+        type="button"
+        (click)="stayOnMigrationPage()"
+        class="admin-material-btn admin-material-btn--ghost px-4 py-2 rounded-lg border border-gray-300 dark:border-gray5 text-sm text-gray5 dark:text-gray-200">
+        Stay Here
+      </button>
+      <button
+        type="button"
+        (click)="confirmStopAndLeave(false)"
+        [disabled]="leaveActionInProgress"
+        class="admin-material-btn admin-material-btn--warn px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white text-sm font-medium">
+        Stop & Leave
+      </button>
+      <button
+        type="button"
+        (click)="confirmStopAndLeave(true)"
+        [disabled]="leaveActionInProgress || !lastCompletedRunId"
+        class="admin-material-btn admin-material-btn--ghost px-4 py-2 rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-medium disabled:opacity-50">
+        Stop & Revert Fallback
+      </button>
+    </div>
+  </div>
+</app-slideinmodal>

@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core'
-import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router'
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterOutlet } from '@angular/router'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
@@ -7,7 +7,7 @@ import { LoggerService, SnackbarService, SvgIconService, HeartbeatService, Fires
 import { AnimatedBgComponent, LangPickerComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
-import { forkJoin, map, Observable, of } from 'rxjs'
+import { catchError, filter, forkJoin, map, Observable, of, switchMap, tap, timer } from 'rxjs'
 import { isPlatformBrowser, isPlatformServer } from '@angular/common'
 import { fadeInOutAnimation } from './animations'
 import { Inject, OnInit, OnDestroy } from '@angular/core'
@@ -67,16 +67,23 @@ export class AppComponent implements OnInit, OnDestroy {
   private analytics = inject(Analytics)
   private heartbeatService = inject(HeartbeatService)
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent
+  @ViewChild(RouterOutlet) outlet?: RouterOutlet
   protected snackbarMessage = ''
   protected snackbarAction = ''
   protected snackbarType: SnackBarType = SnackBarType.info
   protected snackbarDuration = 3000
 
-  protected isLoading: boolean = true
+  protected isLoading: boolean = false
+  protected showRouteLoader: boolean = false
   protected route = ''
   protected isAuthState$: Observable<boolean | null> = of(null)
 
-  private routerEventSubscription: Subscription
+  private readonly loaderDelayMs = 120
+  private readonly loaderMinVisibleMs = 220
+  private loaderDelaySubscription: Subscription | null = null
+  private loaderHideSubscription: Subscription | null = null
+  private loaderShownAt = 0
+
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private matIconRegistry: SvgIconService,
@@ -92,25 +99,34 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {
     //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
     //Add 'implements AfterViewInit' to the class.
-    this.routerEventSubscription = this.router.events.subscribe((event: any) => {
-      if (event instanceof NavigationStart) {
-        this.isLoading = true
-      } else if (event instanceof NavigationEnd) {
-        this.isLoading = false
-        this.route = event.urlAfterRedirects
-        try {
-          // Log page view event to Google Analytics
+    this.router.events
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        tap((event) => {
+          if (event instanceof NavigationStart) {
+            this.beginRouteLoading()
+          } else if (event instanceof NavigationCancel || event instanceof NavigationError) {
+            this.endRouteLoading()
+          }
+        }),
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        tap((event) => {
+          this.endRouteLoading()
+          this.route = event.urlAfterRedirects
+        }),
+        switchMap((event) =>
           this.analyticsService.trackEvent('page_view', {
             page: event.urlAfterRedirects,
             timestamp: new Date().toISOString()
-          }).pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe()
-
-        } catch (e) {
-          // console.warn('Analytics not ready:', e)
-        }
-      }
-    })
+          }).pipe(
+            catchError((error) => {
+              console.error('Error tracking page view event:', error)
+              return of(null)
+            })
+          )
+        )
+      )
+      .subscribe()
 
     // Mat SAFE SVGs icons
     this.matIconRegistry.addSvgIconResolver()
@@ -124,6 +140,12 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.authService.token
   }
   ngOnInit() {
+
+    if (!this.router.navigated) {
+      this.beginRouteLoading()
+    } else {
+      this.endRouteLoading()
+    }
 
     this.theme.setDefaultTheme()
 
@@ -176,15 +198,64 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   // Helper method to get the animation data from the router outlet
-  getRouteAnimationData(outlet: RouterOutlet) {
+  getRouteAnimationData(outlet?: RouterOutlet | null) {
     return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
   }
 
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
-    this.routerEventSubscription?.unsubscribe()
+    this.loaderDelaySubscription?.unsubscribe()
+    this.loaderDelaySubscription = null
+
+    this.loaderHideSubscription?.unsubscribe()
+    this.loaderHideSubscription = null
+
     this.heartbeatService.stop() // Stop heartbeat when app is destroyed
+  }
+
+  private beginRouteLoading(): void {
+    this.isLoading = true
+
+    this.loaderHideSubscription?.unsubscribe()
+    this.loaderHideSubscription = null
+
+    this.loaderDelaySubscription?.unsubscribe()
+
+    this.loaderDelaySubscription = timer(this.loaderDelayMs)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+      if (!this.isLoading) {
+        return
+      }
+
+      this.showRouteLoader = true
+      this.loaderShownAt = Date.now()
+    })
+  }
+
+  private endRouteLoading(): void {
+    this.isLoading = false
+
+    this.loaderDelaySubscription?.unsubscribe()
+    this.loaderDelaySubscription = null
+
+    if (!this.showRouteLoader) {
+      return
+    }
+
+    const visibleFor = Date.now() - this.loaderShownAt
+    const remaining = Math.max(0, this.loaderMinVisibleMs - visibleFor)
+
+    this.loaderHideSubscription?.unsubscribe()
+
+    this.loaderHideSubscription = timer(remaining)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+      if (!this.isLoading) {
+        this.showRouteLoader = false
+      }
+    })
   }
 
 }

@@ -1,13 +1,57 @@
 <!-- Admin Analytics Dashboard -->
-<div class="mt-10 min-h-screen bg-slate-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 rounded-md">
+<div class="admin-analytics-theme mt-10 min-h-screen bg-slate-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 rounded-md">
   <!-- Header -->
   <header class="mb-8">
-    <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-      Admin Analytics Dashboard
-    </h1>
-    <p class="text-base text-slate-600 dark:text-slate-300">
-      Real-time insights and metrics
-    </p>
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+          Admin Analytics Dashboard
+        </h1>
+        <p class="text-base text-slate-600 dark:text-slate-300">
+          Real-time insights and metrics by selected period
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
+        <div class="min-w-[180px]">
+          <app-dropdown
+            [control]="periodControl"
+            [options]="periodDropdownOptions"
+            [dropDownName]="'Range'"
+            (select)="onPeriodSelected($event)"></app-dropdown>
+        </div>
+
+        <div class="flex gap-2" *ngIf="selectedPeriod === 'custom'">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Start</label>
+            <input
+              type="date"
+              [(ngModel)]="customStartDate"
+              class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">End</label>
+            <input
+              type="date"
+              [(ngModel)]="customEndDate"
+              class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100" />
+          </div>
+          <button
+            type="button"
+            (click)="applyCustomRange()"
+            class="admin-material-btn admin-material-btn--primary self-end px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium">
+            Apply
+          </button>
+        </div>
+
+        <a
+          routerLink="/admin/migration"
+          class="admin-material-btn admin-material-btn--ghost inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          Open Migration Tools
+        </a>
+      </div>
+    </div>
   </header>
 
   <!-- Loading State -->
@@ -15,7 +59,7 @@
     *ngIf="loading"
     class="flex flex-col items-center justify-center py-16 gap-4">
     <div
-      class="w-12 h-12 border-4 border-slate-200 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div>
+      class="admin-loader w-12 h-12 border-4 border-slate-200 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div>
     <p class="text-base text-slate-600 dark:text-slate-300">
       Loading analytics data...
     </p>

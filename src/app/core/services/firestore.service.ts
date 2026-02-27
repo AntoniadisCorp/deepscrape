@@ -1,4 +1,4 @@
-import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core'
+import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector, PLATFORM_ID } from '@angular/core'
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database'
 import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, User, UserCredential } from '@angular/fire/auth'
 import {
@@ -21,12 +21,14 @@ import {
 import { createSessionKey } from '../functions'
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Analytics, logEvent, setUserId } from '@angular/fire/analytics'
+import { isPlatformBrowser } from '@angular/common'
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
-  private analytics = inject(Analytics)
+  private analytics = inject(Analytics, { optional: true })
+  private platformId = inject(PLATFORM_ID)
   private firestore = inject(Firestore) // inject()
 
   private storage = inject(Storage)
@@ -1162,10 +1164,18 @@ export class FirestoreService {
   }
 
   public logEvent(eventName: string, eventParams?: { [key: string]: any }): void {
+    if (!isPlatformBrowser(this.platformId) || !this.analytics) {
+      return
+    }
+
     runInInjectionContext(
       this._injector,
       (): void => {
-        logEvent(this.analytics, eventName, eventParams)
+        try {
+          logEvent(this.analytics!, eventName, eventParams)
+        } catch (error) {
+          console.warn('Analytics logEvent skipped:', error)
+        }
       },
     )
   }
@@ -1328,6 +1338,28 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error getting range metrics:', error);
       return null;
+    }
+  }
+
+  /**
+   * Get hourly metrics by datetime key range.
+   * Datetime key format: YYYY-MM-DD-HH
+   */
+  async getHourlyMetricsByDateTimeRange(startKey: string, endKey: string): Promise<any[]> {
+    try {
+      const hourlyCollection = this.collection(this.firestore, 'metrics_hourly');
+      const q = this.query(
+        hourlyCollection,
+        this.where('datetime', '>=', startKey),
+        this.where('datetime', '<=', endKey),
+      );
+      const snapshot = await this.getDocs(q);
+      return snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a: any, b: any) => String(a.datetime || '').localeCompare(String(b.datetime || '')));
+    } catch (error) {
+      console.error('Error getting hourly metrics by datetime range:', error);
+      return [];
     }
   }
   /**

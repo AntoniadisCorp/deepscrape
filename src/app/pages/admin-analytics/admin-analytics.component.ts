@@ -1,10 +1,13 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DecimalPipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { FormControl, FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { FirestoreService } from '../../core/services';
 import { LucideAngularModule } from 'lucide-angular';
 import { myIcons } from '../../shared/lucideicons';
+import { RouterLink } from '@angular/router';
+import { DropdownComponent } from 'src/app/core/components/dropdown/dropdown.component';
 
 interface DayActivity {
     date: string;
@@ -13,9 +16,11 @@ interface DayActivity {
     trend: number;
 }
 
+type AnalyticsPeriod = 'last-30m' | 'last-1h' | 'last-24h' | 'last-7d' | 'last-30d' | 'last-90d' | 'custom';
+
 @Component({
     selector: 'app-admin-analytics',
-    imports: [BaseChartDirective, DecimalPipe, NgFor, NgIf, NgClass, LucideAngularModule],
+    imports: [BaseChartDirective, DecimalPipe, NgFor, NgIf, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent],
     templateUrl: './admin-analytics.component.html',
     styleUrls: ['./admin-analytics.component.scss']
 })
@@ -42,9 +47,32 @@ export class AdminAnalyticsComponent implements OnInit {
 
     // Caching for performance optimization
     private cacheTimestamp: number | null = null;
+    private cachedPeriodKey: string | null = null;
     private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
     private cachedDashboard: any = null;
     private cachedRangeMetrics: any = null;
+
+    // Filter state
+    selectedPeriod: AnalyticsPeriod = 'last-7d';
+    readonly periodControl = new FormControl<{ name: string; code: AnalyticsPeriod }>({
+        name: 'Last 7 days',
+        code: 'last-7d'
+    }, { nonNullable: true });
+    customStartDate = this.getDateOffset(-7);
+    customEndDate = this.getDateOffset(0);
+    readonly periodOptions: Array<{ value: AnalyticsPeriod; label: string }> = [
+        { value: 'last-30m', label: 'Last 30 minutes' },
+        { value: 'last-1h', label: 'Last 1 hour' },
+        { value: 'last-24h', label: 'Last 24 hours' },
+        { value: 'last-7d', label: 'Last 7 days' },
+        { value: 'last-30d', label: 'Last 30 days' },
+        { value: 'last-90d', label: 'Last 90 days' },
+        { value: 'custom', label: 'Custom range' },
+    ];
+    readonly periodDropdownOptions: Array<{ name: string; code: AnalyticsPeriod }> = this.periodOptions.map(option => ({
+        name: option.label,
+        code: option.value,
+    }));
 
     // Line Chart Configuration
     public lineChartData: ChartData<'line'> = {
@@ -299,11 +327,17 @@ export class AdminAnalyticsComponent implements OnInit {
         }
     }
 
-    async loadAnalyticsData() {
+    onPeriodSelected(option: { name: string; code: AnalyticsPeriod }): void {
+        this.selectedPeriod = option.code;
+        this.onPeriodChanged();
+    }
+
+    async loadAnalyticsData(forceRefresh = false) {
         const now = Date.now();
+        const periodKey = this.getPeriodCacheKey();
         
         // Return cached data if still fresh
-        if (this.isCacheValid(now)) {
+        if (!forceRefresh && this.isCacheValid(now) && this.cachedPeriodKey === periodKey) {
             console.log('✅ Using cached analytics data');
             this.updateChartsFromOptimizedData(this.cachedDashboard, this.cachedRangeMetrics);
             return;
@@ -333,13 +367,19 @@ export class AdminAnalyticsComponent implements OnInit {
             ? Math.round((this.registeredGuestsCount / this.guestCount) * 10000) / 100
             : 0;
 
-        // Get time-series data for charts
-        const rangeMetrics = await this.firestoreService.getRangeMetrics('last-7d');
+        // Get time-series data for charts based on selected period
+        const rangeMetrics = await this.resolveMetricsForSelectedPeriod();
+
+        if (rangeMetrics) {
+            this.totalLogins = rangeMetrics.totalLogins ?? this.totalLogins;
+            this.conversionRate = rangeMetrics.conversionRate ?? this.conversionRate;
+        }
         
         // Update cache
         this.cachedDashboard = dashboardSummary;
         this.cachedRangeMetrics = rangeMetrics;
         this.cacheTimestamp = now;
+        this.cachedPeriodKey = periodKey;
         
         console.log('✅ Analytics data loaded from optimized backend');
         
@@ -353,7 +393,7 @@ export class AdminAnalyticsComponent implements OnInit {
         this.cacheTimestamp = null; // Invalidate cache
         
         try {
-            await this.loadAnalyticsData();
+            await this.loadAnalyticsData(true);
         } catch (err) {
             this.error = 'Failed to refresh data';
             console.error(err);
@@ -361,6 +401,17 @@ export class AdminAnalyticsComponent implements OnInit {
             this.loading = false;
             this.cdr.detectChanges();
         }
+    }
+
+    async onPeriodChanged() {
+        if (this.selectedPeriod !== 'custom') {
+            await this.refreshData();
+        }
+    }
+
+    async applyCustomRange() {
+        this.selectedPeriod = 'custom';
+        await this.refreshData();
     }
 
     private isCacheValid(now: number): boolean {
@@ -372,9 +423,16 @@ export class AdminAnalyticsComponent implements OnInit {
     private updateChartsFromOptimizedData(dashboard: any, rangeMetrics: any) {
         // Extract daily breakdown for time-series charts
         const dailyData = rangeMetrics?.dailyBreakdown || [];
-        const labels = dailyData.map((day: any) => 
-            new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        );
+        const labels = dailyData.map((day: any) => {
+            const parsed = new Date(day.date);
+            if (Number.isNaN(parsed.getTime())) {
+                return String(day.date);
+            }
+            const hasTime = String(day.date).includes('T');
+            return parsed.toLocaleDateString('en-US', hasTime ?
+                { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' } :
+                { month: 'short', day: 'numeric' });
+        });
         const loginData = dailyData.map((day: any) => day.totalLogins || 0);
         const newGuestsData = dailyData.map((day: any) => day.newGuests || 0);
         const newUsersData = dailyData.map((day: any) => day.newUsers || 0);
@@ -469,9 +527,7 @@ export class AdminAnalyticsComponent implements OnInit {
 
         // Guest by OS Chart (from range metrics if available)
         if (rangeMetrics?.byOS) {
-            const osEntries = Object.entries(rangeMetrics.byOS)
-                .sort(([, a]: any, [, b]: any) => b - a)
-                .slice(0, 10);
+            const osEntries = this.getTopDimensionEntries(rangeMetrics.byOS, 10);
             
             this.guestOSChartData = {
                 labels: osEntries.map(([os]) => os),
@@ -504,6 +560,137 @@ export class AdminAnalyticsComponent implements OnInit {
             newUsers: day.newUsers || 0,
             trend: day.conversionRate || 0
         }));
+    }
+
+    private async resolveMetricsForSelectedPeriod(): Promise<any> {
+        switch (this.selectedPeriod) {
+            case 'last-7d':
+            case 'last-30d':
+            case 'last-90d':
+                return this.firestoreService.getRangeMetrics(this.selectedPeriod);
+            case 'last-24h':
+                return this.buildHourlyRangeMetrics(24, 'last-24h');
+            case 'last-1h':
+                return this.buildHourlyRangeMetrics(1, 'last-1h');
+            case 'last-30m':
+                return this.buildHourlyRangeMetrics(1, 'last-30m');
+            case 'custom':
+                return this.buildCustomDateRangeMetrics();
+            default:
+                return this.firestoreService.getRangeMetrics('last-7d');
+        }
+    }
+
+    private async buildCustomDateRangeMetrics(): Promise<any> {
+        if (!this.customStartDate || !this.customEndDate) {
+            return this.firestoreService.getRangeMetrics('last-7d');
+        }
+
+        const rows = await this.firestoreService.getMetricsByDateRange(this.customStartDate, this.customEndDate);
+        const sorted = [...rows].sort((a: any, b: any) => String(a.date || '').localeCompare(String(b.date || '')));
+
+        const byOS: Record<string, number> = {};
+        const byCountry: Record<string, number> = {};
+        const byBrowser: Record<string, number> = {};
+        const byDevice: Record<string, number> = {};
+
+        let totalGuests = 0;
+        let totalUsers = 0;
+        let totalLogins = 0;
+        let guestConversions = 0;
+
+        for (const row of sorted) {
+            totalGuests += Number(row.newGuests || 0);
+            totalUsers += Number(row.newUsers || 0);
+            totalLogins += Number(row.totalLogins || 0);
+            guestConversions += Number(row.guestConversions || 0);
+
+            Object.entries((row.byOS || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k);
+                byOS[normalized] = (byOS[normalized] || 0) + Number(v || 0);
+            });
+            Object.entries((row.byCountry || {}) as Record<string, number>).forEach(([k, v]) => byCountry[k] = (byCountry[k] || 0) + Number(v || 0));
+            Object.entries((row.byBrowser || {}) as Record<string, number>).forEach(([k, v]) => byBrowser[k] = (byBrowser[k] || 0) + Number(v || 0));
+            Object.entries((row.byDevice || {}) as Record<string, number>).forEach(([k, v]) => byDevice[k] = (byDevice[k] || 0) + Number(v || 0));
+        }
+
+        return {
+            rangeId: 'custom',
+            startDate: this.customStartDate,
+            endDate: this.customEndDate,
+            totalGuests,
+            totalUsers,
+            totalLogins,
+            guestConversions,
+            conversionRate: totalGuests > 0 ? Math.round((guestConversions / totalGuests) * 100) : 0,
+            byOS,
+            byCountry,
+            byBrowser,
+            byDevice,
+            dailyBreakdown: sorted.map((row: any) => ({
+                date: row.date,
+                newGuests: Number(row.newGuests || 0),
+                newUsers: Number(row.newUsers || 0),
+                totalLogins: Number(row.totalLogins || 0),
+                guestConversions: Number(row.guestConversions || 0),
+                conversionRate: Number(row.conversionRate || 0),
+            })),
+        };
+    }
+
+    private async buildHourlyRangeMetrics(hours: number, rangeId: string): Promise<any> {
+        const end = new Date();
+        const start = new Date(end.getTime() - (hours * 60 * 60 * 1000));
+
+        const rows = await this.firestoreService.getHourlyMetricsByDateTimeRange(
+            this.toDateTimeKey(start),
+            this.toDateTimeKey(end),
+        );
+
+        const totalGuests = rows.reduce((sum: number, row: any) => sum + Number(row.newGuests || 0), 0);
+        const totalUsers = rows.reduce((sum: number, row: any) => sum + Number(row.newUsers || 0), 0);
+        const totalLogins = rows.reduce((sum: number, row: any) => sum + Number(row.totalLogins || 0), 0);
+        const guestConversions = rows.reduce((sum: number, row: any) => sum + Number(row.guestConversions || 0), 0);
+
+        return {
+            rangeId,
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            totalGuests,
+            totalUsers,
+            totalLogins,
+            guestConversions,
+            conversionRate: totalGuests > 0 ? Math.round((guestConversions / totalGuests) * 100) : 0,
+            dailyBreakdown: rows.map((row: any) => ({
+                date: `${row.date}T${String(row.hour ?? 0).padStart(2, '0')}:00:00.000Z`,
+                newGuests: Number(row.newGuests || 0),
+                newUsers: Number(row.newUsers || 0),
+                totalLogins: Number(row.totalLogins || 0),
+                guestConversions: Number(row.guestConversions || 0),
+                conversionRate: Number(row.newGuests || 0) > 0 ? Math.round((Number(row.guestConversions || 0) / Number(row.newGuests || 0)) * 100) : 0,
+            })),
+        };
+    }
+
+    private getPeriodCacheKey(): string {
+        if (this.selectedPeriod !== 'custom') {
+            return this.selectedPeriod;
+        }
+        return `custom:${this.customStartDate}:${this.customEndDate}`;
+    }
+
+    private toDateTimeKey(date: Date): string {
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
+        const h = String(date.getUTCHours()).padStart(2, '0');
+        return `${y}-${m}-${d}-${h}`;
+    }
+
+    private getDateOffset(offsetDays: number): string {
+        const date = new Date();
+        date.setUTCDate(date.getUTCDate() + offsetDays);
+        return date.toISOString().slice(0, 10);
     }
 
     /**
@@ -643,7 +830,7 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Guest by OS Chart
-        const osEntries = Object.entries(guestAnalytics.byOS);
+        const osEntries = this.getTopDimensionEntries(guestAnalytics.byOS, 10);
         this.guestOSChartData = {
             labels: osEntries.map(([os]) => os),
             datasets: [{
@@ -678,5 +865,25 @@ export class AdminAnalyticsComponent implements OnInit {
             newUsers: Math.floor(((loginData as number[])[index] || 0) * 0.3),
             trend: index > 0 ? Math.round((((loginData as number[])[index] - (loginData as number[])[index - 1]) / (loginData as number[])[index - 1]) * 100) : 0
         }));
+    }
+
+    private normalizeDimensionKey(key: unknown, fallback = 'Unknown'): string {
+        const normalized = String(key ?? '').trim();
+        return normalized.length > 0 ? normalized : fallback;
+    }
+
+    private getTopDimensionEntries(source: Record<string, unknown>, max = 10): Array<[string, number]> {
+        const merged: Record<string, number> = {};
+        Object.entries(source || {}).forEach(([rawKey, value]) => {
+            const key = this.normalizeDimensionKey(rawKey);
+            const count = Number(value || 0);
+            if (count > 0) {
+                merged[key] = (merged[key] || 0) + count;
+            }
+        });
+
+        return Object.entries(merged)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, max);
     }
 }

@@ -65,6 +65,7 @@ export const getMachinesPaging = auth.getMachinesPaging
 export const onGuestCreated = analyticsRealtime.onGuestCreated
 export const onUserCreated = analyticsRealtime.onUserRegistered
 export const onUserLogin = analyticsRealtime.onLoginEvent
+export const backfillDashboardSummary = analyticsRealtime.backfillDashboardSummary
 export const computeDailyTrends = analyticsRealtime.computeDailyTrends
 export const computeRangeMetrics = analyticsRealtime.computeRangeMetrics
 export const cleanupOldMetrics = analyticsRealtime.cleanupOldAnalytics

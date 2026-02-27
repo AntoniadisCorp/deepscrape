@@ -2,7 +2,7 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable require-jsdoc */
 
-import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore"
+import { onDocumentCreated } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
 import { FieldValue, Timestamp } from "firebase-admin/firestore"
 
@@ -19,6 +19,33 @@ const mapToTop = (source: Record<string, number> | undefined, key: string, limit
     .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, limit)
     .map(([name, count]) => ({ [key]: name, count }))
+}
+
+const toLatitudeBand = (latitude?: number) => {
+  if (!Number.isFinite(latitude)) return "Unknown"
+  const lat = Number(latitude)
+  return `${Math.floor(lat)}..${Math.floor(lat) + 1}`
+}
+
+const toLongitudeBand = (longitude?: number) => {
+  if (!Number.isFinite(longitude)) return "Unknown"
+  const lng = Number(longitude)
+  return `${Math.floor(lng)}..${Math.floor(lng) + 1}`
+}
+
+type RangeSummary = {
+  byCountry?: Record<string, number>
+  byBrowser?: Record<string, number>
+  byDevice?: Record<string, number>
+  byProvider?: Record<string, number>
+}
+
+type MetricsDailyExtended = MetricsDaily & {
+  byRegion?: Record<string, number>
+  byLocation?: Record<string, number>
+  byGeoCell?: Record<string, number>
+  byLatitudeBand?: Record<string, number>
+  byLongitudeBand?: Record<string, number>
 }
 
 // ============================================================================
@@ -42,6 +69,12 @@ export const onGuestCreated = onDocumentCreated(
     const today = now.toISOString().split("T")[0]
     const hour = now.getHours()
     const hourKey = `${today}-${hour.toString().padStart(2, "0")}`
+    const geoCell =
+      Number.isFinite(guest.latitude) && Number.isFinite(guest.longitude) ?
+        `${Number(guest.latitude).toFixed(1)},${Number(guest.longitude).toFixed(1)}` :
+        "Unknown"
+    const latBand = toLatitudeBand(guest.latitude)
+    const lonBand = toLongitudeBand(guest.longitude)
 
     try {
     // Single batch transaction for consistency
@@ -56,6 +89,11 @@ export const onGuestCreated = onDocumentCreated(
         totalGuests: FieldValue.increment(1),
         activeGuests: FieldValue.increment(1),
         [`byCountry.${guest.country}`]: FieldValue.increment(1),
+        [`byRegion.${guest.region || "Unknown"}`]: FieldValue.increment(1),
+        [`byLocation.${guest.location || "Unknown"}`]: FieldValue.increment(1),
+        [`byGeoCell.${geoCell}`]: FieldValue.increment(1),
+        [`byLatitudeBand.${latBand}`]: FieldValue.increment(1),
+        [`byLongitudeBand.${lonBand}`]: FieldValue.increment(1),
         [`byBrowser.${guest.browser}`]: FieldValue.increment(1),
         [`byDevice.${guest.device}`]: FieldValue.increment(1),
         [`byOS.${guest.os}`]: FieldValue.increment(1),
@@ -104,6 +142,7 @@ export const onUserRegistered = onDocumentCreated(
   async (event) => {
     const user = event.data?.data() as Users
     if (!user) return
+    const userId = event.params.userId
 
     const now = new Date()
     const today = now.toISOString().split("T")[0]
@@ -124,7 +163,7 @@ export const onUserRegistered = onDocumentCreated(
         if (guestDoc.exists && !guestDoc.data()?.linkedAt) {
           batch.update(guestRef, {
             linkedAt: Timestamp.now(),
-            uid: user.uid,
+            uid: userId,
           })
           isConversion = true
         }
@@ -164,7 +203,7 @@ export const onUserRegistered = onDocumentCreated(
       // 3. Initialize user login metrics
       const userMetricsRef = db.doc(`users/${user.uid}/login_metrics`)
       batch.set(userMetricsRef, {
-        userId: user.uid,
+        userId: userId,
         totalLogins: 0,
         loginStreak: 0,
         longestStreak: 0,
@@ -178,7 +217,7 @@ export const onUserRegistered = onDocumentCreated(
       })
 
       await batch.commit()
-      console.log(`✅ User ${user.uid} registration metrics updated (conversion: ${isConversion})`)
+      console.log(`✅ User ${userId} registration metrics updated (conversion: ${isConversion})`)
     } catch (error) {
       console.error(`❌ Error updating user registration metrics for ${event.params.userId}:`, error)
     }
@@ -187,13 +226,13 @@ export const onUserRegistered = onDocumentCreated(
 /**
  * 🔥 Login event trigger - Updates login analytics and user metrics
  */
-export const onLoginEvent = onDocumentUpdated(
+export const onLoginEvent = onDocumentCreated(
   {
-    document: "users/{userId}/login_history/{loginId}",
+    document: "login_metrics/{userId}/login_history_Info/{loginId}",
     database: DATABASE_NAME, // ⭐ v2 requires database parameter for named databases
   },
   async (event) => {
-    const loginInfo = event.data?.after.data() as loginHistoryInfo
+    const loginInfo = event.data?.data() as loginHistoryInfo
     if (!loginInfo) return
 
     const now = new Date()
@@ -205,10 +244,11 @@ export const onLoginEvent = onDocumentUpdated(
 
       // 1. Update daily metrics
       const dailyRef = db.doc(`metrics_daily/${today}`)
+      const providerKey = loginInfo.providerId || "unknown"
       batch.set(dailyRef, {
         totalLogins: FieldValue.increment(1),
         [`loginsByHour.${hour}`]: FieldValue.increment(1),
-        [`byProvider.${loginInfo.providerId}`]: FieldValue.increment(1),
+        [`byProvider.${providerKey}`]: FieldValue.increment(1),
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
@@ -228,7 +268,7 @@ export const onLoginEvent = onDocumentUpdated(
       }, { merge: true })
 
       // 4. Update user login metrics
-      const userMetricsRef = db.doc(`users/${loginInfo.uid}/login_metrics`)
+      const userMetricsRef = db.doc(`users/${event.params.userId}/login_metrics`)
       batch.set(userMetricsRef, {
         totalLogins: FieldValue.increment(1),
         lastLogin: Timestamp.now(),
@@ -236,7 +276,7 @@ export const onLoginEvent = onDocumentUpdated(
       }, { merge: true })
 
       await batch.commit()
-      console.log(`✅ Login metrics updated for user ${loginInfo.uid}`)
+      console.log(`✅ Login metrics updated for user ${event.params.userId}`)
     } catch (error) {
       console.error("❌ Error updating login metrics:", error)
     }
@@ -252,20 +292,44 @@ export const onLoginEvent = onDocumentUpdated(
  */
 export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
   try {
-    const latestDailySnap = await db.collection("metrics_daily")
-      .orderBy("date", "desc")
-      .limit(1)
-      .get()
+    const now = new Date()
+    const last30Start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)
+      .toISOString().split("T")[0]
+    const last30StartTs = Timestamp.fromDate(new Date(`${last30Start}T00:00:00.000Z`))
+    const tomorrowTs = Timestamp.fromDate(new Date(now.getTime() + 24 * 60 * 60 * 1000))
+
+    const [latestDailySnap, rangeSnap, guestCountSnap, userCountSnap, last30DailySnap, last30LoginCount] = await Promise.all([
+      db.collection("metrics_daily")
+        .orderBy("date", "desc")
+        .limit(1)
+        .get(),
+      db.doc("metrics_range/last-30d").get(),
+      db.collection("guests").count().get(),
+      db.collection("users").count().get(),
+      db.collection("metrics_daily")
+        .where("date", ">=", last30Start)
+        .get(),
+      db.collectionGroup("login_history_Info")
+        .where("timestamp", ">=", last30StartTs)
+        .where("timestamp", "<", tomorrowTs)
+        .count()
+        .get(),
+    ])
 
     const latestDaily = latestDailySnap.docs[0]?.data() as MetricsDaily | undefined
+    const rangeData = rangeSnap.exists ? rangeSnap.data() as RangeSummary : null
 
-    const rangeSnap = await db.doc("metrics_range/last-30d").get()
-    const rangeData = rangeSnap.exists ? rangeSnap.data() as any : null
-
-    const totalGuests = latestDaily?.totalGuests || 0
-    const totalUsers = latestDaily?.totalUsers || 0
-    const totalLogins = latestDaily?.totalLogins || 0
-    const guestConversions = latestDaily?.guestConversions || 0
+    const totalGuests = guestCountSnap.data().count || 0
+    const totalUsers = userCountSnap.data().count || 0
+    const totalLoginsFromDaily = last30DailySnap.docs.reduce((sum, doc) => {
+      const data = doc.data() as MetricsDaily
+      return sum + (data.totalLogins || 0)
+    }, 0)
+    const totalLogins = Math.max(totalLoginsFromDaily, last30LoginCount.data().count || 0)
+    const guestConversions = last30DailySnap.docs.reduce((sum, doc) => {
+      const data = doc.data() as MetricsDaily
+      return sum + (data.guestConversions || 0)
+    }, 0)
     const conversionRate = totalGuests > 0 ?
       Math.round((guestConversions / totalGuests) * 100) : 0
 
@@ -316,22 +380,26 @@ export const computeDailyTrends = onSchedule("5 0 * * *", async () => {
     const yesterdayData = yesterdayDoc.data() as MetricsDaily | undefined
     const todayData = todayDoc.data() as MetricsDaily | undefined
 
-    if (!yesterdayData || !todayData) {
-      console.warn("Missing data for trend calculation")
-      return
-    }
-
     // Calculate trends (% change from yesterday)
     const calculateGrowth = (today: number, yesterday: number): number => {
       if (yesterday === 0) return today > 0 ? 100 : 0
       return Math.round(((today - yesterday) / yesterday) * 100)
     }
 
+    const todayGuests = todayData?.newGuests || 0
+    const yesterdayGuests = yesterdayData?.newGuests || 0
+    const todayUsers = todayData?.newUsers || 0
+    const yesterdayUsers = yesterdayData?.newUsers || 0
+    const todayLogins = todayData?.totalLogins || 0
+    const yesterdayLogins = yesterdayData?.totalLogins || 0
+    const todayConversion = todayData?.conversionRate || 0
+    const yesterdayConversion = yesterdayData?.conversionRate || 0
+
     const trends = {
-      guestsGrowth: calculateGrowth(todayData.newGuests, yesterdayData.newGuests),
-      usersGrowth: calculateGrowth(todayData.newUsers, yesterdayData.newUsers),
-      loginsGrowth: calculateGrowth(todayData.totalLogins, yesterdayData.totalLogins),
-      conversionGrowth: calculateGrowth(todayData.conversionRate || 0, yesterdayData.conversionRate || 0),
+      guestsGrowth: calculateGrowth(todayGuests, yesterdayGuests),
+      usersGrowth: calculateGrowth(todayUsers, yesterdayUsers),
+      loginsGrowth: calculateGrowth(todayLogins, yesterdayLogins),
+      conversionGrowth: calculateGrowth(todayConversion, yesterdayConversion),
     }
 
     // Update dashboard summary with trends
@@ -372,6 +440,18 @@ export const computeRangeMetrics = onSchedule({
 async function computeRangeMetric(rangeId: string, days: number) {
   const endDate = new Date()
   const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000)
+  const startTs = Timestamp.fromDate(new Date(Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth(),
+    startDate.getUTCDate(),
+    0, 0, 0, 0,
+  )))
+  const endExclusiveTs = Timestamp.fromDate(new Date(Date.UTC(
+    endDate.getUTCFullYear(),
+    endDate.getUTCMonth(),
+    endDate.getUTCDate() + 1,
+    0, 0, 0, 0,
+  )))
 
   // Generate array of dates
   const dates: string[] = []
@@ -380,10 +460,83 @@ async function computeRangeMetric(rangeId: string, days: number) {
   }
 
   // Fetch all daily metrics for the range
-  const dailyMetricsPromises = dates.map((date) =>
-    db.doc(`metrics_daily/${date}`).get()
-  )
-  const dailySnapshots = await Promise.all(dailyMetricsPromises)
+  const dailyMetricsPromises = dates.map((date) => db.doc(`metrics_daily/${date}`).get())
+  const [dailySnapshots, loginHistorySnap, usersCreatedSnap, guestsCreatedSnap] = await Promise.all([
+    Promise.all(dailyMetricsPromises),
+    db.collectionGroup("login_history_Info")
+      .where("timestamp", ">=", startTs)
+      .where("timestamp", "<", endExclusiveTs)
+      .get(),
+    db.collection("users")
+      .where("created_At", ">=", startTs)
+      .where("created_At", "<", endExclusiveTs)
+      .get(),
+    db.collection("guests")
+      .where("createdAt", ">=", startTs)
+      .where("createdAt", "<", endExclusiveTs)
+      .get(),
+  ])
+
+  const sourceLoginsByDate: Record<string, number> = {}
+  const sourceUsersByDate: Record<string, number> = {}
+  const sourceGuestsByDate: Record<string, number> = {}
+  const sourceConversionsByDate: Record<string, number> = {}
+
+  loginHistorySnap.docs.forEach((doc) => {
+    const login = doc.data() as loginHistoryInfo
+    const tsValue = login.timestamp as unknown as { toDate?: () => Date }
+    const dateKey = tsValue?.toDate ?
+      tsValue.toDate().toISOString().split("T")[0] :
+      new Date(login.timestamp as unknown as string).toISOString().split("T")[0]
+
+    sourceLoginsByDate[dateKey] = (sourceLoginsByDate[dateKey] || 0) + 1
+
+    const provider = login.providerId || "unknown"
+    byProvider[provider] = (byProvider[provider] || 0) + 1
+  })
+
+  usersCreatedSnap.docs.forEach((doc) => {
+    const user = doc.data() as Users
+    const tsValue = user.created_At as unknown as { toDate?: () => Date }
+    const dateKey = tsValue?.toDate ?
+      tsValue.toDate().toISOString().split("T")[0] :
+      new Date(user.created_At as unknown as string).toISOString().split("T")[0]
+
+    sourceUsersByDate[dateKey] = (sourceUsersByDate[dateKey] || 0) + 1
+
+    if (user.loginMetricsId) {
+      sourceConversionsByDate[dateKey] = (sourceConversionsByDate[dateKey] || 0) + 1
+    }
+  })
+
+  guestsCreatedSnap.docs.forEach((doc) => {
+    const guest = doc.data() as Guest
+    const tsValue = guest.createdAt as unknown as { toDate?: () => Date }
+    const dateKey = tsValue?.toDate ?
+      tsValue.toDate().toISOString().split("T")[0] :
+      new Date(guest.createdAt as unknown as string).toISOString().split("T")[0]
+
+    sourceGuestsByDate[dateKey] = (sourceGuestsByDate[dateKey] || 0) + 1
+
+    byCountry[guest.country || "Unknown"] = (byCountry[guest.country || "Unknown"] || 0) + 1
+    byRegion[guest.region || "Unknown"] = (byRegion[guest.region || "Unknown"] || 0) + 1
+    byLocation[guest.location || "Unknown"] = (byLocation[guest.location || "Unknown"] || 0) + 1
+
+    const geoCell =
+      Number.isFinite(guest.latitude) && Number.isFinite(guest.longitude) ?
+        `${Number(guest.latitude).toFixed(1)},${Number(guest.longitude).toFixed(1)}` :
+        "Unknown"
+
+    byGeoCell[geoCell] = (byGeoCell[geoCell] || 0) + 1
+
+    const latBand = toLatitudeBand(guest.latitude)
+    const lonBand = toLongitudeBand(guest.longitude)
+    byLatitudeBand[latBand] = (byLatitudeBand[latBand] || 0) + 1
+    byLongitudeBand[lonBand] = (byLongitudeBand[lonBand] || 0) + 1
+
+    byBrowser[guest.browser || "Unknown"] = (byBrowser[guest.browser || "Unknown"] || 0) + 1
+    byDevice[guest.device || "Unknown"] = (byDevice[guest.device || "Unknown"] || 0) + 1
+  })
 
   // Aggregate the data
   let totalGuests = 0
@@ -393,6 +546,11 @@ async function computeRangeMetric(rangeId: string, days: number) {
   let totalLogins = 0
   let guestConversions = 0
   const byCountry: { [key: string]: number } = {}
+  const byRegion: { [key: string]: number } = {}
+  const byLocation: { [key: string]: number } = {}
+  const byGeoCell: { [key: string]: number } = {}
+  const byLatitudeBand: { [key: string]: number } = {}
+  const byLongitudeBand: { [key: string]: number } = {}
   const byBrowser: { [key: string]: number } = {}
   const byDevice: { [key: string]: number } = {}
   const byProvider: { [key: string]: number } = {}
@@ -408,18 +566,49 @@ async function computeRangeMetric(rangeId: string, days: number) {
   dailySnapshots.forEach((snapshot, index) => {
     const data = snapshot.data() as MetricsDaily | undefined
     const date = dates[index]
+    const sourceNewGuests = sourceGuestsByDate[date] || 0
+    const sourceNewUsers = sourceUsersByDate[date] || 0
+    const sourceTotalLogins = sourceLoginsByDate[date] || 0
+    const sourceConversions = sourceConversionsByDate[date] || 0
 
     if (data) {
-      totalGuests += data.totalGuests || 0
-      newGuests += data.newGuests || 0
-      totalUsers += data.totalUsers || 0
-      newUsers += data.newUsers || 0
-      totalLogins += data.totalLogins || 0
-      guestConversions += data.guestConversions || 0
+      const finalNewGuests = Math.max(data.newGuests || 0, sourceNewGuests)
+      const finalNewUsers = Math.max(data.newUsers || 0, sourceNewUsers)
+      const finalTotalLogins = Math.max(data.totalLogins || 0, sourceTotalLogins)
+      const finalConversions = Math.max(data.guestConversions || 0, sourceConversions)
+
+      totalGuests += finalNewGuests
+      newGuests += finalNewGuests
+      totalUsers += finalNewUsers
+      newUsers += finalNewUsers
+      totalLogins += finalTotalLogins
+      guestConversions += finalConversions
 
       // Aggregate dimensions
       Object.entries(data.byCountry || {}).forEach(([country, count]) => {
         byCountry[country] = (byCountry[country] || 0) + count
+      })
+
+      const dataExt = data as MetricsDailyExtended
+
+      Object.entries(dataExt.byRegion || {}).forEach(([region, count]) => {
+        byRegion[region] = (byRegion[region] || 0) + (count as number)
+      })
+
+      Object.entries(dataExt.byLocation || {}).forEach(([location, count]) => {
+        byLocation[location] = (byLocation[location] || 0) + (count as number)
+      })
+
+      Object.entries(dataExt.byGeoCell || {}).forEach(([cell, count]) => {
+        byGeoCell[cell] = (byGeoCell[cell] || 0) + (count as number)
+      })
+
+      Object.entries(dataExt.byLatitudeBand || {}).forEach(([band, count]) => {
+        byLatitudeBand[band] = (byLatitudeBand[band] || 0) + (count as number)
+      })
+
+      Object.entries(dataExt.byLongitudeBand || {}).forEach(([band, count]) => {
+        byLongitudeBand[band] = (byLongitudeBand[band] || 0) + (count as number)
       })
 
       Object.entries(data.byBrowser || {}).forEach(([browser, count]) => {
@@ -436,24 +625,65 @@ async function computeRangeMetric(rangeId: string, days: number) {
 
       dailyBreakdown.push({
         date: date,
-        newGuests: data.newGuests || 0,
-        newUsers: data.newUsers || 0,
-        totalLogins: data.totalLogins || 0,
-        guestConversions: data.guestConversions || 0,
-        conversionRate: data.conversionRate || 0,
+        newGuests: finalNewGuests,
+        newUsers: finalNewUsers,
+        totalLogins: finalTotalLogins,
+        guestConversions: finalConversions,
+        conversionRate: finalNewGuests > 0 ? Math.round((finalConversions / finalNewGuests) * 100) : 0,
       })
     } else {
       // Fill missing days with zeros
       dailyBreakdown.push({
         date: date,
-        newGuests: 0,
-        newUsers: 0,
-        totalLogins: 0,
-        guestConversions: 0,
-        conversionRate: 0,
+        newGuests: sourceNewGuests,
+        newUsers: sourceNewUsers,
+        totalLogins: sourceTotalLogins,
+        guestConversions: sourceConversions,
+        conversionRate: sourceNewGuests > 0 ? Math.round((sourceConversions / sourceNewGuests) * 100) : 0,
       })
+
+      totalGuests += sourceNewGuests
+      newGuests += sourceNewGuests
+      totalUsers += sourceNewUsers
+      newUsers += sourceNewUsers
+      totalLogins += sourceTotalLogins
+      guestConversions += sourceConversions
     }
   })
+
+  // Fallback: rebuild logins from raw login history if daily totals are missing
+  if (totalLogins === 0) {
+    const rangeStart = Timestamp.fromDate(new Date(`${startDate.toISOString().split("T")[0]}T00:00:00.000Z`))
+    const rangeEndExclusiveDate = new Date(endDate)
+    rangeEndExclusiveDate.setDate(rangeEndExclusiveDate.getDate() + 1)
+    const rangeEndExclusive = Timestamp.fromDate(new Date(`${rangeEndExclusiveDate.toISOString().split("T")[0]}T00:00:00.000Z`))
+
+    const loginEventsSnap = await db.collectionGroup("login_history_Info")
+      .where("timestamp", ">=", rangeStart)
+      .where("timestamp", "<", rangeEndExclusive)
+      .get()
+
+    loginEventsSnap.forEach((doc) => {
+      const event = doc.data() as loginHistoryInfo
+      const ts = event.timestamp as unknown
+      const eventDateValue: Date | null =
+        ts instanceof Date ? ts :
+          (typeof ts === "object" && ts !== null && "toDate" in ts && typeof (ts as { toDate: () => Date }).toDate === "function") ?
+            (ts as { toDate: () => Date }).toDate() : null
+      if (!eventDateValue) {
+        return
+      }
+      const eventDate = eventDateValue.toISOString().slice(0, 10)
+      const day = dailyBreakdown.find((d) => d.date === eventDate)
+      if (day) {
+        day.totalLogins += 1
+      }
+      totalLogins += 1
+
+      const providerKey = event.providerId || "unknown"
+      byProvider[providerKey] = (byProvider[providerKey] || 0) + 1
+    })
+  }
 
   // Calculate averages and trends
   const avgDailyGuests = Math.round(newGuests / days)
@@ -478,6 +708,11 @@ async function computeRangeMetric(rangeId: string, days: number) {
     guestConversions: guestConversions,
     conversionRate: newGuests > 0 ? Math.round((guestConversions / newGuests) * 100) : 0,
     byCountry: byCountry,
+    byRegion: byRegion,
+    byLocation: byLocation,
+    byGeoCell: byGeoCell,
+    byLatitudeBand: byLatitudeBand,
+    byLongitudeBand: byLongitudeBand,
     byBrowser: byBrowser,
     byDevice: byDevice,
     byProvider: byProvider,

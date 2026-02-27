@@ -77,6 +77,11 @@ export interface MetricsDaily {
   
   // Dimensional breakdowns
   byCountry: { [country: string]: number }
+  byRegion?: { [region: string]: number }
+  byLocation?: { [location: string]: number }
+  byGeoCell?: { [geoCell: string]: number }
+  byLatitudeBand?: { [latitudeBand: string]: number }
+  byLongitudeBand?: { [longitudeBand: string]: number }
   byBrowser: { [browser: string]: number }
   byDevice: { [device: string]: number }
   byOS: { [os: string]: number }
@@ -135,6 +140,11 @@ export interface MetricsRange {
   
   // Dimensional aggregations
   byCountry: { [country: string]: number }
+  byRegion?: { [region: string]: number }
+  byLocation?: { [location: string]: number }
+  byGeoCell?: { [geoCell: string]: number }
+  byLatitudeBand?: { [latitudeBand: string]: number }
+  byLongitudeBand?: { [longitudeBand: string]: number }
   byBrowser: { [browser: string]: number }
   byDevice: { [device: string]: number }
   byProvider: { [provider: string]: number }

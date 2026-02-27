@@ -25,6 +25,13 @@ export const navigation = [
                     text: 'new'
                 },
             },
+            {
+                name: 'Migration',
+                url: '/admin/migration',
+                icon: {
+                    matIcon: 'sync_alt'
+                }
+            },
         ]
     },
     /* Posts Management  */

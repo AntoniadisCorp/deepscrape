@@ -40,7 +40,7 @@ export const MainRoutes: Routes = [
     {
         path: 'admin',
         data: { title: 'Admin', animation: 'admin' },
-        loadComponent: () => import('../../pages').then(m => m.AccountSettingsComponent),
+        loadComponent: () => import('../../pages').then(m => m.AdminWorkspaceComponent),
         loadChildren: () => import('./admin.route').then(m => m.AdminRoutes),
         canActivate: [AdminGuard],
     },
