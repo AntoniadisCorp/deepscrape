@@ -438,7 +438,7 @@
               <div
                 class="flex flex-row items-start justify-end w-full gap-2 p-4 rounded-md bg-transparent">
                 <p
-                  *ngIf="operation.metrics?.duration"
+                  *ngIf="operation.metrics.duration"
                   class="flex items-center">
                   <span
                     class="font-medium text-center text-gray-600 dark:text-gray-400">
@@ -476,7 +476,7 @@
                   </span>
                 </p>
                 <p
-                  *ngIf="operation.metrics?.peak_memory"
+                  *ngIf="operation.metrics.peak_memory"
                   class="flex items-center text-base">
                   <span
                     class="font-medium text-center text-gray-600 dark:text-gray-400">
@@ -615,21 +615,6 @@
               {{ totalOpePages }}
             </button>
 
-            <!-- Use this for small number of pages -->
-            <ng-container *ngIf="totalOpePages <= 7">
-              <button
-                *ngFor="let page of Array(totalOpePages)"
-                title="pagination buttons"
-                [class]="
-                  currentOpePage === page
-                    ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]'
-                    : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'
-                "
-                class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
-                (click)="onPageChanged(page, totalOpePages)">
-                {{ page }}
-              </button>
-            </ng-container>
           </div>
 
           <!-- Next button to move to next page -->

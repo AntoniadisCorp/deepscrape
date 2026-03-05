@@ -1,8 +1,14 @@
 import { CommonModule, DecimalPipe, NgFor, NgIf } from '@angular/common'
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core'
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms'
+import { MatDatepickerModule } from '@angular/material/datepicker'
+import { MatFormFieldModule } from '@angular/material/form-field'
+import { MatInputModule } from '@angular/material/input'
+import { provideNativeDateAdapter } from '@angular/material/core'
+import { RouterLink } from '@angular/router'
 import { FirestoreService } from 'src/app/core/services'
-import { DropdownComponent, SlideInModalComponent } from 'src/app/core/components'
+import { CheckboxComponent, DropdownComponent, SlideInModalComponent } from 'src/app/core/components'
+import { RippleDirective } from 'src/app/core/directives'
 import {
   DocumentData,
   Firestore,
@@ -71,7 +77,21 @@ interface HourlyAccumulator {
 
 @Component({
   selector: 'app-admin-migration',
-  imports: [CommonModule, ReactiveFormsModule, NgIf, NgFor, DecimalPipe, DropdownComponent, SlideInModalComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    NgIf,
+    NgFor,
+    DecimalPipe,
+    DropdownComponent,
+    CheckboxComponent,
+    SlideInModalComponent,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDatepickerModule,
+    RouterLink,
+  ],
+  providers: [provideNativeDateAdapter()],
   templateUrl: './admin-migration.component.html',
   styleUrl: './admin-migration.component.scss',
 })
@@ -80,7 +100,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder)
   private readonly db: Firestore = this.firestoreService.getInstanceDB('easyscrape')
 
-  readonly form = this.fb.group({
+  readonly form = this.fb.nonNullable.group({
     startDate: this.getDateOffset(-30),
     endDate: this.getDateOffset(0),
     chunkSize: 400,
@@ -119,6 +139,10 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
   validationMessage: string | null = null
   validationOk = false
   leaveActionInProgress = false
+
+  asBoolControl(controlName: 'includeDaily' | 'includeHourly' | 'includeRange' | 'includeSummary' | 'backupBeforeWrite'): FormControl<boolean> {
+    return this.form.get(controlName) as FormControl<boolean>
+  }
 
   private valueChangesSubscription: Subscription | null = null
   private leaveModalSubscription: Subscription | null = null
@@ -648,6 +672,8 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
       const byCountry = this.mergeByKey(sortedDaily.map((d) => d.byCountry))
       const byBrowser = this.mergeByKey(sortedDaily.map((d) => d.byBrowser))
       const byDevice = this.mergeByKey(sortedDaily.map((d) => d.byDevice))
+      const byOS = this.mergeByKey(sortedDaily.map((d) => d.byOS))
+      const byTimezone = this.mergeByKey(sortedDaily.map((d) => d.byTimezone))
 
       writes.push({
         path: 'metrics_summary/dashboard',
@@ -671,6 +697,10 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
           topCountries: this.mapToTop(byCountry, 'country', 5),
           topBrowsers: this.mapToTop(byBrowser, 'browser', 5),
           topDevices: this.mapToTop(byDevice, 'device', 5),
+          topOperatingSystems: this.mapToTop(byOS, 'os', 5),
+          byOS,
+          byProvider: {},
+          byTimezone,
           topProviders: [],
           lastUpdated: Timestamp.now(),
           computedAt: Timestamp.now(),
@@ -706,6 +736,8 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
     const byLongitudeBand = this.mergeByKey(rangeItems.map((d) => d.byLongitudeBand))
     const byBrowser = this.mergeByKey(rangeItems.map((d) => d.byBrowser))
     const byDevice = this.mergeByKey(rangeItems.map((d) => d.byDevice))
+    const byOS = this.mergeByKey(rangeItems.map((d) => d.byOS))
+    const byTimezone = this.mergeByKey(rangeItems.map((d) => d.byTimezone))
 
     const newGuests = rangeItems.reduce((sum, day) => sum + day.newGuests, 0)
     const guestConversions = rangeItems.reduce((sum, day) => sum + day.guestConversions, 0)
@@ -745,7 +777,9 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
         byLongitudeBand,
         byBrowser,
         byDevice,
+        byOS,
         byProvider: {},
+        byTimezone,
         dailyBreakdown,
         trends: {
           avgDailyGuests: days > 0 ? Math.round(newGuests / days) : 0,
@@ -956,13 +990,16 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
 
   private getOptions(): MigrationOptions | null {
     const raw = this.form.getRawValue()
-    if (!raw.startDate || !raw.endDate || Number(raw.chunkSize) <= 0) {
+    const startDate = this.toIsoDateString(raw.startDate)
+    const endDate = this.toIsoDateString(raw.endDate)
+
+    if (!startDate || !endDate || Number(raw.chunkSize) <= 0) {
       return null
     }
 
     return {
-      startDate: raw.startDate,
-      endDate: raw.endDate,
+      startDate,
+      endDate,
       chunkSize: Number(raw.chunkSize),
       includeDaily: !!raw.includeDaily,
       includeHourly: !!raw.includeHourly,
@@ -970,6 +1007,27 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
       includeSummary: !!raw.includeSummary,
       backupBeforeWrite: !!raw.backupBeforeWrite,
     }
+  }
+
+  private toIsoDateString(value: unknown): string | null {
+    if (!value) {
+      return null
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10)
+    }
+
+    if (typeof value === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value
+      }
+
+      const parsed = new Date(value)
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10)
+    }
+
+    return null
   }
 
   private async saveRunStatus(status: string, options: MigrationOptions | null, extra: Record<string, unknown>): Promise<void> {

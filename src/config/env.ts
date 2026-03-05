@@ -2,8 +2,30 @@
  * Typed environment variables
  * All variables are validated and accessible with full type safety and dot notation
  */
-import * as dotenv from "dotenv"
-dotenv.config()
+import * as dotenvx from "@dotenvx/dotenvx"
+dotenvx.config({ quiet: true })
+
+const normalizeUpstashRestUrl = (value: string): string => {
+  if (!value) {
+    return ''
+  }
+
+  try {
+    const parsed = new URL(value)
+    let hostname = parsed.hostname.trim().toLowerCase()
+
+    if (hostname.endsWith('.upstash.io.upstash.io')) {
+      hostname = hostname.replace(/\.upstash\.io\.upstash\.io$/, '.upstash.io')
+      parsed.hostname = hostname
+      return parsed.toString().replace(/\/$/, '')
+    }
+
+    return value
+  } catch {
+    const trimmed = value.trim()
+    return trimmed.replace(/\.upstash\.io\.upstash\.io(?=$|\/)/, '.upstash.io')
+  }
+}
 
 const getEnv = () => {
   const env = {
@@ -13,7 +35,7 @@ const getEnv = () => {
     PORT: parseInt(process.env['PORT'] || '4000', 10),
 
     // Upstash Redis configuration (for rate limiting)
-    UPSTASH_REDIS_REST_URL: process.env['UPSTASH_REDIS_REST_URL'] || '',
+    UPSTASH_REDIS_REST_URL: normalizeUpstashRestUrl(process.env['UPSTASH_REDIS_REST_URL'] || ''),
     UPSTASH_REDIS_REST_TOKEN: process.env['UPSTASH_REDIS_REST_TOKEN'] || '',
     UPSTASH_REDIS_REST_PORT: process.env['UPSTASH_REDIS_REST_PORT'] || '30766',
     UPSTASH_REDIS_REST_USER: process.env['UPSTASH_REDIS_REST_USER'] || 'default',

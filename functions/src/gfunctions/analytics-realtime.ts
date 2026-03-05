@@ -37,7 +37,9 @@ type RangeSummary = {
   byCountry?: Record<string, number>
   byBrowser?: Record<string, number>
   byDevice?: Record<string, number>
+  byOS?: Record<string, number>
   byProvider?: Record<string, number>
+  byTimezone?: Record<string, number>
 }
 
 type MetricsDailyExtended = MetricsDaily & {
@@ -111,6 +113,7 @@ export const onGuestCreated = onDocumentCreated(
         timestamp: Timestamp.now(),
         newGuests: FieldValue.increment(1),
         activeGuests: FieldValue.increment(1),
+        [`byOS.${guest.os || "Unknown"}`]: FieldValue.increment(1),
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
@@ -119,6 +122,11 @@ export const onGuestCreated = onDocumentCreated(
       batch.set(summaryRef, {
         totalGuests: FieldValue.increment(1),
         activeGuests: FieldValue.increment(1),
+        [`byCountry.${guest.country || "Unknown"}`]: FieldValue.increment(1),
+        [`byBrowser.${guest.browser || "Unknown"}`]: FieldValue.increment(1),
+        [`byDevice.${guest.device || "Unknown"}`]: FieldValue.increment(1),
+        [`byOS.${guest.os || "Unknown"}`]: FieldValue.increment(1),
+        [`byTimezone.${guest.timezone || "Unknown"}`]: FieldValue.increment(1),
         lastUpdated: Timestamp.now(),
         computedAt: Timestamp.now(),
       }, { merge: true })
@@ -264,6 +272,7 @@ export const onLoginEvent = onDocumentCreated(
       const summaryRef = db.doc("metrics_summary/dashboard")
       batch.set(summaryRef, {
         totalLogins: FieldValue.increment(1),
+        [`byProvider.${providerKey}`]: FieldValue.increment(1),
         lastUpdated: Timestamp.now(),
       }, { merge: true })
 
@@ -345,6 +354,10 @@ export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
       topCountries: mapToTop(rangeData?.byCountry || latestDaily?.byCountry, "country"),
       topBrowsers: mapToTop(rangeData?.byBrowser || latestDaily?.byBrowser, "browser"),
       topDevices: mapToTop(rangeData?.byDevice || latestDaily?.byDevice, "device"),
+      topOperatingSystems: mapToTop(rangeData?.byOS || latestDaily?.byOS, "os"),
+      byOS: rangeData?.byOS || latestDaily?.byOS || {},
+      byProvider: rangeData?.byProvider || latestDaily?.byProvider || {},
+      byTimezone: rangeData?.byTimezone || latestDaily?.byTimezone || {},
       topProviders: mapToTop(rangeData?.byProvider || latestDaily?.byProvider, "provider"),
       lastUpdated: Timestamp.now(),
       computedAt: Timestamp.now(),
@@ -482,6 +495,33 @@ async function computeRangeMetric(rangeId: string, days: number) {
   const sourceGuestsByDate: Record<string, number> = {}
   const sourceConversionsByDate: Record<string, number> = {}
 
+  // Aggregate the data
+  let totalGuests = 0
+  let newGuests = 0
+  let totalUsers = 0
+  let newUsers = 0
+  let totalLogins = 0
+  let guestConversions = 0
+  const byCountry: { [key: string]: number } = {}
+  const byRegion: { [key: string]: number } = {}
+  const byLocation: { [key: string]: number } = {}
+  const byGeoCell: { [key: string]: number } = {}
+  const byLatitudeBand: { [key: string]: number } = {}
+  const byLongitudeBand: { [key: string]: number } = {}
+  const byBrowser: { [key: string]: number } = {}
+  const byDevice: { [key: string]: number } = {}
+  const byOS: { [key: string]: number } = {}
+  const byProvider: { [key: string]: number } = {}
+  const byTimezone: { [key: string]: number } = {}
+  const dailyBreakdown: Array<{
+    date: string
+    newGuests: number
+    newUsers: number
+    totalLogins: number
+    guestConversions: number
+    conversionRate: number
+  }> = []
+
   loginHistorySnap.docs.forEach((doc) => {
     const login = doc.data() as loginHistoryInfo
     const tsValue = login.timestamp as unknown as { toDate?: () => Date }
@@ -536,32 +576,9 @@ async function computeRangeMetric(rangeId: string, days: number) {
 
     byBrowser[guest.browser || "Unknown"] = (byBrowser[guest.browser || "Unknown"] || 0) + 1
     byDevice[guest.device || "Unknown"] = (byDevice[guest.device || "Unknown"] || 0) + 1
+    byOS[guest.os || "Unknown"] = (byOS[guest.os || "Unknown"] || 0) + 1
+    byTimezone[guest.timezone || "Unknown"] = (byTimezone[guest.timezone || "Unknown"] || 0) + 1
   })
-
-  // Aggregate the data
-  let totalGuests = 0
-  let newGuests = 0
-  let totalUsers = 0
-  let newUsers = 0
-  let totalLogins = 0
-  let guestConversions = 0
-  const byCountry: { [key: string]: number } = {}
-  const byRegion: { [key: string]: number } = {}
-  const byLocation: { [key: string]: number } = {}
-  const byGeoCell: { [key: string]: number } = {}
-  const byLatitudeBand: { [key: string]: number } = {}
-  const byLongitudeBand: { [key: string]: number } = {}
-  const byBrowser: { [key: string]: number } = {}
-  const byDevice: { [key: string]: number } = {}
-  const byProvider: { [key: string]: number } = {}
-  const dailyBreakdown: Array<{
-    date: string
-    newGuests: number
-    newUsers: number
-    totalLogins: number
-    guestConversions: number
-    conversionRate: number
-  }> = []
 
   dailySnapshots.forEach((snapshot, index) => {
     const data = snapshot.data() as MetricsDaily | undefined
@@ -617,6 +634,14 @@ async function computeRangeMetric(rangeId: string, days: number) {
 
       Object.entries(data.byDevice || {}).forEach(([device, count]) => {
         byDevice[device] = (byDevice[device] || 0) + count
+      })
+
+      Object.entries(data.byOS || {}).forEach(([os, count]) => {
+        byOS[os] = (byOS[os] || 0) + count
+      })
+
+      Object.entries(data.byTimezone || {}).forEach(([timezone, count]) => {
+        byTimezone[timezone] = (byTimezone[timezone] || 0) + count
       })
 
       Object.entries(data.byProvider || {}).forEach(([provider, count]) => {
@@ -715,7 +740,9 @@ async function computeRangeMetric(rangeId: string, days: number) {
     byLongitudeBand: byLongitudeBand,
     byBrowser: byBrowser,
     byDevice: byDevice,
+    byOS: byOS,
     byProvider: byProvider,
+    byTimezone: byTimezone,
     dailyBreakdown: dailyBreakdown,
     trends: {
       avgDailyGuests: avgDailyGuests,

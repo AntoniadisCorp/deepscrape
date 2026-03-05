@@ -7,8 +7,27 @@ import {RedisOptions, Redis as IORedis} from "ioredis"
 import chalk from "chalk"
 import {env} from "../config/env"
 
+const sanitizeUpstashRestUrl = (value: string): string => {
+    if (!value) {
+        return ""
+    }
+
+    try {
+        const parsed = new URL(value)
+        if (parsed.hostname.endsWith(".upstash.io.upstash.io")) {
+            parsed.hostname = parsed.hostname.replace(/\.upstash\.io\.upstash\.io$/, ".upstash.io")
+            return parsed.toString().replace(/\/$/, "")
+        }
+        return value
+    } catch {
+        return value
+            .trim()
+            .replace(/\.upstash\.io\.upstash\.io(?=$|\/)/, ".upstash.io")
+    }
+}
+
 // Initialize Upstash Redis client
-const upstashUrl = env.UPSTASH_REDIS_REST_URL
+const upstashUrl = sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL)
 const upstashToken = env.UPSTASH_REDIS_REST_TOKEN
 const redis = new Redis({
     url: upstashUrl || "",
@@ -18,38 +37,54 @@ const redis = new Redis({
 
 // Configure your Redis client.  IMPORTANT: Use environment variables
 // for sensitive information like host, port, password.
-const httpHost = upstashUrl
-const port = env.UPSTASH_REDIS_REST_PORT
-const username = env.UPSTASH_REDIS_REST_USER // Default username for Redis
-const p4ss = env.UPSTASH_REDIS_REST_PASSWORD
+const tcpHostRaw = env.UPSTASH_REDIS_REST_URL || upstashUrl
+const tcpPortRaw = env.UPSTASH_REDIS_REST_PORT || env.UPSTASH_REDIS_REST_PORT
+const tcpUsername = env.UPSTASH_REDIS_REST_USER || env.UPSTASH_REDIS_REST_USER // Default username for Redis
+const tcpPassword = env.UPSTASH_REDIS_REST_PASSWORD || env.UPSTASH_REDIS_REST_PASSWORD
 
 let client: IORedis | null = null
 
+const parseRedisHost = (value: string): string => {
+    try {
+        const parsed = new URL(value)
+        let host = parsed.hostname.trim().toLowerCase()
 
-if (httpHost?.length && port?.length && username?.length && p4ss?.length) {
+        // Defensive normalization for malformed values like: *.upstash.io.upstash.io
+        const duplicatedSuffix = ".upstash.io.upstash.io"
+        if (host.endsWith(duplicatedSuffix)) {
+            host = host.replace(/\.upstash\.io\.upstash\.io$/, ".upstash.io")
+        }
+
+        return host
+    } catch {
+        return value.replace(/^https?:\/\//, "").trim().toLowerCase()
+    }
+}
+
+
+if (tcpHostRaw?.length && tcpPortRaw?.length && tcpUsername?.length && tcpPassword?.length) {
     // Configure your Redis client.  IMPORTANT: Use environment variables
     // for sensitive information like host, port, password.
-    // remove https:// from the host if it exists
-    const host = httpHost.split("https://")[1]
+    const host = parseRedisHost(tcpHostRaw)
+    const port = parseInt(tcpPortRaw || "30766", 10)
 
     // Define Redis options
     const redisOptions: RedisOptions = {
-        host: httpHost || "localhost", // Read from env
-        port: parseInt(port || "30766"), // Read from env
-        username: username || "default", // Default username for Redis
-        password: p4ss || "", // Read from env
+        host: host || "localhost", // Read from env
+        port, // Read from env
+        username: tcpUsername || "default", // Default username for Redis
+        password: tcpPassword || "", // Read from env
         db: 0, // Default database
         lazyConnect: true, // Use lazy connect to avoid immediate connection
+        tls: {},
     }
 
     // Set username if provided which should resolve the
     // authentication issue with older Redis versions.
 
-    const redisUrl = `rediss://${redisOptions.username}:${redisOptions.password}@${host}:${port}`
-    client = new IORedis(redisUrl)
+    client = new IORedis(redisOptions)
 
     // Log the Redis URL for debugging purposes
-    // console.log(chalk.hex("#74A36AFF").bold("Upstash URL") + ": " + chalk.yellow.bold(`${redisUrl}`))
     console.log(chalk.hex("#028C9E").bold("Upstash Redis client initialized ") + chalk.yellow.bold(`${host}:${port}`))
 
     // client.quit() // Ensure we start with a clean slate
@@ -72,7 +107,7 @@ if (httpHost?.length && port?.length && username?.length && p4ss?.length) {
         console.log("Redis client quit")
     })
 } else {
-    console.error("Redis client not connected: Missing environment variables")
+    console.warn("Redis client not connected: Missing TCP environment variables (UPSTASH_REDIS_REST_URL/PORT/USERNAME/PASSWORD)")
 }
 
 export {client as redisClient, redis}

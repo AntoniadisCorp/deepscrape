@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core'
 import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterOutlet } from '@angular/router'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
+import { HttpClient } from '@angular/common/http'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
 import { LoggerService, SnackbarService, SvgIconService, HeartbeatService, FirestoreService, AnalyticsService, AuthService } from './core/services'
@@ -14,6 +15,7 @@ import { Inject, OnInit, OnDestroy } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { NgswUpdateService } from './core/services/ngsw-update.service'
 import { Analytics } from '@angular/fire/analytics'
+import { environment } from 'src/environments/environment'
 
 /* 
                      ,//@@@.
@@ -75,7 +77,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   protected isLoading: boolean = false
   protected showRouteLoader: boolean = false
-  protected route = ''
+  protected route = 'initial'
   protected isAuthState$: Observable<boolean | null> = of(null)
 
   private readonly loaderDelayMs = 120
@@ -88,6 +90,7 @@ export class AppComponent implements OnInit, OnDestroy {
     @Inject(PLATFORM_ID) private platformId: Object,
     private matIconRegistry: SvgIconService,
     private router: Router,
+    private http: HttpClient,
     private theme: ThemeToggleComponent,
     private snackbarService: SnackbarService,
     private authService: AuthService,
@@ -151,7 +154,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
     const isBrowser = isPlatformBrowser(this.platformId)
     // Make a request to the status endpoint to trigger guestTracker
-    if (isBrowser) {
+    if (isBrowser && environment.production) {
+      this.http.get('/csrf-token', { withCredentials: true })
+        .pipe(
+          takeUntilDestroyed(this.destroyRef),
+          catchError(() => of(null)),
+        )
+        .subscribe()
+
       // HeartbeatService will be started only for authenticated users
       // Send custom analytics event to backend
       forkJoin([
@@ -199,7 +209,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Helper method to get the animation data from the router outlet
   getRouteAnimationData(outlet?: RouterOutlet | null) {
-    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']
+    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation'] || 'initial'
   }
 
   ngOnDestroy(): void {

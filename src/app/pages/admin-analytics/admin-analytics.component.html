@@ -1,18 +1,15 @@
 <!-- Admin Analytics Dashboard -->
-<div class="admin-analytics-theme mt-10 min-h-screen bg-slate-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 rounded-md">
+<div class="admin-analytics-theme mt-10 min-h-screen bg-transparent dark:bg-gray-900 rounded-md">
   <!-- Header -->
   <header class="mb-8">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-          Admin Analytics Dashboard
-        </h1>
         <p class="text-base text-slate-600 dark:text-slate-300">
           Real-time insights and metrics by selected period
         </p>
       </div>
 
-      <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
+      <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
         <div class="min-w-[180px]">
           <app-dropdown
             [control]="periodControl"
@@ -39,14 +36,14 @@
           <button
             type="button"
             (click)="applyCustomRange()"
-            class="admin-material-btn admin-material-btn--primary self-end px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium">
+            class="btn btn-sm btn-blue btn-ring btn-ring-blue self-end disabled:opacity-50 disabled:cursor-not-allowed">
             Apply
           </button>
         </div>
 
         <a
           routerLink="/admin/migration"
-          class="admin-material-btn admin-material-btn--ghost inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          class="btn btn-sm btn-gray btn-ring btn-ring-blue inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
           Open Migration Tools
         </a>
@@ -104,7 +101,7 @@
               {{ guestCount + userCount | number }}
             </p>
             <span class="text-xs text-slate-500 dark:text-slate-400">
-              All time unique visitors
+              {{ selectedPeriodLabel }} unique visitors
             </span>
           </div>
         </div>        <!-- Active Users -->
@@ -161,7 +158,7 @@
               {{ totalLogins | number }}
             </p>
             <span class="text-xs text-slate-500 dark:text-slate-400">
-              Last 7 days
+              {{ selectedPeriodLabel }}
             </span>
           </div>
         </div>
@@ -179,7 +176,7 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
         <!-- Conversion Funnel -->
         <div
           class="col-span-full bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
@@ -249,7 +246,7 @@
               </p>
               <p
                 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                {{ totalLogins / 7 | number : '1.0-0' }}
+                {{ totalLogins / (displayPeriodDays || 1) | number : '1.0-0' }}
               </p>
             </div>
             <div
@@ -297,7 +294,7 @@
           </div>
           <div class="space-y-3">
             <!-- Sessions/User -->
-            <div class="flex items-center justify-between py-2 border-l-4 border-blue-600 dark:border-blue-500 pl-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-r-lg">
+            <div class="flex flex-wrap items-center justify-between py-2 border-l-4 border-blue-600 dark:border-blue-500 pl-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-r-lg">
               <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <lucide-angular [img]="icons['user-round']" class="w-4 h-4 text-blue-600 dark:text-blue-400 fill-none" aria-label="Sessions/User"></lucide-angular>
                 Sessions/User
@@ -310,20 +307,20 @@
               </div>
             </div>
             <!-- New Visitors/Day -->
-            <div class="flex items-center justify-between py-2 border-l-4 border-emerald-600 dark:border-emerald-500 pl-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-r-lg">
+            <div class="flex flex-wrap items-center justify-between py-2 border-l-4 border-emerald-600 dark:border-emerald-500 pl-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-r-lg">
               <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <lucide-angular [img]="icons['user-plus']" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 fill-none" aria-label="New Visitors/Day"></lucide-angular>
                 New Visitors/Day
               </span>
               <div class="flex items-center gap-2">
-                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ (guestCount + userCount) / 7 | number : '1.0-0' }}</span>
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ (guestCount + userCount) / (displayPeriodDays || 1) | number : '1.0-0' }}</span>
                 <div class="w-20 h-2 bg-emerald-200 dark:bg-emerald-900 rounded-full overflow-hidden">
-                  <div [style.width.%]="Math.min(((guestCount + userCount) / 7) * 5, 100)" class="h-2 bg-emerald-600 dark:bg-emerald-400"></div>
+                  <div [style.width.%]="Math.min(((guestCount + userCount) / (displayPeriodDays || 1)) * 5, 100)" class="h-2 bg-emerald-600 dark:bg-emerald-400"></div>
                 </div>
               </div>
             </div>
             <!-- Online Now (5m) -->
-            <div class="flex items-center justify-between py-2 border-l-4 border-cyan-600 dark:border-cyan-500 pl-3 bg-cyan-50/50 dark:bg-cyan-950/20 rounded-r-lg">
+            <div class="flex flex-wrap items-center justify-between py-2 border-l-4 border-cyan-600 dark:border-cyan-500 pl-3 dark:bg-cyan-950/20 rounded-r-lg">
               <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <lucide-angular [img]="icons['zap']" class="w-4 h-4 text-cyan-600 dark:text-cyan-400 fill-none" aria-label="Online Now"></lucide-angular>
                 Online Now (5m)
@@ -336,7 +333,7 @@
               </div>
             </div>
             <!-- Retention Rate -->
-            <div class="flex items-center justify-between py-2 border-l-4 border-violet-600 dark:border-violet-500 pl-3 bg-violet-50/50 dark:bg-violet-950/20 rounded-r-lg">
+            <div class="flex flex-wrap items-center justify-between py-2 border-l-4 border-violet-600 dark:border-violet-500 pl-3 bg-violet-50/50 dark:bg-violet-950/20 rounded-r-lg">
               <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <lucide-angular [img]="icons['repeat']" class="w-4 h-4 text-violet-600 dark:text-violet-400 fill-none" aria-label="Retention Rate"></lucide-angular>
                 Retention Rate
@@ -349,7 +346,7 @@
               </div>
             </div>
             <!-- Global Reach -->
-            <div class="flex items-center justify-between py-2 border-l-4 border-amber-600 dark:border-amber-500 pl-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-r-lg">
+            <div class="flex flex-wrap items-center justify-between py-2 border-l-4 border-amber-600 dark:border-amber-500 pl-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-r-lg">
               <span class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <lucide-angular [img]="icons['globe']" class="w-4 h-4 text-amber-600 dark:text-amber-400 fill-none" aria-label="Global Reach"></lucide-angular>
                 Global Reach
@@ -378,7 +375,7 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6">
           <!-- Logins Over Time Chart -->
           <div
             class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
@@ -396,7 +393,7 @@
               </button>
             </div>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="lineChartData"
@@ -413,7 +410,7 @@
               <lucide-angular [img]="icons['user-distribution']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="User Distribution"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="pieChartData"
@@ -430,7 +427,7 @@
               <lucide-angular [img]="icons['login-methods']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Login Methods"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="doughnutChartData"
@@ -447,7 +444,7 @@
               <lucide-angular [img]="icons['daily-activity']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Daily Activity Comparison"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="barChartData"
@@ -464,7 +461,7 @@
               <lucide-angular [img]="icons['peak-hours']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Peak Activity Hours"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="radarChartData"
@@ -486,7 +483,7 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6">
           <!-- Guest Conversion Chart -->
           <div
             class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
@@ -495,7 +492,7 @@
               <lucide-angular [img]="icons['guest-conversion']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Guest Conversion"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="guestConversionChartData"
@@ -508,11 +505,11 @@
           <div
             class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-              Guest Activity (7d)
+              Guest Activity
               <lucide-angular [img]="icons['guest-activity']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Guest Activity (7d)"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="guestActivityChartData"
@@ -529,7 +526,7 @@
               <lucide-angular [img]="icons['browser-distribution']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Browser Distribution"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="guestBrowserChartData"
@@ -546,7 +543,7 @@
               <lucide-angular [img]="icons['device-types']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Device Types"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="guestDeviceChartData"
@@ -563,7 +560,7 @@
               <lucide-angular [img]="icons['top-countries']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Top 10 Countries"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="guestCountryChartData"
@@ -580,12 +577,29 @@
               <lucide-angular [img]="icons['operating-systems']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Operating Systems"></lucide-angular>
             </h3>
             <div
-              class="flex-1 min-h-64 overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
               <canvas
                 baseChart
                 [data]="guestOSChartData"
                 [options]="guestOSChartOptions"
                 [type]="guestOSChartType"></canvas>
+            </div>
+          </div>
+
+          <!-- Timezone Distribution -->
+          <div
+            class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col xl:col-span-3">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
+              Timezone Distribution
+              <lucide-angular [img]="icons['globe']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Timezone Distribution"></lucide-angular>
+            </h3>
+            <div
+              class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
+              <canvas
+                baseChart
+                [data]="guestTimezoneChartData"
+                [options]="guestTimezoneChartOptions"
+                [type]="guestTimezoneChartType"></canvas>
             </div>
           </div>
         </div>

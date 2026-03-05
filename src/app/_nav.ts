@@ -32,6 +32,20 @@ export const navigation = [
                     matIcon: 'sync_alt'
                 }
             },
+            {
+                name: 'Migration Runs',
+                url: '/admin/migration/runs',
+                icon: {
+                    matIcon: 'history'
+                }
+            },
+            {
+                name: 'Migration Backups',
+                url: '/admin/migration/backups',
+                icon: {
+                    matIcon: 'backup'
+                }
+            },
         ]
     },
     /* Posts Management  */

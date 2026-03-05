@@ -22,6 +22,16 @@ export const AdminRoutes: Routes = [
     data: { title: 'analytics', animation: 'admin_analytics' },
   },
   {
+    path: 'migration/runs',
+    loadComponent: () => import('../../pages').then(m => m.AdminMigrationRunsComponent),
+    data: { title: 'migration runs', animation: 'admin_migration_runs' },
+  },
+  {
+    path: 'migration/backups',
+    loadComponent: () => import('../../pages').then(m => m.AdminMigrationBackupsComponent),
+    data: { title: 'migration backups', animation: 'admin_migration_backups' },
+  },
+  {
     path: 'migration',
     loadComponent: () => import('../../pages').then(m => m.AdminMigrationComponent),
     canDeactivate: [migrationLeaveGuard],

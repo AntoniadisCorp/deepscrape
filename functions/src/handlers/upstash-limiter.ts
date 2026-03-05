@@ -1,3 +1,4 @@
+/* eslint-disable require-jsdoc */
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -13,9 +14,28 @@ import {Response, NextFunction} from "express"
 import {Ratelimit} from "@upstash/ratelimit"
 import {Redis} from "@upstash/redis"
 import {env} from "../config/env"
+
+const sanitizeUpstashRestUrl = (value: string): string => {
+  if (!value) {
+    return ""
+  }
+
+  try {
+    const parsed = new URL(value)
+    if (parsed.hostname.endsWith(".upstash.io.upstash.io")) {
+      parsed.hostname = parsed.hostname.replace(/\.upstash\.io\.upstash\.io$/, ".upstash.io")
+      return parsed.toString().replace(/\/$/, "")
+    }
+    return value
+  } catch {
+    return value
+      .trim()
+      .replace(/\.upstash\.io\.upstash\.io(?=$|\/)/, ".upstash.io")
+  }
+}
 // Initialize Upstash Redis and Ratelimit
 const redis = new Redis({
-  url: env.UPSTASH_REDIS_REST_URL,
+  url: sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL),
   token: env.UPSTASH_REDIS_REST_TOKEN,
 }) as any
 
@@ -36,15 +56,27 @@ const functionRatelimit = new Ratelimit({
 })
 
 /**
- * Express middleware for Firebase Functions rate limiting
- * @param {any} req - Express request object
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
+ * Analytics/events limiter
+ * Uses the same window but disables automatic deny-list protection
+ * to avoid false-positive 403s on high-volume client telemetry.
  */
-export async function upstashFunctionLimiter(
+const eventRatelimit = new Ratelimit({
+  redis: redis as any,
+  limiter: Ratelimit.slidingWindow(
+    env.PRODUCTION === "true" ? 100 : 50,
+    env.PRODUCTION === "true" ? "15 m" : "1 m"
+  ),
+  analytics: env.PRODUCTION === "true",
+  enableProtection: false,
+  prefix: "eventRateLimit",
+})
+
+async function applyRateLimit(
   req: any,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
+  ratelimit: Ratelimit,
+  allowDenyListBlock = true
 ): Promise<Response | void> {
   // Skip rate limiting for health checks
   if (req.path === "/health" || req.path === "/ping" || req.path === "/") {
@@ -60,7 +92,7 @@ export async function upstashFunctionLimiter(
     const identifier = req.user?.uid || ip
 
     // Apply rate limit with protection
-    const {success, limit, remaining, reset, pending, reason} = await functionRatelimit.limit(
+    const {success, limit, remaining, reset, pending, reason} = await ratelimit.limit(
       identifier,
       {
         ip, // For auto IP deny list
@@ -87,7 +119,7 @@ export async function upstashFunctionLimiter(
       res.set("Retry-After", resetSec.toString())
 
       // If blocked by deny list
-      if (reason === "denyList") {
+      if (allowDenyListBlock && reason === "denyList") {
         return res.status(403).set("Content-Type", "text/html").send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -110,7 +142,7 @@ export async function upstashFunctionLimiter(
         <span class="text-red-600 font-semibold">Reason: Security Policy Violation</span>
       </p>
       <div class="flex gap-4 py-6 justify-center">
-        <button class="flex min-w-[84px] max-w-xs cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-[#195de6] text-white text-sm font-bold hover:bg-blue-700" onclick="window.location.href='/'">
+        <button class="flex min-w-[84px] max-w-xs cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-[#195de6] text-white text-sm font-bold hover:bg-blue-700" onclick="window.location.href='/'>
           <span>Go Home</span>
         </button>
       </div>
@@ -177,6 +209,28 @@ export async function upstashFunctionLimiter(
     // On error, allow request but log it
     next()
   }
+}
+
+/**
+ * Express middleware for Firebase Functions rate limiting
+ * @param {any} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ */
+export async function upstashFunctionLimiter(
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> {
+  return applyRateLimit(req, res, next, functionRatelimit, true)
+}
+
+export async function upstashEventLimiter(
+  req: any,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> {
+  return applyRateLimit(req, res, next, eventRatelimit, false)
 }
 
 export {functionRatelimit}

@@ -4,14 +4,14 @@
 /* eslint-disable object-curly-spacing */
 /* eslint-disable linebreak-style */
 // Initialize Express App and Middleware //
-import express, { NextFunction, Response, Request, json } from "express"
+import express, { NextFunction, Response, Request } from "express"
 import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
-import { upstashFunctionLimiter, limiter, statusCheck } from "./handlers"
-import * as dotenv from "dotenv"
+import { upstashEventLimiter, upstashFunctionLimiter, statusCheck } from "./handlers"
+import * as dotenvx from "@dotenvx/dotenvx"
 import { AuthAPIProxy, EventsAPIProxy, ReverseAPIProxy } from "./infrastructure"
 import cookieParser from "cookie-parser"
 import csurf from "csurf"
@@ -19,10 +19,9 @@ import { geoDBManager, guestTracker, IP2LocationManager, onError, onListening } 
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
 import { env } from "./config/env"
-// import csurf from "csurf"
 
 // import { createNodeRequestHandler } from "@angular/ssr/node"
-dotenv.config({ quiet: true })
+dotenvx.config({ quiet: true })
 // import { existsSync } from "node:fs"
 // import { reqHandler } from "../../server"
 // see here: https://reddit.com/r/reactjs/comments/fsw405/firebase_cloud_functions_cors_policy_error/?rdt=47413
@@ -33,10 +32,17 @@ export const corss = cors({
       "http://localhost:4200", "http://127.0.0.1:4200", "http://127.0.0.1:8081"], // Allow all origins or specify your frontend URL
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], // Specify allowed methods "OPTIONS"
   allowedHeaders: ["content-type", "Authorization", "Accept", "anthropic-version", "x-with-iframe",
-    "x-return-format", "x-target-selector", "x-with-generated-alt", "x-set-cookie", "x-api-key"], // Specify allowed headers
+    "x-return-format", "x-target-selector", "x-with-generated-alt", "x-set-cookie", "x-api-key",
+    "csrf-token", "x-csrf-token"], // Specify allowed headers
   maxAge: 1,
   credentials: true,
 })
+
+const CSRF_IGNORED_PATH_PREFIXES = ["/event", "/status", "/oauth"]
+
+function shouldBypassCsrf(req: Request): boolean {
+  return CSRF_IGNORED_PATH_PREFIXES.some((prefix) => req.path.startsWith(prefix))
+}
 
 /* eslint-disable semi */
 function serveapp() {
@@ -137,23 +143,69 @@ function serveapp() {
 
   server.use(morgan("combined"))
   server.use(corss)
-  server.use(cookieParser())
-  // Add CSRF protection middleware with exceptions for API routes using JWT auth
-  server.use(csurf({
-    cookie: true,
-    ignoreMethods: ["HEAD", "OPTIONS"], // Ignore CSRF for safe HTTP methods
-    // Skip CSRF for routes that use JWT authentication
-    value: (req) => {
-      // Skip CSRF check for JWT-authenticated API routes
-      if (req.path.startsWith("/api") || req.path.startsWith("/status") || req.path.startsWith("/event")) {
-        return "skip-csrf";
-      }
-      // Check for CSRF token in header or body
-      return req.headers["csrf-token"] as string ||
-             req.body?._csrf ||
-             req.query?._csrf as string;
+  const cookieSecret = process.env["COOKIE_SECRET"] || process.env["CSRF_COOKIE_SECRET"]
+  if (env.PRODUCTION === "true" && !cookieSecret) {
+    throw new Error("COOKIE_SECRET (or CSRF_COOKIE_SECRET) is required in production")
+  }
+  server.use(cookieParser(cookieSecret))
+  const csrfProtection = csurf({
+    cookie: {
+      key: "_csrf_secret",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: env.PRODUCTION === "true",
+      path: "/",
+      signed: !!cookieSecret,
     },
-  }))
+    ignoreMethods: ["GET", "HEAD", "OPTIONS"],
+    value: (req) => {
+      return (req.headers["csrf-token"] as string) ||
+        (req.headers["x-csrf-token"] as string) ||
+        req.body?._csrf ||
+        req.query?._csrf as string;
+    },
+  })
+
+  // Apply CSRF protection for browser-facing and API routes. Machine/webhook/health
+  // endpoints are excluded because they are non-browser callers.
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    if (shouldBypassCsrf(req)) {
+      return next()
+    }
+    return csrfProtection(req, res, next)
+  })
+
+  // Issue Angular-readable CSRF token cookie after csurf middleware attaches req.csrfToken().
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    if (shouldBypassCsrf(req)) {
+      return next()
+    }
+
+    const tokenFactory = (req as Request & { csrfToken?: () => string }).csrfToken
+    if (typeof tokenFactory === "function") {
+      const token = tokenFactory()
+      res.cookie("_csrf", token, {
+        httpOnly: false,
+        sameSite: "lax",
+        secure: env.PRODUCTION === "true",
+        path: "/",
+      })
+    }
+
+    return next()
+  })
+
+  server.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
+    if ((error as {code?: string})?.code !== "EBADCSRFTOKEN") {
+      return next(error)
+    }
+
+    if (req.path.startsWith("/api")) {
+      return res.status(403).json({ error: "Invalid CSRF token" })
+    }
+
+    return res.status(403).send("Invalid CSRF token")
+  })
   // Optimized security headers middleware
   server.use((req, res, next) => {
     // Generate a nonce for each request
@@ -181,14 +233,34 @@ function serveapp() {
     next()
   })
 
+  // Optional SPA endpoint for proactive CSRF token refresh.
+  server.get("/csrf-token", (req: Request, res: Response) => {
+    const tokenFactory = (req as Request & { csrfToken?: () => string }).csrfToken
+    if (typeof tokenFactory !== "function") {
+      return res.status(500).json({ error: "CSRF middleware unavailable" })
+    }
+
+    const token = tokenFactory()
+    res.cookie("_csrf", token, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: env.PRODUCTION === "true",
+      path: "/",
+    })
+    res.setHeader("Cache-Control", "no-store")
+    return res.status(200).json({ csrfToken: token })
+  })
+
   // Public API status route (no authentication)
   server.get("/status",
     express.urlencoded({ limit: "3mb", extended: false }),
     express.json({ limit: "3mb" }),
     upstashFunctionLimiter, statusCheck) // aiProxy.router now contains the /status route
 
-  server.use("/event", json({ limit: "1mb" }),
-    upstashFunctionLimiter, eventsProxy.router)
+  // Cloud Functions runtime already parses request bodies.
+  // Re-parsing with express.json() can throw "stream is not readable" in production.
+  server.use("/event",
+    upstashEventLimiter, eventsProxy.router)
 
   // Register the API routes (with authentication)
   server.use("/api",
@@ -213,7 +285,7 @@ function serveapp() {
     index: "index.html",
   }))
   // All regular routes use the Angular engine **
-  server.get("*", limiter, (req: express.Request, res: Response) => {
+  server.get("*", upstashFunctionLimiter, (req: express.Request, res: Response) => {
     const { protocol, originalUrl, baseUrl, headers } = req
     console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
 

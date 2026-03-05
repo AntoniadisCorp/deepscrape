@@ -39,7 +39,6 @@
 }
 
 .admin-analytics-theme {
-  @apply bg-gray-50 dark:bg-gray5/40;
   --admin-glass-bg: rgb(7 11 14 / 40%);
   --admin-glass-bg-soft: rgb(7 11 14 / 24%);
   --admin-glass-border: rgb(148 163 184 / 30%);
@@ -119,26 +118,6 @@
 
 :host-context(.dark) .admin-analytics-theme .dark\:hover\:text-slate-300:hover {
   @apply text-gray-200;
-}
-
-.admin-analytics-theme .admin-material-btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200;
-}
-
-.admin-analytics-theme .admin-material-btn:focus-visible {
-  @apply outline-none ring-2 ring-blue-300 dark:ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray6;
-}
-
-.admin-analytics-theme .admin-material-btn--primary {
-  box-shadow: 0 8px 18px rgb(37 99 235 / 28%);
-}
-
-.admin-analytics-theme .admin-material-btn--primary:hover {
-  transform: translateY(-1px);
-}
-
-.admin-analytics-theme .admin-material-btn--ghost {
-  @apply bg-white/95 dark:bg-gray6/70;
 }
 
 .admin-analytics-theme .admin-loader {

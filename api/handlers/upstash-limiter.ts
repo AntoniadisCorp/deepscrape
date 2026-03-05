@@ -12,9 +12,28 @@ import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
 import { env } from "../../src/config/env"
 
+const sanitizeUpstashRestUrl = (value: string): string => {
+  if (!value) {
+    return ""
+  }
+
+  try {
+    const parsed = new URL(value)
+    if (parsed.hostname.endsWith(".upstash.io.upstash.io")) {
+      parsed.hostname = parsed.hostname.replace(/\.upstash\.io\.upstash\.io$/, ".upstash.io")
+      return parsed.toString().replace(/\/$/, "")
+    }
+    return value
+  } catch {
+    return value
+      .trim()
+      .replace(/\.upstash\.io\.upstash\.io(?=$|\/)/, ".upstash.io")
+  }
+}
+
 // Initialize Upstash Redis and Ratelimit
 const redis = new Redis({
-  url: env.UPSTASH_REDIS_REST_URL,
+  url: sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL),
   token: env.UPSTASH_REDIS_REST_TOKEN,
 })
 

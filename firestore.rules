@@ -13,11 +13,11 @@ service cloud.firestore {
     // all client requests to your Firestore database will be denied until you Update
     // your rules
     match /{document=**} {
-      allow read, write: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && requestMatchesUID();
-      allow update: if isAuthenticated() && resourceMatchesUID() && requestMatchesUID();
-      allow delete: if isAuthenticated() && resourceMatchesUID(); 
+      allow read: if isAuthenticated() && (isAdmin() || resourceMatchesUID());
+
+      allow create: if isAuthenticated() && (isAdmin() || requestMatchesUID());
+      allow update: if isAuthenticated() && (isAdmin() || (resourceMatchesUID() && requestMatchesUID()));
+      allow delete: if isAuthenticated() && (isAdmin() || resourceMatchesUID());
     }
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
@@ -77,36 +77,46 @@ service cloud.firestore {
     }
     
     match /login_metrics/{docId} {
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId)
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId);
       allow write: if false;
       match /login_history_Info/{historyId} {
         allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId);
         allow write: if false;
       }
     }
+
+    match /migration_runs/{runId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /migration_backups/{runId} {
+      allow read, write: if isAdmin();
+
+      match /documents/{docId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
     match /guests/{guestId} {
       allow read: if isAdmin();
       allow write: if false;
     }
-      // Analytics collections - Admin read only, Cloud Functions write
+
+    // Analytics collections - Admin full access for migration/ops tooling
     match /metrics_daily/{date} {
-      allow read: if isAdmin();
-      allow write: if false; // Only Cloud Functions can write
+      allow read, write: if isAdmin();
     }
     
     match /metrics_hourly/{datetime} {
-      allow read: if isAdmin();
-      allow write: if false;
+      allow read, write: if isAdmin();
     }
     
     match /metrics_summary/{docId} {
-      allow read: if isAdmin();
-      allow write: if false;
+      allow read, write: if isAdmin();
     }
     
     match /metrics_range/{rangeId} {
-      allow read: if isAdmin();
-      allow write: if false;
+      allow read, write: if isAdmin();
     }
     
   }

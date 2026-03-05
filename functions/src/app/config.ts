@@ -6,13 +6,15 @@
 import * as admin from "firebase-admin"
 import Stripe from "stripe"
 import serviceAccount from "../credentials.json"
-import { defineSecret } from "firebase-functions/params"
+import { defineJsonSecret } from "firebase-functions/params"
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
 import { env } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
-export const stripeSecretDef = defineSecret("stripeSecretTest")
+export const functionsConfigExportSecretName = "FUNCTIONS_CONFIG_EXPORT"
+export const functionsConfigExportSecret =
+    defineJsonSecret(functionsConfigExportSecretName)
 export const dbName = serviceAccount.dbName
 
 // Initialize Firebase
@@ -23,8 +25,26 @@ db.settings({ databaseId: dbName })
 
 export const auth = admin.auth()
 
-/* config().stripe?.secret */
-export const stripeSecret = env.STRIPE_PUBLIC_KEY ||
+type ExportedFunctionsConfig = {
+    stripe?: {
+        secret?: string
+    }
+}
+
+const getStripeSecretFromExport = () => {
+    try {
+        const configValue = functionsConfigExportSecret.value()
+        const config =
+            configValue as ExportedFunctionsConfig | undefined
+        return config?.stripe?.secret || ""
+    } catch {
+        return ""
+    }
+}
+
+export const stripeSecret =
+    getStripeSecretFromExport() ||
+    env.STRIPE_PUBLIC_KEY ||
     serviceAccount.stripe.secret
 // export const stripePublishable = serviceAccount.stripe.publishable;
 // export const stripeClientId = serviceAccount.stripe.clientid;

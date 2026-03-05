@@ -43,7 +43,8 @@ export class SecurityTabComponent {
     code: false,
     phone: false,
     email: false,
-    mfa: false
+    mfa: false,
+    remove: false
   }
   securityForm: FormGroup
   private localStorage = inject(LocalStorage)
@@ -171,7 +172,7 @@ export class SecurityTabComponent {
         {
           next: async (response) => {
 
-            if (response.user) {
+            if (response && response.user) {
               // this.pendingCredential = GoogleAuthProvider.credentialFromResult(response.result);
               // If there's a pending credential from a previous social login attempt, link it now
               // const userCredential =  await this.handlePendingCredentialLinking(response.user)
@@ -223,7 +224,7 @@ export class SecurityTabComponent {
         {
           next: async (response) => {
 
-            if (response.user) {
+            if (response && response.user) {
               // this.pendingCredential = GithubAuthProvider.credentialFromResult(response.result);
               // If there's a pending credential from a previous social login attempt, link it now
               // const userCredential =  await this.handlePendingCredentialLinking(response.user)

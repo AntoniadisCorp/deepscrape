@@ -4,9 +4,15 @@
 /* eslint-disable indent */
 // Takes a Firebase user and creates a Stripe customer account
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-import { stripe, db, dbName } from "./config"
+import {
+  stripe,
+  db,
+  dbName,
+  functionsConfigExportSecretName,
+} from "./config"
 import { QueryDocumentSnapshot } from "firebase-functions/v2/firestore"
-import { firestore, auth, EventContext } from "firebase-functions/v1"
+import * as functionsV1 from "firebase-functions/v1"
+import { EventContext } from "firebase-functions/v1"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { UserInfo } from "firebase-functions/v1/auth"
 import { Users } from "../domain"
@@ -30,10 +36,11 @@ export async function createCustomer(firebaseUser: Pick<Users, "providerData" | 
 
 /* Firebase Functions for stripe Workflow */
 
-export const newStripeCustomer = auth
-  .user()
+export const newStripeCustomer = functionsV1
+  .runWith({ secrets: [functionsConfigExportSecretName] })
+  .auth.user()
   .onCreate(
-    async (user: auth.UserRecord, context: EventContext) => {
+    async (user: functionsV1.auth.UserRecord, context: EventContext) => {
       // Create a new Stripe customer when a new user is created
       const userId = user.uid || context.auth?.uid
       const userPath = `users/${userId}`
@@ -82,7 +89,7 @@ export const newStripeCustomer = auth
 
 
 export const createPaymentIntent = onCallv2(
-  // { secrets: [stripeSecretDef] },
+  { secrets: [functionsConfigExportSecretName] },
   async (req) => {
     // Where the cart id is the cart id of last paymentIntent
     // plan chosen plan from cache memmory
@@ -147,6 +154,7 @@ export const createPaymentIntent = onCallv2(
 
 
 export const startSubscription = onCallv2(
+  { secrets: [functionsConfigExportSecretName] },
   async (req) => {
     try {
       // 1. Get user data and validate
@@ -236,7 +244,9 @@ export const startSubscription = onCallv2(
   }
 )
 
-export const updateUsage = firestore
+export const updateUsage = functionsV1
+  .runWith({ secrets: [functionsConfigExportSecretName] })
+  .firestore
   .database(dbName)
   .document("projects/{projectId}")
   .onCreate(async (snap: QueryDocumentSnapshot) => {

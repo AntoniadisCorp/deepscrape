@@ -16,6 +16,8 @@ declare namespace NodeJS {
     UPSTASH_REDIS_REST_PORT: string
     UPSTASH_REDIS_REST_USER: string
     UPSTASH_REDIS_REST_PASSWORD: string
+    COOKIE_SECRET: string
+    CSRF_COOKIE_SECRET?: string
 
     // External API URLs
     API_ARACHNEFLY_URL: string

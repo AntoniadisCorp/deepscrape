@@ -17,7 +17,7 @@ import { getAuth, provideAuth } from '@angular/fire/auth';
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { browserProvider, BrowserToken, PLUTO_ID, STORAGE_PROVIDERS, windowProvider, WindowToken } from './core/services';
-import { HttpClient, provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi, withXsrfConfiguration } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi, withXsrfConfiguration } from '@angular/common/http';
 import { IMAGE_LOADER, ImageLoaderConfig } from '@angular/common';
 import { environment } from 'src/environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
@@ -29,6 +29,7 @@ import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import { myIcons } from './shared'
 import { provideI18n } from './core/i18n'; // Import provideI18n
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
+import { csrfRefreshInterceptor } from './core/interceptors';
 
 setLogLevel(
   environment.production ? LogLevel.SILENT : LogLevel.VERBOSE
@@ -39,6 +40,7 @@ const customImageLoader = (config: ImageLoaderConfig) => {
   const baseUri = environment.assetsUri.endsWith('/') ? environment.assetsUri : environment.assetsUri + '/';
   return baseUri + config.src.replace(/^\//, '');
 }
+
 // const app: FirebaseApp = 
 
 export const appConfig: ApplicationConfig = {
@@ -54,8 +56,10 @@ export const appConfig: ApplicationConfig = {
     }),
     provideHttpClient(
       withInterceptorsFromDi(),
+      withInterceptors([csrfRefreshInterceptor]),
       withXsrfConfiguration({ cookieName: '_csrf', headerName: 'csrf-token' }),
-      withFetch(),      /* withInterceptors([
+      withFetch(),      
+      /* withInterceptors([
         new TokenInterceptor().intercept,
         // new CsrfInterceptor().intercept
       ]), */

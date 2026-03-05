@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DecimalPipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { FormControl, FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
@@ -44,6 +44,7 @@ export class AdminAnalyticsComponent implements OnInit {
     recentActivity: DayActivity[] = [];
     Math = Math;
     readonly icons = myIcons;
+    displayPeriodDays = 7;
 
     // Caching for performance optimization
     private cacheTimestamp: number | null = null;
@@ -289,6 +290,28 @@ export class AdminAnalyticsComponent implements OnInit {
     };
     public guestOSChartType = 'bar' as const;
 
+    // Guest by Timezone Chart
+    public guestTimezoneChartData: ChartData<'bar'> = {
+        labels: [],
+        datasets: [{
+            label: 'Timezones',
+            data: [],
+            backgroundColor: '#0EA5E9',
+            borderRadius: 6
+        }]
+    };
+    public guestTimezoneChartOptions: ChartConfiguration<'bar'>['options'] = {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+            y: { grid: { display: false } }
+        }
+    };
+    public guestTimezoneChartType = 'bar' as const;
+
     // Guest Activity Over Time
     public guestActivityChartData: ChartData<'line'> = {
         labels: [],
@@ -315,7 +338,17 @@ export class AdminAnalyticsComponent implements OnInit {
     };
     public guestActivityChartType = 'line' as const;
 
-    async ngOnInit() {
+    get selectedPeriodLabel(): string {
+        return this.periodOptions.find(option => option.value === this.selectedPeriod)?.label ?? 'Selected period';
+    }
+
+    ngOnInit(): void {
+        void this.initializeAnalytics();
+    }
+
+    private async initializeAnalytics(): Promise<void> {
+        this.loading = true;
+        this.error = null;
         try {
             await this.loadAnalyticsData();
         } catch (err) {
@@ -323,7 +356,7 @@ export class AdminAnalyticsComponent implements OnInit {
             console.error(err);
         } finally {
             this.loading = false;
-            this.cdr.detectChanges();
+            this.renderNow();
         }
     }
 
@@ -385,6 +418,7 @@ export class AdminAnalyticsComponent implements OnInit {
         
         // Update all charts with optimized data
         this.updateChartsFromOptimizedData(dashboardSummary, rangeMetrics);
+        this.renderNow();
     }
 
     async refreshData() {
@@ -399,8 +433,12 @@ export class AdminAnalyticsComponent implements OnInit {
             console.error(err);
         } finally {
             this.loading = false;
-            this.cdr.detectChanges();
+            this.renderNow();
         }
+    }
+
+    private renderNow(): void {
+        this.cdr.detectChanges();
     }
 
     async onPeriodChanged() {
@@ -421,6 +459,8 @@ export class AdminAnalyticsComponent implements OnInit {
     }
 
     private updateChartsFromOptimizedData(dashboard: any, rangeMetrics: any) {
+        this.applyDisplayMetrics(dashboard, rangeMetrics);
+
         // Extract daily breakdown for time-series charts
         const dailyData = rangeMetrics?.dailyBreakdown || [];
         const labels = dailyData.map((day: any) => {
@@ -478,6 +518,22 @@ export class AdminAnalyticsComponent implements OnInit {
             }]
         };
 
+        // Login methods (providers)
+        const providerEntries = this.getTopDimensionEntries(
+            rangeMetrics?.byProvider ?? dashboard.topProviders ?? {},
+            8,
+            'unknown',
+        );
+        this.doughnutChartData = {
+            labels: providerEntries.map(([provider]) => provider),
+            datasets: [{
+                data: providerEntries.map(([, count]) => count),
+                backgroundColor: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#14B8A6', '#F43F5E'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        };
+
         // Guest Conversion Chart
         this.guestConversionChartData = {
             labels: ['Registered', 'Unregistered'],
@@ -489,24 +545,33 @@ export class AdminAnalyticsComponent implements OnInit {
             }]
         };
 
-        // Guest by Country Chart (Top 10 from dashboard)
-        const topCountries = dashboard.topCountries || [];
+        // Guest by Country Chart (Top 10 from selected range, fallback to dashboard summary)
+        const topCountriesSource =
+            rangeMetrics?.byCountry ??
+            dashboard.topCountries ??
+            dashboard.byCountry ??
+            {};
+        const topCountries = this.getTopDimensionEntries(topCountriesSource, 10, 'Unknown Country');
         this.guestCountryChartData = {
-            labels: topCountries.map((c: any) => c.country || c.name),
+            labels: topCountries.map(([country]) => country),
             datasets: [{
                 label: 'Guests by Country',
-                data: topCountries.map((c: any) => c.count || c.value),
+                data: topCountries.map(([, count]) => count),
                 backgroundColor: '#3B82F6',
                 borderRadius: 6
             }]
         };
 
         // Guest by Browser Chart
-        const topBrowsers = dashboard.topBrowsers || [];
+        const topBrowsers = this.getTopDimensionEntries(
+            rangeMetrics?.byBrowser ?? dashboard.topBrowsers ?? dashboard.byBrowser ?? {},
+            10,
+            'Unknown Browser',
+        );
         this.guestBrowserChartData = {
-            labels: topBrowsers.map((b: any) => b.browser || b.name),
+            labels: topBrowsers.map(([browser]) => browser),
             datasets: [{
-                data: topBrowsers.map((b: any) => b.count || b.value),
+                data: topBrowsers.map(([, count]) => count),
                 backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
                 borderWidth: 2,
                 borderColor: '#fff'
@@ -514,31 +579,54 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Guest by Device Chart
-        const topDevices = dashboard.topDevices || [];
+        const topDevices = this.getTopDimensionEntries(
+            rangeMetrics?.byDevice ?? dashboard.topDevices ?? dashboard.byDevice ?? {},
+            10,
+            'Unknown Device',
+        );
         this.guestDeviceChartData = {
-            labels: topDevices.map((d: any) => d.device || d.name),
+            labels: topDevices.map(([device]) => device),
             datasets: [{
-                data: topDevices.map((d: any) => d.count || d.value),
+                data: topDevices.map(([, count]) => count),
                 backgroundColor: ['#6366F1', '#EC4899', '#10B981', '#F59E0B'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
         };
 
-        // Guest by OS Chart (from range metrics if available)
-        if (rangeMetrics?.byOS) {
-            const osEntries = this.getTopDimensionEntries(rangeMetrics.byOS, 10);
-            
-            this.guestOSChartData = {
-                labels: osEntries.map(([os]) => os),
-                datasets: [{
-                    label: 'Operating Systems',
-                    data: osEntries.map(([, count]) => count as number),
-                    backgroundColor: '#8B5CF6',
-                    borderRadius: 6
-                }]
-            };
-        }
+        // Guest by OS Chart (from selected range with dashboard fallback)
+        const osSource =
+            rangeMetrics?.byOS ??
+            dashboard.topOperatingSystems ??
+            dashboard.topOS ??
+            dashboard.byOS ??
+            {};
+        const osEntries = this.getTopDimensionEntries(osSource, 10, 'Unknown OS');
+
+        this.guestOSChartData = {
+            labels: osEntries.map(([os]) => os),
+            datasets: [{
+                label: 'Operating Systems',
+                data: osEntries.map(([, count]) => count),
+                backgroundColor: '#8B5CF6',
+                borderRadius: 6
+            }]
+        };
+
+        const timezoneEntries = this.getTopDimensionEntries(
+            rangeMetrics?.byTimezone ?? dashboard.byTimezone ?? {},
+            10,
+            'Unknown Timezone',
+        );
+        this.guestTimezoneChartData = {
+            labels: timezoneEntries.map(([timezone]) => timezone),
+            datasets: [{
+                label: 'Timezones',
+                data: timezoneEntries.map(([, count]) => count),
+                backgroundColor: '#0EA5E9',
+                borderRadius: 6,
+            }],
+        };
 
         // Guest Activity Over Time
         this.guestActivityChartData = {
@@ -560,6 +648,114 @@ export class AdminAnalyticsComponent implements OnInit {
             newUsers: day.newUsers || 0,
             trend: day.conversionRate || 0
         }));
+
+        this.renderNow();
+    }
+
+    private applyDisplayMetrics(dashboard: any, rangeMetrics: any): void {
+        const dailyBreakdown = Array.isArray(rangeMetrics?.dailyBreakdown) ? rangeMetrics.dailyBreakdown : [];
+
+        const getNumber = (value: any): number | null => {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+
+        const firstNumber = (source: any, keys: string[]): number | null => {
+            if (!source) {
+                return null;
+            }
+            for (const key of keys) {
+                const value = getNumber(source[key]);
+                if (value !== null) {
+                    return value;
+                }
+            }
+            return null;
+        };
+
+        const sumDaily = (key: string): number =>
+            dailyBreakdown.reduce((sum: number, row: any) => sum + Number(row?.[key] || 0), 0);
+
+        const periodGuests =
+            firstNumber(rangeMetrics, ['totalGuests', 'newGuests'])
+            ?? (dailyBreakdown.length > 0 ? sumDaily('newGuests') : null)
+            ?? firstNumber(dashboard, ['totalGuests'])
+            ?? 0;
+
+        const periodUsers =
+            firstNumber(rangeMetrics, ['totalUsers', 'newUsers'])
+            ?? (dailyBreakdown.length > 0 ? sumDaily('newUsers') : null)
+            ?? firstNumber(dashboard, ['totalUsers'])
+            ?? 0;
+
+        const periodLogins =
+            firstNumber(rangeMetrics, ['totalLogins', 'logins'])
+            ?? (dailyBreakdown.length > 0 ? sumDaily('totalLogins') : null)
+            ?? firstNumber(dashboard, ['totalLogins'])
+            ?? 0;
+
+        const periodGuestConversions =
+            firstNumber(rangeMetrics, ['guestConversions', 'registeredGuests', 'conversions'])
+            ?? (dailyBreakdown.length > 0 ? sumDaily('guestConversions') : null)
+            ?? firstNumber(dashboard, ['guestConversions'])
+            ?? 0;
+
+        this.guestCount = periodGuests;
+        this.userCount = periodUsers;
+        this.totalLogins = periodLogins;
+        this.registeredGuestsCount = periodGuestConversions;
+        this.unregisteredGuestsCount = Math.max(periodGuests - periodGuestConversions, 0);
+        this.guestConversionRate = periodGuests > 0
+            ? Math.round((periodGuestConversions / periodGuests) * 10000) / 100
+            : 0;
+
+        const resolvedConversionRate =
+            firstNumber(rangeMetrics, ['conversionRate'])
+            ?? firstNumber(dashboard, ['conversionRate'])
+            ?? (periodGuests > 0 ? Math.round((periodGuestConversions / periodGuests) * 100) : 0);
+
+        this.conversionRate = Number(resolvedConversionRate || 0);
+
+        this.activeUsersNow = Number(
+            firstNumber(rangeMetrics, ['activeUsersNow', 'activeUsers'])
+            ?? firstNumber(dashboard, ['activeUsersNow', 'activeUsers'])
+            ?? 0
+        );
+        this.activeGuestsNow = Number(
+            firstNumber(rangeMetrics, ['activeGuestsNow', 'activeGuests'])
+            ?? firstNumber(dashboard, ['activeGuestsNow', 'activeGuests'])
+            ?? 0
+        );
+        this.onlineNow = Number(
+            firstNumber(rangeMetrics, ['onlineNow', 'online'])
+            ?? firstNumber(dashboard, ['onlineNow', 'online'])
+            ?? (this.activeUsersNow + this.activeGuestsNow)
+        );
+        this.displayPeriodDays = this.resolvePeriodDays(rangeMetrics);
+    }
+
+    private resolvePeriodDays(rangeMetrics: any): number {
+        const start = new Date(rangeMetrics?.startDate ?? '');
+        const end = new Date(rangeMetrics?.endDate ?? '');
+        if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+            const ms = Math.max(end.getTime() - start.getTime(), 0);
+            return Math.max(1, Math.floor(ms / (24 * 60 * 60 * 1000)) + 1);
+        }
+
+        if (this.selectedPeriod === 'last-30d') {
+            return 30;
+        }
+        if (this.selectedPeriod === 'last-90d') {
+            return 90;
+        }
+        if (this.selectedPeriod === 'last-24h') {
+            return 1;
+        }
+        if (this.selectedPeriod === 'last-1h' || this.selectedPeriod === 'last-30m') {
+            return 1;
+        }
+
+        return 7;
     }
 
     private async resolveMetricsForSelectedPeriod(): Promise<any> {
@@ -593,6 +789,8 @@ export class AdminAnalyticsComponent implements OnInit {
         const byCountry: Record<string, number> = {};
         const byBrowser: Record<string, number> = {};
         const byDevice: Record<string, number> = {};
+        const byTimezone: Record<string, number> = {};
+        const byProvider: Record<string, number> = {};
 
         let totalGuests = 0;
         let totalUsers = 0;
@@ -609,9 +807,26 @@ export class AdminAnalyticsComponent implements OnInit {
                 const normalized = this.normalizeDimensionKey(k);
                 byOS[normalized] = (byOS[normalized] || 0) + Number(v || 0);
             });
-            Object.entries((row.byCountry || {}) as Record<string, number>).forEach(([k, v]) => byCountry[k] = (byCountry[k] || 0) + Number(v || 0));
-            Object.entries((row.byBrowser || {}) as Record<string, number>).forEach(([k, v]) => byBrowser[k] = (byBrowser[k] || 0) + Number(v || 0));
-            Object.entries((row.byDevice || {}) as Record<string, number>).forEach(([k, v]) => byDevice[k] = (byDevice[k] || 0) + Number(v || 0));
+            Object.entries((row.byCountry || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Country');
+                byCountry[normalized] = (byCountry[normalized] || 0) + Number(v || 0)
+            });
+            Object.entries((row.byBrowser || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Browser');
+                byBrowser[normalized] = (byBrowser[normalized] || 0) + Number(v || 0)
+            });
+            Object.entries((row.byDevice || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Device');
+                byDevice[normalized] = (byDevice[normalized] || 0) + Number(v || 0)
+            });
+            Object.entries((row.byTimezone || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Timezone');
+                byTimezone[normalized] = (byTimezone[normalized] || 0) + Number(v || 0)
+            });
+            Object.entries((row.byProvider || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'unknown');
+                byProvider[normalized] = (byProvider[normalized] || 0) + Number(v || 0)
+            });
         }
 
         return {
@@ -627,6 +842,8 @@ export class AdminAnalyticsComponent implements OnInit {
             byCountry,
             byBrowser,
             byDevice,
+            byTimezone,
+            byProvider,
             dailyBreakdown: sorted.map((row: any) => ({
                 date: row.date,
                 newGuests: Number(row.newGuests || 0),
@@ -652,6 +869,30 @@ export class AdminAnalyticsComponent implements OnInit {
         const totalLogins = rows.reduce((sum: number, row: any) => sum + Number(row.totalLogins || 0), 0);
         const guestConversions = rows.reduce((sum: number, row: any) => sum + Number(row.guestConversions || 0), 0);
 
+        const byOS: Record<string, number> = {};
+        const byCountry: Record<string, number> = {};
+        const byBrowser: Record<string, number> = {};
+        const byDevice: Record<string, number> = {};
+
+        for (const row of rows) {
+            Object.entries((row.byOS || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown OS');
+                byOS[normalized] = (byOS[normalized] || 0) + Number(v || 0);
+            });
+            Object.entries((row.byCountry || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Country');
+                byCountry[normalized] = (byCountry[normalized] || 0) + Number(v || 0);
+            });
+            Object.entries((row.byBrowser || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Browser');
+                byBrowser[normalized] = (byBrowser[normalized] || 0) + Number(v || 0);
+            });
+            Object.entries((row.byDevice || {}) as Record<string, number>).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, 'Unknown Device');
+                byDevice[normalized] = (byDevice[normalized] || 0) + Number(v || 0);
+            });
+        }
+
         return {
             rangeId,
             startDate: start.toISOString(),
@@ -661,6 +902,10 @@ export class AdminAnalyticsComponent implements OnInit {
             totalLogins,
             guestConversions,
             conversionRate: totalGuests > 0 ? Math.round((guestConversions / totalGuests) * 100) : 0,
+            byOS,
+            byCountry,
+            byBrowser,
+            byDevice,
             dailyBreakdown: rows.map((row: any) => ({
                 date: `${row.date}T${String(row.hour ?? 0).padStart(2, '0')}:00:00.000Z`,
                 newGuests: Number(row.newGuests || 0),
@@ -727,6 +972,7 @@ export class AdminAnalyticsComponent implements OnInit {
 
         // Update charts with legacy data structure
         this.updateChartsFromLegacyData(guestAnalytics, loginCountsByDay);
+        this.renderNow();
     }
 
     /**
@@ -872,18 +1118,36 @@ export class AdminAnalyticsComponent implements OnInit {
         return normalized.length > 0 ? normalized : fallback;
     }
 
-    private getTopDimensionEntries(source: Record<string, unknown>, max = 10): Array<[string, number]> {
+    private getTopDimensionEntries(source: unknown, max = 10, fallback = 'Unknown'): Array<[string, number]> {
         const merged: Record<string, number> = {};
-        Object.entries(source || {}).forEach(([rawKey, value]) => {
-            const key = this.normalizeDimensionKey(rawKey);
-            const count = Number(value || 0);
-            if (count > 0) {
-                merged[key] = (merged[key] || 0) + count;
-            }
-        });
 
-        return Object.entries(merged)
+        if (Array.isArray(source)) {
+            source.forEach((entry: any) => {
+                const rawKey = entry?.country ?? entry?.browser ?? entry?.device ?? entry?.os ?? entry?.provider ?? entry?.timezone ?? entry?.name ?? entry?.label;
+                const key = this.normalizeDimensionKey(rawKey, fallback);
+                const count = Number(entry?.count ?? entry?.value ?? 0);
+                if (count > 0) {
+                    merged[key] = (merged[key] || 0) + count;
+                }
+            });
+        } else {
+            Object.entries((source || {}) as Record<string, unknown>).forEach(([rawKey, value]) => {
+                const key = this.normalizeDimensionKey(rawKey, fallback);
+                const count = Number(value || 0);
+                if (count > 0) {
+                    merged[key] = (merged[key] || 0) + count;
+                }
+            });
+        }
+
+        const entries = Object.entries(merged)
             .sort(([, a], [, b]) => b - a)
             .slice(0, max);
+
+        if (entries.length > 0) {
+            return entries;
+        }
+
+        return [[fallback, 0]];
     }
 }

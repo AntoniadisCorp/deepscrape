@@ -147,7 +147,9 @@ export interface MetricsRange {
   byLongitudeBand?: { [longitudeBand: string]: number }
   byBrowser: { [browser: string]: number }
   byDevice: { [device: string]: number }
+  byOS?: { [os: string]: number }
   byProvider: { [provider: string]: number }
+  byTimezone?: { [timezone: string]: number }
   
   // Daily timeline for charts
   dailyBreakdown: DailyBreakdown[]

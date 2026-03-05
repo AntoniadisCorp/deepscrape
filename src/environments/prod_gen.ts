@@ -1,8 +1,8 @@
 // generate-env.ts
 const fs = require('fs');
-const dotenv = require('dotenv');
+const dotenvx = require('@dotenvx/dotenvx');
 
-const env = dotenv.config().parsed; // Get parsed .env values directly
+const env = dotenvx.config({ quiet: true }).parsed; // Get parsed .env values directly
 const environment = {
     production: env["PRODUCTION"] === "true",
     emulators: env["EMULATORS"] === "true",
