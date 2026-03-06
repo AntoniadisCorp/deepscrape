@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe, NgFor, NgIf } from '@angular/common'
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core'
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
@@ -80,8 +80,6 @@ interface HourlyAccumulator {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    NgIf,
-    NgFor,
     DecimalPipe,
     DropdownComponent,
     CheckboxComponent,
@@ -89,8 +87,8 @@ interface HourlyAccumulator {
     MatFormFieldModule,
     MatInputModule,
     MatDatepickerModule,
-    RouterLink,
-  ],
+    RouterLink
+],
   providers: [provideNativeDateAdapter()],
   templateUrl: './admin-migration.component.html',
   styleUrl: './admin-migration.component.scss',

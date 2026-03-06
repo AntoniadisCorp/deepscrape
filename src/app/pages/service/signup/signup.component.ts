@@ -53,6 +53,7 @@ export class SignupComponent implements OnInit, OnDestroy {
         logout: false,
         google: false,
         email: false,
+        remove: false,
         phone: false,
         code: false,
         password: false,

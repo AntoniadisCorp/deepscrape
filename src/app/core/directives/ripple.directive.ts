@@ -1,5 +1,5 @@
-import { DOCUMENT } from '@angular/common';
-import { Directive, ElementRef, HostListener, Inject, Input } from '@angular/core';
+
+import { Directive, ElementRef, HostListener, Inject, Input, DOCUMENT } from '@angular/core';
 import { Subject } from 'rxjs/internal/Subject';
 
 

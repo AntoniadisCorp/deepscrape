@@ -19,7 +19,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@angular/common": "^19.2.5",
+    "@angular/common": "^20.3.17",
     "@dotenvx/dotenvx": "^1.52.0",
     "@google-cloud/functions-framework": "^5.0.2",
     "@google-cloud/secret-manager": "^5.6.0",
@@ -29,7 +29,6 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "csurf": "^1.11.0",
-    "dotenv": "^17.2.1",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "firebase-admin": "^12.6.0",

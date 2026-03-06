@@ -1,4 +1,4 @@
-import { JsonPipe, NgClass, NgFor, NgIf, UpperCasePipe } from '@angular/common';
+import { JsonPipe, NgClass, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { GithubAuthProvider, GoogleAuthProvider, updateProfile, UserCredential, UserInfo } from '@angular/fire/auth';
@@ -20,10 +20,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-security-tab',
-  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe,
-    NgFor, MatIcon, RippleDirective, RadioToggleComponent, UpperCasePipe, 
-  MatProgressSpinnerModule, LucideAngularModule, NgClass, NgIf
-],
+  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, RadioToggleComponent, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass],
   templateUrl: './security.component.html',
   styleUrl: './security.component.scss',
 })

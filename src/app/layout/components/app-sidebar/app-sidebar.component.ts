@@ -1,4 +1,4 @@
-import { NgClass, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppSidebarNavComponent } from '../app-sidebar-nav/app-sidebar-nav.component';
@@ -9,7 +9,7 @@ import { Outsideclick } from 'src/app/core/directives';
 
 @Component({
     selector: 'app-sidebar',
-    imports: [NgClass, NgIf, AppSidebarNavComponent, MatProgressSpinner, Outsideclick],
+    imports: [NgClass, AppSidebarNavComponent, MatProgressSpinner, Outsideclick],
     templateUrl: './app-sidebar.component.html',
     styleUrl: './app-sidebar.component.scss',
     animations: [

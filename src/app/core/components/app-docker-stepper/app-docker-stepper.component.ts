@@ -1,4 +1,4 @@
-import { AsyncPipe, JsonPipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, JsonPipe } from '@angular/common';
 import { Component, DestroyRef, EventEmitter, inject, input, model, Output } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
@@ -28,10 +28,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 @Component({
   selector: 'app-docker-stepper',
-  imports: [NgIf, ReactiveFormsModule, NgFor, JsonPipe, MatIcon, RadioButtonComponent,
-    FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule,
-    MatProgressSpinner
-  ],
+  imports: [ReactiveFormsModule, JsonPipe, MatIcon, RadioButtonComponent, FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule, MatProgressSpinner],
   templateUrl: './app-docker-stepper.component.html',
   styleUrl: './app-docker-stepper.component.scss'
 })

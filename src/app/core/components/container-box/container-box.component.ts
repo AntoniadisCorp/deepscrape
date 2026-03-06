@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, NgIf } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, model, Output, signal, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { startSuspendAnimation } from 'src/app/animations';
@@ -15,8 +15,11 @@ export interface ExtendedFlyMachine extends FlyMachine {
 @Component({
   selector: 'app-container-box',
   imports: [
-    MatIcon, DatePipe, NgIf, FormatBytesPipe, RippleDirective
-  ],
+    MatIcon,
+    DatePipe,
+    FormatBytesPipe,
+    RippleDirective
+],
   templateUrl: './container-box.component.html',
   styleUrl: './container-box.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

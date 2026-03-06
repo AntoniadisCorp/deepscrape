@@ -1,5 +1,5 @@
 import { Component } from '@angular/core'
-import { NgClass, NgFor } from '@angular/common'
+import { NgClass } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'
 import { LucideAngularModule } from 'lucide-angular'
 import { smoothfadeAnimation } from 'src/app/animations'
@@ -7,7 +7,7 @@ import { myIcons } from 'src/app/shared'
 
 @Component({
   selector: 'app-admin-workspace',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgFor, NgClass, LucideAngularModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, LucideAngularModule],
   templateUrl: './admin-workspace.component.html',
   styleUrl: './admin-workspace.component.scss',
   animations: [smoothfadeAnimation],

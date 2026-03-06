@@ -1,5 +1,5 @@
-import { AsyncPipe, DatePipe, DOCUMENT, NgClass, NgForOf, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, Inject, inject } from '@angular/core';
+import { AsyncPipe, DatePipe, NgClass } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, Inject, inject, DOCUMENT } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -18,9 +18,7 @@ import { CrawlResult } from 'src/app/core/types';
 
 @Component({
   selector: 'app-crawl-results',
-  imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, AsyncPipe, NgIf,
-    DatePipe, NgForOf, MatProgressSpinner, StinputComponent, FormControlPipe,
-    RadioToggleComponent],
+  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, MatProgressSpinner, StinputComponent, FormControlPipe, RadioToggleComponent],
   templateUrl: './crawl-results.component.html',
   styleUrl: './crawl-results.component.scss'
 })

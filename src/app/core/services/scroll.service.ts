@@ -1,5 +1,5 @@
-import { DOCUMENT, Location, PlatformLocation, PopStateEvent, ViewportScroller } from '@angular/common'
-import { Inject, Injectable, OnDestroy, Renderer2, RendererFactory2, inject } from '@angular/core'
+import { Location, PlatformLocation, PopStateEvent, ViewportScroller } from '@angular/common'
+import { Inject, Injectable, OnDestroy, Renderer2, RendererFactory2, inject, DOCUMENT } from '@angular/core'
 import { fromEvent, Subject } from 'rxjs'
 import { debounceTime, takeUntil } from 'rxjs/operators'
 import { SessionStorage } from './storage.service'

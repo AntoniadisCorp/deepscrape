@@ -1,4 +1,4 @@
-import { ApplicationConfig, isDevMode, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, isDevMode, importProvidersFrom, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -70,7 +70,7 @@ export const appConfig: ApplicationConfig = {
     },
 
     // provideZoneChangeDetection({ eventCoalescing: true }),
-    provideExperimentalZonelessChangeDetection(),
+    provideZonelessChangeDetection(),
     provideRouter(routes),
     provideAnalytics(() => getAnalytics(initializeApp(environment.firebaseConfig))),
     ScreenTrackingService, // track page views automatically

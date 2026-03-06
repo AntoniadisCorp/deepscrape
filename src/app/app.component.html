@@ -23,7 +23,7 @@ class="relative bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-g
   <app-animated-bg></app-animated-bg>
   <router-outlet #outlet="outlet"></router-outlet>
 
-  @if(showRouteLoader) {
+  @if(isBrowser && showRouteLoader) {
     <span class="pointer-events-none absolute inset-0 z-[70] flex h-screen w-full items-center justify-center">
       <mat-spinner
         [diameter]="40"

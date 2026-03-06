@@ -5,116 +5,132 @@
     <!-- Logo/Icon placeholder -->
     <div class="flex justify-center mb-1">
       <img
-            alt="Logo"
-            [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
-            class="mt-4 h-9 w-9 rounded-full shadow-md border-none max-h-[80%] xs:max-h-max" loading="lazy" />
-    
-    </div>
-    <header class="flex gap-2 mb-2 items-center justify-center text-center">
-      <div class="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center shadow-md font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]" aria-hidden="true">
-        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" class="cc-surface-fill" fill="#6366f1"></circle> <path d="M8 13.5L10.5 16L16 8" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        alt="Logo"
+        [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
+        class="mt-4 h-9 w-9 rounded-full shadow-md border-none max-h-[80%] xs:max-h-max" loading="lazy" />
+
       </div>
-      <div>
-        <h1 class="text-xl font-extrabold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">{{ 'LOGIN.SIGN_IN_TITLE' | translate }}</h1>
-        <p class="text-gray-600 dark:text-gray-300 text-xs">{{ 'LOGIN.WELCOME_MESSAGE' | translate }}</p>
-      </div>
-    </header>
-    <form [formGroup]="loginForm" (ngSubmit)="login()" autocomplete="off" novalidate class="flex flex-col gap-3">
-      <div *ngIf="errorMessage" class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-600 dark:text-red-100 px-2 py-2 rounded-lg relative mb-2 font-medium flex items-center gap-2 text-xs" role="alert">
-        <svg class="w-4 h-4 text-red-500 dark:text-red-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"/></svg>
-        <span class="block sm:inline">{{ errorMessage }}</span>
-      </div>
-      <!-- Social Login Buttons -->
-      <div class="flex gap-2 mb-1">
-        <button type="button" [disabled]="loading.github" (click)="loginWithGithub()"
+      <header class="flex gap-2 mb-2 items-center justify-center text-center">
+        <div class="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center shadow-md font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]" aria-hidden="true">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" class="cc-surface-fill" fill="#6366f1"></circle> <path d="M8 13.5L10.5 16L16 8" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">{{ 'LOGIN.SIGN_IN_TITLE' | translate }}</h1>
+          <p class="text-gray-600 dark:text-gray-300 text-xs">{{ 'LOGIN.WELCOME_MESSAGE' | translate }}</p>
+        </div>
+      </header>
+      <form [formGroup]="loginForm" (ngSubmit)="login()" autocomplete="off" novalidate class="flex flex-col gap-3">
+        @if (errorMessage) {
+          <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-600 dark:text-red-100 px-2 py-2 rounded-lg relative mb-2 font-medium flex items-center gap-2 text-xs" role="alert">
+            <svg class="w-4 h-4 text-red-500 dark:text-red-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"/></svg>
+            <span class="block sm:inline">{{ errorMessage }}</span>
+          </div>
+        }
+        <!-- Social Login Buttons -->
+        <div class="flex gap-2 mb-1">
+          <button type="button" [disabled]="loading.github" (click)="loginWithGithub()"
           class="flex-1 flex items-center justify-center gap-2 rounded bg-white dark:bg-gray-800 px-2 py-2 text-xs xs:text-base md:text-lg font-bold text-gray-800 dark:text-gray-200 shadow transition-all duration-150 hover:shadow-md active:bg-gray-100 dark:active:bg-gray-700 outline-none
             hover:bg-[#3939393b] hover:text-gray-900 dark:hover:bg-gray-700/30 dark:hover:text-white focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600">
-          <ng-container *ngIf="!loading.github; else githubSpinner">
-            <mat-icon aria-label="github" svgIcon="github" class="w-5 h-5 text-gray-700 dark:text-gray-200 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
-            <span>{{ 'LOGIN.GITHUB_BUTTON' | translate }}</span>
-          </ng-container>
-          <ng-template #githubSpinner>
-            <span class="flex h-6 w-16 items-center justify-center">
-              <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
-            </span>
-          </ng-template>
-        </button>
-        <button type="button" [disabled]="loading.google" (click)="loginWithGoogle()"
+            @if (!loading.github) {
+              <mat-icon aria-label="github" svgIcon="github" class="w-5 h-5 text-gray-700 dark:text-gray-200 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
+              <span>{{ 'LOGIN.GITHUB_BUTTON' | translate }}</span>
+            } @else {
+              <span class="flex h-6 w-16 items-center justify-center">
+                <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
+              </span>
+            }
+          </button>
+          <button type="button" [disabled]="loading.google" (click)="loginWithGoogle()"
           class="flex-1 flex items-center justify-center gap-2 rounded bg-white dark:bg-gray-800 px-2 py-2 text-xs xs:text-base md:text-lg font-bold text-gray-800 dark:text-gray-200 shadow transition-all duration-150 hover:shadow-md active:bg-gray-100 dark:active:bg-gray-700
             hover:bg-[#3939393b] hover:text-gray-900 dark:hover:bg-gray-700/30 dark:hover:text-white focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600">
-          <ng-container *ngIf="!loading.google; else googleSpinner">
-            <mat-icon aria-label="google" svgIcon="google" class="w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
-            <span>{{ 'LOGIN.GOOGLE_BUTTON' | translate }}</span>
-          </ng-container>
-          <ng-template #googleSpinner>
-            <span class="flex h-6 w-16 items-center justify-center">
-              <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
-            </span>
-          </ng-template>
-        </button>
-      </div>
-      <div class="flex items-center gap-2 my-1">
-        <div class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
-        <span class="text-xs text-gray-400 dark:text-gray-500 font-medium">{{ 'LOGIN.OR_DIVIDER' | translate }}</span>
-        <div class="flex-1 h-px bg-gradient-to-l from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
-      </div>
-      <!-- Identifier -->
-      <div>
-        <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
-        <input id="identifier" autocomplete="off" formControlName="identifier" required type="text" placeholder="{{ 'LOGIN.IDENTIFIER_PLACEHOLDER' | translate }}"
-          class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
-          [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('identifier')?.valid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)}"
-        />
-        <small *ngIf="loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)" class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
-          <ng-container *ngIf="loginForm.get('identifier')?.errors?.['required']">{{ 'LOGIN.IDENTIFIER_REQUIRED' | translate }}</ng-container>
-          <ng-container *ngIf="loginForm.get('identifier')?.errors?.['pattern']">{{ 'LOGIN.INVALID_IDENTIFIER_FORMAT' | translate }}</ng-container>
-        </small>
-      </div>
-      <!-- Password or Verification Code -->
-      <ng-container *ngIf="!phoneVerificationSent; else codeInput">
-        <div>
-          <label for="password" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.PASSWORD_LABEL' | translate }}</label>
-          <input id="password" type="password" formControlName="password" required placeholder="{{ 'LOGIN.PASSWORD_PLACEHOLDER' | translate }}" autocomplete="current-password"
-            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
-            [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('password')?.valid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)}"
-          />
-          <small *ngIf="loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)" class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
-            <ng-container *ngIf="loginForm.get('password')?.errors?.['required']">{{ 'LOGIN.PASSWORD_REQUIRED' | translate }}</ng-container>
-          </small>
+            @if (!loading.google) {
+              <mat-icon aria-label="google" svgIcon="google" class="w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
+              <span>{{ 'LOGIN.GOOGLE_BUTTON' | translate }}</span>
+            } @else {
+              <span class="flex h-6 w-16 items-center justify-center">
+                <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
+              </span>
+            }
+          </button>
         </div>
-      </ng-container>
-      <ng-template #codeInput>
-        <div>
-          <label for="verificationCode" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.VERIFICATION_CODE_LABEL' | translate }}</label>
-          <input id="verificationCode" type="text" formControlName="verificationCode" required placeholder="{{ 'LOGIN.VERIFICATION_CODE_PLACEHOLDER' | translate }}"
-            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
-            [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('verificationCode')?.valid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)}"
-          />
-          <small *ngIf="loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)" class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
-            <ng-container *ngIf="loginForm.get('verificationCode')?.errors?.['required']">{{ 'LOGIN.VERIFICATION_CODE_REQUIRED' | translate }}</ng-container>
-            <ng-container *ngIf="loginForm.get('verificationCode')?.errors?.['minlength'] || loginForm.get('verificationCode')?.errors?.['maxlength']">{{ 'LOGIN.VERIFICATION_CODE_LENGTH' | translate }}</ng-container>
-          </small>
+        <div class="flex items-center gap-2 my-1">
+          <div class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
+          <span class="text-xs text-gray-400 dark:text-gray-500 font-medium">{{ 'LOGIN.OR_DIVIDER' | translate }}</span>
+          <div class="flex-1 h-px bg-gradient-to-l from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
         </div>
-        <button type="button" (click)="resetAuthFlow()" class="mt-3 w-full rounded bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 shadow transition-all duration-150 outline-none">{{ 'LOGIN.BACK_RESEND_BUTTON' | translate }}</button>
-      </ng-template>
-      <!-- Links -->
-      <div class="flex flex-wrap gap-2 mt-2">
-        <a [routerLink]="['/service/resetpassword']" class="text-xs text-gray-500 dark:text-gray-50 hover:underline">{{ 'LOGIN.FORGOT_PASSWORD' | translate }}</a>
-        <span class="flex-1"></span>
-        <a [routerLink]="['/service/signup']" class="text-xs text-gray-500 dark:text-gray-50 hover:underline">{{ 'LOGIN.CREATE_NEW_ACCOUNT' | translate }}</a>
-      </div>
-      
-      <!-- Submit Button -->
-      <div class="mt-4">
-        <button type="submit" [disabled]="!loginForm.valid || loading.email" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white font-bold py-2 px-3 shadow-xl transition-all duration-200 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 cc-focus-ring text-sm">
-          <ng-container *ngIf="loading.email; else loginText">
-            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
-          </ng-container>
-          <ng-template #loginText>{{ 'LOGIN.SIGN_IN_BUTTON' | translate }}</ng-template>
-        </button>
-      </div>
-    </form>
-  </section>
-  <div hidden #recaptchaContainer id="recaptcha-container"></div>
-</main>
-<!-- Tailwind-based animated background and card structure, Angular form bindings, and error messages integrated. Light and dark mode supported. -->
+        <!-- Identifier -->
+        <div>
+          <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
+          <input id="identifier" autocomplete="off" formControlName="identifier" required type="text" placeholder="{{ 'LOGIN.IDENTIFIER_PLACEHOLDER' | translate }}"
+            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+            [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('identifier')?.valid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)}"
+            />
+            @if (loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)) {
+              <small class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                @if (loginForm.get('identifier')?.errors?.['required']) {
+                  {{ 'LOGIN.IDENTIFIER_REQUIRED' | translate }}
+                }
+                @if (loginForm.get('identifier')?.errors?.['pattern']) {
+                  {{ 'LOGIN.INVALID_IDENTIFIER_FORMAT' | translate }}
+                }
+              </small>
+            }
+          </div>
+          <!-- Password or Verification Code -->
+          @if (!phoneVerificationSent) {
+            <div>
+              <label for="password" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.PASSWORD_LABEL' | translate }}</label>
+              <input id="password" type="password" formControlName="password" required placeholder="{{ 'LOGIN.PASSWORD_PLACEHOLDER' | translate }}" autocomplete="current-password"
+                class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+                [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('password')?.valid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)}"
+                />
+                @if (loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)) {
+                  <small class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                    @if (loginForm.get('password')?.errors?.['required']) {
+                      {{ 'LOGIN.PASSWORD_REQUIRED' | translate }}
+                    }
+                  </small>
+                }
+              </div>
+            } @else {
+              <div>
+                <label for="verificationCode" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.VERIFICATION_CODE_LABEL' | translate }}</label>
+                <input id="verificationCode" type="text" formControlName="verificationCode" required placeholder="{{ 'LOGIN.VERIFICATION_CODE_PLACEHOLDER' | translate }}"
+                  class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+                  [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('verificationCode')?.valid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)}"
+                  />
+                  @if (loginForm.get('verificationCode')?.invalid && (loginForm.get('verificationCode')?.dirty || loginForm.get('verificationCode')?.touched)) {
+                    <small class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                      @if (loginForm.get('verificationCode')?.errors?.['required']) {
+                        {{ 'LOGIN.VERIFICATION_CODE_REQUIRED' | translate }}
+                      }
+                      @if (loginForm.get('verificationCode')?.errors?.['minlength'] || loginForm.get('verificationCode')?.errors?.['maxlength']) {
+                        {{ 'LOGIN.VERIFICATION_CODE_LENGTH' | translate }}
+                      }
+                    </small>
+                  }
+                </div>
+                <button type="button" (click)="resetAuthFlow()" class="mt-3 w-full rounded bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 shadow transition-all duration-150 outline-none">{{ 'LOGIN.BACK_RESEND_BUTTON' | translate }}</button>
+              }
+              <!-- Links -->
+              <div class="flex flex-wrap gap-2 mt-2">
+                <a [routerLink]="['/service/resetpassword']" class="text-xs text-gray-500 dark:text-gray-50 hover:underline">{{ 'LOGIN.FORGOT_PASSWORD' | translate }}</a>
+                <span class="flex-1"></span>
+                <a [routerLink]="['/service/signup']" class="text-xs text-gray-500 dark:text-gray-50 hover:underline">{{ 'LOGIN.CREATE_NEW_ACCOUNT' | translate }}</a>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="mt-4">
+                <button type="submit" [disabled]="!loginForm.valid || loading.email" class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white font-bold py-2 px-3 shadow-xl transition-all duration-200 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 cc-focus-ring text-sm">
+                  @if (loading.email) {
+                    <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                  } @else {
+                    {{ 'LOGIN.SIGN_IN_BUTTON' | translate }}
+                  }
+                </button>
+              </div>
+            </form>
+          </section>
+          <div hidden #recaptchaContainer id="recaptcha-container"></div>
+        </main>
+        <!-- Tailwind-based animated background and card structure, Angular form bindings, and error messages integrated. Light and dark mode supported. -->

@@ -2,7 +2,7 @@ import { ChangeDetectorRef, ChangeDetectionStrategy, Component, DestroyRef, Host
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { GinputComponent } from '../ginput/ginput.component';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { AsyncPipe, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, JsonPipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 import { takeUntil } from 'rxjs/internal/operators/takeUntil';
 import { tap } from 'rxjs/internal/operators/tap';
@@ -35,10 +35,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 const DEFAULT_CRAWL_PACK_SELECTION = { name: "select a crawlpack", code: "default" }
 @Component({
   selector: 'app-crawl',
-  imports: [MatProgressSpinner, GinputComponent, NgFor, NgIf, MatIcon, NgClass, RippleDirective,
-    DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe,
-    RadioToggleComponent, CrawlResultItemComponent, AsyncPipe, MatProgressBarModule // Add the new component to imports
-  ],
+  imports: [MatProgressSpinner, GinputComponent, MatIcon, NgClass, RippleDirective, DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe, RadioToggleComponent, CrawlResultItemComponent, AsyncPipe, MatProgressBarModule],
   animations: [expandCollapseAnimation],
   templateUrl: './app-crawl.component.html',
   styleUrl: './app-crawl.component.scss',

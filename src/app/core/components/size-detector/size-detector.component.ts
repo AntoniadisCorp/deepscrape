@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, HostListener, Inject, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { CommonModule, isPlatformBrowser, NgFor } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { AuthService, ScreenResizeService, WindowToken } from 'src/app/core/services';
 import { SCREEN_SIZE } from 'src/app/core/enum';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,7 +10,7 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-size-detector',
-  imports: [NgFor],
+  imports: [],
   templateUrl: './size-detector.component.html',
   styleUrl: './size-detector.component.scss'
 })

@@ -1,11 +1,11 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { trigger, state, style, transition, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-operations-tab',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './operations-tab.component.html',
   styleUrl: './operations-tab.component.scss',
   animations: [

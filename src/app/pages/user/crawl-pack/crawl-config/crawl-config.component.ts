@@ -1,5 +1,5 @@
-import { AsyncPipe, DatePipe, DOCUMENT, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, inject, Inject } from '@angular/core';
+import { AsyncPipe, DatePipe, JsonPipe, NgClass } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, inject, Inject, DOCUMENT } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -21,9 +21,7 @@ import { CrawlConfig, CrawlerRunConfig, DropDownOption } from 'src/app/core/type
 
 @Component({
   selector: 'app-crawl-config',
-  imports: [ReactiveFormsModule, NgIf, MatIcon, RadioToggleComponent, FormControlPipe, NgClass,
-    StinputComponent, DropdownComponent, AsyncPipe, DatePipe, NgFor, MatProgressSpinner, JsonPipe
-  ],
+  imports: [ReactiveFormsModule, MatIcon, RadioToggleComponent, FormControlPipe, NgClass, StinputComponent, DropdownComponent, AsyncPipe, DatePipe, MatProgressSpinner, JsonPipe],
   templateUrl: './crawl-config.component.html',
   styleUrl: './crawl-config.component.scss'
 })

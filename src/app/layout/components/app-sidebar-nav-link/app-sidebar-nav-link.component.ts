@@ -1,4 +1,4 @@
-import { NgClass, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
@@ -12,7 +12,7 @@ import { AppUserLayoutComponent } from '../../full';
 
 @Component({
   selector: 'app-sidebar-nav-link',
-  imports: [NgClass, NgIf, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
+  imports: [NgClass, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app-sidebar-nav-link.component.html',
   styleUrl: './app-sidebar-nav-link.component.scss'

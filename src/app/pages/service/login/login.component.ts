@@ -10,13 +10,14 @@ import {
   DestroyRef,
   ViewChild,
   ElementRef,
-  PLATFORM_ID
+  PLATFORM_ID,
+  DOCUMENT
 } from '@angular/core';
 import { FormGroup, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CommonModule, DOCUMENT, JsonPipe, NgIf, isPlatformBrowser } from '@angular/common';
+import { CommonModule, JsonPipe, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Observable, Subject, takeUntil } from 'rxjs';
@@ -314,6 +315,10 @@ export class LoginComponent  {
         this.translate.use(lang);
       });
 
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     // Preload providers
     this.googleProvider = new GoogleAuthProvider();
     this.googleProvider.addScope('email');
@@ -332,6 +337,10 @@ export class LoginComponent  {
    */
   ngAfterViewInit(): void {
     // Recaptcha initialization might be placed here if it depends on DOM elements being present.
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.initializeRecaptcha()
   }
 

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { WebRtcService } from '../../services';
 import { EVENT } from '../../types';
@@ -9,46 +9,48 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-control',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="control-panel" [class.expanded]="expanded">
       <div class="control-header" (click)="toggleExpanded()">
         <span class="title">Control Panel</span>
         <span class="toggle-icon">{{ expanded ? '▲' : '▼' }}</span>
       </div>
-      
-      <div *ngIf="expanded" class="control-content">
-        <div class="control-status">
-          <span class="status-label">Status:</span>
-          <span class="status-value" [class.active]="hasControl">
-            {{ hasControl ? 'You have control' : 'Viewing only' }}
-          </span>
-        </div>
+    
+      @if (expanded) {
+        <div class="control-content">
+          <div class="control-status">
+            <span class="status-label">Status:</span>
+            <span class="status-value" [class.active]="hasControl">
+              {{ hasControl ? 'You have control' : 'Viewing only' }}
+            </span>
+          </div>
           <div class="control-actions">
-          <button 
-            class="control-button request-button" 
-            [disabled]="hasControl || controlLocked"
-            (click)="requestControl()">
-            {{ controlLocked && !hasControl ? 'Control Locked' : 'Request Control' }}
-          </button>
-          
-          <button 
-            class="control-button release-button" 
-            [disabled]="!hasControl"
-            (click)="releaseControl()">
-            Release Control
-          </button>
+            <button
+              class="control-button request-button"
+              [disabled]="hasControl || controlLocked"
+              (click)="requestControl()">
+              {{ controlLocked && !hasControl ? 'Control Locked' : 'Request Control' }}
+            </button>
+            <button
+              class="control-button release-button"
+              [disabled]="!hasControl"
+              (click)="releaseControl()">
+              Release Control
+            </button>
+          </div>
+          @if (hasControl) {
+            <div class="control-lock">
+              <label class="lock-label">
+                <input type="checkbox" [(ngModel)]="locked" (change)="toggleLock()">
+                <span>Lock Control (prevent others from taking control)</span>
+              </label>
+            </div>
+          }
         </div>
-        
-        <div class="control-lock" *ngIf="hasControl">
-          <label class="lock-label">
-            <input type="checkbox" [(ngModel)]="locked" (change)="toggleLock()">
-            <span>Lock Control (prevent others from taking control)</span>
-          </label>
-        </div>
-      </div>
+      }
     </div>
-  `,
+    `,
   styles: [`
     .control-panel {
       background-color: #2c3e50;

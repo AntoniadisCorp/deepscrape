@@ -1,31 +1,33 @@
 import { Component, EventEmitter, OnDestroy, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { WebRtcService } from '../../services';
 
 @Component({
   selector: 'app-clipboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],  template: `
-    <div *ngIf="visible" class="clipboard-container">
-      <div class="clipboard-content">
-        <h3>Clipboard Sync</h3>
-        <p>Copy text to remote clipboard</p>
-        <textarea 
-          #clipboardTextarea
-          [(ngModel)]="clipboardText" 
-          (ngModelChange)="onClipboardTextChange($event)"
-          placeholder="Paste content to send to remote clipboard..."
-          class="clipboard-textarea"
-          rows="5"
-        ></textarea>
-        <div class="button-row">
-          <button (click)="sendClipboard()" class="primary-button">Send</button>
-          <button (click)="close()" class="secondary-button">Close</button>
+  imports: [FormsModule],  template: `
+    @if (visible) {
+      <div class="clipboard-container">
+        <div class="clipboard-content">
+          <h3>Clipboard Sync</h3>
+          <p>Copy text to remote clipboard</p>
+          <textarea
+            #clipboardTextarea
+            [(ngModel)]="clipboardText"
+            (ngModelChange)="onClipboardTextChange($event)"
+            placeholder="Paste content to send to remote clipboard..."
+            class="clipboard-textarea"
+            rows="5"
+          ></textarea>
+          <div class="button-row">
+            <button (click)="sendClipboard()" class="primary-button">Send</button>
+            <button (click)="close()" class="secondary-button">Close</button>
+          </div>
         </div>
       </div>
-    </div>
-  `,
+    }
+    `,
   styles: [`
     .clipboard-container {
       position: fixed;

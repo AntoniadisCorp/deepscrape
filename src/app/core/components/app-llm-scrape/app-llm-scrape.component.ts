@@ -17,7 +17,7 @@ import { GinputComponent } from '../ginput/ginput.component';
 import { AiAPIService, CrawlAPIService, LocalStorage, SnackbarService } from '../../services';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { NgIf } from '@angular/common';
+
 import { MarkdownModule } from 'ngx-markdown';
 import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component';
 import { PromptareaComponent } from '../promptarea/promptarea.component';
@@ -34,11 +34,7 @@ import { map } from 'rxjs/internal/operators/map';
 
 @Component({
   selector: 'app-llm-scrape',
-  imports: [MatIcon, MarkdownModule, NgIf, MatProgressSpinner,
-    GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe,
-    RadioToggleComponent,
-    BrowserCookiesComponent
-  ],
+  imports: [MatIcon, MarkdownModule, MatProgressSpinner, GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe, RadioToggleComponent, BrowserCookiesComponent],
   templateUrl: './app-llm-scrape.component.html',
   styleUrl: './app-llm-scrape.component.scss'
 })

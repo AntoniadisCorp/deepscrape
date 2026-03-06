@@ -1,4 +1,4 @@
-import { NgClass, NgFor, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
@@ -7,7 +7,7 @@ import { RippleDirective } from '../../directives';
 
 @Component({
   selector: 'app-promptarea',
-  imports: [ReactiveFormsModule, NgIf, NgFor, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
+  imports: [ReactiveFormsModule, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
   templateUrl: './promptarea.component.html',
   styleUrl: './promptarea.component.scss'
 })

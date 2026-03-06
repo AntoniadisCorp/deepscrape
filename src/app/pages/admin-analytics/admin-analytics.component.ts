@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DecimalPipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { CommonModule, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
@@ -20,7 +20,7 @@ type AnalyticsPeriod = 'last-30m' | 'last-1h' | 'last-24h' | 'last-7d' | 'last-3
 
 @Component({
     selector: 'app-admin-analytics',
-    imports: [BaseChartDirective, DecimalPipe, NgFor, NgIf, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent],
+    imports: [BaseChartDirective, DecimalPipe, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent],
     templateUrl: './admin-analytics.component.html',
     styleUrls: ['./admin-analytics.component.scss']
 })

@@ -25,147 +25,167 @@
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" [(ngModel)]="filters.realtime" (change)="onRealtimeToggle()"
               class="toggle-checkbox" />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"> Live Updates </span>
-          </label>
-          <!-- Refresh Button -->
-          <button (click)="refreshData()" [disabled]="loading"
-            class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors">
-            <lucide-angular [img]="icons['RefreshCw']" class="w-4 h-4" [class.animate-spin]="loading"></lucide-angular>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300"> Live Updates </span>
+            </label>
+            <!-- Refresh Button -->
+            <button (click)="refreshData()" [disabled]="loading"
+              class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors">
+              <lucide-angular [img]="icons['RefreshCw']" class="w-4 h-4" [class.animate-spin]="loading"></lucide-angular>
             Refresh </button>
+          </div>
+        </div>
+        <!-- Last Updated -->
+        @if (lastUpdated) {
+          <div class="mt-2 text-xs text-gray-500 dark:text-gray-400"> Last updated: {{ lastUpdated |
+          date : 'medium' }} </div>
+        }
+      </div>
+    </div>
+    <!-- Filters Section -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Period Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Period: </label>
+          <select title="Period" [(ngModel)]="filters.period" (ngModelChange)="onPeriodChange()"
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            @for (option of periodOptions; track option) {
+              <option [value]="option.value"> {{ option.label }} </option>
+            }
+          </select>
+        </div>
+        <!-- Device Filter -->
+        <div class="flex items-center gap-2">
+          <label for="device-select" class="text-sm font-medium text-gray-700 dark:text-gray-300"> Device: </label>
+          <select id="device-select" title="Device" [(ngModel)]="filters.device" (ngModelChange)="onDeviceChange()"
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            @for (option of deviceOptions; track option) {
+              <option [value]="option.value"> {{ option.label }} </option>
+            }
+          </select>
+        </div>
+        <!-- Provider Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Provider: </label>
+          <select title="Provider" [(ngModel)]="filters.provider" (ngModelChange)="onProviderChange()"
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            @for (option of providerOptions; track option) {
+              <option [value]="option.value"> {{ option.label }} </option>
+            }
+          </select>
         </div>
       </div>
-      <!-- Last Updated -->
-      <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" *ngIf="lastUpdated"> Last updated: {{ lastUpdated |
-        date : 'medium' }} </div>
     </div>
-  </div>
-  <!-- Filters Section -->
-  <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-    <div class="flex flex-wrap items-center gap-4">
-      <!-- Period Filter -->
-      <div class="flex items-center gap-2">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Period: </label>
-        <select title="Period" [(ngModel)]="filters.period" (ngModelChange)="onPeriodChange()"
-          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <option *ngFor="let option of periodOptions" [value]="option.value"> {{ option.label }} </option>
-        </select>
-      </div>
-      <!-- Device Filter -->
-      <div class="flex items-center gap-2">
-        <label for="device-select" class="text-sm font-medium text-gray-700 dark:text-gray-300"> Device: </label>
-        <select id="device-select" title="Device" [(ngModel)]="filters.device" (ngModelChange)="onDeviceChange()"
-          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <option *ngFor="let option of deviceOptions" [value]="option.value"> {{ option.label }} </option>
-        </select>
-      </div>
-      <!-- Provider Filter -->
-      <div class="flex items-center gap-2">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Provider: </label>
-        <select title="Provider" [(ngModel)]="filters.provider" (ngModelChange)="onProviderChange()"
-          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <option *ngFor="let option of providerOptions" [value]="option.value"> {{ option.label }} </option>
-        </select>
-      </div>
-    </div>
-  </div>
-  <!-- Main Content -->
-  <div class="p-6">
-    <!-- Loading State -->
-    <div *ngIf="loading && !dashboardSummary" class="flex items-center justify-center py-12">
-      <div class="text-center">
-        <lucide-angular [img]="icons['Loader2']"
-          class="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4"></lucide-angular>
-        <p class="text-gray-500 dark:text-gray-400"> Loading analytics data... </p>
-      </div>
-    </div>
-    <!-- Error State -->
-    <div *ngIf="error"
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-      <div class="flex items-center gap-2">
-        <lucide-angular [img]="icons['AlertTriangle']" class="w-5 h-5 text-red-500"></lucide-angular>
-        <p class="text-red-700 dark:text-red-300 font-medium">{{ error }}</p>
-      </div>
-    </div>
-    <!-- Dashboard Content -->
-    <div *ngIf="dashboardSummary" class="space-y-6">
-      <!-- Key Metrics Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Guests -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Total Guests </p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{
-                formatNumber(dashboardSummary.totalGuests) }} </p>
-              <div class="flex items-center gap-1 mt-2" *ngIf="dashboardSummary.trends">
+    <!-- Main Content -->
+    <div class="p-6">
+      <!-- Loading State -->
+      @if (loading && !dashboardSummary) {
+        <div class="flex items-center justify-center py-12">
+          <div class="text-center">
+            <lucide-angular [img]="icons['Loader2']"
+            class="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4"></lucide-angular>
+            <p class="text-gray-500 dark:text-gray-400"> Loading analytics data... </p>
+          </div>
+        </div>
+      }
+      <!-- Error State -->
+      @if (error) {
+        <div
+          class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center gap-2">
+            <lucide-angular [img]="icons['AlertTriangle']" class="w-5 h-5 text-red-500"></lucide-angular>
+            <p class="text-red-700 dark:text-red-300 font-medium">{{ error }}</p>
+          </div>
+        </div>
+      }
+      <!-- Dashboard Content -->
+      @if (dashboardSummary) {
+        <div class="space-y-6">
+          <!-- Key Metrics Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Total Guests -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Total Guests </p>
+                  <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{
+                  formatNumber(dashboardSummary.totalGuests) }} </p>
+                  @if (dashboardSummary.trends) {
+                    <div class="flex items-center gap-1 mt-2">
                 <lucide-angular [img]="
                     icons[getTrendIcon(dashboardSummary.trends.guestsGrowth)]
                   " class="w-4 h-4" [class]="
                     getTrendClass(dashboardSummary.trends.guestsGrowth)
                   "></lucide-angular>
-                <span class="text-sm font-medium" [class]="getTrendClass(dashboardSummary.trends.guestsGrowth)"> {{
-                  Math.abs(dashboardSummary.trends.guestsGrowth) }}% </span>
+                      <span class="text-sm font-medium" [class]="getTrendClass(dashboardSummary.trends.guestsGrowth)"> {{
+                      Math.abs(dashboardSummary.trends.guestsGrowth) }}% </span>
+                    </div>
+                  }
+                </div>
+                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <lucide-angular [img]="icons['Users']" class="w-6 h-6 text-blue-600 dark:text-blue-400"></lucide-angular>
+                </div>
               </div>
             </div>
-            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <lucide-angular [img]="icons['Users']" class="w-6 h-6 text-blue-600 dark:text-blue-400"></lucide-angular>
-            </div>
-          </div>
-        </div>
-        <!-- Total Users -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Registered Users </p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{
-                formatNumber(dashboardSummary.totalUsers) }} </p>
-              <div class="flex items-center gap-1 mt-2" *ngIf="dashboardSummary.trends">
+            <!-- Total Users -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Registered Users </p>
+                  <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{
+                  formatNumber(dashboardSummary.totalUsers) }} </p>
+                  @if (dashboardSummary.trends) {
+                    <div class="flex items-center gap-1 mt-2">
                 <lucide-angular [img]="
                     icons[getTrendIcon(dashboardSummary.trends.usersGrowth)]
                   " class="w-4 h-4" [class]="
                     getTrendClass(dashboardSummary.trends.usersGrowth)
                   "></lucide-angular>
-                <span class="text-sm font-medium" [class]="getTrendClass(dashboardSummary.trends.usersGrowth)"> {{
-                  Math.abs(dashboardSummary.trends.usersGrowth) }}% </span>
+                      <span class="text-sm font-medium" [class]="getTrendClass(dashboardSummary.trends.usersGrowth)"> {{
+                      Math.abs(dashboardSummary.trends.usersGrowth) }}% </span>
+                    </div>
+                  }
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <lucide-angular [img]="icons['UserCheck']"
+                  class="w-6 h-6 text-green-600 dark:text-green-400"></lucide-angular>
+                </div>
               </div>
             </div>
-            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <lucide-angular [img]="icons['UserCheck']"
-                class="w-6 h-6 text-green-600 dark:text-green-400"></lucide-angular>
-            </div>
-          </div>
-        </div>
-        <!-- Total Logins -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Total Logins </p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{
-                formatNumber(dashboardSummary.totalLogins) }} </p>
-              <div class="flex items-center gap-1 mt-2" *ngIf="dashboardSummary.trends">
+            <!-- Total Logins -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Total Logins </p>
+                  <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{
+                  formatNumber(dashboardSummary.totalLogins) }} </p>
+                  @if (dashboardSummary.trends) {
+                    <div class="flex items-center gap-1 mt-2">
                 <lucide-angular [img]="
                     icons[getTrendIcon(dashboardSummary.trends.loginsGrowth)]
                   " class="w-4 h-4" [class]="
                     getTrendClass(dashboardSummary.trends.loginsGrowth)
                   "></lucide-angular>
-                <span class="text-sm font-medium" [class]="getTrendClass(dashboardSummary.trends.loginsGrowth)"> {{
-                  Math.abs(dashboardSummary.trends.loginsGrowth) }}% </span>
+                      <span class="text-sm font-medium" [class]="getTrendClass(dashboardSummary.trends.loginsGrowth)"> {{
+                      Math.abs(dashboardSummary.trends.loginsGrowth) }}% </span>
+                    </div>
+                  }
+                </div>
+                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <lucide-angular [img]="icons['LogIn']"
+                  class="w-6 h-6 text-yellow-600 dark:text-yellow-400"></lucide-angular>
+                </div>
               </div>
             </div>
-            <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <lucide-angular [img]="icons['LogIn']"
-                class="w-6 h-6 text-yellow-600 dark:text-yellow-400"></lucide-angular>
-            </div>
-          </div>
-        </div>
-        <!-- Conversion Rate -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Conversion Rate </p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{ dashboardSummary.conversionRate |
-                number : '1.1-1' }}% </p>
-              <div class="flex items-center gap-1 mt-2" *ngIf="dashboardSummary.trends">
+            <!-- Conversion Rate -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400"> Conversion Rate </p>
+                  <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1"> {{ dashboardSummary.conversionRate |
+                  number : '1.1-1' }}% </p>
+                  @if (dashboardSummary.trends) {
+                    <div class="flex items-center gap-1 mt-2">
                 <lucide-angular [img]="
                     icons[
                       getTrendIcon(dashboardSummary.trends.conversionGrowth)
@@ -176,71 +196,75 @@
                 <span class="text-sm font-medium" [class]="
                     getTrendClass(dashboardSummary.trends.conversionGrowth)
                   "> {{ Math.abs(dashboardSummary.trends.conversionGrowth) }}% </span>
+                    </div>
+                  }
+                </div>
+                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <lucide-angular [img]="icons['TrendingUp']"
+                  class="w-6 h-6 text-purple-600 dark:text-purple-400"></lucide-angular>
+                </div>
               </div>
             </div>
-            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <lucide-angular [img]="icons['TrendingUp']"
-                class="w-6 h-6 text-purple-600 dark:text-purple-400"></lucide-angular>
+          </div>
+          <!-- Charts Section -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- Timeline Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Activity Timeline </h3>
+              <div class="h-80">
+                <canvas baseChart [data]="timelineChartData" [options]="timelineChartOptions" [type]="timelineChartType"
+                class="w-full h-full"></canvas>
+              </div>
+            </div>
+            <!-- Countries Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Top Countries </h3>
+              <div class="h-80">
+                <canvas baseChart [data]="countryChartData" [options]="countryChartOptions" [type]="countryChartType"
+                class="w-full h-full"></canvas>
+              </div>
+            </div>
+            <!-- Browser Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Browser Distribution </h3>
+              <div class="h-80">
+                <canvas baseChart [data]="browserChartData" [options]="browserChartOptions" [type]="browserChartType"
+                class="w-full h-full"></canvas>
+              </div>
+            </div>
+            <!-- Device Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Device Types </h3>
+              <div class="h-80">
+                <canvas baseChart [data]="deviceChartData" [options]="deviceChartOptions" [type]="deviceChartType"
+                class="w-full h-full"></canvas>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      <!-- Charts Section -->
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <!-- Timeline Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Activity Timeline </h3>
-          <div class="h-80">
-            <canvas baseChart [data]="timelineChartData" [options]="timelineChartOptions" [type]="timelineChartType"
-              class="w-full h-full"></canvas>
-          </div>
-        </div>
-        <!-- Countries Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Top Countries </h3>
-          <div class="h-80">
-            <canvas baseChart [data]="countryChartData" [options]="countryChartOptions" [type]="countryChartType"
-              class="w-full h-full"></canvas>
-          </div>
-        </div>
-        <!-- Browser Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Browser Distribution </h3>
-          <div class="h-80">
-            <canvas baseChart [data]="browserChartData" [options]="browserChartOptions" [type]="browserChartType"
-              class="w-full h-full"></canvas>
-          </div>
-        </div>
-        <!-- Device Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Device Types </h3>
-          <div class="h-80">
-            <canvas baseChart [data]="deviceChartData" [options]="deviceChartOptions" [type]="deviceChartType"
-              class="w-full h-full"></canvas>
-          </div>
-        </div>
-      </div>
-      <!-- Real-time Activity Feed -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-        *ngIf="isRealtime">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Live Activity
-        </h3>
-        <div class="space-y-2">
+          <!-- Real-time Activity Feed -->
+          @if (isRealtime) {
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              >
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Live Activity
+              </h3>
+              <div class="space-y-2">
           <div class="flex items-center justify-between py-2 px-3 bg-gray-50
           dark:bg-gray-700 rounded-lg transition-all duration-300" [class.bg-green-50]="realtimeIndicator"
-            [class.dark:bg-green-900]="realtimeIndicator">
-            <span class="text-sm text-gray-600 dark:text-gray-400"> Active users in the last 5 minutes </span>
-            <span class="text-sm font-semibold text-gray-900 dark:text-white"> {{ dashboardSummary.activeUsers }}
-            </span>
-          </div>
-          <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <span class="text-sm text-gray-600 dark:text-gray-400"> Active guests in the last 5 minutes </span>
-            <span class="text-sm font-semibold text-gray-900 dark:text-white"> {{ dashboardSummary.activeGuests }}
-            </span>
-          </div>
+                  [class.dark:bg-green-900]="realtimeIndicator">
+                  <span class="text-sm text-gray-600 dark:text-gray-400"> Active users in the last 5 minutes </span>
+                  <span class="text-sm font-semibold text-gray-900 dark:text-white"> {{ dashboardSummary.activeUsers }}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <span class="text-sm text-gray-600 dark:text-gray-400"> Active guests in the last 5 minutes </span>
+                  <span class="text-sm font-semibold text-gray-900 dark:text-white"> {{ dashboardSummary.activeGuests }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
         </div>
-      </div>
+      }
     </div>
   </div>
-</div>

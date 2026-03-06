@@ -1,4 +1,4 @@
-import { AsyncPipe, DatePipe, DecimalPipe, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, DatePipe, DecimalPipe, JsonPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, SimpleChanges, ViewChild } from '@angular/core'
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { FirestoreService } from 'src/app/core/services'
@@ -47,14 +47,7 @@ type OperationPageCursor = {
 
 @Component({
   selector: 'app-operations',
-  imports: [NgFor, NgIf, DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe,
-    MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe,
-    GinputComponent, DropdownComponent, RouterLink, PromptareaComponent,
-    ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner,
-    MatInputModule, DecimalPipe,
-    MatTimepickerModule,
-    MatDatepickerModule,
-  ],
+  imports: [DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe, MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe, GinputComponent, DropdownComponent, RouterLink, PromptareaComponent, ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner, MatInputModule, DecimalPipe, MatTimepickerModule, MatDatepickerModule],
   providers: [provideNativeDateAdapter(), provideNativeDateTimeAdapter()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './operations.component.html',

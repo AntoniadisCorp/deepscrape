@@ -104,7 +104,7 @@ function serveapp(): Elysia {
         .get('*.*', async ({ originalUrl }) => {
             const file = Bun.file(`${browserDistFolder}${originalUrl}`)
 
-            return new Response(Buffer.from(await file.arrayBuffer()), {
+            return new Response(await file.arrayBuffer(), {
                 headers: {
                     'Content-Type': file.type,
                 },
@@ -124,7 +124,7 @@ function serveapp(): Elysia {
 
                 header['Content-Type'] = file.type
 
-                return new Response(Buffer.from(await file.arrayBuffer()), {
+                return new Response(await file.arrayBuffer(), {
                     headers: header,
                 })
             }

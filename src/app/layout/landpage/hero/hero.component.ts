@@ -1,5 +1,5 @@
-import { DOCUMENT, NgOptimizedImage } from '@angular/common';
-import { Component, inject, Inject } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
+import { Component, inject, Inject, DOCUMENT } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { ScrollService } from 'src/app/core/services';

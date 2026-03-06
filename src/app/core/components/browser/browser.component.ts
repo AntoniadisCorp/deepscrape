@@ -1,5 +1,5 @@
-import { Component, ElementRef, Inject, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { Component, ElementRef, Inject, inject, OnDestroy, OnInit, ViewChild, DOCUMENT } from '@angular/core';
+
 import { AuthService, WebRtcService, WindowToken } from '../../services';
 import { ClipboardComponent } from '../clipboard/clipboard.component';
 import { ResolutionComponent } from '../resolution/resolution.component';
@@ -10,7 +10,7 @@ import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-browser',
-  imports: [CommonModule, ClipboardComponent, ResolutionComponent, ControlComponent],
+  imports: [ClipboardComponent, ResolutionComponent, ControlComponent],
   templateUrl: './browser.component.html',
   styleUrl: './browser.component.scss'
 })

@@ -1,4 +1,4 @@
-import { AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage } from '@angular/common'
+import { AsyncPipe, isPlatformBrowser, NgClass, NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
 import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
@@ -26,11 +26,7 @@ import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/com
  */
 @Component({
   selector: 'app-user-layout',
-  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
-    MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
-    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe,
-    LangPickerComponent
-  ],
+  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'

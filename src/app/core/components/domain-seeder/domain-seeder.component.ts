@@ -4,7 +4,7 @@ import { CrawlOperation, CrawlResult, CrawlStatus, CrawlStreamBatch, CrawlTask, 
 import { LocalStorage, SeedingService, ScreenResizeService, WindowToken, CrawlAPIService, SnackbarService, OperationStatusService, AuthService } from '../../services'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { concatMap, delay, Observable, of, shareReplay, Subject, Subscription, takeUntil, tap, timer } from 'rxjs'
-import { AsyncPipe, NgClass, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, NgClass } from '@angular/common';
 import { MatSliderModule } from '@angular/material/slider'
 import { CheckboxComponent } from '../checkbox/checkbox.component'
 import { MatChipsModule } from '@angular/material/chips'
@@ -23,10 +23,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar'
 
 // Type definitions for preset configurations
 @Component({
-  selector: 'app-domain-seeder', imports: [ReactiveFormsModule, NgFor, NgIf, NgClass, MatSliderModule, CheckboxComponent,
-    FormsModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatIconModule, AsyncPipe, MatProgressBarModule,
-    HiddenDragScrollDirective, RippleDirective, SeederResultsComponent, RippleDirective
-  ],
+  selector: 'app-domain-seeder', imports: [ReactiveFormsModule, NgClass, MatSliderModule, CheckboxComponent, FormsModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatIconModule, AsyncPipe, MatProgressBarModule, HiddenDragScrollDirective, RippleDirective, SeederResultsComponent, RippleDirective],
   animations: [expandCollapseAnimation, fadeInUp],
   templateUrl: './domain-seeder.component.html',
   styleUrl: './domain-seeder.component.scss',

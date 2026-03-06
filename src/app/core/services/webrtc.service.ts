@@ -1,10 +1,10 @@
 // webrtc.service.ts
-import { DestroyRef, Inject, Injectable, inject } from '@angular/core';
+import { DestroyRef, Inject, Injectable, inject, DOCUMENT } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, Observable, Subject, catchError, firstValueFrom, from, retry, throwError, filter, take, timeout } from 'rxjs';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { DOCUMENT } from '@angular/common';
+
 import { NAVIGATOR } from '../providers';
 import { EVENT, SignalAnswerMessage, ControlClipboardPayload, SignalCandidatePayload, SignalOfferPayload, SignalProvidePayload, WebSocketMessages } from '../types';
 

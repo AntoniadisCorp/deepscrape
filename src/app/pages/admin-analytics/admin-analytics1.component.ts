@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core'
-import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common'
+import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms'
 import { BaseChartDirective } from 'ng2-charts'
 import { ChartConfiguration, ChartData } from 'chart.js'
@@ -26,9 +26,7 @@ interface FilterState {
 
 @Component({
   selector: 'app-admin-analytics',
-  imports: [BaseChartDirective, DecimalPipe, NgFor, NgIf, LucideAngularModule, FormsModule,
-    DatePipe, NgFor, NgIf
-  ],
+  imports: [BaseChartDirective, DecimalPipe, LucideAngularModule, FormsModule, DatePipe],
   templateUrl: './admin-analytics1.component.html',
   styleUrls: ['./admin-analytics.component.scss']
 })

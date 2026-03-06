@@ -1,4 +1,4 @@
-import { CurrencyPipe, NgFor, NgIf } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { RippleDirective } from 'src/app/core/directives';
@@ -6,7 +6,7 @@ import { PlanPeriod } from 'src/app/core/types';
 
 @Component({
     selector: 'app-plans',
-    imports: [NgIf, NgFor, RippleDirective, CurrencyPipe, MatIcon],
+    imports: [RippleDirective, CurrencyPipe, MatIcon],
     templateUrl: './plans.component.html',
     styleUrl: './plans.component.scss'
 })

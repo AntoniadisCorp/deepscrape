@@ -1,5 +1,5 @@
-import { AsyncPipe, DatePipe, DOCUMENT, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, inject, Inject } from '@angular/core';
+import { AsyncPipe, DatePipe, JsonPipe, NgClass } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, inject, Inject, DOCUMENT } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -15,10 +15,7 @@ import { BrowserConfig, BrowserProfile, Cookies, Headers, ProxyConfig, DropDownO
 
 @Component({
   selector: 'app-browser-config',
-  imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, NgFor, AsyncPipe, DatePipe,
-    RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe,
-    DropdownComponent, MatProgressSpinner,
-  ],
+  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe, DropdownComponent, MatProgressSpinner],
   templateUrl: './browser-config.component.html',
   styleUrl: './browser-config.component.scss'
 })

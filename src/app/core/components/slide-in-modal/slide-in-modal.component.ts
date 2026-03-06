@@ -1,4 +1,4 @@
-import { NgClass, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, input, Input, model, output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -10,7 +10,7 @@ import { delay, map, of, Subject, take, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-slideinmodal',
-  imports: [NgIf, MatProgressBarModule],
+  imports: [MatProgressBarModule],
   templateUrl: './slide-in-modal.component.html',
   styleUrl: './slide-in-modal.component.scss',
   animations: [slideInModalAnimation],

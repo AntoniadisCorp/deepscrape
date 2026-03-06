@@ -1,8 +1,9 @@
+import { DOCUMENT } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { NgswUpdateService } from './ngsw-update.service';
 import { SwUpdate } from '@angular/service-worker';
-import { DOCUMENT } from '@angular/common';
+
 import { of } from 'rxjs/internal/observable/of';
 
 describe('NgswUpdateService', () => {

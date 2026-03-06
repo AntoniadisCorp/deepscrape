@@ -1,4 +1,4 @@
-import { AsyncPipe, DatePipe, JsonPipe, KeyValuePipe, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, DatePipe, JsonPipe, KeyValuePipe } from '@angular/common';
 import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { Outsideclick } from '../../directives';
 import { MatIcon } from '@angular/material/icon';
@@ -12,7 +12,7 @@ import { switchPackageIcon } from '../../functions';
 
 @Component({
   selector: 'app-dropdown-cart',
-  imports: [NgIf, Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
+  imports: [Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
   templateUrl: './dropdown-cart.component.html',
   styleUrl: './dropdown-cart.component.scss',
   animations: [PopupAnimation]

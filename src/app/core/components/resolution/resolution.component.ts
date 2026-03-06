@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { WebRtcService } from '../../services';
 
@@ -12,58 +12,58 @@ interface Resolution {
 @Component({
   selector: 'app-resolution',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
-    <div *ngIf="visible" class="resolution-container">
-      <div class="resolution-content">
-        <h3>Screen Resolution</h3>
-        <p>Select a resolution for the remote screen:</p>
-        
-        <div class="resolutions-grid">
-          <button 
-            *ngFor="let res of resolutions" 
-            class="resolution-button" 
-            [class.selected]="isSelected(res)"
-            (click)="selectResolution(res)">
-            {{ res.label }}
-          </button>
-        </div>
-        
-        <div class="custom-resolution">
-          <h4>Custom Resolution</h4>
-          <div class="resolution-inputs">
-            <input 
-              type="number" 
-              [(ngModel)]="customWidth" 
-              placeholder="Width" 
-              min="640" 
-              max="7680"
-              class="resolution-input"
-            >
-            <span>×</span>
-            <input 
-              type="number" 
-              [(ngModel)]="customHeight" 
-              placeholder="Height" 
-              min="480" 
-              max="4320"
-              class="resolution-input"
-            >
-            <button 
-              (click)="setCustomResolution()" 
-              class="apply-button"
-              [disabled]="!isValidCustomResolution()">
-              Apply
-            </button>
+    @if (visible) {
+      <div class="resolution-container">
+        <div class="resolution-content">
+          <h3>Screen Resolution</h3>
+          <p>Select a resolution for the remote screen:</p>
+          <div class="resolutions-grid">
+            @for (res of resolutions; track res) {
+              <button
+                class="resolution-button"
+                [class.selected]="isSelected(res)"
+                (click)="selectResolution(res)">
+                {{ res.label }}
+              </button>
+            }
           </div>
-        </div>
-        
-        <div class="button-row">
-          <button (click)="close()" class="close-button">Close</button>
-        </div>
-      </div>
-    </div>
-  `,
+          <div class="custom-resolution">
+            <h4>Custom Resolution</h4>
+            <div class="resolution-inputs">
+              <input
+                type="number"
+                [(ngModel)]="customWidth"
+                placeholder="Width"
+                min="640"
+                max="7680"
+                class="resolution-input"
+                >
+                <span>×</span>
+                <input
+                  type="number"
+                  [(ngModel)]="customHeight"
+                  placeholder="Height"
+                  min="480"
+                  max="4320"
+                  class="resolution-input"
+                  >
+                  <button
+                    (click)="setCustomResolution()"
+                    class="apply-button"
+                    [disabled]="!isValidCustomResolution()">
+                    Apply
+                  </button>
+                </div>
+              </div>
+              <div class="button-row">
+                <button (click)="close()" class="close-button">Close</button>
+              </div>
+            </div>
+          </div>
+        }
+    `,
   styles: [`
     .resolution-container {
       position: fixed;

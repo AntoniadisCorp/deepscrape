@@ -1,18 +1,18 @@
 <div class="mx-auto mt-8 w-full">
   <div class="flex items-center flex-col relative">
-    <ng-container *ngIf="currentMode as mode">
+    @if (currentMode; as mode) {
       <div
         [@routeChildAnimation]="mode"
         class="flex max-w-3xl w-full flex-col mt-4 lg:mt-0">
-        <div 
+        <div
           class="relative rounded-lg overflow-hidden dark:bg-gray6 bg-gray-200 shadow-md">
-          <div 
+          <div
             #modeScrollContainer
             class="overflow-x-hidden scrollbar-thin overscroll-contain touch-pan-x py-2 px-2"
             appHiddenDragScroll
             (scroll)="onModeScroll($event)">
             <div class="flex gap-3 whitespace-nowrap min-w-max cursor-grab active:cursor-grabbing">
-              <ng-container *ngFor="let mode of ['llm-scrape', 'crawl', 'seeder']">
+              @for (mode of ['llm-scrape', 'crawl', 'seeder']; track mode) {
                 <button
                   class="group py-2 px-3 text-base font-normal text-center transition-all duration-100 ease-in-out rounded-lg focus:outline-none"
                   [ngClass]="{
@@ -31,20 +31,26 @@
                     /{{ mode }}
                   </span>
                 </button>
-              </ng-container>
+              }
             </div>
           </div>
         </div>        <!-- Use [@fadeinCartItems] on each child component container to animate transitions -->
-        <div *ngIf="currentMode === 'llm-scrape'" class="w-full">
-          <app-llm-scrape></app-llm-scrape>
-        </div>
-        <div *ngIf="currentMode === 'crawl'" class="w-full">
-          <app-crawl></app-crawl>
-        </div>
-        <div *ngIf="currentMode === 'seeder'" class="w-full">
-          <app-domain-seeder></app-domain-seeder>
-        </div>
+        @if (currentMode === 'llm-scrape') {
+          <div class="w-full">
+            <app-llm-scrape></app-llm-scrape>
+          </div>
+        }
+        @if (currentMode === 'crawl') {
+          <div class="w-full">
+            <app-crawl></app-crawl>
+          </div>
+        }
+        @if (currentMode === 'seeder') {
+          <div class="w-full">
+            <app-domain-seeder></app-domain-seeder>
+          </div>
+        }
       </div>
-    </ng-container>
+    }
   </div>
 </div>

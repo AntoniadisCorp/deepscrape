@@ -3,7 +3,7 @@ import { FirestoreService, PlutoService, SessionStorage, SnackbarService, STRIPE
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Firestore } from '@angular/fire/firestore'
 import { connectFunctionsEmulator, Functions, getFunctions, httpsCallable } from '@angular/fire/functions'
-import { CurrencyPipe, JsonPipe, NgIf } from '@angular/common'
+import { CurrencyPipe, JsonPipe } from '@angular/common';
 import { StripeCardCvcElement, StripeCardElement, StripeElement, StripeElementsOptions, StripePaymentElement, StripePaymentElementOptions } from '@stripe/stripe-js'
 import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe'
 import { from, fromEvent, Subscription } from 'rxjs'
@@ -13,7 +13,7 @@ import { environment } from 'src/environments/environment'
 
 @Component({
     selector: 'app-payment',
-    imports: [ReactiveFormsModule, NgIf, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
+    imports: [ReactiveFormsModule, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
     templateUrl: './payment.component.html',
     styleUrl: './payment.component.scss'
 })

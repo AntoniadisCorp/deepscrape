@@ -1,12 +1,13 @@
 <div class="flex justify-center my-6">
-  <span
-    *ngIf="isAdmin"
-    class="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-orange-300 via-orange-400 to-deep-orange-400 text-gray-900 shadow border border-yellow-300  dark:from-gray-800 dark:via-gray-700 dark:to-gray-900 dark:text-white dark:shadow-lg dark:border-gray-600">
-    <svg class="w-4 h-4 mr-2 text-yellow-500 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M10 2a1 1 0 01.894.553l2.382 4.764 5.263.765a1 1 0 01.554 1.706l-3.807 3.713.899 5.243a1 1 0 01-1.451 1.054L10 17.347l-4.7 2.472a1 1 0 01-1.451-1.054l.899-5.243-3.807-3.713a1 1 0 01.554-1.706l5.263-.765L9.106 2.553A1 1 0 0110 2z"/>
-    </svg>
-    Admin
-  </span>
+  @if (isAdmin) {
+    <span
+      class="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-orange-300 via-orange-400 to-deep-orange-400 text-gray-900 shadow border border-yellow-300  dark:from-gray-800 dark:via-gray-700 dark:to-gray-900 dark:text-white dark:shadow-lg dark:border-gray-600">
+      <svg class="w-4 h-4 mr-2 text-yellow-500 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M10 2a1 1 0 01.894.553l2.382 4.764 5.263.765a1 1 0 01.554 1.706l-3.807 3.713.899 5.243a1 1 0 01-1.451 1.054L10 17.347l-4.7 2.472a1 1 0 01-1.451-1.054l.899-5.243-3.807-3.713a1 1 0 01.554-1.706l5.263-.765L9.106 2.553A1 1 0 0110 2z"/>
+      </svg>
+      Admin
+    </span>
+  }
 </div>
 
 <form
@@ -16,7 +17,7 @@
   class="mt-4 flex flex-col"
   [formGroup]="profileForm"
   (ngSubmit)="saveProfile()">
-  
+
   <div class="flex w-full flex-col gap-4">
     <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
       Profile Picture
@@ -27,11 +28,13 @@
         Upload a picture to make your profile stand out and let people recognize
         your tasks easily!
       </h3>
-      <mat-progress-bar
-        class="text-blue-600 mt-5 flex w-full max-w-lg items-center justify-center"
-        value="40"
-        mode="indeterminate"
-        *ngIf="isLoadingFile"></mat-progress-bar>
+      @if (isLoadingFile) {
+        <mat-progress-bar
+          class="text-blue-600 mt-5 flex w-full max-w-lg items-center justify-center"
+          value="40"
+          mode="indeterminate"
+        ></mat-progress-bar>
+      }
       <div
         class="mt-5 flex w-full max-w-lg items-center justify-center dark:shadow-inner focus:dark:shadow-gray-800">
         <label
@@ -39,262 +42,266 @@
           class="flex h-40 w-full flex-auto cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray5 dark:hover:border-gray-500 dark:hover:bg-gray6 relative"
           [ngClass]="{ 'border-blue-500 ring-2 ring-blue-200': isDragging }">
           @if(!isLoadingFile && !selectedFile && !previewUrl?.value) {
-          <div class="flex w-24 flex-col items-center justify-center pt-5">
-            <svg
-              class="mb-4 h-8 w-8 text-gray-500 dark:text-gray-400"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 20 16">
-              <path
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-            </svg>
-          </div>
-          } 
-          @if (previewUrl?.value && !selectedFile &&
-          profileForm.get('photoFile')?.value) {
+            <div class="flex w-24 flex-col items-center justify-center pt-5">
+              <svg
+                class="mb-4 h-8 w-8 text-gray-500 dark:text-gray-400"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 20 16">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                </svg>
+              </div>
+            }
+            @if (previewUrl?.value && !selectedFile &&
+              profileForm.get('photoFile')?.value) {
 
-          <div
-            class="flex h-full max-w-[11rem] flex-col items-center justify-center">
-            <img
+              <div
+                class="flex h-full max-w-[11rem] flex-col items-center justify-center">
+                <img
               [srcset]="
                 previewUrl?.value.toString() ||
                 (user | provider : user?.providerId || '' : 'photoFile')
               "
-              [name]="user | provider : user?.providerId || '' : 'displayName'"
-              alt="Preview"
-              class="inset-0 h-full w-full rounded-lg object-cover" />
-          </div>
-          }
+                  [name]="user | provider : user?.providerId || '' : 'displayName'"
+                  alt="Preview"
+                  class="inset-0 h-full w-full rounded-lg object-cover" />
+                </div>
+              }
 
-          <div
-            *ngIf="selectedFile && previewUrl?.value"
-            class="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
-            <div
-              class="absolute top-2 left-2 z-10 rounded-md bg-gray-900/60 px-2 py-1 text-xs font-medium text-white">
-              {{ fileSize }}
+              @if (selectedFile && previewUrl?.value) {
+                <div
+                  class="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
+                  <div
+                    class="absolute top-2 left-2 z-10 rounded-md bg-gray-900/60 px-2 py-1 text-xs font-medium text-white">
+                    {{ fileSize }}
+                  </div>
+                  <button
+                    type="button"
+                    (click)="removeImage()"
+                    title="Remove image"
+                    class="absolute right-2 top-2 z-10 rounded-full bg-gray-200 p-1 text-gray-700 hover:bg-gray-300">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor">
+                      <path
+                        fill-rule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                    <app-preview-image formControlName="previewUrl"></app-preview-image>
+                  </div>
+                }
+                <!-- *ngIf="!selectedFile" -->
+                @if (!selectedFile && !isLoadingFile) {
+                  <div
+                    class="flex flex-col items-center justify-center px-6 py-6">
+                    <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span class="font-semibold">Click to upload</span>
+                      or drag and drop
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      SVG, PNG, JPG, GIF, or WEBP (MAX. 1920x1080px)
+                    </p>
+                  </div>
+                }
+
+                <input
+                  #image
+                  class="hidden"
+                  id="image"
+                  type="file"
+                  (change)="onFileSelected($event)"
+                  accept="image/jpeg, image/png, image/gif, image/svg+xml, image/webp" />
+                </label>
+                @if (fileError) {
+                  <div class="text-red-500 text-sm mt-1">
+                    {{ fileError }}
+                  </div>
+                }
+              </div>
             </div>
-            <button
-              type="button"
-              (click)="removeImage()"
-              title="Remove image"
-              class="absolute right-2 top-2 z-10 rounded-full bg-gray-200 p-1 text-gray-700 hover:bg-gray-300">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor">
-                <path
-                  fill-rule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clip-rule="evenodd" />
-              </svg>
-            </button>
-            <app-preview-image formControlName="previewUrl"></app-preview-image>
+
+            <!-- Header -->
+            <div class="mt-6 flex flex-row items-center">
+              <h2 class="font-body text-lg font-bold text-gray5 dark:text-gray-200">
+                Profile Information
+              </h2>
+              <span class="mx-1 text-xs font-light dark:text-gray-400">•</span>
+              <div class="text-xs font-light dark:text-gray-400">
+                Joined
+                <time
+                  [dateTime]="user?.created_At | date : 'yyyy-MM-ddTHH:mm:ssZ'"
+                [innerText]="user?.created_At | date : 'mediumDate'"></time>
+                @if(user?.updated_At) {
+                  <span class="mx-1">•</span>
+                  Last login
+                  <time [innerText]="user?.updated_At | date : 'mediumDate'"></time>
+                }
+              </div>
+            </div>
+            <div
+              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
+              <!-- Full Name  -->
+              <div
+                class="flex w-full flex-row items-center flex-wrap sm:flex-nowrap justify-between gap-4">
+                <app-stinput
+                  class="w-full sm:w-auto flex-1"
+                  [control]="profileForm.get('displayName') | formControl"
+                  [leftIcon]="'person'"
+                [label]="'Name'"></app-stinput>
+              </div>
+
+              <!-- username Control field -->
+              <h3 class="-mb-3 mt-5 font-body text-sm text-gray5/50 dark:text-gray-400">
+                Username can be updated only once per year - Last username update: x
+                months ago
+              </h3>
+
+              <app-stinput
+                [control]="profileForm.get('username') | formControl"
+                [leftIcon]="'person_outline'"
+                [rightIcon]="'lock'"
+              [label]="'Username'"></app-stinput>
+
+              <!-- Engineer Status Dropdown -->
+              <div class="mt-4 flex w-full max-w-3xl flex-col space-y-2">
+                <app-dropdown
+                  lightColor="blue"
+                  [control]="profileForm.get('engineerStatus') | formControl"
+                  [options]="engineerStatuses"
+                  (select)="onEngineerStatusChange($event)"
+                [dropDownName]="'Engineer Status'"></app-dropdown>
+              </div>
+            </div>
+
+            <!-- About Section -->
+            <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
+              About
+            </h2>
+            <div
+              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
+              <!-- Bio Field -->
+              <div class="group mt-4 mb-6 flex max-w-lg flex-col items-start gap-2">
+                <div
+                  class="relative flex pr-1 h-auto ring-0 cursor-text w-full flex-row focus-within:border-blue-400 dark:focus-within:border-[#539cfc] focus-within:border-l-blue-500 dark:focus-within:border-l-gray-100 hover:border-l-blue-500 dark:hover:border-l-blue-400 items-center overflow-hidden rounded-lg border border-l-4 bg-white px-4 pl-3 outline-none transition-[border_,_colors] duration-75 ease-out before:absolute before:-left-7 before:top-0 before:h-full before:w-9 before:rounded-l-[14px] before:bg-gradient-to-l before:from-[rgba(252,83,141,0)] before:to-[#e053fc] before:content-[''] dark:bg-gray6">
+                  <textarea
+                    id="bio"
+                    [formControl]="profileForm.get('bio') | formControl"
+                    placeholder=" "
+                    minlength="0"
+                    maxlength="600"
+                  class="mt-2 scrollbar block w-full h-32 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-gray-300 px-2.5 pb-2.5 pr-2 pt-5 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:text-white dark:bg-gray6 bg-white"></textarea>
+                  <label
+                    for="bio"
+                    class="absolute start-2 top-[0.8rem] z-10 origin-[0] -translate-y-3 scale-75 transform cursor-text text-sm text-gray5 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 dark:peer-hover:text-blue-400 peer-focus:scale-75 peer-focus:text-blue-700 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 dark:group-hover:text-white peer-focus:dark:text-gray-100">
+                    Bio
+                  </label>
+                </div>
+                <div class="flex w-full justify-between items-center">
+                  @if (profileForm.get('bio')?.invalid &&
+                    profileForm.get('bio')?.touched) {
+                    <div class="mt-0 px-2 h-[20px] text-sm text-red-400" role="alert">
+                      {{ profileForm.get('bio')?.errors?.['maxlength'] ? 'Bio cannot exceed 100 characters' : '' }}
+                    </div>
+                  } @else {
+                    <div class="mt-0 px-2 text-sm text-transparent" role="alert"></div>
+                  }
+                  <span class="text-right text-gray5 dark:text-gray1">
+                    {{ profileForm.get('bio')?.value.length || '0' }}/600
+                  </span>
+                </div>
+              </div>
+
+              <!-- Company Field -->
+              <app-stinput
+                [control]="profileForm.get('company') | formControl"
+                [leftIcon]="'business'"
+              [label]="'Company'"></app-stinput>
+
+              <!-- Location Field -->
+              <app-stinput
+                [control]="profileForm.get('location') | formControl"
+                [leftIcon]="'location_on'"
+              [label]="'Location'"></app-stinput>
+
+              <!-- Job Title Field -->
+              <app-stinput
+                [control]="profileForm.get('jobTitle') | formControl"
+                [leftIcon]="'work'"
+              [label]="'Job Title'"></app-stinput>
+            </div>
+
+            <!-- Social Links Section -->
+            <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
+              Social Links
+            </h2>
+            <div
+              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
+              <app-stinput
+                [control]="profileForm.get('socialLinks.twitter') | formControl"
+                svgIcon="x"
+                [leftIcon]="'twitter'"
+              [label]="'X'"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.linkedin') | formControl"
+                svgIcon="linkedin"
+                [leftIcon]="'linkedin'"
+              [label]="'LinkedIn'"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.threads') | formControl"
+                svgIcon="threads"
+                [leftIcon]="'threads'"
+              [label]="'Threads'"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.github') | formControl"
+                svgIcon="github_link2"
+                [leftIcon]="'github'"
+              [label]="'GitHub'"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.website') | formControl"
+                [leftIcon]="'link'"
+              [label]="'Website'"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.stackoverflow') | formControl"
+                svgIcon="stackoverflow"
+                [leftIcon]="'stackoverflow'"
+              [label]="'Stack Overflow '"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.youtube') | formControl"
+                svgIcon="youtube"
+                [leftIcon]="'youtube'"
+              [label]="'YouTube'"></app-stinput>
+              <app-stinput
+                [control]="profileForm.get('socialLinks.codepen') | formControl"
+                svgIcon="codepen"
+                [leftIcon]="'codepen'"
+              [label]="'CodePen'"></app-stinput>
+            </div>
           </div>
-          <!-- *ngIf="!selectedFile" -->
-          <div
-            *ngIf="!selectedFile && !isLoadingFile"
-            class="flex flex-col items-center justify-center px-6 py-6">
-            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-              <span class="font-semibold">Click to upload</span>
-              or drag and drop
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              SVG, PNG, JPG, GIF, or WEBP (MAX. 1920x1080px)
-            </p>
-          </div>
-
-          <input
-            #image
-            class="hidden"
-            id="image"
-            type="file"
-            (change)="onFileSelected($event)"
-            accept="image/jpeg, image/png, image/gif, image/svg+xml, image/webp" />
-        </label>
-        <div *ngIf="fileError" class="text-red-500 text-sm mt-1">
-          {{ fileError }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Header -->
-    <div class="mt-6 flex flex-row items-center">
-      <h2 class="font-body text-lg font-bold text-gray5 dark:text-gray-200">
-        Profile Information
-      </h2>
-      <span class="mx-1 text-xs font-light dark:text-gray-400">•</span>
-      <div class="text-xs font-light dark:text-gray-400">
-        Joined 
-        <time
-          [dateTime]="user?.created_At | date : 'yyyy-MM-ddTHH:mm:ssZ'"
-          [innerText]="user?.created_At | date : 'mediumDate'"></time>
-        @if(user?.updated_At) {
-        <span class="mx-1">•</span>
-        Last login 
-        <time [innerText]="user?.updated_At | date : 'mediumDate'"></time>
-        }
-      </div>
-    </div>
-    <div
-      class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
-      <!-- Full Name  -->
-      <div
-        class="flex w-full flex-row items-center flex-wrap sm:flex-nowrap justify-between gap-4">
-        <app-stinput
-          class="w-full sm:w-auto flex-1"
-          [control]="profileForm.get('displayName') | formControl"
-          [leftIcon]="'person'"
-          [label]="'Name'"></app-stinput>
-      </div>
-
-      <!-- username Control field -->
-      <h3 class="-mb-3 mt-5 font-body text-sm text-gray5/50 dark:text-gray-400">
-        Username can be updated only once per year - Last username update: x
-        months ago
-      </h3>
-
-      <app-stinput
-        [control]="profileForm.get('username') | formControl"
-        [leftIcon]="'person_outline'"
-        [rightIcon]="'lock'"
-        [label]="'Username'"></app-stinput>
-
-      <!-- Engineer Status Dropdown -->
-      <div class="mt-4 flex w-full max-w-3xl flex-col space-y-2">
-        <app-dropdown
-          lightColor="blue"
-          [control]="profileForm.get('engineerStatus') | formControl"
-          [options]="engineerStatuses"
-          (select)="onEngineerStatusChange($event)"
-          [dropDownName]="'Engineer Status'"></app-dropdown>
-      </div>
-    </div>
-
-    <!-- About Section -->
-    <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
-      About
-    </h2>
-    <div
-      class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
-      <!-- Bio Field -->
-      <div class="group mt-4 mb-6 flex max-w-lg flex-col items-start gap-2">
-        <div
-          class="relative flex pr-1 h-auto ring-0 cursor-text w-full flex-row focus-within:border-blue-400 dark:focus-within:border-[#539cfc] focus-within:border-l-blue-500 dark:focus-within:border-l-gray-100 hover:border-l-blue-500 dark:hover:border-l-blue-400 items-center overflow-hidden rounded-lg border border-l-4 bg-white px-4 pl-3 outline-none transition-[border_,_colors] duration-75 ease-out before:absolute before:-left-7 before:top-0 before:h-full before:w-9 before:rounded-l-[14px] before:bg-gradient-to-l before:from-[rgba(252,83,141,0)] before:to-[#e053fc] before:content-[''] dark:bg-gray6">
-          <textarea
-            id="bio"
-            [formControl]="profileForm.get('bio') | formControl"
-            placeholder=" "
-            minlength="0"
-            maxlength="600"
-            class="mt-2 scrollbar block w-full h-32 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-gray-300 px-2.5 pb-2.5 pr-2 pt-5 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:text-white dark:bg-gray6 bg-white"></textarea>
-          <label
-            for="bio"
-            class="absolute start-2 top-[0.8rem] z-10 origin-[0] -translate-y-3 scale-75 transform cursor-text text-sm text-gray5 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 dark:peer-hover:text-blue-400 peer-focus:scale-75 peer-focus:text-blue-700 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 dark:group-hover:text-white peer-focus:dark:text-gray-100">
-            Bio
-          </label>
-        </div>
-        <div class="flex w-full justify-between items-center">
-          @if (profileForm.get('bio')?.invalid &&
-          profileForm.get('bio')?.touched) {
-          <div class="mt-0 px-2 h-[20px] text-sm text-red-400" role="alert">
-            {{ profileForm.get('bio')?.errors?.['maxlength'] ? 'Bio cannot exceed 100 characters' : '' }}
-          </div>
-          } @else {
-          <div class="mt-0 px-2 text-sm text-transparent" role="alert"></div>
-          }
-          <span class="text-right text-gray5 dark:text-gray1">
-            {{ profileForm.get('bio')?.value.length || '0' }}/600
-          </span>
-        </div>
-      </div>
-
-      <!-- Company Field -->
-      <app-stinput
-        [control]="profileForm.get('company') | formControl"
-        [leftIcon]="'business'"
-        [label]="'Company'"></app-stinput>
-
-      <!-- Location Field -->
-      <app-stinput
-        [control]="profileForm.get('location') | formControl"
-        [leftIcon]="'location_on'"
-        [label]="'Location'"></app-stinput>
-
-      <!-- Job Title Field -->
-      <app-stinput
-        [control]="profileForm.get('jobTitle') | formControl"
-        [leftIcon]="'work'"
-        [label]="'Job Title'"></app-stinput>
-    </div>
-
-    <!-- Social Links Section -->
-    <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
-      Social Links
-    </h2>
-    <div
-      class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
-      <app-stinput
-        [control]="profileForm.get('socialLinks.twitter') | formControl"
-        svgIcon="x"
-        [leftIcon]="'twitter'"
-        [label]="'X'"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.linkedin') | formControl"
-        svgIcon="linkedin"
-        [leftIcon]="'linkedin'"
-        [label]="'LinkedIn'"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.threads') | formControl"
-        svgIcon="threads"
-        [leftIcon]="'threads'"
-        [label]="'Threads'"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.github') | formControl"
-        svgIcon="github_link2"
-        [leftIcon]="'github'"
-        [label]="'GitHub'"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.website') | formControl"
-        [leftIcon]="'link'"
-        [label]="'Website'"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.stackoverflow') | formControl"
-        svgIcon="stackoverflow"
-        [leftIcon]="'stackoverflow'"
-        [label]="'Stack Overflow '"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.youtube') | formControl"
-        svgIcon="youtube"
-        [leftIcon]="'youtube'"
-        [label]="'YouTube'"></app-stinput>
-      <app-stinput
-        [control]="profileForm.get('socialLinks.codepen') | formControl"
-        svgIcon="codepen"
-        [leftIcon]="'codepen'"
-        [label]="'CodePen'"></app-stinput>
-    </div>
-  </div>
-  <!-- {{ profileForm.value | json }}
-  {{ profileForm.errors | json }}
-  {{ profileForm.status | json }}
-  {{ profileForm.pristine | json }} -->
-  <!-- Save button -->
-  <button
-    appRipple
+          <!-- {{ profileForm.value | json }}
+          {{ profileForm.errors | json }}
+          {{ profileForm.status | json }}
+          {{ profileForm.pristine | json }} -->
+          <!-- Save button -->
+          <button
+            appRipple
     rippleColor="{{
       themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
     }}"
-    type="submit"
-    [disabled]="!profileForm.valid || profileForm.pristine || isSaving"
-    class="mt-5 w-20 rounded-lg p-2 disabled:bg-green-300/80 shadow-md disabled:shadow shadow-green-400 bg-green-500 focus:bg-green-500/80 hover:bg-green-600 text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-white focus:text-white focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/60 dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60 disabled:opacity-50">
-    @if(isSaving) {
-    <mat-spinner [diameter]="25" class="mx-auto stroke-white"></mat-spinner>
-    } @else { Save }
-  </button>
-</form>
+            type="submit"
+            [disabled]="!profileForm.valid || profileForm.pristine || isSaving"
+            class="mt-5 w-20 rounded-lg p-2 disabled:bg-green-300/80 shadow-md disabled:shadow shadow-green-400 bg-green-500 focus:bg-green-500/80 hover:bg-green-600 text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-white focus:text-white focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/60 dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60 disabled:opacity-50">
+            @if(isSaving) {
+              <mat-spinner [diameter]="25" class="mx-auto stroke-white"></mat-spinner>
+            } @else { Save }
+            </button>
+          </form>

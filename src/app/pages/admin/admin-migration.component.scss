@@ -32,9 +32,9 @@ input[type='checkbox'] {
 }
 
 ::ng-deep html.dark .mdc-text-field {
-  --mdc-filled-text-field-container-color: #2a2e35;
+  --mat-form-field-filled-container-color: #2a2e35;
 }
 
 ::ng-deep .mdc-text-field {
-  --mdc-filled-text-field-container-color: #ffffff;
+  --mat-form-field-filled-container-color: #ffffff;
 }

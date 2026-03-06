@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core'
+import { ChangeDetectorRef, Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core'
 import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterOutlet } from '@angular/router'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { HttpClient } from '@angular/common/http'
@@ -66,6 +66,7 @@ import { environment } from 'src/environments/environment'
 })
 export class AppComponent implements OnInit, OnDestroy {
   private destroyRef = inject(DestroyRef)
+  private cdr = inject(ChangeDetectorRef)
   private analytics = inject(Analytics)
   private heartbeatService = inject(HeartbeatService)
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent
@@ -74,6 +75,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected snackbarAction = ''
   protected snackbarType: SnackBarType = SnackBarType.info
   protected snackbarDuration = 3000
+  protected isBrowser = false
 
   protected isLoading: boolean = false
   protected showRouteLoader: boolean = false
@@ -100,6 +102,8 @@ export class AppComponent implements OnInit, OnDestroy {
     // Inject ActivatedRoute to access route data
     // private activatedRoute: ActivatedRoute,
   ) {
+    this.isBrowser = isPlatformBrowser(this.platformId)
+
     //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
     //Add 'implements AfterViewInit' to the class.
     this.router.events
@@ -131,8 +135,10 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe()
 
-    // Mat SAFE SVGs icons
-    this.matIconRegistry.addSvgIconResolver()
+    // Mat SAFE SVG icons (browser-only to avoid SSR fetch errors)
+    if (this.isBrowser) {
+      this.matIconRegistry.addSvgIconResolver()
+    }
   }
 
   get title() {
@@ -197,6 +203,7 @@ export class AppComponent implements OnInit, OnDestroy {
       )
 
     this.snackbarService.setSnackbar(this.snackbar)
+    this.cdr.detectChanges()
   }
 
   onSnackbarAction() {
@@ -225,6 +232,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private beginRouteLoading(): void {
+    if (!this.isBrowser) {
+      return
+    }
+
     this.isLoading = true
 
     this.loaderHideSubscription?.unsubscribe()
@@ -245,6 +256,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private endRouteLoading(): void {
+    if (!this.isBrowser) {
+      return
+    }
+
     this.isLoading = false
 
     this.loaderDelaySubscription?.unsubscribe()

@@ -1,10 +1,10 @@
-import { ApplicationRef, ComponentRef, Directive, ElementRef, EmbeddedViewRef, HostListener, Injector, Input, ViewContainerRef, inject, OnDestroy, OnInit } from '@angular/core'
+import { ApplicationRef, ComponentRef, Directive, ElementRef, EmbeddedViewRef, HostListener, Injector, Input, ViewContainerRef, inject, OnDestroy, OnInit, DOCUMENT } from '@angular/core'
 import { TooltipComponent } from '../components'
 import { TooltipPosition, TooltipTheme } from '../enum'
 import { WindowToken } from '../services'
 import { Subject, Subscription, timer } from 'rxjs'
 import { debounceTime, takeUntil } from 'rxjs/operators'
-import { DOCUMENT } from '@angular/common'
+
 
 @Directive({
   selector: '[tooltip]'

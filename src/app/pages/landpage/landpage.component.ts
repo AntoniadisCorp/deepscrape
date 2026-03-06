@@ -1,9 +1,9 @@
 import { Component, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { trigger, state, style, animate, transition } from '@angular/animations';
 @Component({
     selector: 'app-landpage',
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './landpage.component.html',
     styleUrl: './landpage.component.scss',
     animations: [

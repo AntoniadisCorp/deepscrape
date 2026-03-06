@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, AfterViewInit, ElementRef, ViewChildren, QueryList } from '@angular/core';
-import { CommonModule, JsonPipe, NgClass, NgFor, NgIf, NgSwitch, NgSwitchCase } from '@angular/common';
+import { CommonModule, JsonPipe, NgClass } from '@angular/common';
 import { CrawlResults } from '../../types';
 import { expandCollapseAnimation } from 'src/app/animations';
 import { MarkdownModule } from 'ngx-markdown';
@@ -10,9 +10,7 @@ import { PdfSrcPipe } from '../../pipes';
 
 @Component({
   selector: 'app-crawl-result-item',
-  imports: [CommonModule, NgClass, NgIf, NgFor, NgSwitch, NgSwitchCase, JsonPipe, MarkdownModule, MatIconModule,
-    LucideAngularModule, PdfSrcPipe
-  ],
+  imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe],
   animations: [expandCollapseAnimation],
   templateUrl: './crawl-result-item.component.html',
   styles: [`

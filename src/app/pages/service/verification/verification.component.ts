@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT } from '@angular/core';
 import { applyActionCode, Auth, sendEmailVerification, updateCurrentUser, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
 import { Router } from '@angular/router';
-import { CommonModule, DOCUMENT } from '@angular/common';
+
 import { AuthService, FirestoreService, SnackbarService } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
@@ -13,7 +13,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-verification',
-  imports: [MatIcon, CommonModule, ReactiveFormsModule, TranslateModule],
+  imports: [MatIcon, ReactiveFormsModule, TranslateModule],
   templateUrl: './verification.component.html',
   styleUrl: './verification.component.scss'
 })
@@ -25,6 +25,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   timerSubscriber: Subscription;
   loading: Loading = {
     email: false,
+    remove: false,
     password: false,
     mfa: false,
     logout: false,

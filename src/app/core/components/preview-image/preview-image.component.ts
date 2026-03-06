@@ -1,11 +1,11 @@
-import { NgIf } from '@angular/common';
+
 import { Component, forwardRef, Input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
   selector: 'app-preview-image',
-  imports: [ReactiveFormsModule, NgIf],
+  imports: [ReactiveFormsModule],
   templateUrl: './preview-image.component.html',
   styleUrl: './preview-image.component.scss',
     providers: [

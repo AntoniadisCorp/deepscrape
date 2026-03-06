@@ -29,25 +29,29 @@
 
   <!-- Collapsible section -->
   <div [@collapseExpand]="isExpanded ? 'expanded' : 'collapsed'">
-    <div *ngIf="isExpanded" class="flex items-center justify-between mt-4">
-      <div class="flex items-center space-x-2">
-        <img src="assets/svg/micro-sd.svg" alt="Micro SD" class="w-[25px] h-[27px]">
-        <span class="text-[#232323] text-[11px] font-['Chocolate_Classical_Sans']">:</span>
-        <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-[#8A8A8A] text-[11px] font-['Chocolate_Classical_Sans']">{{ dataSize }}</span>
-        <div class="w-px h-[17px] bg-[#638DD0] rounded-[16px] blur-[2px]"></div>
-        <img src="assets/svg/electronics.svg" alt="Electronics" class="w-[22px] h-[24px]">
-        <span class="text-[#232323] text-[11px] font-['Chocolate_Classical_Sans']">:</span>
-        <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-[#8A8A8A] text-[11px] font-['Chocolate_Classical_Sans']">{{ progress }}</span>
-        <div class="w-px h-[17px] bg-[#984AEB] rounded-[16px] blur-[2px]"></div>
-        <img src="assets/svg/pocket-watch.svg" alt="Pocket Watch" class="w-[22px] h-[24px]">
-        <span class="text-[#232323] text-[11px] font-['Chocolate_Classical_Sans']">:</span>
-        <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-[#8A8A8A] text-[11px] font-['Chocolate_Classical_Sans']">{{ time }}</span>
+    @if (isExpanded) {
+      <div class="flex items-center justify-between mt-4">
+        <div class="flex items-center space-x-2">
+          <img src="assets/svg/micro-sd.svg" alt="Micro SD" class="w-[25px] h-[27px]">
+          <span class="text-[#232323] text-[11px] font-['Chocolate_Classical_Sans']">:</span>
+          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-[#8A8A8A] text-[11px] font-['Chocolate_Classical_Sans']">{{ dataSize }}</span>
+          <div class="w-px h-[17px] bg-[#638DD0] rounded-[16px] blur-[2px]"></div>
+          <img src="assets/svg/electronics.svg" alt="Electronics" class="w-[22px] h-[24px]">
+          <span class="text-[#232323] text-[11px] font-['Chocolate_Classical_Sans']">:</span>
+          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-[#8A8A8A] text-[11px] font-['Chocolate_Classical_Sans']">{{ progress }}</span>
+          <div class="w-px h-[17px] bg-[#984AEB] rounded-[16px] blur-[2px]"></div>
+          <img src="assets/svg/pocket-watch.svg" alt="Pocket Watch" class="w-[22px] h-[24px]">
+          <span class="text-[#232323] text-[11px] font-['Chocolate_Classical_Sans']">:</span>
+          <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-[#8A8A8A] text-[11px] font-['Chocolate_Classical_Sans']">{{ time }}</span>
+        </div>
       </div>
-    </div>
+    }
   </div>
 
   <!-- "tap to open" text -->
-  <div *ngIf="!isExpanded" class="absolute bottom-4 left-1/2 -translate-x-1/2">
-    <span class="text-[#B4B4B4] text-[14px] font-['Arimo_Hebrew_Subset_Italic']">tap to open</span>
-  </div>
+  @if (!isExpanded) {
+    <div class="absolute bottom-4 left-1/2 -translate-x-1/2">
+      <span class="text-[#B4B4B4] text-[14px] font-['Arimo_Hebrew_Subset_Italic']">tap to open</span>
+    </div>
+  }
 </div>

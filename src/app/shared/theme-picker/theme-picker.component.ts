@@ -1,5 +1,5 @@
-import { DOCUMENT, isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
-import { Component, Inject, PLATFORM_ID, WritableSignal, inject, input, signal } from '@angular/core';
+import { isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
+import { Component, Inject, PLATFORM_ID, WritableSignal, inject, input, signal, DOCUMENT } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { RippleDirective } from 'src/app/core/directives';
 import { AppTheme } from 'src/app/core/enum';

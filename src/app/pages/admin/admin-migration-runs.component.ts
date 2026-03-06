@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe, NgFor, NgIf } from '@angular/common'
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core'
 import { FormControl } from '@angular/forms'
 import { RouterLink } from '@angular/router'
@@ -53,7 +53,7 @@ interface MigrationRunItem {
 
 @Component({
   selector: 'app-admin-migration-runs',
-  imports: [CommonModule, NgIf, NgFor, DecimalPipe, RouterLink, SlideInModalComponent],
+  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent],
   templateUrl: './admin-migration-runs.component.html',
   styleUrl: './admin-migration-runs.component.scss',
 })

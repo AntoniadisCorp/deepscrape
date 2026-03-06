@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-general-tab',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './general.component.html',
   styleUrls: ['./general.component.scss']
 })

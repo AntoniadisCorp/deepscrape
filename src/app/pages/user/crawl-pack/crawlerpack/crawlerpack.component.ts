@@ -3,7 +3,7 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 
 import { CartPack, CrawlPack, CrawlPackConfigs, Headers, Users } from 'src/app/core/types';
 import { CartService } from 'src/app/core/services/cart.service';
-import { AsyncPipe, JsonPipe, KeyValuePipe, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, JsonPipe, KeyValuePipe } from '@angular/common';
 import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services';
 import { Observable } from 'rxjs/internal/Observable';
 import { Subscription } from 'rxjs/internal/Subscription';
@@ -31,10 +31,7 @@ import { UserInfo } from '@angular/fire/auth';
     selector: 'app-crawlerpack',
     templateUrl: './crawlerpack.component.html',
     styleUrl: './crawlerpack.component.scss',
-    imports: [ReactiveFormsModule, NgIf, NgFor, AsyncPipe, KeyValuePipe, JsonPipe, ReversePipe,
-        MatIcon, MarkdownModule, RippleDirective, RemoveToolbarDirective, MatProgressSpinner, DialogComponent,
-        CPackComponent, ReactiveFormsModule, StinputComponent
-    ],
+    imports: [ReactiveFormsModule, AsyncPipe, KeyValuePipe, JsonPipe, ReversePipe, MatIcon, MarkdownModule, RippleDirective, RemoveToolbarDirective, MatProgressSpinner, DialogComponent, CPackComponent, ReactiveFormsModule, StinputComponent],
     animations: [
         // animation triggers go here
         expandCollapseAnimation,

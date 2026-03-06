@@ -6,7 +6,6 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
-
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitOverride": true,
@@ -16,7 +15,7 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
     "sourceMap": true,
     "declaration": false,
     "experimentalDecorators": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "importHelpers": true,
     "skipLibCheck": true,
     "isolatedModules": true,
@@ -24,23 +23,20 @@ https://medium.com/@sehban.alam/almost-perfect-tsconfig-json-options-for-your-an
     "module": "ES2022",
     "useDefineForClassFields": false,
     "strictPropertyInitialization": false,
-    // "allowSyntheticDefaultImports": true,
     "typeRoots": [
-      "node_modules/@types",
+      "node_modules/@types"
     ],
     "types": [
       "chrome",
       "jest",
       "node"
-      // "bun"
     ],
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "lib": [
       "ES2022",
       "dom"
-    ],
-    // "emitDecoratorMetadata": true,
+    ]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

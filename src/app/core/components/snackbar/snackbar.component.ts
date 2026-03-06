@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
-import { NgClass, NgIf, NgFor } from '@angular/common'; // Added NgFor for iterating over icons
+import { NgClass } from '@angular/common'; // Added NgFor for iterating over icons
 import { WindowToken } from '../../services';
 import { RippleDirective } from '../../directives';
 import { Subscription } from 'rxjs/internal/Subscription';
@@ -25,7 +25,7 @@ export enum SnackBarPosition {
 
 @Component({
   selector: 'app-snackbar',
-  imports: [NgClass, MatIcon, NgIf, RippleDirective],
+  imports: [NgClass, MatIcon, RippleDirective],
   templateUrl: './snackbar.component.html',
   styleUrl: './snackbar.component.scss',
   animations: [

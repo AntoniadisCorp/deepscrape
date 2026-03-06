@@ -1,6 +1,6 @@
 import { Component, HostBinding, inject, OnInit, ViewChild, ElementRef, AfterViewInit, DestroyRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { CommonModule, NgClass, NgIf } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 import { AppCrawlComponent, AppLLMScrapeComponent, DomainSeederComponent } from 'src/app/core/components';
 import { fadeinCartItems, smoothfadeAnimation } from 'src/app/animations';
 import { HiddenDragScrollDirective } from 'src/app/core/directives';
@@ -9,8 +9,7 @@ import { timer } from 'rxjs';
 
 @Component({
   selector: 'app-playground',
-  imports: [AppLLMScrapeComponent, AppCrawlComponent, CommonModule, RouterModule, 
-    NgClass, NgIf, DomainSeederComponent, HiddenDragScrollDirective],
+  imports: [AppLLMScrapeComponent, AppCrawlComponent, CommonModule, RouterModule, NgClass, DomainSeederComponent, HiddenDragScrollDirective],
   templateUrl: './playground.component.html',
   styleUrl: './playground.component.scss',
   animations: [

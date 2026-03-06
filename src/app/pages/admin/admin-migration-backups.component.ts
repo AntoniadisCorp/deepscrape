@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe, NgFor, NgIf } from '@angular/common'
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core'
 import { FormControl } from '@angular/forms'
 import { RouterLink } from '@angular/router'
@@ -45,7 +45,7 @@ interface BackupRunItem {
 
 @Component({
   selector: 'app-admin-migration-backups',
-  imports: [CommonModule, NgIf, NgFor, DecimalPipe, RouterLink, SlideInModalComponent],
+  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent],
   templateUrl: './admin-migration-backups.component.html',
   styleUrl: './admin-migration-backups.component.scss',
 })

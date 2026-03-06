@@ -16,7 +16,7 @@
     <mat-icon
       aria-label="docker-original"
       svgIcon="docker-original"
-      class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
+    class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
   </div>
 
   <p class="mb-8 text-lg max-w-screen-xl text-gray-800 dark:text-gray-300">
@@ -48,66 +48,74 @@
     <div class="mt-4 flex items-center justify-between">
       <div class="relative flex gap-4">
         <!-- Previous Button -->
-        <button
-          *ngIf="currentStep() > 1"
-          (click)="prevStep()"
-          type="button"
-          class="rounded-lg flex items-center p-2 min-w-fit text-white transition-colors duration-200 hover:bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-gray-600/[.1] dark:text-white dark:hover:bg-gray-500/70 dark:hover:text-white dark:focus:ring-gray-200/60 disabled:opacity-50">
-          <mat-icon>chevron_left</mat-icon>
-          Back
-        </button>
+        @if (currentStep() > 1) {
+          <button
+            (click)="prevStep()"
+            type="button"
+            class="rounded-lg flex items-center p-2 min-w-fit text-white transition-colors duration-200 hover:bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-gray-600/[.1] dark:text-white dark:hover:bg-gray-500/70 dark:hover:text-white dark:focus:ring-gray-200/60 disabled:opacity-50">
+            <mat-icon>chevron_left</mat-icon>
+            Back
+          </button>
+        }
         <!-- Clear Button -->
         <div [tooltip]="'Clear'" position="above" class="relative">
-          <button
-            *ngIf="currentStep() < 4"
-            (click)="clearInput()"
-            appRipple
+          @if (currentStep() < 4) {
+            <button
+              (click)="clearInput()"
+              appRipple
             rippleColor="{{
               themeIsDark()
                 ? 'rgba(255, 255, 255, 0.35)'
                 : 'rgba(33, 33, 33, 0.35)'
             }}"
-            type="button"
-            title="Clear form"
-            class="h-11 w-11 rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60">
-            <mat-icon
-              svgIcon="clear"
-              faria-hidden="false"
+              type="button"
+              title="Clear form"
+              class="h-11 w-11 rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60">
+              <mat-icon
+                svgIcon="clear"
+                faria-hidden="false"
               aria-label="clear"></mat-icon>
-          </button>
+            </button>
+          }
         </div>
       </div>
       <!-- Next and Deploy button -->
-      <button
-        class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50"
-        type="button"
-        *ngIf="currentStep() < 4"
-        [disabled]="!isStepValid(currentStep())"
-        (click)="nextStep()"
-        appRipple
+      @if (currentStep() < 4) {
+        <button
+          class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50"
+          type="button"
+          [disabled]="!isStepValid(currentStep())"
+          (click)="nextStep()"
+          appRipple
         rippleColor="{{
           themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
         }}">
-        Next
-        <mat-icon class="!h-5 !w-5 pt-[0.1rem] leading-4 top-1 relative">
-          chevron_right
-        </mat-icon>
-      </button>
-      <button
-        *ngIf="currentStep() > 3"
-        (click)="deploy()"
-        [disabled]="isDeploying || isModalLoading.modal"
-        class="min-w-fit transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50 px-4 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        appRipple
+          Next
+          <mat-icon class="!h-5 !w-5 pt-[0.1rem] leading-4 top-1 relative">
+            chevron_right
+          </mat-icon>
+        </button>
+      }
+      @if (currentStep() > 3) {
+        <button
+          (click)="deploy()"
+          [disabled]="isDeploying || isModalLoading.modal"
+          class="min-w-fit transition-colors duration-200 hover:bg-blue-100/60 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100/70 dark:bg-blue-600/50 dark:text-white dark:hover:bg-blue-500/70 dark:hover:text-white dark:focus:ring-blue-200/60 disabled:opacity-50 px-4 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          appRipple
         rippleColor="{{
           themeIsDark() ? 'rgba(255, 255, 255, 0.35)' : 'rgba(33, 33, 33, 0.35)'
         }}">
-        <span *ngIf="!isDeploying">Deploy</span>
-        <span *ngIf="isDeploying" class="animate-spin block">
-          <!-- ⏳ -->
-          <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
-        </span>
-      </button>
+          @if (!isDeploying) {
+            <span>Deploy</span>
+          }
+          @if (isDeploying) {
+            <span class="animate-spin block">
+              <!-- ⏳ -->
+              <mat-spinner [diameter]="20" class="stroke-gray-200"></mat-spinner>
+            </span>
+          }
+        </button>
+      }
     </div>
   </app-slideinmodal>
   <p class="text-lg text-center text-gray-500 mb-4">
@@ -145,102 +153,106 @@
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-x-8 gap-y-10">
       @for (machine of machines$ | async; track machine.id) {
 
-      <div class="">
-        <app-container-box
-          [machine]="machine"
-          (startPressed)="startMachine($event)"
-          (suspendPressed)="suspendMachine($event)"
-          (destroyPressed)="destroyMachine($event)"
+        <div class="">
+          <app-container-box
+            [machine]="machine"
+            (startPressed)="startMachine($event)"
+            (suspendPressed)="suspendMachine($event)"
+            (destroyPressed)="destroyMachine($event)"
           (stopPressed)="stopMachine($event)"></app-container-box>
-      </div>
+        </div>
 
-      } @empty {
-      <!-- Empty State -->
-      <div
-        class="flex flex-col items-center justify-center col-span-full"
-        *ngIf="(machines$ | async) !== null">
-        <!-- Ensure it spans columns if needed -->
-        <mat-icon
-          aria-label="container"
-          svgIcon="container"
-          class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
-        <p class="text-gray-500 dark:text-gray-300 text-lg mb-4">
-          No machines created yet. Click the plus button to create a new
-          machine.
-        </p>
-      </div>
+        } @empty {
+        <!-- Empty State -->
+        @if ((machines$ | async) !== null) {
+          <div
+            class="flex flex-col items-center justify-center col-span-full"
+            >
+            <!-- Ensure it spans columns if needed -->
+            <mat-icon
+              aria-label="container"
+              svgIcon="container"
+            class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
+            <p class="text-gray-500 dark:text-gray-300 text-lg mb-4">
+              No machines created yet. Click the plus button to create a new
+              machine.
+            </p>
+          </div>
+        }
       }
     </div>
     <!-- Pagination Buttons -->
     @if((machines$ | async)?.length) {
 
-    <div
-      class="flex items-center justify-center gap-2"
-      *ngIf="totalMachinePages$ | async as totalMachinePages">
-      <!-- First button to move to previous page -->
-      <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
-        <button
-          [disabled]="currMachinePage === 1"
-          title="actions"
-          type="button"
-          (click)="onPageChanged(currMachinePage - 1, totalMachinePages)"
-          class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
-          <mat-icon
-            *ngIf="currMachinePage !== 1"
-            class="dark:disabled:text-white dark:disabled:hover:text-gray1/[.08]">
-            chevron_left
-          </mat-icon>
-          Previous
-        </button>
-      </div>
-
-      <!-- Pagination Buttons -->
-      <div class="flex justify-center gap-1">
-        <button
-          title="pagination buttons"
-          *ngFor="let page of Array(totalMachinePages)"
+      @if (totalMachinePages$ | async; as totalMachinePages) {
+        <div
+          class="flex items-center justify-center gap-2"
+          >
+          <!-- First button to move to previous page -->
+          <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
+            <button
+              [disabled]="currMachinePage === 1"
+              title="actions"
+              type="button"
+              (click)="onPageChanged(currMachinePage - 1, totalMachinePages)"
+              class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+              @if (currMachinePage !== 1) {
+                <mat-icon
+                  class="dark:disabled:text-white dark:disabled:hover:text-gray1/[.08]">
+                  chevron_left
+                </mat-icon>
+              }
+              Previous
+            </button>
+          </div>
+          <!-- Pagination Buttons -->
+          <div class="flex justify-center gap-1">
+            @for (page of Array(totalMachinePages); track page) {
+              <button
+                title="pagination buttons"
           [class]="
             currMachinePage === page
               ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]'
               : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'
           "
-          class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
-          (click)="onPageChanged(page, totalMachinePages)">
-          {{ page }}
-        </button>
-      </div>
-
-      <!-- Next button to move to next page -->
-      <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
-        <button
-          disabled="true"
-          [disabled]="currMachinePage === totalMachinePages"
-          title="actions"
-          type="button"
-          (click)="onPageChanged(currMachinePage + 1, totalMachinePages)"
-          class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
-          Next
-          <mat-icon
-            class="peer-disabled:text-gray5 dark:peer-disabled:!text-white dark:peer-disabled:hover:text-gray1/[.08]">
-            chevron_right
-          </mat-icon>
-        </button>
-      </div>
-    </div>
+                class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                (click)="onPageChanged(page, totalMachinePages)">
+                {{ page }}
+              </button>
+            }
+          </div>
+          <!-- Next button to move to next page -->
+          <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
+            <button
+              disabled="true"
+              [disabled]="currMachinePage === totalMachinePages"
+              title="actions"
+              type="button"
+              (click)="onPageChanged(currMachinePage + 1, totalMachinePages)"
+              class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+              Next
+              <mat-icon
+                class="peer-disabled:text-gray5 dark:peer-disabled:!text-white dark:peer-disabled:hover:text-gray1/[.08]">
+                chevron_right
+              </mat-icon>
+            </button>
+          </div>
+        </div>
+      }
     }
     <!-- Error State -->
     @if((machines$ | async) === null) {
 
-    <div class="flex flex-col items-center justify-center">
-      <mat-icon
-        aria-label="container"
-        svgIcon="container"
+      <div class="flex flex-col items-center justify-center">
+        <mat-icon
+          aria-label="container"
+          svgIcon="container"
         class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
-      <p class="text-red-600 dark:text-red-300 text-lg mb-4">
-        An Error Occurred while loading machines. Please try again later or
-        contact the administrator.
-      </p>
-    </div>
+        <p class="text-red-600 dark:text-red-300 text-lg mb-4">
+          An Error Occurred while loading machines. Please try again later or
+          contact the administrator.
+        </p>
+      </div>
     }
   </div>
   } @placeholder (minimum 500ms) {
@@ -248,7 +260,7 @@
   <div
     class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40">
     @for (item of [1, 2, 3, 4, 5]; track item) {
-    <div
+      <div
       class="relative h-40 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray3 dark:bg-gray4/60"></div>
     }
   </div>
@@ -258,11 +270,11 @@
     <mat-icon
       aria-label="container"
       svgIcon="container"
-      class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
+    class="!size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
     <p class="text-red-600 dark:text-red-300 text-lg mb-4">
       An Error Occurred while loading machines. Please try again later or
       contact the administrator.
     </p>
   </div>
-  }
+}
 </div>

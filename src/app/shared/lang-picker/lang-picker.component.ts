@@ -2,14 +2,14 @@ import { Component, inject, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { RippleDirective } from 'src/app/core/directives';
 import { I18nService } from 'src/app/core/i18n';
-import { CommonModule } from '@angular/common';
+
 import { MatMenuModule, MatMenuTrigger, MatMenuItem } from '@angular/material/menu';
 
 @Component({
   selector: 'app-lang-picker',
   standalone: true,
   templateUrl: './lang-picker.component.html',
-  imports: [MatIconModule, RippleDirective, CommonModule, MatMenuModule, MatMenuItem],
+  imports: [MatIconModule, RippleDirective, MatMenuModule, MatMenuItem],
 })
 export class LangPickerComponent {
   private i18nService = inject(I18nService);

@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core'
 import { SeederResult } from '../../types/seeding.interface'
-import { CommonModule, DecimalPipe, UpperCasePipe, KeyValuePipe } from '@angular/common'
+import { CommonModule, DecimalPipe, UpperCasePipe, KeyValuePipe } from '@angular/common';
 import { expandCollapseAnimation, fadeInUp } from 'src/app/animations'
 import { MatIconModule } from '@angular/material/icon'
 import { MatTooltipModule } from '@angular/material/tooltip'
