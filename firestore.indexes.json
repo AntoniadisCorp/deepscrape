@@ -24,6 +24,14 @@
       ]
     },
     {
+      "collectionGroup": "migration_runs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "operations",
       "queryScope": "COLLECTION",
       "fields": [
