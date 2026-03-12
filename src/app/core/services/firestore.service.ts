@@ -1,15 +1,16 @@
 import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector, PLATFORM_ID } from '@angular/core'
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database'
-import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, User, UserCredential } from '@angular/fire/auth'
+import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, getRedirectResult, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, updateProfile, User, UserCredential } from '@angular/fire/auth'
 import {
   addDoc,
-  collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, DocumentData, DocumentReference,
+  collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, docData, DocumentData, DocumentReference,
   FieldValue,
   Firestore, getDoc, getDocs, getFirestore, increment, limit, query, Query,
   QueryConstraint, QuerySnapshot, serverTimestamp, setDoc, SetOptions,
   Timestamp, writeBatch, WriteBatch,
   where
 } from '@angular/fire/firestore'
+import { connectFunctionsEmulator, Functions, httpsCallable } from '@angular/fire/functions'
 import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
 import { map, Observable, of, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
@@ -29,6 +30,7 @@ import { isPlatformBrowser } from '@angular/common'
 export class FirestoreService {
   private analytics = inject(Analytics, { optional: true })
   private platformId = inject(PLATFORM_ID)
+  private functions = inject(Functions, { optional: true })
   private firestore = inject(Firestore) // inject()
 
   private storage = inject(Storage)
@@ -46,7 +48,7 @@ export class FirestoreService {
 
     this.storage = this.getStorage()
 
-    if (this.isLocalhost() && environment.emulators) {
+    if (this.isBrowserRuntime() && this.isLocalhost() && environment.emulators) {
 
       console.log('🔥 Connecting Firestore Service to Firebase Emulators')
 
@@ -54,8 +56,15 @@ export class FirestoreService {
       connectFirestoreEmulator(this.firestore, 'localhost', 5001)
       connectAuthEmulator(this.afAuth, 'http://localhost:9099')
       connectStorageEmulator(this.storage, 'localhost', 9199) // <-- Add this line
+      if (this.functions) {
+        connectFunctionsEmulator(this.functions, 'localhost', 8081)
+      }
 
     }
+  }
+
+  private isBrowserRuntime(): boolean {
+    return isPlatformBrowser(this.platformId)
   }
 
   getInstanceDB(databaseName?: string): Firestore {
@@ -104,29 +113,26 @@ export class FirestoreService {
    * error retrieving the data.
    */
   async getUserData(userId: string): Promise<Users | null> {
+    try {
+      const userRef = this.doc('users', userId)
+      const docSnapshot = await this.getDoc(userRef)
 
+      if (docSnapshot['exists']()) {
+        const data = docSnapshot['data']() as any
 
-    const userRef = this.doc('users', userId)
-    let err, docSnapshot = await this.getDoc(userRef)
+        return {
+          ...data,
+          last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null,
+          created_At: data.created_At ? (data.created_At as any).toDate() : null,
+          updated_At: data.updated_At ? (data.updated_At as any).toDate() : null
+        } as Users
+      }
 
-    if (err) {
+      return null
+    } catch (err) {
       console.error("Failed to get user's data:", err)
       return null
     }
-
-    if (docSnapshot['exists']()) {
-      const data = docSnapshot['data']() as any
-
-      return {
-        ...data,
-        last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null,
-        created_At: data.created_At ? (data.created_At as any).toDate() : null,
-        updated_At: data.updated_At ? (data.updated_At as any).toDate() : null
-      } as Users
-    }
-
-    return null
-
   }
 
   async setUserData(userId: string, data: Partial<Users>, merge: boolean = true): Promise<boolean | Error> {
@@ -281,20 +287,7 @@ export class FirestoreService {
       }
 
       if (!guestInfo) {
-        const loginMetrics = loginMetricsSnap["data"]() as loginMetrics | undefined
-
-        if (loginMetrics && loginMetrics.lastGuestId) {
-          let err, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
-
-          if (err) {
-            console.warn("Failed to get guest data:", err)
-          } else if (guestSnap['exists']()) {
-            guestInfo = guestSnap['data']() as Guest
-            console.log("Guest info retrieved from lastGuestId:", guestInfo)
-          }
-        } else {
-          console.warn("loginMetrics is undefined or lastGuestId is missing.")
-        }
+        console.warn('Guest info not provided. Continuing metrics without guest enrichment.')
       }
 
       // Prepare login history entry
@@ -383,9 +376,16 @@ export class FirestoreService {
 
   async setSignOutMetrics(userId: string, loginId: string) {
 
-    if (!userId || !loginId) {
-      throw new Error('UID and Login ID are required. ' + `Received UID: ${userId}, Login ID: ${loginId}`)
+    if (!userId) {
+      throw new Error('User ID is required for sign-out metrics.')
     }
+
+    // If loginId is missing, log warning but don't fail - user logout should still proceed
+    if (!loginId) {
+      console.warn('Login ID not available for sign-out metrics - will skip recording sign-out time')
+      return { success: true, message: `Sign-out recorded for user ${userId} (no login session found).` }
+    }
+
     try {
       const loginHistoryRef = this.doc(`login_metrics/${userId}/login_history_Info`, loginId)
 
@@ -410,52 +410,18 @@ export class FirestoreService {
       throw new Error("User ID and Guest ID are required.");
     }
 
-    let guestInfo: Guest | null = null;
-
     try {
-      const guestRef = this.doc('guests', guestId);
-      let err, guestSnap = await this.getDoc(guestRef);
+      const response = await this.callFunction<
+        { uid: string; guestId: string },
+        { ok: boolean; linkedUid: string; guestId: string; guestInfo?: Guest | null }
+      >('linkGuestToUser', { uid, guestId });
 
-      if (err) {
-        console.error("Failed to get guest data:", err);
-        return { err, guestInfo };
-      }
-
-      if (!guestSnap['exists']()) {
-        return { err: "Guest not found", guestInfo: null };
-      }
-
-      guestInfo = guestSnap['data']() as Guest;
-
-      const details: Partial<UserDetails> = {
-        latitude: guestInfo.latitude || 0,
-        longitude: guestInfo.longitude || 0,
-        country: guestInfo.country || "Unknown",
-        geo: guestInfo.geo || { continent: "Unknown", region: "Unknown" },
-        region: guestInfo.region || "Unknown",
-        timezone: guestInfo.timezone || "UTC",
-        location: guestInfo.location || "Unknown",
-        updated_At: new Date(),
-      };
-
-      const userDetails: any = {
-        details,
-        updated_At: new Date(),
-      };
-
-      // Batch write: user first, then guest
-      const userRef = this.doc('users', uid);
-      const batch = this.writeBatch();
-      batch.set(userRef, userDetails, { merge: true });
-      batch.set(guestRef, { uid, linkedAt: new Date() }, { merge: true });
-
-      await batch.commit();
-
-      console.log(`Guest ${guestId} linked to user ${uid}.`);
+      const guestInfo = response?.guestInfo ?? null;
+      console.log(`Guest ${guestId} linked to user ${uid} via backend function.`);
       return { err: null, guestInfo };
     } catch (error) {
       console.error("Error linking guest data to user:", error);
-      return { err: error as string, guestInfo };
+      return { err: error as string, guestInfo: null };
     }
   }
 
@@ -981,6 +947,13 @@ export class FirestoreService {
     )
   }
 
+  public docData<T = DocumentData>(userRef: DocumentReference<DocumentData>): Observable<T | undefined> {
+    return runInInjectionContext(
+      this._injector,
+      (): Observable<T | undefined> => docData(userRef) as Observable<T | undefined>,
+    )
+  }
+
   public async addDoc(collectionRef: CollectionReference, data: unknown): Promise<DocumentReference<unknown, DocumentData>> {
 
     return this.runAsyncInInjectionContext(
@@ -1159,6 +1132,55 @@ export class FirestoreService {
       this._injector,
       async (): Promise<void> => {
         await this.afAuth.signOut()
+      },
+    )
+  }
+
+  public async getRedirectResult(): Promise<UserCredential | null> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential | null> => {
+        return await getRedirectResult(this.afAuth)
+      },
+    )
+  }
+
+  public async updateUserProfile(user: User, profile: { displayName?: string | null; photoURL?: string | null }): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await updateProfile(user, profile)
+      },
+    )
+  }
+
+  public async callFunction<RequestData = void, ResponseData = unknown>(
+    functionName: string,
+    data?: RequestData,
+  ): Promise<ResponseData> {
+    if (!this.functions) {
+      throw new Error('Firebase Functions is not available in the current injector context')
+    }
+
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<ResponseData> => {
+        const callable = httpsCallable<RequestData, ResponseData>(this.functions!, functionName)
+        const response = await callable(data as RequestData)
+        return response.data
+      },
+    )
+  }
+
+  public setAnalyticsUserId(analytics: Analytics | null | undefined, userId: string): void {
+    if (!analytics) {
+      return
+    }
+
+    runInInjectionContext(
+      this._injector,
+      (): void => {
+        setUserId(analytics, userId)
       },
     )
   }

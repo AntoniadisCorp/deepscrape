@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { themeStorageKey, ThemeToggleComponent, AnimatedBgComponent, LangPickerComponent } from 'src/app/shared';
 import { FeaturesComponent, HeroComponent } from 'src/app/layout/landpage';
-import { LocalStorage, ThemeService } from 'src/app/core/services';
+import { LocalStorage, ThemeService, WindowToken } from 'src/app/core/services';
 import { AppFooterComponent } from 'src/app/layout/footer';
 import { Observable } from 'rxjs';
 
@@ -26,6 +26,7 @@ import { Observable } from 'rxjs';
 export class HomeComponent implements OnInit {
   private localStorage = inject(LocalStorage);
   private themePicker = inject(ThemeService);
+  private window: Window = inject(WindowToken);
   isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$;
   isScrolled = false;
   footerColor: string = '';
@@ -35,7 +36,7 @@ export class HomeComponent implements OnInit {
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
-    this.isScrolled = window.scrollY > 100;
+    this.isScrolled = this.window.scrollY > 100;
   }
 
   isThemeDark(): boolean {

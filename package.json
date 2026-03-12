@@ -3,17 +3,20 @@
   "version": "0.4.0",
   "scripts": {
     "ng": "ng",
-    "dev": "ng serve --configuration=development",
+    "dev": "npm run prbuild && ng serve --configuration=elysia",
     "dev:elysia": "ng serve --configuration=elysia",
     "release:prepare": "npx semantic-release --no-ci --dry-run",
     "release": "npx semantic-release",
-    "prbuild": "ts-node src/environments/prod_gen.ts",
-    "build:dev": "ng build --configuration=development",
-    "staging": "npm run prbuild && ng build --configuration=staging",
+    "prebuild": "tsx src/environments/prod_gen.ts",
+    "prbuild:dev": "dotenvx run --overload --env BUILD_ENV=development -f .env.dev -- npm run prebuild",
+    "prbuild:staging": "dotenvx run --overload --env BUILD_ENV=staging -f .env.staging -- npm run prebuild",
+    "prbuild": "dotenvx run --overload --env BUILD_ENV=production -f .env -- npm run prebuild",
+    "build:dev": "npm run prbuild:dev && ng build --configuration=development",
+    "build:staging": "npm run prbuild:staging && ng build --configuration=staging",
     "build": "npm run prbuild && ng build --configuration=production",
     "build:elysia": "ng build --configuration=elysia",
     "watch": "ng build --watch --configuration development",
-    "serve": "npm run dev && cd functions && npm run serve",
+    "serve": "npm run build:dev && cd functions && npm run serve",
     "deploy": "npm run build && cd functions && npm run deploy",
     "deploy:indexes": "firebase deploy --only firestore:indexes",
     "test": "ng test",
@@ -42,7 +45,7 @@
     "@angular/service-worker": "^20.3.17",
     "@angular/ssr": "^20.3.19",
     "@dhutaryan/ngx-mat-timepicker": "^20.2.0",
-    "@dotenvx/dotenvx": "^1.52.0",
+    "@dotenvx/dotenvx": "^1.54.1",
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/node": "^1.2.6",
     "@elysiajs/static": "^1.2.0",
@@ -56,6 +59,7 @@
     "@stripe/stripe-js": "^8.0.0",
     "@upstash/ratelimit": "^1.2.0",
     "@upstash/redis": "^1.34.9",
+    "chalk": "^5.6.2",
     "chart.js": "^4.5.1",
     "clipboard": "^2.0.11",
     "date-fns": "^4.1.0",
@@ -64,7 +68,6 @@
     "express": "^4.18.2",
     "express-rate-limit": "^7.5.0",
     "firebase": "^11.0.2",
-    "firebase-functions": "^7.0.0",
     "http-proxy-middleware": "^3.0.3",
     "idb": "^8.0.2",
     "ioredis": "^5.7.0",
@@ -122,10 +125,5 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5.9.3"
-  },
-  "trustedDependencies": [
-    "@firebase/util",
-    "@parcel/watcher",
-    "protobufjs"
-  ]
+  }
 }

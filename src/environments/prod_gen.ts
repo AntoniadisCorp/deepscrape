@@ -1,8 +1,37 @@
 // generate-env.ts
-const fs = require('fs');
-const dotenvx = require('@dotenvx/dotenvx');
+import fs from 'fs'
+import dotenvx from '@dotenvx/dotenvx'
 
-const env = dotenvx.config({ quiet: true }).parsed; // Get parsed .env values directly
+type BuildMode = 'development' | 'staging' | 'production'
+
+const normalizeMode = (value: string | undefined): BuildMode => {
+    const mode = (value || '').trim().toLowerCase()
+
+    if (mode === 'dev' || mode === 'development') {
+        return 'development'
+    }
+
+    if (mode === 'stage' || mode === 'staging') {
+        return 'staging'
+    }
+
+    return 'production'
+}
+
+const mode = normalizeMode(process.env['BUILD_ENV'] || process.env['APP_ENV'] || process.env['NODE_ENV'])
+
+const envFilesByMode: Record<BuildMode, string[]> = {
+    development: ['.env.dev'],
+    staging: ['.env.staging'],
+    production: ['.env'],
+}
+
+const selectedEnvFiles = envFilesByMode[mode]
+const result = dotenvx.config({ quiet: true, path: selectedEnvFiles/* , debug: true,verbose: true, */ })
+const env = { ...(result.parsed || {})/* , ...process.env  */}
+
+console.log(`[prod_gen] mode=${mode} files=${selectedEnvFiles.join(', ')}`)
+// console.log('Loaded environment variables:', env);
 const environment = {
     production: env["PRODUCTION"] === "true",
     emulators: env["EMULATORS"] === "true",
@@ -37,4 +66,4 @@ const environment = {
 
 const content = `export const environment = ${JSON.stringify(environment, null, 2)};`
 
-fs.writeFileSync('src/environments/environment.ts', content);
+fs.writeFileSync('src/environments/environment.ts', content)

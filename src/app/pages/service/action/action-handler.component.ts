@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Auth, verifyPasswordResetCode, confirmPasswordReset, applyActionCode } from '@angular/fire/auth';
 import { TranslateService } from '@ngx-translate/core';
-import { ThemeService, FirestoreService, AuthService } from 'src/app/core/services';
+import { ThemeService, FirestoreService, AuthService, WindowToken } from 'src/app/core/services';
 import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
 import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -23,6 +23,7 @@ import { timer } from 'rxjs';
   styleUrl: './action-handler.component.scss'
 })
 export class ActionHandlerComponent implements OnInit {
+  private window: Window = inject(WindowToken);
   oobCode: string | null = null;
   continueUrl: string | null = null;
   email: string | null = null;
@@ -162,8 +163,8 @@ export class ActionHandlerComponent implements OnInit {
     }
 
     try {
-      const url = new URL(this.continueUrl, window.location.origin);
-      if (url.host === window.location.host) {
+      const url = new URL(this.continueUrl, this.window.location.origin);
+      if (url.host === this.window.location.host) {
         return url.pathname + url.search + url.hash;
       }
       if (this.continueUrl.startsWith('https://')) {

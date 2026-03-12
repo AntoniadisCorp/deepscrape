@@ -10,6 +10,7 @@ import { isPlatformBrowser } from '@angular/common';
   providedIn: 'root'
 })
 export class AnalyticsService {
+  private analyticsBackendAvailable = true;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -29,6 +30,11 @@ export class AnalyticsService {
       return of(null)
     }
 
+    if (!this.analyticsBackendAvailable) {
+      this.fireService.logEvent(eventType, metadata)
+      return of(null)
+    }
+
     // Google Analytics logEvent
     this.fireService.logEvent(eventType, metadata)
     // Send event to backend
@@ -43,9 +49,7 @@ export class AnalyticsService {
       ...(token && { 'Authorization': `Bearer ${token}` })
     });
     return this.http.post('/event/analytics/event', event, { headers }).pipe(
-      // Gracefully handle 404 and other errors
-      // You may need to import catchError, of, throwError from rxjs
-      catchError(handleError)
+      catchError((error) => this.handleError(error))
     );
   }
 
@@ -57,6 +61,13 @@ export class AnalyticsService {
       return of(null)
     }
 
+    if (!this.analyticsBackendAvailable) {
+      events.forEach(ev => {
+        this.fireService.logEvent(ev.method || ev.eventType, ev)
+      });
+      return of(null)
+    }
+
     // Optionally batch logEvent to Google Analytics (not supported natively, so log individually)
     events.forEach(ev => {
       this.fireService.logEvent(ev.method || ev.eventType, ev)
@@ -65,15 +76,31 @@ export class AnalyticsService {
     const headers = new HttpHeaders({ 'Accept': 'application/json' });
     if (token) headers.append('Authorization', `Bearer ${token}`);
     return this.http.post('/event/analytics/batch', { events }, { headers }).pipe(
-      catchError(handleError))
+      catchError((error) => this.handleError(error)))
+  }
+
+  private handleError(error: any): Observable<any> {
+    if (error?.status === 404) {
+      const backendMessage = typeof error?.error === 'string' ? error.error : ''
+      const missingFunction = backendMessage.includes('does not exist')
+
+      if (missingFunction) {
+        this.analyticsBackendAvailable = false
+        console.warn('Analytics backend disabled for this session (missing function route):', error)
+        return of(null)
+      }
+
+      console.warn('Analytics backend endpoint not found:', error)
+      return of(null)
+    }
+
+    if (error?.status >= 500) {
+      console.warn('Analytics backend unavailable (non-fatal):', error)
+      return of(null)
+    }
+
+    console.error('Analytics backend error:', error)
+    return of(null)
   }
 }
 
-function handleError(error: any): Observable<any> {
-        if (error.status === 404) {
-          console.warn('Analytics backend endpoint not found:', error);
-          return of(null);
-        }
-        console.error('Analytics backend error:', error);
-        return throwError(() => error);
-      }

@@ -9,15 +9,16 @@ import {
   HttpRequest,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { WindowToken } from '../services';
 import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
 const CSRF_RETRIED = new HttpContextToken<boolean>(() => false);
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-function isApiRequest(req: HttpRequest<unknown>): boolean {
+function isApiRequest(req: HttpRequest<unknown>, win: Window): boolean {
   try {
-    const url = new URL(req.url, window.location.origin);
+    const url = new URL(req.url, win.location.origin);
     return url.pathname.startsWith('/api');
   } catch {
     return req.url.startsWith('/api');
@@ -45,9 +46,10 @@ export const csrfRefreshInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const backend = inject(HttpBackend);
   const rawHttp = new HttpClient(backend);
+  const win = inject(WindowToken);
 
   const shouldHandle =
-    isApiRequest(req) &&
+    isApiRequest(req, win) &&
     MUTATING_METHODS.has(req.method.toUpperCase()) &&
     !req.context.get(CSRF_RETRIED);
 

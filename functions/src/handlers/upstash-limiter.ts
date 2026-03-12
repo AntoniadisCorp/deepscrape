@@ -33,18 +33,35 @@ const sanitizeUpstashRestUrl = (value: string): string => {
       .replace(/\.upstash\.io\.upstash\.io(?=$|\/)/, ".upstash.io")
   }
 }
+
+// const isFunctionsEmulator =
+//   process.env["FUNCTIONS_EMULATOR"] === "true" ||
+//   !!process.env["FIREBASE_EMULATOR_HUB"]
+
+const upstashUrl = sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL)
+const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_REDIS_REST_PASSWORD
+const shouldEnableUpstashRateLimit =
+  !!upstashUrl &&
+  !!upstashToken
+  /* ( !isFunctionsEmulator ||  ) */
+if (!shouldEnableUpstashRateLimit) {
+  console.warn(
+    "Upstash rate limiter disabled (emulator mode or missing credentials)."
+  )
+}
+
 // Initialize Upstash Redis and Ratelimit
-const redis = new Redis({
-  url: sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL),
-  token: env.UPSTASH_REDIS_REST_TOKEN,
-}) as any
+const redis = shouldEnableUpstashRateLimit ? new Redis({
+  url: upstashUrl,
+  token: upstashToken,
+}) as any : null
 
 /**
  * Firebase Functions rate limiter
  * Development: 1 min window, 50 requests
  * Production: 15 min window, 100 requests
  */
-const functionRatelimit = new Ratelimit({
+const functionRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
   redis: redis as any,
   limiter: Ratelimit.slidingWindow(
     env.PRODUCTION === "true" ? 100 : 50, // max requests
@@ -53,14 +70,14 @@ const functionRatelimit = new Ratelimit({
   analytics: env.PRODUCTION === "true", // Enable analytics in production
   enableProtection: env.PRODUCTION === "true", // Enable auto IP deny list in production
   prefix: "functionsRateLimit", // Redis key prefix
-})
+}) : null
 
 /**
  * Analytics/events limiter
  * Uses the same window but disables automatic deny-list protection
  * to avoid false-positive 403s on high-volume client telemetry.
  */
-const eventRatelimit = new Ratelimit({
+const eventRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
   redis: redis as any,
   limiter: Ratelimit.slidingWindow(
     env.PRODUCTION === "true" ? 100 : 50,
@@ -69,15 +86,19 @@ const eventRatelimit = new Ratelimit({
   analytics: env.PRODUCTION === "true",
   enableProtection: false,
   prefix: "eventRateLimit",
-})
+}) : null
 
 async function applyRateLimit(
   req: any,
   res: Response,
   next: NextFunction,
-  ratelimit: Ratelimit,
+  ratelimit: Ratelimit | null,
   allowDenyListBlock = true
 ): Promise<Response | void> {
+  if (!shouldEnableUpstashRateLimit || !ratelimit) {
+    return next()
+  }
+
   // Skip rate limiting for health checks
   if (req.path === "/health" || req.path === "/ping" || req.path === "/") {
     return next()

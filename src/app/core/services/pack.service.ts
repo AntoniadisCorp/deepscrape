@@ -9,7 +9,6 @@ import { from } from 'rxjs/internal/observable/from';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { tap } from 'rxjs/internal/operators/tap';
-import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable } from 'rxjs/internal/Observable';
 import { map } from 'rxjs/internal/operators/map';
 import { Subject } from 'rxjs/internal/Subject';
@@ -24,7 +23,6 @@ export class PackService {
 
   private destroyRef = inject(DestroyRef)
   private firestore: Firestore = inject(Firestore)
-  private functions: Functions = inject(Functions)
   private auth: AuthService = inject(AuthService)
   private firestoreService: FirestoreService = inject(FirestoreService)
 
@@ -254,11 +252,13 @@ export class PackService {
   }
 
   private getBrowserProfilesByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
-    return from(httpsCallable(this.functions, "getBrowserProfilesPaging")
-      ({ currPage, pageSize }))
+    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+      'getBrowserProfilesPaging',
+      { currPage, pageSize }
+    ))
       .pipe(
-        map((fun: any) => {
-          const { error, profiles, inTotal, totalPages, message } = fun.data as any
+        map((data: any) => {
+          const { error, profiles, inTotal, totalPages, message } = data as any
 
           if (error) {
             console.error('Error retrieving Browser Profiles by pagination:', error, profiles, message)
@@ -308,11 +308,13 @@ export class PackService {
 
 
   private getCrawlConfigsByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
-    return from(httpsCallable(this.functions, "getCrawlConfigsPaging")
-      ({ currPage, pageSize }))
+    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+      'getCrawlConfigsPaging',
+      { currPage, pageSize }
+    ))
       .pipe(
-        map((fun: any) => {
-          const { error, configs, inTotal, totalPages, message } = fun.data as any
+        map((data: any) => {
+          const { error, configs, inTotal, totalPages, message } = data as any
 
           if (error) {
             console.error('Error retrieving Crawler Configurations by pagination:', error, configs, message)
@@ -361,11 +363,13 @@ export class PackService {
   }
 
   private getCrawlResultConfigsByPagination(currPage: number = 1, pageSize: number = 10) {
-    return from(httpsCallable(this.functions, "getCrawlResultConfigsPaging")
-      ({ currPage, pageSize }))
+    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+      'getCrawlResultConfigsPaging',
+      { currPage, pageSize }
+    ))
       .pipe(
-        map((fun: any) => {
-          const { error, crawlResultConfigs, inTotal, totalPages, message } = fun.data as any
+        map((data: any) => {
+          const { error, crawlResultConfigs, inTotal, totalPages, message } = data as any
 
           if (error) {
             console.error('Error retrieving Crawler Configurations by pagination:', error, crawlResultConfigs, message)

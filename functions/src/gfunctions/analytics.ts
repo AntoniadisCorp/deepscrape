@@ -12,10 +12,11 @@ import { db } from "../app/config"
 import path from "node:path"
 import net from "node:net"
 import crypto from "crypto"
+import { existsSync } from "node:fs"
 import { env } from "../config/env"
 
 // Determine if running in production based on environment variable
-const isProduction = env.PRODUCTION === "true"
+const isProduction = env.IS_PRODUCTION
 
 // Class to manage IP2Location database connection
 // https://github.com/onramper/fast-geoip is a faster alternative but less detailed
@@ -109,9 +110,13 @@ export class IP2LocationManager {
 }
 
 // Initialize IP2Location Manager with the database path
-const databaseDir = path.join(__dirname, "../../databases")
 const databaseFile = "IP2LOCATION-LITE-DB11.BIN"
-export const geoDBManager = new IP2LocationManager(path.join(databaseDir, databaseFile))
+const databaseCandidates = [
+  path.join(__dirname, "../../databases", databaseFile),
+  path.join(__dirname, "../../../databases", databaseFile),
+]
+const resolvedDatabasePath = databaseCandidates.find((candidate) => existsSync(candidate)) || databaseCandidates[0]
+export const geoDBManager = new IP2LocationManager(resolvedDatabasePath)
 
 
 // Helper function to map timezone to continent
@@ -133,6 +138,7 @@ function getContinentFromTimezone(timezone: string): string {
 // Ensures unique guest analytics using fingerprinting and Redis/Firestore
 export async function guestTracker(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
+  console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
   const user = req.app.locals["user"] as string | null
   const isUser = !!user
 
@@ -147,12 +153,21 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
   // Create SHA-256 hash of the fingerprint for privacy
   const fingerprint = crypto.createHash("sha256").update(fingerstring).digest("hex")
   // Always check Redis for fingerprint mapping
-  const existingGuestId = await redis.get(`guestfp:${fingerprint}`)
+  let existingGuestId: string | null = null
+  try {
+    existingGuestId = await redis.get(`guestfp:${fingerprint}`)
+  } catch (error) {
+    console.warn("guestTracker: Redis unavailable while checking fingerprint mapping", error)
+  }
   if (!guestId && existingGuestId) {
     guestId = existingGuestId
     res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
     // Update lastSeen in Redis
-    await redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ lastSeen: new Date() }))
+    try {
+      await redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ lastSeen: new Date() }))
+    } catch (error) {
+      console.warn("guestTracker: Redis unavailable while updating guest lastSeen", error)
+    }
     // Update lastSeen in Firestore (throttled)
     const docRef = db.collection("guests").doc(guestId)
     const doc = await docRef.get()
@@ -197,7 +212,7 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
     }
     req.clientIp = ip
     try {
-      await Promise.all([
+      await Promise.allSettled([
         redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData)),
         redis.set(`guestfp:${fingerprint}`, guestId),
         db.collection("guests").doc(guestId).set(guestData, { merge: true }),
@@ -247,7 +262,8 @@ export async function analyticsEventHandler(req: Request, res: Response) {
     res.status(200).json({ success: true })
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
-    res.status(500).json({ success: false, error: errorMsg })
+    console.warn("analyticsEventHandler: Redis unavailable, dropping event", error)
+    res.status(202).json({ success: false, accepted: false, error: errorMsg })
   }
 }
 
@@ -277,7 +293,7 @@ export async function batchSyncAnalyticsEvents() {
     if (!events.length) return
     // Prepare batch write to Firestore
     const batch = db.batch()
-    events.forEach((eventStr) => {
+    events.forEach((eventStr: string) => {
       const event = JSON.parse(eventStr)
       const ref = db.collection("analyticsEvents").doc()
       batch.set(ref, event)

@@ -1,5 +1,4 @@
-// import { APP_BASE_HREF } from '@angular/common'
-import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
+import { AngularNodeAppEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
 import express, { NextFunction, Request, Response } from 'express'
 // import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
@@ -30,9 +29,7 @@ function serveapp(): express.Application {
   // const indexHtmlB = join(browserDistFolder, 'index.html')
   console.log('indexHtml', indexHtml, /* serverDistFolderD */)
 
-  // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
   const angularNodeAppEngine = new AngularNodeAppEngine()
-  // const commonEngine = new CommonEngine()
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
@@ -79,16 +76,13 @@ function serveapp(): express.Application {
   })
 
   // Serve static files from /browser
-  server.get('*.*', express.static(browserDistFolder, {
+  server.get(/.*\..*/, express.static(browserDistFolder, {
     maxAge: '1y',
     index: "index.html",
   }))
 
   // All regular routes use the Angular engine **
-  server.get('**', (req: Request, res: Response, next: any) => {
-    // const { protocol, originalUrl, baseUrl, headers } = req
-    // res.render(indexHtmlB, { req, providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }] })
-    // Yes, this is executed in devMode via the Vite DevServer
+  server.get(/.*/, (req: Request, res: Response, next: any) => {
     console.log(
       chalk.bgYellow('Request Method:'), req.method,
       chalk.bgYellow('Request URL:'), req.url,
@@ -99,19 +93,9 @@ function serveapp(): express.Application {
       chalk.bgBlue.black('IP:'), req.ip,
       chalk.bgBlue.black('Host:'), req.hostname
     )
-     
-    // commonEngine
-    //   .render({
-    //     bootstrap,
-    //     documentFilePath: indexHtml,
-    //     url: `${protocol}://${headers.host}${originalUrl}`,
-    //     publicPath: browserDistFolder,
-    //     providers: [{provide: APP_BASE_HREF, useValue: baseUrl}],
-    //   })
-    //   .then((html) => res.send(html))
-    //   .catch((err) => next(err));
+
     angularNodeAppEngine
-      .handle(req, { server: 'express' })
+      .handle(req)
       .then((response) =>
         response ? writeResponseToNodeResponse(response, res) : next()
       )

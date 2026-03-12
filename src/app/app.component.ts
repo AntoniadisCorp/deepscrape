@@ -11,7 +11,7 @@ import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
 import { catchError, filter, forkJoin, map, Observable, of, switchMap, tap, timer } from 'rxjs'
 import { isPlatformBrowser, isPlatformServer } from '@angular/common'
 import { fadeInOutAnimation } from './animations'
-import { Inject, OnInit, OnDestroy } from '@angular/core'
+import { Inject, OnInit, OnDestroy, AfterViewInit } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { NgswUpdateService } from './core/services/ngsw-update.service'
 import { Analytics } from '@angular/fire/analytics'
@@ -64,7 +64,7 @@ import { environment } from 'src/environments/environment'
   //  }, // Set background color to transparent when loading
   animations: [fadeInOutAnimation]
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   private destroyRef = inject(DestroyRef)
   private cdr = inject(ChangeDetectorRef)
   private analytics = inject(Analytics)
@@ -87,6 +87,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private loaderDelaySubscription: Subscription | null = null
   private loaderHideSubscription: Subscription | null = null
   private loaderShownAt = 0
+  private hasViewInitialized = false
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -135,10 +136,8 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe()
 
-    // Mat SAFE SVG icons (browser-only to avoid SSR fetch errors)
-    if (this.isBrowser) {
-      this.matIconRegistry.addSvgIconResolver()
-    }
+    // Register SVG resolver for both browser and SSR so MatIcon can resolve named icons consistently.
+    this.matIconRegistry.addSvgIconResolver()
   }
 
   get title() {
@@ -190,6 +189,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   ngAfterViewInit() {
+    this.hasViewInitialized = true
     
 
     // Set the initial values
@@ -238,6 +238,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.isLoading = true
 
+    if (!this.hasViewInitialized) {
+      return
+    }
+
     this.loaderHideSubscription?.unsubscribe()
     this.loaderHideSubscription = null
 
@@ -261,6 +265,11 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.isLoading = false
+
+    if (!this.hasViewInitialized) {
+      this.showRouteLoader = false
+      return
+    }
 
     this.loaderDelaySubscription?.unsubscribe()
     this.loaderDelaySubscription = null

@@ -6,16 +6,18 @@
 import * as admin from "firebase-admin"
 import Stripe from "stripe"
 import serviceAccount from "../credentials.json"
-import { defineJsonSecret } from "firebase-functions/params"
+import { defineSecret } from "firebase-functions/params"
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
 import { env } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
-export const functionsConfigExportSecretName = "FUNCTIONS_CONFIG_EXPORT"
-export const functionsConfigExportSecret =
-    defineJsonSecret(functionsConfigExportSecretName)
+export const stripeSecretParam = defineSecret("STRIPE_SECRET_KEY")
+export const stripeWebhookSecretParam =
+    defineSecret("STRIPE_WEBHOOK_SECRET")
+export const stripeSecrets = [stripeSecretParam, stripeWebhookSecretParam]
 export const dbName = serviceAccount.dbName
+
 
 // Initialize Firebase
 admin.initializeApp(serviceAccount.firebaseConfig)
@@ -25,30 +27,58 @@ db.settings({ databaseId: dbName })
 
 export const auth = admin.auth()
 
-type ExportedFunctionsConfig = {
-    stripe?: {
-        secret?: string
+const resolveStripeSecret = (secret: string | undefined) => {
+    const candidate = typeof secret === "string" ? secret.trim() : ""
+
+    if (candidate) {
+        return candidate
     }
+
+    const fromEnv = env.STRIPE_SECRET_KEY?.trim()
+    if (fromEnv) {
+        return fromEnv
+    }
+
+    const fromServiceAccount =
+        typeof serviceAccount?.stripe?.secret === "string"?
+         serviceAccount.stripe.secret.trim() : ""
+
+    return fromServiceAccount || undefined
 }
 
-const getStripeSecretFromExport = () => {
+export const getStripeWebhookSecret = (secret:string | undefined) => {
     try {
-        const configValue = functionsConfigExportSecret.value()
-        const config =
-            configValue as ExportedFunctionsConfig | undefined
-        return config?.stripe?.secret || ""
+        const stripeWebhookKey =
+            secret as string | undefined
+        return stripeWebhookKey ||
+            env.STRIPE_WEBHOOK_SECRET ||
+            ""
     } catch {
-        return ""
+        return env.STRIPE_WEBHOOK_SECRET || ""
     }
 }
 
-export const stripeSecret =
-    getStripeSecretFromExport() ||
-    env.STRIPE_PUBLIC_KEY ||
-    serviceAccount.stripe.secret
-// export const stripePublishable = serviceAccount.stripe.publishable;
-// export const stripeClientId = serviceAccount.stripe.clientid;
-export const stripe = new Stripe(stripeSecret)
+let stripeClient: Stripe | null = null
+
+export const getStripe = (secret: string | undefined) => {
+    if (stripeClient) {
+        return stripeClient
+    }
+
+    const stripeSecret = resolveStripeSecret(secret) as string | undefined
+    if (!stripeSecret) {
+        throw new Error("Missing Stripe secret key")
+    }
+
+    if (!stripeSecret.startsWith("sk_")) {
+        throw new Error(
+            "Invalid Stripe secret key format. Expected prefix sk_"
+        )
+    }
+
+    stripeClient = new Stripe(stripeSecret)
+    return stripeClient
+}
 
 // Helper: Generate a secure random API key
 export function generateApiKey() {

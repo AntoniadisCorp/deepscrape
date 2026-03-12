@@ -209,7 +209,7 @@ export const onUserRegistered = onDocumentCreated(
       batch.set(summaryRef, summaryUpdate, { merge: true })
 
       // 3. Initialize user login metrics
-      const userMetricsRef = db.doc(`users/${user.uid}/login_metrics`)
+      const userMetricsRef = db.doc(`users/${userId}/login_metrics/summary`)
       batch.set(userMetricsRef, {
         userId: userId,
         totalLogins: 0,
@@ -277,7 +277,7 @@ export const onLoginEvent = onDocumentCreated(
       }, { merge: true })
 
       // 4. Update user login metrics
-      const userMetricsRef = db.doc(`users/${event.params.userId}/login_metrics`)
+      const userMetricsRef = db.doc(`users/${event.params.userId}/login_metrics/summary`)
       batch.set(userMetricsRef, {
         totalLogins: FieldValue.increment(1),
         lastLogin: Timestamp.now(),

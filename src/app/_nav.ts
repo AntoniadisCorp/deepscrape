@@ -104,16 +104,24 @@ export const navigation = [
 
     /* Menu Management  */
     {
-        name: 'Passes',
-        url: '/billing/passes',
+        name: 'Plans',
+        url: '/billing/plans',
         identity: true,
         icon: {
-            matIcon: 'credit_card'
+            matIcon: 'workspace_premium'
         },
         badge: {
             variant: 'new',
             text: 'new'
         },
+    },
+    {
+        name: 'Usage',
+        url: '/billing/usage',
+        identity: true,
+        icon: {
+            matIcon: 'query_stats'
+        }
     },
 
 

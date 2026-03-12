@@ -3,9 +3,24 @@
 /* eslint-disable object-curly-spacing */
 import { FieldPath, FieldValue } from "firebase-admin/firestore"
 import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
-import { auth, EventContext, firestore } from "firebase-functions/v1"
+import { auth } from "firebase-functions/v1"
+import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
+import { env } from "../config/env"
 // import { redis } from "./cacheConfig"
+
+const bootstrapAdminEmails = new Set(
+    env.ADMIN_EMAILS
+        .map((item) => item.toLowerCase())
+)
+
+const isBootstrapAdmin = (email?: string | null): boolean => {
+    if (!email) {
+        return false
+    }
+
+    return bootstrapAdminEmails.has(email.toLowerCase())
+}
 
 
 export const trackGuest = auth
@@ -52,7 +67,7 @@ export const trackGuest = auth
 
             // Update daily analytics metrics for real-time dashboard
             const dailyRef = db.collection("metrics_daily").doc(today)
-            const dailyUpdate: any = {
+            const dailyUpdate = {
                 date: today,
                 timestamp: FieldValue.serverTimestamp(),
                 newUsers: FieldValue.increment(1),
@@ -70,7 +85,7 @@ export const trackGuest = auth
 
             // Update dashboard summary for real-time UI updates
             const summaryRef = db.collection("metrics_summary").doc("dashboard")
-            const summaryUpdate: any = {
+            const summaryUpdate: Record<string, FieldValue> = {
                 totalUsers: FieldValue.increment(1),
                 activeUsers: FieldValue.increment(1),
                 lastUpdated: FieldValue.serverTimestamp(),
@@ -107,16 +122,11 @@ export const trackGuest = auth
 
 export const setDefaultAdminRole = auth
     .user()
-    .onCreate(async (user, context: EventContext) => {
+    .onCreate(async (user/* , context: EventContext */) => {
         try {
-            const emails = [
-                "prokopis123@gmail.com",
-                "prokopis3@gmail.com",
-                "admin@deepscrape.dev",
-            ]
             const role = "admin"
 
-            if (user.email && emails.includes(user.email)) {
+            if (isBootstrapAdmin(user.email)) {
                 await adminAuth.setCustomUserClaims(user.uid, { role })
                 // Only set role in Firestore if defined
                 const userDoc: Record<string, unknown> = {}
@@ -133,8 +143,12 @@ export const setDefaultAdminRole = auth
 
 export const setDefaultRole = auth
     .user()
-    .onCreate(async (user, context: EventContext) => {
+    .onCreate(async (user/* , context: EventContext */) => {
         try {
+            if (isBootstrapAdmin(user.email)) {
+                return
+            }
+
             const role = "user"
 
             await adminAuth.setCustomUserClaims(user.uid, { role })
@@ -149,6 +163,74 @@ export const setDefaultRole = auth
             throw new HttpsError("internal", "Error setting default role", error)
         }
     })
+
+export const linkGuestToUser = onCallv2(async (req) => {
+    try {
+        const authenticatedUid = req.auth?.uid
+        if (!authenticatedUid) {
+            throw new HttpsError("unauthenticated", "User must be authenticated")
+        }
+
+        const guestIdRaw = req.data?.guestId
+        const uidRaw = req.data?.uid
+        const guestId = typeof guestIdRaw === "string" ? guestIdRaw.trim() : ""
+        const uid = typeof uidRaw === "string" ? uidRaw.trim() : authenticatedUid
+
+        if (!guestId) {
+            throw new HttpsError("invalid-argument", "guestId is required")
+        }
+
+        if (uid !== authenticatedUid) {
+            throw new HttpsError("permission-denied", "uid must match authenticated user")
+        }
+
+        const guestRef = db.collection("guests").doc(guestId)
+        const userRef = db.collection("users").doc(uid)
+        const guestSnap = await guestRef.get()
+        const guestInfo = guestSnap.exists ? guestSnap.data() : null
+
+        const batch = db.batch()
+        batch.set(guestRef, {
+            uid,
+            linkedAt: FieldValue.serverTimestamp(),
+            updated_At: FieldValue.serverTimestamp(),
+        }, { merge: true })
+
+        if (guestInfo) {
+            const details = {
+                latitude: typeof guestInfo.latitude === "number" ? guestInfo.latitude : 0,
+                longitude: typeof guestInfo.longitude === "number" ? guestInfo.longitude : 0,
+                country: typeof guestInfo.country === "string" ? guestInfo.country : "Unknown",
+                geo: guestInfo.geo || { continent: "Unknown", region: "Unknown" },
+                region: typeof guestInfo.region === "string" ? guestInfo.region : "Unknown",
+                timezone: typeof guestInfo.timezone === "string" ? guestInfo.timezone : "UTC",
+                location: typeof guestInfo.location === "string" ? guestInfo.location : "Unknown",
+                updated_At: FieldValue.serverTimestamp(),
+            }
+
+            batch.set(userRef, {
+                uid,
+                details,
+                updated_At: FieldValue.serverTimestamp(),
+            }, { merge: true })
+        }
+
+        await batch.commit()
+
+        return {
+            ok: true,
+            linkedUid: uid,
+            guestId,
+            guestInfo,
+        }
+    } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error
+        }
+        console.error("Error linking guest to user:", error)
+        throw new HttpsError("internal", "Failed to link guest to user")
+    }
+})
 
 // Firebase Function: Create API Key
 export const createMyApiKey = onCallv2(async (req) => {
@@ -272,17 +354,19 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
     }
 })
 
-export const enqueueCrawlOperation = firestore
-    .database(dbName)
-    .document("users/{userId}/operations/{operationId}")
-    .onWrite(async (snap, context) => {
-        const after = snap.after.exists ? snap.after.data() : null
+export const enqueueCrawlOperation = onDocumentWritten(
+    {
+        document: "users/{userId}/operations/{operationId}",
+        database: dbName,
+    },
+    async (event) => {
+        const after = event.data?.after?.exists ? event.data.after.data() : null
         // check to see if the operation is ready to be processed or to be Scheduled
         if (!after || !(after.status === "Start" || after.status === "Scheduled")) {
             return null // Ignore non-ready or deleted operations
         }
-        const operationId = context.params.operationId
-        const userId = context.params.userId
+        const operationId = event.params.operationId
+        const userId = event.params.userId
 
         const operation = {
             operationId,
@@ -308,7 +392,8 @@ export const enqueueCrawlOperation = firestore
         } /* finally {
             release() // Always release the client back to the pool
         } */
-    })
+    }
+)
 
 export const getOperationsPaging = onCallv2(
 

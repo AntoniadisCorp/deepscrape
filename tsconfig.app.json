@@ -3,10 +3,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
-    "types": [
+    /* "types": [
       "node",
       "chrome"
-    ]
+    ] */
   },
   "files": [
     "src/main.ts",
@@ -15,6 +15,7 @@
     "server-elysia.ts"
   ],
   "include": [
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "api/**/*.d.ts"
   ]
 }

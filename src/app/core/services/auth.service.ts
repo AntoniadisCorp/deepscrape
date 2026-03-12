@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider, indexedDBLocalPersistence, linkWithPhoneNumber, linkWithPopup, PhoneAuthProvider, reauthenticateWithCredential, RecaptchaVerifier, setPersistence, signInWithCredential,
   signInWithPhoneNumber,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   unlink,
   updatePassword,
@@ -30,7 +31,6 @@ import { cleanAndParseJSON, handleError } from '../functions';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
 import { of, pipe, timestamp } from 'rxjs';
-import { Functions, httpsCallable } from '@angular/fire/functions';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CookieService } from 'ngx-cookie-service';
 import { LocalStorage } from './storage.service';
@@ -51,6 +51,7 @@ export class AuthService {
   private heartbeatService = inject(HeartbeatService)
   token: string | undefined = ''
   isAdmin: boolean = false
+  private currentLoginId: string = ''
 
   private authStateResolved = new BehaviorSubject<boolean>(false)
 
@@ -61,12 +62,16 @@ export class AuthService {
 
   constructor(
     private auth: Auth, private fireService: FirestoreService,
-    private http: HttpClient, private functions: Functions,
+    private http: HttpClient,
 
     private analyticsService: AnalyticsService
 
   ) {
     this.initAuth()
+  }
+
+  private isBrowserRuntime(): boolean {
+    return isPlatformBrowser(this.platformId);
   }
 
   isAuthenticated(): Observable<{ isAuthenticated: boolean, user: Users & { currProviderData: UserInfo | null } | null }> {
@@ -222,7 +227,7 @@ export class AuthService {
   // Sign in with Google
   signInWithGoogle(provider: GoogleAuthProvider) {
     // Check if running in browser environment
-    if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    if (!this.isBrowserRuntime()) {
       return throwError(() => new Error('auth/operation-not-supported-in-this-environment'));
     }
     return from(this.fireService.signInWithPopup(provider)).pipe(
@@ -237,7 +242,7 @@ export class AuthService {
   // Sign in with Facebook
   signInWithFacebook(provider: FacebookAuthProvider) {
     // Check if running in browser environment
-    if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    if (!this.isBrowserRuntime()) {
       return throwError(() => new Error('auth/operation-not-supported-in-this-environment'));
     }
     return from(this.fireService.signInWithPopup(provider)).pipe(
@@ -252,7 +257,7 @@ export class AuthService {
   // Sign in with GitHub
   signInWithGitHub(provider: GithubAuthProvider) {
     // Check if running in browser environment
-    if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    if (!this.isBrowserRuntime()) {
       return throwError(() => new Error('auth/operation-not-supported-in-this-environment'));
     }
     return from(this.fireService.signInWithPopup(provider)).pipe(
@@ -262,6 +267,14 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  async signInWithRedirectProvider(provider: AuthProvider): Promise<void> {
+    if (!this.isBrowserRuntime()) {
+      throw new Error('auth/operation-not-supported-in-this-environment');
+    }
+
+    await signInWithRedirect(this.auth, provider);
   }
 
   // Sign in with Email and Password
@@ -469,6 +482,10 @@ export class AuthService {
    */
   initAuth() {
 
+    if (!this.isBrowserRuntime()) {
+      return null;
+    }
+
     if (this.fireService.isLocalhost() && environment.emulators) {
       // Connect to Firebase Emulators if running on localhost and not in production
       console.log('🔥 Connecting Auth Service to Firebase Emulators');
@@ -565,13 +582,20 @@ export class AuthService {
       throw new Error("providerId is required for loginHistoryInfo");
     }
     // Cast metrics to loginHistoryInfo after ensuring required fields are present
-    return await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo)
+    const result = await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo)
+    // Store loginId in memory for use during logout
+    if (result?.loginId) {
+      this.currentLoginId = result.loginId
+    }
+    return result
   }
 
   logout() {
     const tokenTemp = this.token
     let { userId, loginId } = this.getLoginIdFromStorage()
     userId = userId || this.userSubject.value?.uid || ''
+    // Use in-memory loginId first, fallback to storage
+    loginId = this.currentLoginId || loginId
 
     // Immediately clear user state to prevent race conditions with Firestore listeners
     this.userSubject.next(null);

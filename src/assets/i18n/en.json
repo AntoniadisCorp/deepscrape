@@ -137,7 +137,7 @@
     "FORGOT_PASSWORD": "Forgot password?",
     "CREATE_NEW_ACCOUNT": "Create new account",
     "SIGN_IN_BUTTON": "Sign In",
-    "SIGN_IN_SUCCESS": "Sign-in successful",
+    "SIGN_IN_SUCCESS": "Signed in successfully.",
     "RECAPTCHA_EXPIRED": "reCAPTCHA expired, please try again.",
     "ACCOUNT_LINKED_SUCCESS": "Account successfully linked!"
   },
@@ -209,6 +209,7 @@
     "INSTRUCTION": "Please verify your account to access the dashboard.",
     "EMAIL_TITLE": "Email Verification",
     "EMAIL_SENT": "A verification email has been sent to your inbox.",
+    "EMAIL_SENT_SUCCESS": "Verification email sent successfully.",
     "EMAIL_SENT_TO": "Verification email sent to",
     "RESEND_EMAIL": "Resend Verification Email",
     "GO_TO_LOGIN": "Go to Login",

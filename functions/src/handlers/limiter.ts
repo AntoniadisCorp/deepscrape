@@ -7,15 +7,6 @@ import { env } from "../config/env"
 import { RedisStore, type RedisReply } from "rate-limit-redis"
 import { redisClient } from "../app/cacheConfig" // Adjust the import path as necessary
 
-// Extend Express Request type to include rateLimit property
-declare module "express-serve-static-core" {
-    interface Request {
-        rateLimit?: {
-            resetTime?: number
-        }
-    }
-}
-
 let redisStore = undefined
 
 if (redisClient) {
@@ -43,9 +34,12 @@ const apiLimitOptions: Partial<Options> = {
     handler: (req, res) => {
         const defaultWindowMs = env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000
         const resetTime = req?.rateLimit?.resetTime
+      const resetTimeMs =
+        typeof resetTime === "number" ? resetTime : resetTime instanceof Date?
+         resetTime.getTime() : undefined
         const retryAfterMs =
-            typeof resetTime === "number"?
-            resetTime - Date.now(): defaultWindowMs
+        typeof resetTimeMs === "number" ?
+        resetTimeMs - Date.now() : defaultWindowMs
         const retryAfterSec = Math.max(1, Math.round(retryAfterMs / 1000))
         const minutes = Math.floor(retryAfterSec / 60).toString().padStart(2, "0")
         const seconds = (retryAfterSec % 60).toString().padStart(2, "0")

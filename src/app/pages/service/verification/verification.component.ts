@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
 import { applyActionCode, Auth, sendEmailVerification, updateCurrentUser, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
 import { Router } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService, FirestoreService, SnackbarService } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
@@ -32,7 +33,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     phone: false,
     code: false,
     google: false,
-    github: false
+    github: false,
   };
   errorMessage: string = '';
 
@@ -40,6 +41,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   public confirmationResult!: ConfirmationResult;
   public verificationMethod: 'email' | 'phone' | null = null; // 'email' or 'phone'
   public phoneVerificationForm: FormGroup;
+  private platformId = inject<Object>(PLATFORM_ID);
 
   constructor(
     private auth: Auth,
@@ -64,6 +66,9 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     this.initializeRecaptcha()
   }
 
@@ -186,8 +191,10 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.phoneVerificationForm.reset();
     this.errorMessage = '';
     this.confirmationResult = null as any; // Reset confirmation result
-    this.recaptchaVerifier.clear();
-    this.recaptchaVerifier.render();
+    if (this.recaptchaVerifier) {
+      this.recaptchaVerifier.clear();
+      this.recaptchaVerifier.render();
+    }
   }
 
   async resendVerificationEmail() {
@@ -244,3 +251,4 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.recaptchaVerifier?.clear()
   }
 }
+

@@ -13,7 +13,7 @@ service cloud.firestore {
     // all client requests to your Firestore database will be denied until you Update
     // your rules
     match /{document=**} {
-      allow read: if isAuthenticated() && (isAdmin() || resourceMatchesUID());
+      allow read: if isAdmin();
 
       allow create: if isAuthenticated() && (isAdmin() || requestMatchesUID());
       allow update: if isAuthenticated() && (isAdmin() || (resourceMatchesUID() && requestMatchesUID()));
@@ -25,6 +25,39 @@ service cloud.firestore {
                   (request.auth.token.email_verified || 
                    request.auth.token.phone_number != null ||
                    (request.resource.data.phoneNumber == request.auth.token.phone_number && request.resource.data.phoneVerified == true));
+
+      match /billing/{billingId} {
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      match /cartpack/{cartpackId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /crawlpack/{crawlpackId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /operations/{operationId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /crawlconfigs/{configId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /crawlresultsconfig/{configId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /apikeys/{keyId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /browser/{profileId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
     
     function isAuthenticated() {
@@ -40,48 +73,81 @@ service cloud.firestore {
         return request.auth.uid == resource.data.uid;
     }
 
+    function hasRole(roleName) {
+      return request.auth != null
+        && request.auth.token != null
+        && ('role' in request.auth.token)
+        && request.auth.token.role == roleName;
+    }
+
+    function hasTeamsClaim() {
+      return request.auth != null
+        && request.auth.token != null
+        && ('teams' in request.auth.token)
+        && request.auth.token.teams is list;
+    }
+
+    function hasOrganizationClaim(orgId) {
+      return request.auth != null
+        && request.auth.token != null
+        && ('organization' in request.auth.token)
+        && request.auth.token.organization == orgId;
+    }
+
     function isAdmin() {
-      return request.auth != null && request.auth.token.role == 'admin';
+      return hasRole('admin') || (
+        request.auth != null
+        && request.auth.token != null
+        && ('email' in request.auth.token)
+        && request.auth.token.email in [
+          'prokopis123@gmail.com',
+          'prokopis3@gmail.com',
+          'admin@deepscrape.dev'
+        ]
+      );
     }
 
     function isModerator() {
-      return request.auth != null && request.auth.token.role == 'moderator';
+      return hasRole('moderator');
     }
 
     function isManager() {
-      return request.auth != null && request.auth.token.role == 'manager';
+      return hasRole('manager');
     }
 
     function isUser() {
-      return request.auth != null && request.auth.token.role == 'user';
+      return hasRole('user');
     }
 
     function isGuest() {
-      return request.auth != null && request.auth.token.role == 'guest';
+      return hasRole('guest');
     }
 
     function isTeamLeader(teamId) {
-      return request.auth != null && request.auth.token.teams.hasAny([teamId]) && request.auth.token.role == 'team_leader';
+      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]) && hasRole('team_leader');
     }
 
     function isTeamMember(teamId) {
-      return request.auth != null && request.auth.token.teams.hasAny([teamId]);
+      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]);
     }
 
     function isOrganizationAdmin(orgId) {
-      return request.auth != null && request.auth.token.organization == orgId && request.auth.token.role == 'org_admin';
+      return hasOrganizationClaim(orgId) && hasRole('org_admin');
     }
 
     function isOrganizationMember(orgId) {
-      return request.auth != null && request.auth.token.organization == orgId;
+      return hasOrganizationClaim(orgId);
     }
     
     match /login_metrics/{docId} {
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId);
-      allow write: if false;
+      allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
+      allow create, update: if isAuthenticated() && request.auth.uid == docId;
+      allow delete: if false;
+
       match /login_history_Info/{historyId} {
-        allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId);
-        allow write: if false;
+        allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
+        allow create, update: if isAuthenticated() && request.auth.uid == docId;
+        allow delete: if false;
       }
     }
 
@@ -99,6 +165,13 @@ service cloud.firestore {
 
     match /guests/{guestId} {
       allow read: if isAdmin();
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /operation_metrics/{operationId} {
+      allow read: if isAuthenticated();
       allow write: if false;
     }
 

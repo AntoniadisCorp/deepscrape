@@ -17,7 +17,11 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "*.local"
+        "*.local",
+        "*.env",
+        "*.env.dev",
+        "*.env.keys",
+        "*.deploy-secrets.json"
       ],
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run build",

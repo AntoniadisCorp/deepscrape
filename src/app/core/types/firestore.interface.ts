@@ -34,7 +34,7 @@ export type Users = {
 
     // User Authorization fieldsrole
     role?: string
-    plan?: 'free' | 'pro' | 'enterprise'
+    plan?: 'free' | 'trial' | 'starter' | 'pro' | 'enterprise'
 
     // Profile status
     profileStatus?: ProfileStatus

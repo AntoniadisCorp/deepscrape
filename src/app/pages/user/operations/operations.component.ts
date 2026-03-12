@@ -36,7 +36,7 @@ import {
   query,
   startAfter,
   writeBatch,
-} from 'firebase/firestore'
+} from '@angular/fire/firestore'
 
 type OperationPageCursor = {
   createdAt: number

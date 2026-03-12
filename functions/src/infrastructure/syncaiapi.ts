@@ -9,14 +9,19 @@ import {
     anthropicAICore, openaiAICore, groqAICore, crawl4aiCore, jinaAICrawl,
     arachnefly,
 } from "../handlers"
-import { auth } from "../app/config"
-import { DecodedIdToken } from "firebase-admin/lib/auth/token-verifier"
+import { auth, db } from "../app/config"
+import { BillingSnapshot, getBillingAccessMode, resolveBillingPricingPolicy } from "../domain"
+import { consumeBillingCredits, releaseBillingCredits, reserveBillingCredits } from "../app/billing-credits"
 
-declare module "express-serve-static-core" {
-    interface Request {
-        user?: DecodedIdToken
-    }
+type BillingChargeContext = {
+    uid: string
+    amount: number
+    bucket: "purchased" | "included"
+    action: string
+    idempotencyBase: string
 }
+
+const randomSuffix = (): string => Math.random().toString(36).slice(2, 10)
 
 class ReverseAPIProxy {
     public router: Router
@@ -56,6 +61,138 @@ class ReverseAPIProxy {
         }
     }
 
+    async requirePaidAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
+        const uid = req.user?.uid
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        try {
+            const billingRef = db.doc(`users/${uid}/billing/current`)
+            const billingSnap = await billingRef.get()
+
+            const now = Date.now()
+            if (billingSnap.exists) {
+                const billing = billingSnap.data() as BillingSnapshot
+                const accessMode = getBillingAccessMode(billing, now)
+
+                if (accessMode !== "free") {
+                    const policy = resolveBillingPricingPolicy(req.method, req.path)
+                    const shouldCharge = policy.credits > 0 && (accessMode === "credits" || accessMode === "plan")
+
+                    let chargeContext: BillingChargeContext | null = null
+
+                    if (shouldCharge) {
+                        const bucket: "purchased" | "included" = accessMode === "credits" ? "purchased" : "included"
+                        const idempotencyBase = `${uid}:${req.method}:${req.path}:${now}:${randomSuffix()}`
+
+                        await reserveBillingCredits({
+                            uid,
+                            amount: policy.credits,
+                            bucket,
+                            ledger: {
+                                source: "syncaiapi",
+                                reason: `reserve:${policy.action}`,
+                                metadata: {
+                                    action: policy.action,
+                                    method: req.method,
+                                    path: req.path,
+                                },
+                                idempotencyKey: `${idempotencyBase}:reserve`,
+                            },
+                        })
+
+                        chargeContext = {
+                            uid,
+                            amount: policy.credits,
+                            bucket,
+                            action: policy.action,
+                            idempotencyBase,
+                        }
+
+                        res.setHeader("x-billing-credits-reserved", String(policy.credits))
+                        res.setHeader("x-billing-action", policy.action)
+                    }
+
+                    let settled = false
+                    const settleCharge = async (shouldConsume: boolean): Promise<void> => {
+                        if (settled || !chargeContext) {
+                            return
+                        }
+
+                        settled = true
+
+                        try {
+                            if (shouldConsume) {
+                                await consumeBillingCredits({
+                                    uid: chargeContext.uid,
+                                    amount: chargeContext.amount,
+                                    bucket: chargeContext.bucket,
+                                    releaseReserved: true,
+                                    ledger: {
+                                        source: "syncaiapi",
+                                        reason: `consume:${chargeContext.action}`,
+                                        metadata: {
+                                            action: chargeContext.action,
+                                            method: req.method,
+                                            path: req.path,
+                                            statusCode: res.statusCode,
+                                        },
+                                        idempotencyKey: `${chargeContext.idempotencyBase}:consume`,
+                                    },
+                                })
+                                return
+                            }
+
+                            await releaseBillingCredits({
+                                uid: chargeContext.uid,
+                                amount: chargeContext.amount,
+                                bucket: chargeContext.bucket,
+                                ledger: {
+                                    source: "syncaiapi",
+                                    reason: `release:${chargeContext.action}`,
+                                    metadata: {
+                                        action: chargeContext.action,
+                                        method: req.method,
+                                        path: req.path,
+                                        statusCode: res.statusCode,
+                                    },
+                                    idempotencyKey: `${chargeContext.idempotencyBase}:release`,
+                                },
+                            })
+                        } catch (settlementError) {
+                            console.error("Billing credit settlement failed:", settlementError)
+                        }
+                    }
+
+                    res.once("finish", () => {
+                        const success = res.statusCode >= 200 && res.statusCode < 400
+                        void settleCharge(success)
+                    })
+
+                    res.once("close", () => {
+                        if (!res.writableEnded) {
+                            void settleCharge(false)
+                        }
+                    })
+
+                    next()
+                    return
+                }
+            }
+
+            res.status(402).json({
+                error: "payment_required",
+                code: "payment_required",
+                message: "Payment required to access this endpoint",
+            })
+        } catch (error) {
+            console.error("Payment gate check failed:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
     // ------------------- Node JS Routes -------------------
 
     /**
@@ -72,13 +209,13 @@ class ReverseAPIProxy {
          */
 
         // Get Machine Details
-        this.router.get("/machines/machine/:id", arachnefly.getMachine)
+        this.router.get("/machines/machine/:id", this.requirePaidAccess, arachnefly.getMachine)
 
         // Check if the image is deployable
-        this.router.get("/machines/check-image", arachnefly.checkImageDeployability)
+        this.router.get("/machines/check-image", this.requirePaidAccess, arachnefly.checkImageDeployability)
 
         // wait for a machine to stabilize a specific state and return the machine details
-        this.router.get("/machines/machine/waitforstate/:machineId", arachnefly.waitForState)
+        this.router.get("/machines/machine/waitforstate/:machineId", this.requirePaidAccess, arachnefly.waitForState)
 
 
         /**
@@ -103,15 +240,15 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesPosts(): void {
-        this.router.post("/anthropic/messages", anthropicAICore) // Search for Markets
-        this.router.post("/openai/chat/completions", openaiAICore)
-        this.router.post("/groq/chat/completions", groqAICore)
+        this.router.post("/anthropic/messages", this.requirePaidAccess, anthropicAICore) // Search for Markets
+        this.router.post("/openai/chat/completions", this.requirePaidAccess, openaiAICore)
+        this.router.post("/groq/chat/completions", this.requirePaidAccess, groqAICore)
 
         /**
          * Crawler Management by crawlagent
         */
 
-        this.router.post("/crawl", crawl4aiCore)
+        this.router.post("/crawl", this.requirePaidAccess, crawl4aiCore)
 
         // Enqueue a stream Crawl Task
         // this.router.post("/crawl/stream/job", crawlagent.multiCrawlEnqueue)
@@ -119,7 +256,7 @@ class ReverseAPIProxy {
         /* Machines by Arachnefly */
 
         // Deploy a new Machine
-        this.router.post("/machines/deploy", arachnefly.deployMachine)
+        this.router.post("/machines/deploy", this.requirePaidAccess, arachnefly.deployMachine)
         // this.router.post('/api/machines/logs', receiveLogs)
     }
     /**
@@ -132,13 +269,13 @@ class ReverseAPIProxy {
          */
 
         // Start a Machine
-        this.router.put("/machines/machine/:machineId/start", arachnefly.startMachine)
+        this.router.put("/machines/machine/:machineId/start", this.requirePaidAccess, arachnefly.startMachine)
 
         // Suspend a Machine
-        this.router.put("/machines/machine/:machineId/suspend", arachnefly.suspendMachine)
+        this.router.put("/machines/machine/:machineId/suspend", this.requirePaidAccess, arachnefly.suspendMachine)
 
         // Stop a Machine
-        this.router.put("/machines/machine/:machineId/stop", arachnefly.stopMachine)
+        this.router.put("/machines/machine/:machineId/stop", this.requirePaidAccess, arachnefly.stopMachine)
 
 
         /**
@@ -158,7 +295,7 @@ class ReverseAPIProxy {
          * Machines by Arachnefly
          */
         // Destroy a Machine
-        this.router.delete("/machines/machine/:machineId", arachnefly.destroyMachine)
+        this.router.delete("/machines/machine/:machineId", this.requirePaidAccess, arachnefly.destroyMachine)
     }
 }
 

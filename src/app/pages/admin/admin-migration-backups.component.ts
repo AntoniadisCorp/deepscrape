@@ -21,7 +21,7 @@ import {
   query,
   startAfter,
   writeBatch,
-} from 'firebase/firestore'
+} from '@angular/fire/firestore'
 import { CacheService, FirestoreService } from 'src/app/core/services'
 
 type StartedAtCursor = {

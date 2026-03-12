@@ -39,7 +39,6 @@ import {
   signInWithEmailLink,
   signInWithPopup,
   updateCurrentUser,
-  updateProfile,
   User,
   UserCredential,
   user,
@@ -48,7 +47,7 @@ import {
   UserInfo
 } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
-import { Analytics, setUserId, setUserProperties } from '@angular/fire/analytics';
+import { Analytics } from '@angular/fire/analytics';
 import { HttpClient } from '@angular/common/http';
 
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
@@ -89,7 +88,7 @@ export class LoginComponent  {
   @ViewChild('recaptchaContainer', { static: false }) recaptchaContainer!: ElementRef<HTMLDivElement>;
 
   /** Analytics service for tracking user interactions. */
-  private analytics = inject(Analytics);
+  private analytics = inject(Analytics, { optional: true });
   /** Custom analytics service for application-specific event tracking. */
   private analyticsService = inject(AnalyticsService);
   /** Local storage service for storing key-value pairs. */
@@ -259,6 +258,42 @@ export class LoginComponent  {
     this.loginInProgress = false;
   }
 
+  private shouldFallbackToRedirect(error: any): boolean {
+    const code = error?.code;
+    return code === 'auth/popup-blocked' ||
+      code === 'auth/web-storage-unsupported' ||
+      code === 'auth/operation-not-supported-in-this-environment';
+  }
+
+  private async handleRedirectSignInResult(): Promise<void> {
+    try {
+      const result = await this.firestoreService.getRedirectResult();
+      if (!result?.user) return;
+
+      const providerId = result.providerId || result.user.providerData?.[0]?.providerId || 'oauth';
+
+      if (result.user.displayName || result.user.photoURL) {
+        await this.firestoreService.updateUserProfile(result.user, {
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL || DEFAULT_PROFILE_URL,
+        });
+      }
+
+      this.firestoreService.setAnalyticsUserId(this.analytics, result.user.uid);
+
+      await Promise.all([
+        this.loginMetrics(result.user.uid, providerId),
+        this.firestoreService.storeUserData(result.user, providerId, true)
+      ]);
+
+      this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      await this.router.navigateByUrl(returnUrl);
+    } catch (error) {
+      this.handleError(error, 'login:redirect-result', 'oauth');
+    }
+  }
+
   /**
    * @description Debounced analytics event tracker.
    * @param {any} event - Analytics event payload.
@@ -271,7 +306,7 @@ export class LoginComponent  {
         .batchTrackEvents([...this.analyticsEventQueue])
         .pipe(takeUntilDestroyed(this.DestroyRef))
         .subscribe({
-          error: (err) => console.error('Failed to send analytics batch', err),
+          error: (err: unknown) => console.error('Failed to send analytics batch', err),
         });
       this.analyticsEventQueue = [];
     }, 500); // 500ms debounce
@@ -286,18 +321,22 @@ export class LoginComponent  {
    * @param {string} [context] - Context of the login attempt.
    */
   private async trackLoginAttempt(method: string, success: boolean, token?: string, errorMsg?: string, context?: string): Promise<void> {
-    const browser = await getBrowser(this.navigator) || 'Unknown';
-    const platform = this.navigator?.platform || 'Unknown';
-    const payload = {
-      method,
-      success,
-      timestamp: new Date().toISOString(),
-      browser,
-      platform,
-      errorMsg: errorMsg || null,
-      context: context || null
-    };
-    this.debounceTrackEvent(payload);
+    try {
+      const browser = await getBrowser(this.navigator) || 'Unknown';
+      const platform = this.navigator?.platform || 'Unknown';
+      const payload = {
+        method,
+        success,
+        timestamp: new Date().toISOString(),
+        browser,
+        platform,
+        errorMsg: errorMsg || null,
+        context: context || null
+      };
+      this.debounceTrackEvent(payload);
+    } catch (error) {
+      console.warn('Login analytics tracking skipped:', error);
+    }
   }
 
   /**
@@ -328,7 +367,9 @@ export class LoginComponent  {
     this.githubProvider = new GithubAuthProvider();
     this.githubProvider.addScope('user:email');
     this.githubProvider.addScope('read:user');
-    this.githubProvider.setCustomParameters({ prompt: 'select_account' })    
+    this.githubProvider.setCustomParameters({ prompt: 'select_account' })
+
+    void this.handleRedirectSignInResult();
   }
 
   /**
@@ -337,10 +378,9 @@ export class LoginComponent  {
    */
   ngAfterViewInit(): void {
     // Recaptcha initialization might be placed here if it depends on DOM elements being present.
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
+    // if (!isPlatformBrowser(this.platformId)) {
+    //   return;
+    // }
     this.initializeRecaptcha()
   }
 
@@ -423,7 +463,7 @@ export class LoginComponent  {
                   const isVerified = await this.onLoginUpdate(response, 'password');
                   if (!isVerified) return; // If not verified, stop here (redirection handled in onLoginUpdate).
 
-                  setUserId(this.analytics, response.user.uid); // Set user ID for analytics.
+                  this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
 
                   // Show success snackbar and navigate to the dashboard or return URL.
                   this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
@@ -479,7 +519,7 @@ export class LoginComponent  {
               try {
                 // Update user profile with display name and photo URL if available.
                 if (response.user.displayName || response.user.photoURL) {
-                  await updateProfile(response.user, {
+                  await this.firestoreService.updateUserProfile(response.user, {
                     displayName: response.user.displayName,
                     photoURL: response.user.photoURL || DEFAULT_PROFILE_URL, // Use default if photoURL is null.
                   });
@@ -491,9 +531,10 @@ export class LoginComponent  {
                 await Promise.all([
                   this.trackLoginAttempt('google.com', true, token),
                   this.loginMetrics(response.user.uid, 'google.com'),
-                  this.firestoreService.storeUserData(response.user, 'google.com', true),
-                  setUserId(this.analytics, response.user.uid) // Set user ID for analytics.
+                  this.firestoreService.storeUserData(response.user, 'google.com', true)
                 ]);
+
+                this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
 
                 // Show success snackbar and navigate to the dashboard or return URL.
                 this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
@@ -512,6 +553,16 @@ export class LoginComponent  {
             }
           },
           error: async (error) => {
+            if (this.shouldFallbackToRedirect(error)) {
+              try {
+                await this.authService.signInWithRedirectProvider(this.googleProvider);
+                return;
+              } catch (redirectError) {
+                this.handleError(redirectError, 'login:google:redirect-fallback', 'google.com');
+                return;
+              }
+            }
+
             this.handleError(error, 'login:google', 'google.com');
             this.handleAccountExistsError(error, 'google.com');
             this.cdr.detectChanges();
@@ -556,7 +607,7 @@ export class LoginComponent  {
               try {
                 // Update user profile with display name and photo URL if available.
                 if (response.user.displayName || response.user.photoURL) {
-                  await updateProfile(response.user, {
+                  await this.firestoreService.updateUserProfile(response.user, {
                     displayName: response.user.displayName,
                     photoURL: response.user.photoURL ? response.user.photoURL : DEFAULT_PROFILE_URL, // Use default if photoURL is null.
                   });
@@ -567,9 +618,10 @@ export class LoginComponent  {
                 await Promise.all([
                   this.trackLoginAttempt('github.com', true, token),
                   this.loginMetrics(response.user.uid, 'github.com'),
-                  this.firestoreService.storeUserData(response.user, 'github.com', true),
-                  setUserId(this.analytics, response.user.uid) // Set user ID for analytics.
+                  this.firestoreService.storeUserData(response.user, 'github.com', true)
                 ]);
+
+                this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
 
                 // Show success snackbar and navigate to the dashboard or return URL.
                 this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
@@ -583,6 +635,16 @@ export class LoginComponent  {
             }
           },
           error: async (error) => {
+            if (this.shouldFallbackToRedirect(error)) {
+              try {
+                await this.authService.signInWithRedirectProvider(this.githubProvider);
+                return;
+              } catch (redirectError) {
+                this.handleError(redirectError, 'login:github:redirect-fallback', 'github.com');
+                return;
+              }
+            }
+
             this.handleError(error, 'login:github', 'github.com');
             this.handleAccountExistsError(error, 'github.com');
           },
@@ -849,8 +911,7 @@ export class LoginComponent  {
 
       guestInfo = GuestData;
       if (err) {
-        console.error('Error linking guest to user:', err);
-        throw err; // Propagate the error
+        console.warn('Guest link skipped due to recoverable error:', err);
       }
 
       this.cookieService.delete('gid'); // Clear the guest_id cookie
@@ -882,12 +943,11 @@ export class LoginComponent  {
     if (currlogin?.success && currlogin?.loginId) {
       // Store loginId in localStorage for future reference (e.g., logout)
       this.localStorage.setItem('loginId', currlogin.loginId);
-      if (aid) {
-        const aidData = cleanAndParseJSON(aid) as { userId: string, guestId: string, loginId?: string };
-        const newAidData = { ...aidData, loginId: currlogin.loginId };
-        // Extend authenticated user cookie expiration if exists
-        this.cookieService.set('aid', JSON.stringify(newAidData), 90, '/', "", true, "Lax");
-      }
+      
+      // Store loginId in aid cookie (create if doesn't exist, or update if exists)
+      const aidData = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string };
+      const newAidData = { ...aidData, userId, loginId: currlogin.loginId, guestId: guestInfo?.id || aidData.guestId || '' };
+      this.cookieService.set('aid', JSON.stringify(newAidData), 90, '/', "", true, "Lax");
     }
   }
 

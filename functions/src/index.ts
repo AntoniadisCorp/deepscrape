@@ -24,7 +24,7 @@ export const deepscrape = app.deepscrape
 
 /* Auth - Functions */
 // User Management - Functions
-// export const linkGuestToUser = auth.linkGuestToUser
+export const linkGuestToUser = auth.linkGuestToUser
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole
@@ -34,8 +34,22 @@ export const setDefaultRole = auth.setDefaultRole
 // STRIPE Functions
 export const newStripeCustomer = stripe.newStripeCustomer
 export const createPaymentIntent = stripe.createPaymentIntent
+export const createSetupIntent = stripe.createSetupIntent
 export const startSubscription = stripe.startSubscription
 export const updateUsage = stripe.updateUsage
+export const getBillingCatalog = stripe.getBillingCatalog
+export const getMyEntitlements = stripe.getMyEntitlements
+export const startTrial = stripe.startTrial
+export const validateStripeCatalog = stripe.validateStripeCatalog
+export const createCheckoutSession = stripe.createCheckoutSession
+export const createBillingPortalSession = stripe.createBillingPortalSession
+export const resumeSubscriptionCancellation = stripe.resumeSubscriptionCancellation
+export const verifyCheckoutSession = stripe.verifyCheckoutSession
+export const getBillingUsage = stripe.getBillingUsage
+export const stripeWebhook = stripe.stripeWebhook
+export const grantPromotionalCredits = stripe.grantPromotionalCredits
+export const expireTrialsToFree = stripe.expireTrialsToFree
+
 
 // API SECRET KEYS - Functions
 export const createMyApiKey = auth.createMyApiKey

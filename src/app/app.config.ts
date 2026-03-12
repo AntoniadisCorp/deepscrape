@@ -1,4 +1,4 @@
-import { ApplicationConfig, isDevMode, importProvidersFrom, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, isDevMode, importProvidersFrom, provideZonelessChangeDetection, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -13,12 +13,13 @@ import { getStorage, provideStorage } from '@angular/fire/storage';
 import { provideAnalytics, getAnalytics, ScreenTrackingService, UserTrackingService } from '@angular/fire/analytics';
 
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, provideAppCheck, ReCaptchaV3Provider } from '@angular/fire/app-check';
-import { getAuth, provideAuth } from '@angular/fire/auth';
+import { getAuth, inMemoryPersistence, initializeAuth, provideAuth } from '@angular/fire/auth';
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { browserProvider, BrowserToken, PLUTO_ID, STORAGE_PROVIDERS, windowProvider, WindowToken } from './core/services';
 import { provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi, withXsrfConfiguration } from '@angular/common/http';
 import { IMAGE_LOADER, ImageLoaderConfig } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { environment } from 'src/environments/environment';
 import { provideMarkdown } from 'ngx-markdown';
 import { provideNgxStripe } from 'ngx-stripe';
@@ -29,7 +30,8 @@ import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import { myIcons } from './shared'
 import { provideI18n } from './core/i18n'; // Import provideI18n
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { csrfRefreshInterceptor } from './core/interceptors';
+import { csrfRefreshInterceptor, paymentRequiredInterceptor } from './core/interceptors';
+import { PLATFORM_ID } from '@angular/core';
 
 setLogLevel(
   environment.production ? LogLevel.SILENT : LogLevel.VERBOSE
@@ -41,7 +43,19 @@ const customImageLoader = (config: ImageLoaderConfig) => {
   return baseUri + config.src.replace(/^\//, '');
 }
 
-// const app: FirebaseApp = 
+const hasSsrSerializedState =
+  typeof document !== 'undefined' &&
+  !!document.querySelector('script#ng-state');
+
+const hydrationProviders = hasSsrSerializedState
+  ? [
+      provideClientHydration(
+        withHttpTransferCacheOptions({
+          includePostRequests: true,
+        }),
+      ),
+    ]
+  : [];
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -56,7 +70,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideHttpClient(
       withInterceptorsFromDi(),
-      withInterceptors([csrfRefreshInterceptor]),
+      withInterceptors([csrfRefreshInterceptor, paymentRequiredInterceptor]),
       withXsrfConfiguration({ cookieName: '_csrf', headerName: 'csrf-token' }),
       withFetch(),      
       /* withInterceptors([
@@ -75,19 +89,27 @@ export const appConfig: ApplicationConfig = {
     provideAnalytics(() => getAnalytics(initializeApp(environment.firebaseConfig))),
     ScreenTrackingService, // track page views automatically
     UserTrackingService, // track unique users automatically
-    provideClientHydration(withHttpTransferCacheOptions({
-      includePostRequests: true
-    })),
+    ...hydrationProviders,
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
     }),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideAuth(() => getAuth()),
+    provideAuth(() => {
+      const isBrowserRuntime = isPlatformBrowser(inject(PLATFORM_ID));
+      if (!isBrowserRuntime) {
+        return initializeAuth(initializeApp(environment.firebaseConfig), {
+          persistence: inMemoryPersistence,
+          popupRedirectResolver: undefined,
+        });
+      }
+
+      return getAuth();
+    }),
     provideFirestore(() =>
     {
       const firestore = getFirestore();
-      if (environment.emulators) {
+      if (environment.emulators && isPlatformBrowser(inject(PLATFORM_ID))) {
         console.log('🔥 Connecting Firestore to Emulator');
         connectFirestoreEmulator(firestore, 'localhost', 5001);
       }
@@ -97,7 +119,7 @@ export const appConfig: ApplicationConfig = {
     provideFunctions(() => {
 
       const functions = getFunctions()
-      if (environment.emulators) {
+      if (environment.emulators && isPlatformBrowser(inject(PLATFORM_ID))) {
         console.log('🔥 Connecting Functions to Emulator');
         connectFunctionsEmulator(functions, 'localhost', 8081)
       }
@@ -109,7 +131,7 @@ export const appConfig: ApplicationConfig = {
     {
       provide: 'APP_CHECK',
       useFactory: () => {
-        if (typeof window !== 'undefined') {
+        if (isPlatformBrowser(inject(PLATFORM_ID))) {
           try {
             return initializeAppCheck(undefined, {
               provider: new ReCaptchaV3Provider(environment.RECAPTCHA_KEY), // ReCaptchaEnterpriseProvider

@@ -4,13 +4,11 @@ import { Options, rateLimit, RateLimitRequestHandler } from 'express-rate-limit'
 import { RedisStore } from 'rate-limit-redis'
 import { env } from "../../src/config/env"
 
-// Extend Express Request type to include rateLimit property
-declare module 'express-serve-static-core' {
-    interface Request {
-        rateLimit?: {
-            resetTime?: number;
-        };
-    }
+type RequestWithAuthAndRateLimit = {
+  user?: { uid?: string }
+  rateLimit?: {
+    resetTime?: number | Date
+  }
 }
 
 let redis_store = undefined
@@ -54,11 +52,15 @@ const limmitOptions: Partial<Options> = {
     },
     keyGenerator: (req) => {
         // Use authenticated user UID if available, otherwise use IP
-        return req.user?.uid || req.ip || 'unknown'
+      const request = req as typeof req & RequestWithAuthAndRateLimit
+      return request.user?.uid || req.ip || 'unknown'
     },
     handler: (req, res /*, next */) => {
         // Calculate retry-after in seconds
-        const retryAfterMs = req?.rateLimit?.resetTime ? req.rateLimit.resetTime - Date.now() : (env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000);
+      const request = req as typeof req & RequestWithAuthAndRateLimit
+      const resetTime = request.rateLimit?.resetTime
+      const resetAt = typeof resetTime === 'number' ? resetTime : resetTime instanceof Date ? resetTime.getTime() : undefined
+      const retryAfterMs = resetAt ? resetAt - Date.now() : (env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000)
         const retryAfterSec = Math.max(1, Math.round(retryAfterMs / 1000));
         const minutes = Math.floor(retryAfterSec / 60).toString().padStart(2, '0');
         const seconds = (retryAfterSec % 60).toString().padStart(2, '0');
@@ -139,11 +141,15 @@ const apiLimmitOptions: Partial<Options> = {
     },
     keyGenerator: (req) => {
         // Use authenticated user UID if available, otherwise use IP
-        return req.user?.uid || req.ip || 'unknown'
+      const request = req as typeof req & RequestWithAuthAndRateLimit
+      return request.user?.uid || req.ip || 'unknown'
     },
     handler: (req, res /*, next */) => {
         // Calculate retry-after in seconds
-        const retryAfterMs = req?.rateLimit?.resetTime ? req.rateLimit.resetTime - Date.now() : (env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000);
+      const request = req as typeof req & RequestWithAuthAndRateLimit
+      const resetTime = request.rateLimit?.resetTime
+      const resetAt = typeof resetTime === 'number' ? resetTime : resetTime instanceof Date ? resetTime.getTime() : undefined
+      const retryAfterMs = resetAt ? resetAt - Date.now() : (env.PRODUCTION === "true" ? 15 * 60 * 1000 : 1 * 60 * 1000)
         const retryAfterSec = Math.max(1, Math.round(retryAfterMs / 1000));
         const minutes = Math.floor(retryAfterSec / 60).toString().padStart(2, '0');
         const seconds = (retryAfterSec % 60).toString().padStart(2, '0');

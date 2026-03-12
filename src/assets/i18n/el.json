@@ -137,7 +137,7 @@
     "FORGOT_PASSWORD": "Ξεχάσατε τον κωδικό;",
     "CREATE_NEW_ACCOUNT": "Δημιουργία νέου λογαριασμού",
     "SIGN_IN_BUTTON": "Σύνδεση",
-    "SIGN_IN_SUCCESS": "Η σύνδεση ήταν επιτυχής",
+    "SIGN_IN_SUCCESS": "Συνδεθήκατε με επιτυχία.",
     "RECAPTCHA_EXPIRED": "Το reCAPTCHA έληξε, παρακαλώ δοκιμάστε ξανά.",
     "ACCOUNT_LINKED_SUCCESS": "Ο λογαριασμός συνδέθηκε με επιτυχία!"
   },

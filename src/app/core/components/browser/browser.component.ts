@@ -503,7 +503,7 @@ export class BrowserComponent implements OnInit, OnDestroy {
       // We still send the Ctrl+C to the remote system
       // but also try to get any text selection locally
       try {
-        const selection = window.getSelection()?.toString();
+        const selection = this.window.getSelection()?.toString();
         if (selection && selection.length > 0) {
           // Update clipboard component with selection
           if (this.clipboardRef) {

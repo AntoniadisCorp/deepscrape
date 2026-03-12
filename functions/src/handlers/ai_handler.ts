@@ -10,6 +10,8 @@ import { customUrlDecoder } from "../gfunctions"
 import { env } from "../config/env"
 
 // const streamPipeline = promisify(pipeline)
+const toSingleParam = (value: string | string[] | undefined): string =>
+    Array.isArray(value) ? (value[0] || "") : (value || "")
 
 // Utility function to handle API requests and streaming
 /* const handleStreamedApiResponse = async (
@@ -102,7 +104,7 @@ export const crawl4aiCore = async (req: Request, res: Response) => {
 }
 
 export const jinaAICrawl = async (req: Request, res: Response) => {
-    const { url /* token */ } = req.params
+    const url = toSingleParam(req.params.url as string | string[] | undefined)
     const apiKey = env.JINAAI_API_KEY
 
     const headers: JinaHeader = {

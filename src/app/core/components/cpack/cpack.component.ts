@@ -43,4 +43,12 @@ export class CPackComponent {
     return undefined;
   }
 
+  displayPackType(type: string | undefined): string {
+    if (!type) {
+      return 'crawler'
+    }
+
+    return type.toLowerCase() === 'crawl4ai' ? 'crawler' : type
+  }
+
 }

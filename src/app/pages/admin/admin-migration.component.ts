@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { RouterLink } from '@angular/router'
-import { FirestoreService } from 'src/app/core/services'
+import { FirestoreService, WindowToken } from 'src/app/core/services'
 import { CheckboxComponent, DropdownComponent, SlideInModalComponent } from 'src/app/core/components'
 import { RippleDirective } from 'src/app/core/directives'
 import {
@@ -26,7 +26,7 @@ import {
   startAfter,
   where,
   writeBatch,
-} from 'firebase/firestore'
+} from '@angular/fire/firestore'
 import { Subscription } from 'rxjs'
 
 interface MigrationOptions {
@@ -96,6 +96,7 @@ interface HourlyAccumulator {
 export class AdminMigrationComponent implements OnInit, OnDestroy {
   private readonly firestoreService = inject(FirestoreService)
   private readonly fb = inject(FormBuilder)
+  private readonly window: Window = inject(WindowToken)
   private readonly db: Firestore = this.firestoreService.getInstanceDB('easyscrape')
 
   readonly form = this.fb.nonNullable.group({
@@ -246,7 +247,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
 
       if (this.pendingHardRefresh) {
         this.pendingHardRefresh = false
-        window.location.reload()
+        this.window.location.reload()
         return
       }
 

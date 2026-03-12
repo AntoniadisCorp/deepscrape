@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, inject, DestroyRef, ViewChild, ElementRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, inject, DestroyRef, ViewChild, ElementRef, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -46,6 +46,7 @@ export class SignupComponent implements OnInit, OnDestroy {
     /** Instance of Firebase RecaptchaVerifier for phone authentication. */
     public recaptchaVerifier!: RecaptchaVerifier;
     private window = inject(WindowToken)
+    private platformId = inject<Object>(PLATFORM_ID)
     signupForm: FormGroup
     emailCheckSubs: Subscription
     loading: Loading = {
@@ -57,7 +58,7 @@ export class SignupComponent implements OnInit, OnDestroy {
         phone: false,
         code: false,
         password: false,
-        mfa: false
+        mfa: false,
 
     };
     errorMessage = '';
@@ -128,6 +129,9 @@ export class SignupComponent implements OnInit, OnDestroy {
    */
     ngAfterViewInit(): void {
         // Recaptcha initialization might be placed here if it depends on DOM elements being present.
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
         this.initializeRecaptcha()
     }
 
@@ -136,6 +140,9 @@ export class SignupComponent implements OnInit, OnDestroy {
        * This is crucial for preventing abuse of the phone sign-in flow.
        */
     private initializeRecaptcha(): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
         // Check if the reCAPTCHA container element exists in the DOM.
         if (this.recaptchaContainer && this.recaptchaContainer.nativeElement) {
             // Initialize RecaptchaVerifier with the Firebase Auth instance and container element (not id).

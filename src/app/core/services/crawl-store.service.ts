@@ -5,7 +5,6 @@ import { deleteOperationDoc, storeCrawlOperation } from '../functions'
 import { from } from 'rxjs/internal/observable/from'
 import { BehaviorSubject, catchError, map, Observable, of, Subscription, tap, throwError } from 'rxjs'
 import { CrawlOperation } from '../types'
-import { Functions, httpsCallable } from '@angular/fire/functions'
 import { SessionStorage } from './storage.service'
 import { LoadingBarService } from '@ngx-loading-bar/core';
 
@@ -29,7 +28,6 @@ export class CrawlStoreService {
   constructor(
     private firestoreService: FirestoreService,
     private firestore: Firestore,
-    private functions: Functions,
     private loadingBar: LoadingBarService,
   ) {
 
@@ -171,11 +169,13 @@ export class CrawlStoreService {
   }
 
   private getOperationsByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
-    return from(httpsCallable(this.functions, "getOperationsPaging")
-      ({ currPage, pageSize }))
+    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+      'getOperationsPaging',
+      { currPage, pageSize }
+    ))
       .pipe(
-        map((fun: any) => {
-          const { error, operations, inTotal, totalPages, message } = fun.data as any
+        map((data: any) => {
+          const { error, operations, inTotal, totalPages, message } = data as any
 
           if (error) {
             console.error('Error retrieving Crawl Operation:', error, operations, message)
