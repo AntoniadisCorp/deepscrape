@@ -14,37 +14,53 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: |
-          echo "::set-output name=dir::$(npm config get cache)"
-
-      - uses: actions/cache@v3
-        id: npm-cache
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: "lts/*"
 
       - name: Install dependencies
-        run: npm i && npm ci
+        run: npm clean-install
 
       - name: Set up Git user
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-      
+
       - name: Run Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run release
+        run: npx semantic-release
+
+      - name: Update package.json version
+        run: |
+          NEW_TAG=$(git tag --sort=-version:refname | head -n1)
+          if [ -z "$NEW_TAG" ]; then
+            echo "No new tag found, skipping."
+            exit 0
+          fi
+          NEW_VERSION=${NEW_TAG#v}
+          echo "Bumping package.json to $NEW_VERSION"
+          npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Create Pull Request for Release Assets
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: "chore/release-assets-${{ github.ref_name }}"
+          base: ${{ github.ref_name }}
+          commit-message: "chore: update changelog and package version [skip ci]"
+          title: "chore: release assets for ${{ github.ref_name }}"
+          body: |
+            Automated PR updating release assets after semantic-release.
+
+            - Updated `CHANGELOG.md` with release notes
+            - Bumped `package.json` version to match the new tag
+          labels: release
+          add-paths: |
+            CHANGELOG.md
+            package.json
