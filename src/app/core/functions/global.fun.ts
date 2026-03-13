@@ -20,17 +20,90 @@ export function handleError(error: HttpErrorResponse | any): Observable<never> {
 export function isArray(arr: any): boolean {
     return Array.isArray(arr) && arr.length > 0
 }
+
+function extractBalancedJsonFragment(input: string, startIndex: number): string | null {
+    const openingChar = input[startIndex]
+
+    if (openingChar !== '{' && openingChar !== '[')
+        return null
+
+    const expectedClosing = openingChar === '{' ? '}' : ']'
+    const stack: string[] = [expectedClosing]
+
+    let inString = false
+    let isEscaped = false
+
+    for (let index = startIndex + 1; index < input.length; index++) {
+        const char = input[index]
+
+        if (inString) {
+            if (isEscaped) {
+                isEscaped = false
+                continue
+            }
+
+            if (char === '\\') {
+                isEscaped = true
+                continue
+            }
+
+            if (char === '"') {
+                inString = false
+            }
+
+            continue
+        }
+
+        if (char === '"') {
+            inString = true
+            continue
+        }
+
+        if (char === '{') {
+            stack.push('}')
+            continue
+        }
+
+        if (char === '[') {
+            stack.push(']')
+            continue
+        }
+
+        if (char === '}' || char === ']') {
+            const expected = stack.pop()
+
+            if (expected !== char)
+                return null
+
+            if (stack.length === 0)
+                return input.slice(startIndex, index + 1)
+        }
+    }
+
+    return null
+}
+
 export function cleanAndParseJSON(dirtyJsonString: string): any | null {
     try {
-        // Use a regular expression to extract the JSON object match(/\[[^[\]]*\]|{[^}]*}/) //
-        const jsonMatch = dirtyJsonString.match(/(\[|\{)(?:[^[\]{}]|\{(?:[^{}]|\{[^{}]*\})*\}|\[(?:[^[\]]|\[.*?\])*\])*(\]|\})/)
+        for (let index = 0; index < dirtyJsonString.length; index++) {
+            const char = dirtyJsonString[index]
 
-        if (!jsonMatch)
-            return null
-        // throw new Error('No valid JSON array of objects found in the string')
+            if (char !== '{' && char !== '[')
+                continue
 
-        // Parse the extracted JSON string
-        return JSON.parse(jsonMatch[0])
+            const candidate = extractBalancedJsonFragment(dirtyJsonString, index)
+
+            if (!candidate)
+                continue
+
+            try {
+                return JSON.parse(candidate)
+            } catch {
+                continue
+            }
+        }
+
+        return null
     } catch (error) {
 
         // console.log('Error parsing JSON:', error)

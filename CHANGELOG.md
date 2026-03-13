@@ -15,15 +15,6 @@
 * chore: update dependencies and add trustedDependencies section ([f40bb6c](https://github.com/AntoniadisCorp/deepscrape/commit/f40bb6c))
 * chore(release): 0.4.0-beta.12 [skip ci] ([b7bdcae](https://github.com/AntoniadisCorp/deepscrape/commit/b7bdcae))
 
-## 0.4.0-beta.12 (2026-02-09)
-
-* fix: update Node.js runtime to 22 and clean up environment variable files ([dd43bb3](https://github.com/AntoniadisCorp/deepscrape/commit/dd43bb3))
-* fix: update phoneNumber type to allow null values in Users interface ([efb8820](https://github.com/AntoniadisCorp/deepscrape/commit/efb8820))
-* feat: add typed env config, analytics docs, and rate limiting (#codebase) ([8d6f428](https://github.com/AntoniadisCorp/deepscrape/commit/8d6f428))
-* feat(analytics): add real-time online tracking and enhance dashboard metrics ([db55189](https://github.com/AntoniadisCorp/deepscrape/commit/db55189)), closes [#34](https://github.com/AntoniadisCorp/deepscrape/issues/34)
-* feat(auth): add phone verification flows and csrf protection (#codebase) ([5957cd3](https://github.com/AntoniadisCorp/deepscrape/commit/5957cd3))
-* chore: update dependencies and add trustedDependencies section ([f40bb6c](https://github.com/AntoniadisCorp/deepscrape/commit/f40bb6c))
-
 ## 0.4.0-beta.11 (2025-11-29)
 
 * feat(auth): add robust user and admin management features ([f5fc987](https://github.com/AntoniadisCorp/deepscrape/commit/f5fc987))
