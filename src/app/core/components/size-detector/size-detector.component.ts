@@ -1,25 +1,28 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, HostListener, Inject, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { CommonModule, isPlatformBrowser, NgFor } from '@angular/common';
-import { ScreenResizeService, WindowToken } from 'src/app/core/services';
+import { isPlatformBrowser } from '@angular/common';
+import { AuthService, ScreenResizeService, WindowToken } from 'src/app/core/services';
 import { SCREEN_SIZE } from 'src/app/core/enum';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { timer } from 'rxjs/internal/observable/timer';
-
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Subject, of } from 'rxjs';
+import { debounceTime, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-size-detector',
-  imports: [NgFor],
+  imports: [],
   templateUrl: './size-detector.component.html',
   styleUrl: './size-detector.component.scss'
 })
 // size-detector.component.ts
 
 export class SizeDetectorComponent implements AfterViewInit {
-
+  private authService = inject(AuthService)
   private isBrowser: boolean
   private destroyRef = inject(DestroyRef)
   private _window = inject(WindowToken); // or window = inject(WINDOW);
   private animationFrameId: number | null = null;
+  private fingerprint$ = new Subject<any>();
 
   prefix = 'is-';
   sizes = [
@@ -50,8 +53,8 @@ export class SizeDetectorComponent implements AfterViewInit {
 
   ];
 
-  @HostListener("window:resize", ['$event'])
-  private onResize() {
+  @HostListener("window:resize")
+  public onResize() {
     if (this.animationFrameId) {
       this._window.cancelAnimationFrame(this.animationFrameId);
     }
@@ -64,9 +67,26 @@ export class SizeDetectorComponent implements AfterViewInit {
   constructor(
     private elementRef: ElementRef,
     private resizeSvc: ScreenResizeService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private http: HttpClient
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId)
+    // Set up fingerprint posting pipeline once
+    this.fingerprint$
+      .pipe(
+        debounceTime(500),
+        switchMap(data => {
+          const token = this.authService.token;
+          if (!token) return of(null); // Skip if no token
+          const headers = new HttpHeaders({
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Accept': 'application/json',
+          });
+          return this.http.post('/event/guest-fingerprint', data, { headers });
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe();
   }
 
   ngAfterViewInit() {
@@ -93,7 +113,11 @@ export class SizeDetectorComponent implements AfterViewInit {
       return isVisible;
     })
 
-    if (currentSize)
-      this.resizeSvc.onResize(currentSize.id)
+    if (currentSize) {
+      this.resizeSvc.onResize(currentSize.id);
+      // Emit fingerprint data for analytics
+      const fingerprintData = this.resizeSvc.getFingerprintData();
+      this.fingerprint$.next(fingerprintData);
+    }
   }
 }

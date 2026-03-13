@@ -1,0 +1,19 @@
+:host {
+  display: block;
+  --admin-glass-bg: rgb(7 11 14 / 40%);
+  --admin-glass-bg-soft: rgb(7 11 14 / 24%);
+  --admin-glass-border: rgb(148 163 184 / 30%);
+}
+
+.admin-glass-card {
+  @apply transition-all duration-200 dark:text-white;
+}
+
+:host-context(.dark) .admin-glass-card {
+  color: white;
+  background: linear-gradient(to bottom right, var(--admin-glass-bg-soft), var(--admin-glass-bg));
+  border-color: var(--admin-glass-border);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgb(2 6 23 / 22%);
+}

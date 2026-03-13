@@ -1,9 +1,10 @@
 import { Component, HostBinding, inject } from '@angular/core';
+import { BrowserComponent } from 'src/app/core/components';
 import { AiAPIService, CrawlAPIService, LocalStorage } from 'src/app/core/services';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [],
+    imports: [BrowserComponent],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.scss'
 })
@@ -24,16 +25,5 @@ export class DashboardComponent {
   // Handle consent decision
 
   fetchData() {
-    this.crawlservice.getfromCrawl4Ai().subscribe({
-      error: (error) => {
-        console.log(error)
-      },
-      next: (data) => {
-        console.log(data)
-      },
-      complete: () => {
-        console.log('complete')
-      }
-    })
   }
 }

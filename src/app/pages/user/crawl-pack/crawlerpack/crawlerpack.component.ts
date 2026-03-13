@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy, signal, WritableSignal, inject, ChangeDetectionStrategy } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { CartPack, CrawlPack, CrawlPackConfigs, Headers, Users } from 'src/app/core/types';
 import { CartService } from 'src/app/core/services/cart.service';
-import { AsyncPipe, JsonPipe, KeyValuePipe, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, JsonPipe, KeyValuePipe } from '@angular/common';
 import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services';
 import { Observable } from 'rxjs/internal/Observable';
 import { Subscription } from 'rxjs/internal/Subscription';
@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { convertKeysToSnakeCase, switchPackageIcon, switchPackKey, } from 'src/app/core/functions';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MarkdownModule } from 'ngx-markdown';
-import { ClipboardbuttonComponent, CPackComponent, DialogComponent, SnackBarType } from 'src/app/core/components';
+import { ClipboardbuttonComponent, CPackComponent, DialogComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
 import { expandCollapseAnimation, fadeinCartItems } from 'src/app/animations';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
 import { filter } from 'rxjs/internal/operators/filter';
@@ -31,10 +31,7 @@ import { UserInfo } from '@angular/fire/auth';
     selector: 'app-crawlerpack',
     templateUrl: './crawlerpack.component.html',
     styleUrl: './crawlerpack.component.scss',
-    imports: [ReactiveFormsModule, NgIf, NgFor, AsyncPipe, KeyValuePipe, JsonPipe, ReversePipe,
-        MatIcon, MarkdownModule, RippleDirective, RemoveToolbarDirective, MatProgressSpinner, DialogComponent,
-        CPackComponent
-    ],
+    imports: [ReactiveFormsModule, AsyncPipe, KeyValuePipe, JsonPipe, ReversePipe, MatIcon, MarkdownModule, RippleDirective, RemoveToolbarDirective, MatProgressSpinner, DialogComponent, CPackComponent, ReactiveFormsModule, StinputComponent],
     animations: [
         // animation triggers go here
         expandCollapseAnimation,
@@ -48,8 +45,10 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
     private localStorage = inject(LocalStorage)
     readonly clipboardButton = ClipboardbuttonComponent
     previousPacks: any[] = [];
+    packTitleControl: FormControl<string>
 
     protected loadingCartItems: boolean = false
+    protected deletingCart: boolean = false
     protected cartItems$: Observable<any>
     protected itemVisibility: { [key: string]: WritableSignal<boolean> } = {};
     protected itemToJson: { [key: string]: any } = {}
@@ -78,6 +77,11 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
 
         // load most 10 recent crawl packs
         this.loadCrawlPacks()
+
+        this.packTitleControl = new FormControl<string>('', {
+            nonNullable: true,
+            validators: [Validators.required, Validators.maxLength(30)]
+        })
     }
 
     private setCartItems() {
@@ -116,6 +120,12 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
     }
 
     saveCartItems() {
+
+        if (!this.packTitleControl.valid) {
+            this.showSnackbar('Please enter a title before saving.', SnackBarType.info, '', 5000);
+            return
+        }
+        
         let cartItems: CartPack = {} as CartPack; // Initialize with a default value
         this.cartItems$.forEach((item: CartPack) => {
             cartItems = item;
@@ -137,6 +147,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
                 // reset items according to library configuration json format 
                 const packager: any = {
                     uid: item.uid,
+                    title: this.packTitleControl.value.trim(), // <-- Add this line
                     type: item.type,
                     created_at: new Date(),
                     config: {
@@ -173,7 +184,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
     }
 
     deleteCart() {
-        this.loadingCartItems = true
+        this.deletingCart = true
         this.cartService.deleteCart().
             pipe(
                 takeUntil(this.destroy$)
@@ -183,13 +194,13 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
                     this.showSnackbar('Cart deleted successfully!', SnackBarType.success, '', 5000)
                 },
                 error: (error: any) => {
-                    this.loadingCartItems = false
+                    this.deletingCart = false
                     this.dialogOpen.set(false)
                     this.showSnackbar('Failed to delete cart. Please try again.', SnackBarType.error, '', 5000)
                     console.error('Error deleting cart:', error)
                 },
                 complete: () => {
-                    this.loadingCartItems = false
+                    this.deletingCart = false
                     this.dialogOpen.set(false)
                 }
             })

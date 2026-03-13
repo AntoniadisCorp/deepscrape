@@ -1,15 +1,20 @@
+import { provideServerRendering, withRoutes } from '@angular/ssr';
 import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
-import { provideServerRendering } from '@angular/platform-server';
 import { appConfig } from './app.config';
-// import { provideServerRouting } from '@angular/ssr';
-// import { serverRoutes } from './app.routes.server';
-// import { provideServerRoutesConfig } from '@angular/ssr';
-
+import { serverRoutes } from './app.routes.server';
+/* import { initializeAuth, inMemoryPersistence, provideAuth } from '@angular/fire/auth';
+import { initializeApp } from '@angular/fire/app';
+import { environment } from 'src/environments/environment';
+ */
 const serverConfig: ApplicationConfig = {
   providers: [
-    provideServerRendering(),
-    // provideServerRouting(serverRoutes),
-    // provideServerRoutesConfig(serverRoutes),
+    provideServerRendering(withRoutes(serverRoutes)),
+    /* provideAuth(() =>
+      initializeAuth(initializeApp(environment.firebaseConfig), {
+        persistence: inMemoryPersistence,
+        popupRedirectResolver: undefined,
+      })
+    ), */
   ]
 };
 

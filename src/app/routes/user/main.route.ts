@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
+import { AdminGuard } from 'src/app/core/guards';
 import { UserResolver } from 'src/app/core/services';
+import { paywallGuard } from 'src/app/core/guards';
 
 export const MainRoutes: Routes = [
     {
@@ -16,12 +18,14 @@ export const MainRoutes: Routes = [
         path: 'crawlpack',
         loadComponent: () => import('../../pages').then(m => m.CrawlPackComponent),
         loadChildren: () => import('./crawlpack.route').then(m => m.crawlerPackRoutes),
+        canActivate: [paywallGuard],
         data: { title: 'Crawl Pack', animation: 'parentcrawlpack' },
     },
     {
         path: 'operations',
         loadComponent: () => import('../../pages').then(m => m.OperationsComponent),
         resolve: { user: UserResolver },
+        canActivate: [paywallGuard],
         data: { title: 'Operations', animation: 'operations' },
     },
     {
@@ -36,5 +40,11 @@ export const MainRoutes: Routes = [
         loadComponent: () => import('../../pages').then(m => m.AccountSettingsComponent),
         loadChildren: () => import('./settings.route').then(m => m.settingsRoutes),
     },
-
+    {
+        path: 'admin',
+        data: { title: 'Admin', animation: 'admin' },
+        loadComponent: () => import('../../pages').then(m => m.AdminWorkspaceComponent),
+        loadChildren: () => import('./admin.route').then(m => m.AdminRoutes),
+        canActivate: [AdminGuard],
+    },
 ]

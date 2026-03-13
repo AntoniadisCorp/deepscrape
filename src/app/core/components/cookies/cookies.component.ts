@@ -1,6 +1,6 @@
 import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { ConsentModalComponent } from '../consent-modal/consent-modal.component';
-import { NgFor, NgIf } from '@angular/common';
+
 import { BrowserToken, ExtensionService, LocalStorage } from '../../services';
 import { from } from 'rxjs/internal/observable/from';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -10,7 +10,7 @@ import { EXTENSION_ID } from '../../variables';
 
 @Component({
     selector: 'app-cookies',
-    imports: [ConsentModalComponent, NgIf, ReactiveFormsModule],
+    imports: [ConsentModalComponent, ReactiveFormsModule],
     templateUrl: './cookies.component.html',
     styleUrl: './cookies.component.scss'
 })

@@ -1,0 +1,286 @@
+<section class="admin-migration-theme space-y-6">
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Analytics Migration</h2>
+      <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+        Migrate data from <strong>guests</strong> into <strong>metrics_daily</strong>, <strong>metrics_hourly</strong>, <strong>metrics_range</strong>, and <strong>metrics_summary</strong>
+      </p>
+    </div>
+
+    <div class="inline-flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-1">
+      <span class="text-xs uppercase tracking-wide text-amber-800 dark:text-amber-300">Estimated Cost</span>
+      <span class="text-sm font-semibold text-amber-900 dark:text-amber-200">{{ costBadge }}</span>
+    </div>
+  </header>
+
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <article class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
+      <h3 class="font-semibold text-gray5 dark:text-gray-100">Migration Runs History</h3>
+      <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+        Review every migration execution, status, time window, and totals. You can clean run history when needed.
+      </p>
+      <div class="mt-3">
+        <a
+          routerLink="/admin/migration/runs"
+          class="btn btn-sm btn-blue btn-ring btn-ring-blue inline-flex items-center justify-center gap-2">
+          Open Runs
+        </a>
+      </div>
+    </article>
+
+    <article class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
+      <h3 class="font-semibold text-gray5 dark:text-gray-100">Backups History</h3>
+      <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+        See backup snapshots created for migrations, including document counts and last backup time, and delete backup history.
+      </p>
+      <div class="mt-3">
+        <a
+          routerLink="/admin/migration/backups"
+          class="btn btn-sm btn-gray btn-ring btn-ring-blue inline-flex items-center justify-center gap-2">
+          Open Backups
+        </a>
+      </div>
+    </article>
+  </section>
+
+  <form [formGroup]="form" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="xl:col-span-2 space-y-6">
+      <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+        <h3 class="font-semibold text-gray5 dark:text-gray-100">Basic Options</h3>
+
+        <div class="max-w-xs">
+          <app-dropdown
+            [control]="quickRangeDropdownControl"
+            [options]="quickRangeDropdownOptions"
+            [dropDownName]="'Quick Range'"
+          (select)="onQuickRangeSelected($event)"></app-dropdown>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <mat-form-field>
+            <mat-label>Start Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="startDatepicker"
+              formControlName="startDate" />
+              <mat-datepicker-toggle [for]="startDatepicker" matSuffix />
+              <mat-datepicker #startDatepicker />
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>End Date</mat-label>
+              <input
+                matInput
+                [matDatepicker]="endDatepicker"
+                formControlName="endDate" />
+                <mat-datepicker-toggle [for]="endDatepicker" matSuffix />
+                <mat-datepicker #endDatepicker />
+              </mat-form-field>
+
+              <label class="group relative block text-sm">
+                <span class="mb-1 block font-medium text-slate-700 transition-colors duration-200 group-focus-within:text-indigo-600 dark:text-slate-300 dark:group-focus-within:text-indigo-300">
+                  Chunk Size
+                </span>
+                <input
+                  formControlName="chunkSize"
+                  type="number"
+                  min="100"
+                  max="1000"
+                  class="w-full rounded-xl border border-slate-300/90 bg-white/95 px-3 py-2 text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all duration-200 placeholder:text-slate-400 hover:border-indigo-300 hover:shadow-[0_4px_14px_rgba(79,70,229,0.14)] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-indigo-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/60"
+                  />
+                  <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">Recommended: 300-500 per batch</span>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 text-sm text-gray5 dark:text-gray-300">
+                <app-checkbox
+                  class="h-8 font-code inline-flex justify-start w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"
+                  [control]="asBoolControl('includeDaily')"
+                [title]="'metrics_daily'"></app-checkbox>
+                <app-checkbox
+                  class="h-8 font-code inline-flex justify-start w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"
+                  [control]="asBoolControl('includeHourly')"
+                [title]="'metrics_hourly'"></app-checkbox>
+                <app-checkbox
+                  class="h-8 font-code inline-flex justify-start w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"
+                  [control]="asBoolControl('includeRange')"
+                [title]="'metrics_range'"></app-checkbox>
+                <app-checkbox
+                  class="h-8 font-code inline-flex justify-start w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"
+                  [control]="asBoolControl('includeSummary')"
+                [title]="'metrics_summary'"></app-checkbox>
+                <app-checkbox
+                  class="h-8 font-code inline-flex justify-start w-full hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded transition-colors"
+                  [control]="asBoolControl('backupBeforeWrite')"
+                [title]="'backup for fallback'"></app-checkbox>
+              </div>
+
+              <div class="text-xs text-gray5/60 dark:text-gray-400">
+                Pricing baseline (us-central1 docs): reads $0.03 / 100k, writes $0.09 / 100k, deletes $0.01 / 100k.
+              </div>
+            </div>
+
+            <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+              <h3 class="font-semibold text-gray5 dark:text-gray-100">Execution Controls</h3>
+
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  (click)="refreshEstimate()"
+                  appRipple
+                  rippleColor="dark"
+                  class="btn btn-sm btn-gray btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+                  Refresh Estimate
+                </button>
+
+                <button
+                  type="button"
+                  (click)="startMigration()"
+                  [disabled]="running"
+                  appRipple
+                  rippleColor="dark"
+                  class="btn btn-sm btn-green btn-ring btn-ring-green disabled:opacity-50 disabled:cursor-not-allowed">
+                  Start Migration
+                </button>
+
+                <button
+                  type="button"
+                  (click)="stopMigration()"
+                  [disabled]="!running"
+                  appRipple
+                  rippleColor="dark"
+                  class="btn btn-sm btn-orange btn-ring btn-ring-orange disabled:opacity-50 disabled:cursor-not-allowed">
+                  Stop
+                </button>
+
+                <button
+                  type="button"
+                  (click)="validateMigration()"
+                  [disabled]="running"
+                  appRipple
+                  rippleColor="dark"
+                  class="btn btn-sm btn-blue btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+                  Validation Check (Optional)
+                </button>
+
+                <button
+                  type="button"
+                  (click)="fallbackFromBackup()"
+                  [disabled]="running || !lastCompletedRunId"
+                  appRipple
+                  rippleColor="dark"
+                  class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
+                  Fallback / Revert
+                </button>
+              </div>
+
+              @if (validationMessage) {
+                <div class="rounded-lg p-3 text-sm" [ngClass]="validationOk ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-rose-50 text-rose-800 dark:bg-rose-900/20 dark:text-rose-300'">
+                  {{ validationMessage }}
+                </div>
+              }
+            </div>
+          </div>
+
+          <aside class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+            <h3 class="font-semibold text-gray5 dark:text-gray-100">Estimate & Progress</h3>
+
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+                <p class="text-gray5/60 dark:text-gray-400">Source Guests</p>
+                <p class="font-semibold">{{ sourceGuestCount | number }}</p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+                <p class="text-gray5/60 dark:text-gray-400">Target Docs</p>
+                <p class="font-semibold">{{ writeTargets | number }}</p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+                <p class="text-gray5/60 dark:text-gray-400">Reads</p>
+                <p class="font-semibold">{{ estimate.reads | number }}</p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+                <p class="text-gray5/60 dark:text-gray-400">Writes</p>
+                <p class="font-semibold">{{ estimate.writes | number }}</p>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-xs text-gray5/60 dark:text-gray-400 mb-1">
+                <span>{{ progressLabel }}</span>
+                <span>{{ progressPercent }}%</span>
+              </div>
+              <div class="admin-progress-track h-2 rounded-full bg-gray-200 dark:bg-gray6 overflow-hidden">
+                <div class="admin-progress-fill h-2 bg-indigo-600 transition-all duration-300" [style.width.%]="progressPercent"></div>
+              </div>
+            </div>
+
+            <div class="text-xs text-gray5/60 dark:text-gray-400">
+              Processed guests: {{ processedGuests | number }}
+            </div>
+
+            @if (lastCompletedRunId) {
+              <div class="text-xs text-gray5/60 dark:text-gray-400">
+                Latest completed run: <span class="font-mono">{{ lastCompletedRunId }}</span>
+              </div>
+            }
+          </aside>
+        </form>
+
+        <section class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
+          <h3 class="font-semibold text-gray5 dark:text-gray-100 mb-3">Process Log</h3>
+          <div class="max-h-64 overflow-auto rounded-lg border border-gray-300/70 dark:border-gray5 bg-gray-50 dark:bg-gray6 p-3">
+            @if (logs.length === 0) {
+              <p class="text-sm text-gray5/60 dark:text-gray-400">No migration activity yet.</p>
+            }
+            @for (log of logs; track log) {
+              <p class="text-xs font-mono text-gray5 dark:text-gray-300 mb-1">{{ log }}</p>
+            }
+          </div>
+        </section>
+      </section>
+
+      <app-slideinmodal
+        [isOpen]="leaveWarningModalOpen"
+        [title]="'Migration is running'"
+        [position]="'center'"
+        [maxWidth]="'max-w-xl'"
+        [loading]="leaveActionInProgress"
+        [hasBlur]="true">
+        <div class="space-y-4 text-sm text-gray5 dark:text-gray-300">
+          <p>
+            Migration is still in progress. Leaving now can interrupt visibility while writes are being finalized.
+          </p>
+          <p class="text-amber-700 dark:text-amber-300 font-medium">
+            Choose an action before leaving this page.
+          </p>
+
+          <div class="flex flex-wrap gap-2 justify-end pt-2">
+            <button
+              type="button"
+              (click)="stayOnMigrationPage()"
+              appRipple
+              rippleColor="dark"
+              class="btn btn-sm btn-gray btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+              Stay Here
+            </button>
+            <button
+              type="button"
+              (click)="confirmStopAndLeave(false)"
+              [disabled]="leaveActionInProgress"
+              appRipple
+              rippleColor="dark"
+              class="btn btn-sm btn-orange btn-ring btn-ring-orange disabled:opacity-50 disabled:cursor-not-allowed">
+              Stop & Leave
+            </button>
+            <button
+              type="button"
+              (click)="confirmStopAndLeave(true)"
+              [disabled]="leaveActionInProgress || !lastCompletedRunId"
+              appRipple
+              rippleColor="dark"
+              class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
+              Stop & Revert Fallback
+            </button>
+          </div>
+        </div>
+      </app-slideinmodal>

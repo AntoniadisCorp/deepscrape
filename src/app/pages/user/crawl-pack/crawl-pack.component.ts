@@ -1,7 +1,8 @@
-import { NgIf } from '@angular/common';
-import { Component, HostBinding } from '@angular/core';
+
+import { ChangeDetectorRef, Component, DestroyRef, HostBinding, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, ChildrenOutletContexts, NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { fadeInOutAnimation, smoothfadeAnimation } from 'src/app/animations';
 import { AppTabsComponent } from 'src/app/core/components';
@@ -15,21 +16,27 @@ import { LinkTabs } from 'src/app/core/types';
     animations: [ smoothfadeAnimation]
 })
 export class CrawlPackComponent {
-
+  private contexts = inject(ChildrenOutletContexts)
   @HostBinding('class') classes = 'w-full';
 
   protected sourceTabUrl: string = 'crawlpack'
   protected tabs: LinkTabs[] = []
 
   private routerEventSubscription: Subscription
-  constructor(private route: ActivatedRoute, private router: Router
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute, 
+    private router: Router,
+    private destroyRef: DestroyRef
   ) {
+
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
       if (event instanceof NavigationStart) {
         // this.isLoading = true;
       } else if (event instanceof NavigationEnd) {
 
         this.onRouterChangeSetTabs()
+        
       }
     })
   }
@@ -37,6 +44,8 @@ export class CrawlPackComponent {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
     // ['crawlpack', 'machines', 'browserconfig', 'crawlerconfig', 'crawlresults', 'extraction']
+
+    
 
     const newTabs: LinkTabs[] = [
       { label: 'Crawler Pack', active: false, icon: 'inventory_2', link: '', index: 'crawlpack' },
@@ -57,7 +66,11 @@ export class CrawlPackComponent {
 
   private onRouterChangeSetTabs() {
 
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap
+    .pipe(
+      takeUntilDestroyed(this.destroyRef)
+    )
+    .subscribe(params => {
       const urlPath = this.router.url
       const urlWithoutHash = urlPath.split('#')[0]
       const pathParts = urlWithoutHash.split('/')
@@ -74,8 +87,9 @@ export class CrawlPackComponent {
   }
 
   // Helper method to get the animation data from the router outlet
-  getRouteAnimationData(outlet: RouterOutlet) {
-    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation'];
+ getAnimationData() {
+    return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
+      // return outlet?.activatedRouteData?.['animation']
   }
 
   ngOnDestroy(): void {

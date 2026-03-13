@@ -1,0 +1,230 @@
+<section class="admin-migration-runs-theme space-y-6">
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Migration Runs</h2>
+      <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+        Full history of migration executions with status, options, counters, and estimated cost.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <a
+        routerLink="/admin/migration"
+        class="btn btn-sm btn-gray btn-ring btn-ring-blue inline-flex items-center justify-center">
+        Back to Migration Tool
+      </a>
+      <button
+        type="button"
+        (click)="refreshRuns()"
+        class="btn btn-sm btn-blue btn-ring btn-ring-blue">
+        Refresh
+      </button>
+      <button
+        type="button"
+        (click)="requestDeleteAllRunHistory()"
+        [disabled]="deletingAll || runs.length === 0"
+        class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
+        Delete All History
+      </button>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="rounded-lg p-3 text-sm bg-rose-50 text-rose-800 dark:bg-rose-900/20 dark:text-rose-300">
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && totalItems > 0) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div class="admin-glass-card rounded-xl border border-blue-300/40 dark:border-blue-500/30 bg-blue-50/60 dark:bg-blue-900/10 p-4">
+        <p class="text-xs text-blue-700/80 dark:text-blue-300/80">Page Items</p>
+        <p class="text-xl font-semibold text-blue-800 dark:text-blue-200">{{ runs.length }}</p>
+        <p class="text-xs text-blue-700/70 dark:text-blue-300/70">Completed: {{ pageCompletedRuns }} · Running: {{ pageRunningRuns }}</p>
+      </div>
+      <div class="admin-glass-card rounded-xl border border-emerald-300/40 dark:border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
+        <p class="text-xs text-emerald-700/80 dark:text-emerald-300/80">Processed Guests (Page)</p>
+        <p class="text-xl font-semibold text-emerald-800 dark:text-emerald-200">{{ pageProcessedGuests | number }}</p>
+        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">Failed on page: {{ pageFailedRuns }}</p>
+      </div>
+      <div class="admin-glass-card rounded-xl border border-violet-300/40 dark:border-violet-500/30 bg-violet-50/60 dark:bg-violet-900/10 p-4">
+        <p class="text-xs text-violet-700/80 dark:text-violet-300/80">Estimated Cost (Page)</p>
+        <p class="text-xl font-semibold text-violet-800 dark:text-violet-200">${{ pageEstimatedCost | number : '1.2-4' }}</p>
+        <p class="text-xs text-violet-700/70 dark:text-violet-300/70">Page {{ currentPage }} of {{ totalPages }}</p>
+      </div>
+      <div class="admin-glass-card rounded-xl border border-amber-300/40 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-900/10 p-4">
+        <p class="text-xs text-amber-700/80 dark:text-amber-300/80">All Pages Total Runs</p>
+        <p class="text-xl font-semibold text-amber-800 dark:text-amber-200">{{ totalItems | number }}</p>
+        <p class="text-xs text-amber-700/70 dark:text-amber-300/70">{{ totalPages }} total pages</p>
+      </div>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
+      Loading migration runs...
+    </div>
+  }
+
+  @if (!loading && runs.length === 0) {
+    <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
+      No migration run history found.
+    </div>
+  }
+
+  @if (!loading && runs.length > 0) {
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      @for (run of runs; track run) {
+        <article
+          class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="font-mono text-xs text-gray5/70 dark:text-gray-400 break-all">{{ run.id }}</p>
+              <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+                {{ run.optionsStartDate }} → {{ run.optionsEndDate }} · chunk {{ run.chunkSize }}
+              </p>
+            </div>
+            <span class="text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-1" [ngClass]="badgeClass(run.status)">
+              {{ formatStatus(run.status) }}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+              <p class="text-gray5/60 dark:text-gray-400">Source Guests</p>
+              <p class="font-semibold">{{ run.sourceGuestCount | number }}</p>
+            </div>
+            <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+              <p class="text-gray5/60 dark:text-gray-400">Processed Guests</p>
+              <p class="font-semibold">{{ run.processedGuests | number }}</p>
+            </div>
+            <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+              <p class="text-gray5/60 dark:text-gray-400">Target Docs</p>
+              <p class="font-semibold">{{ run.writeTargets | number }}</p>
+            </div>
+            <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+              <p class="text-gray5/60 dark:text-gray-400">Estimated Cost</p>
+              <p class="font-semibold">${{ run.estimateCostUsd | number : '1.4-4' }}</p>
+            </div>
+          </div>
+          <div class="text-xs text-gray5/70 dark:text-gray-300 space-y-1">
+            <p>Started: {{ run.startedAt ? (run.startedAt | date: 'medium') : '-' }}</p>
+            <p>Completed: {{ run.completedAt ? (run.completedAt | date: 'medium') : '-' }}</p>
+            <p>Failed: {{ run.failedAt ? (run.failedAt | date: 'medium') : '-' }}</p>
+            <p>Stopped: {{ run.stoppedAt ? (run.stoppedAt | date: 'medium') : '-' }}</p>
+            <p>Fallback: {{ run.fallbackAt ? (run.fallbackAt | date: 'medium') : '-' }}</p>
+            <p>Estimate reads/writes: {{ run.estimateReads | number }} / {{ run.estimateWrites | number }}</p>
+          </div>
+          <div class="flex justify-end">
+            <button
+              type="button"
+              (click)="requestDeleteRun(run.id)"
+              class="btn btn-sm btn-red btn-ring btn-ring-red">
+              Delete Run
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (!loading && totalItems > 0) {
+    <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-gray5/70 dark:text-gray-300">
+          Showing {{ runs.length }} of {{ totalItems }} runs · Page {{ currentPage }} / {{ totalPages }}
+        </p>
+        @if (totalPages > 1) {
+          <div class="flex items-center gap-2">
+            <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
+              <button
+                [disabled]="currentPage === 1"
+                type="button"
+                (click)="onPageChanged(currentPage - 1)"
+                class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+                Previous
+              </button>
+            </div>
+            <div class="flex justify-center gap-1">
+              @if (totalPages > 7) {
+                <button
+                  [class]="currentPage === 1 ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]' : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  (click)="onPageChanged(1)">
+                  1
+                </button>
+              }
+              @if (totalPages > 7 && currentPage > 4) {
+                <button
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]"
+                  (click)="onPageChanged(currentPage - 3)">
+                  &hellip;
+                </button>
+              }
+              @for (page of getVisiblePageNumbers(); track page) {
+                <button
+                  [class]="currentPage === page ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]' : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  (click)="onPageChanged(page)">
+                  {{ page }}
+                </button>
+              }
+              @if (totalPages > 7 && currentPage < totalPages - 3) {
+                <button
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]"
+                  (click)="onPageChanged(currentPage + 3)">
+                  &hellip;
+                </button>
+              }
+              @if (totalPages > 7) {
+                <button
+                  [class]="currentPage === totalPages ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]' : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  (click)="onPageChanged(totalPages)">
+                  {{ totalPages }}
+                </button>
+              }
+            </div>
+            <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
+              <button
+                [disabled]="currentPage === totalPages"
+                type="button"
+                (click)="onPageChanged(currentPage + 1)"
+                class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+                Next
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>
+
+<app-slideinmodal
+  [isOpen]="confirmModalOpen"
+  [title]="confirmModalTitle"
+  [position]="'center'"
+  [maxWidth]="'max-w-xl'"
+  [loading]="confirmModalLoading"
+  [hasBlur]="true">
+  <div class="space-y-4 text-sm text-gray5 dark:text-gray-300">
+    <p>{{ confirmModalMessage }}</p>
+
+    <div class="flex flex-wrap gap-2 justify-end pt-2">
+      <button
+        type="button"
+        (click)="closeConfirmModal()"
+        [disabled]="confirmModalLoading"
+        class="btn btn-sm btn-gray btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeletion()"
+        [disabled]="confirmModalLoading"
+        class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ confirmModalActionLabel }}
+      </button>
+    </div>
+  </div>
+</app-slideinmodal>

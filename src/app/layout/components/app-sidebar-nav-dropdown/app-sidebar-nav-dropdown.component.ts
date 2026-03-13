@@ -1,10 +1,10 @@
-import { NgClass, NgIf, NgTemplateOutlet } from '@angular/common';
+import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { Component, Input, TemplateRef } from '@angular/core';
 import { sidebarItemAnimation } from 'src/app/animations';
 
 @Component({
     selector: 'app-sidebar-nav-dropdown',
-    imports: [NgClass, NgIf, NgTemplateOutlet,],
+    imports: [NgClass, NgTemplateOutlet],
     templateUrl: './app-sidebar-nav-dropdown.component.html',
     styleUrl: './app-sidebar-nav-dropdown.component.scss',
     animations: [

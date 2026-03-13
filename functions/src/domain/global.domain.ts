@@ -1,5 +1,7 @@
 /* eslint-disable object-curly-spacing */
-import { UserInfo } from "firebase-functions/lib/common/providers/identity"
+
+import { UserInfo } from "firebase-admin/auth"
+
 
 export type Users = {
     // Firebase UID
@@ -7,14 +9,15 @@ export type Users = {
     email: string | null
     username: string
     details?: UserDetails
-    notifications?: any
-    alerts?: any
-    settings?: any
+    notifications?: UserNotifications
+    alerts?: UserAlerts
+    settings?: UserSettings
     providerParent: string
     providerId: string
     providerData: UserInfo[]
     mfa_enabled?: boolean
     emailVerified: boolean
+    lastSeen: Date
     last_login_at: Date // Timestamp | null
     created_At: Date
     updated_At?:Date
@@ -35,8 +38,7 @@ export type Users = {
 
     // User Authorization fields
     role?: string
-    plan?: "free" | "pro" | "enterprise"
-    isAdmin?: boolean
+    plan?: "free" | "trial" | "starter" | "pro" | "enterprise"
 
     // Profile status
     profileStatus?: ProfileStatus
@@ -105,6 +107,7 @@ export type loginHistoryInfo = {
     guestId?: string // Optional field to store geolocation data
     signOutTime?: Date // Optional field to store sign out time
     sessionKey?: string // Optional field to link to a session
+    deviceFingerprintHash?: string
 }
 
 export type Guest = {
@@ -126,6 +129,7 @@ export type Guest = {
   latitude: number
   longitude: number
   location: string
+  fingerprint: string // Unique fingerprint for guest tracking
   createdAt: Date
   lastSeen: Date
   linkedAt?: Date | null
@@ -142,4 +146,48 @@ export type UserSocialLinks = {
     engineerStatus?: string
     website?: string
     stackoverflow?: string
+}
+
+export type UserNotifications = {
+    emailNotifications?: boolean
+    pushNotifications?: boolean
+    marketingEmails?: boolean
+    securityAlerts?: boolean
+    preferences?: { [key: string]: boolean | string | number }
+}
+
+export type UserAlerts = {
+    unreadCount?: number
+    alerts?: Array<{
+        id: string
+        type: "info" | "warning" | "error" | "success"
+        title: string
+        message: string
+        read?: boolean
+        createdAt: Date
+        actions?: Array<{
+            label: string
+            action: string
+            style?: "primary" | "secondary" | "danger"
+        }>
+    }>
+}
+
+export type UserSettings = {
+    theme?: "light" | "dark" | "auto"
+    language?: string
+    timezone?: string
+    dateFormat?: string
+    privacySettings?: {
+        profileVisibility?: "public" | "private" | "friends"
+        showEmail?: boolean
+        showLocation?: boolean
+        allowDataCollection?: boolean
+    }
+    communicationSettings?: {
+        emailFrequency?: "immediate" | "daily" | "weekly" | "never"
+        allowMarketingEmails?: boolean
+        allowNotifications?: boolean
+    }
+    preferences?: { [key: string]: boolean | string | number }
 }

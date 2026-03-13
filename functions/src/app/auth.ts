@@ -1,10 +1,26 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
-import { db, dbName, getSecretFromManager, saveToSecretManager/* , auth as adminAuth */ } from "./config"
-import { auth, firestore } from "firebase-functions/v1"
+import { FieldPath, FieldValue } from "firebase-admin/firestore"
+import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
+import { auth } from "firebase-functions/v1"
+import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
-import { redis } from "./cacheConfig"
+import { env } from "../config/env"
+// import { redis } from "./cacheConfig"
+
+const bootstrapAdminEmails = new Set(
+    env.ADMIN_EMAILS
+        .map((item) => item.toLowerCase())
+)
+
+const isBootstrapAdmin = (email?: string | null): boolean => {
+    if (!email) {
+        return false
+    }
+
+    return bootstrapAdminEmails.has(email.toLowerCase())
+}
 
 
 export const trackGuest = auth
@@ -13,11 +29,21 @@ export const trackGuest = auth
         try {
             // Assume we store guest_id in Firestore temp or pass it during signup
             const guestId = user.customClaims?.guestId || null
+            const today = new Date().toISOString().split("T")[0]
+            const hour = new Date().getHours()
+
             const userDoc = {
                 analytics: {},
+                // Store creation timestamp for analytics
+                created_At: new Date(),
+                loginMetricsId: guestId, // Link to guest if conversion
             }
 
+            // Use batch for atomic updates to ensure consistency
+            const batch = db.batch()
+
             if (guestId) {
+                // Mark guest as converted
                 const guestRef = db.collection("guests").doc(guestId)
                 const guestSnap = await guestRef.get()
                 if (guestSnap.exists) {
@@ -28,20 +54,183 @@ export const trackGuest = auth
                         mergedAt: Date.now(),
                     }
 
-                    // Mark guest as converted
-                    await guestRef.update({
+                    batch.update(guestRef, {
                         uid: user.uid,
-                        linked: new Date(),
+                        linkedAt: new Date(),
                     })
                 }
             }
-            await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
 
-            console.log(`User ${user.uid} created with analytics merged.`)
+            // Create user document
+            const userRef = db.collection("users").doc(user.uid)
+            batch.set(userRef, userDoc, { merge: true })
+
+            // Update daily analytics metrics for real-time dashboard
+            const dailyRef = db.collection("metrics_daily").doc(today)
+            const dailyUpdate = {
+                date: today,
+                timestamp: FieldValue.serverTimestamp(),
+                newUsers: FieldValue.increment(1),
+                totalUsers: FieldValue.increment(1),
+                activeUsers: FieldValue.increment(1),
+                [`usersByHour.${hour}`]: FieldValue.increment(1),
+                updatedAt: FieldValue.serverTimestamp(),
+            }
+
+            if (guestId) {
+                dailyUpdate.guestConversions = FieldValue.increment(1)
+            }
+
+            batch.set(dailyRef, dailyUpdate, { merge: true })
+
+            // Update dashboard summary for real-time UI updates
+            const summaryRef = db.collection("metrics_summary").doc("dashboard")
+            const summaryUpdate: Record<string, FieldValue> = {
+                totalUsers: FieldValue.increment(1),
+                activeUsers: FieldValue.increment(1),
+                lastUpdated: FieldValue.serverTimestamp(),
+                computedAt: FieldValue.serverTimestamp(),
+            }
+
+            if (guestId) {
+                summaryUpdate.guestConversions = FieldValue.increment(1)
+            }
+
+            batch.set(summaryRef, summaryUpdate, { merge: true })
+
+            // Initialize user login metrics
+            const userMetricsRef = db.collection("users").doc(user.uid).collection("login_metrics").doc("summary")
+            batch.set(userMetricsRef, {
+                userId: user.uid,
+                totalLogins: 0,
+                loginStreak: 0,
+                longestStreak: 0,
+                wasGuest: !!guestId,
+                guestId: guestId || null,
+                linkedAt: guestId ? FieldValue.serverTimestamp() : null,
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+            })
+
+            await batch.commit()
+            console.log(`✅ User ${user.uid} created with real-time analytics updated (conversion: ${!!guestId})`)
         } catch (err) {
-            console.error("Error merging guest data into user:", err)
+            console.error("❌ Error merging guest data into user:", err)
         }
     })
+
+
+export const setDefaultAdminRole = auth
+    .user()
+    .onCreate(async (user/* , context: EventContext */) => {
+        try {
+            const role = "admin"
+
+            if (isBootstrapAdmin(user.email)) {
+                await adminAuth.setCustomUserClaims(user.uid, { role })
+                // Only set role in Firestore if defined
+                const userDoc: Record<string, unknown> = {}
+                if (role !== undefined) {
+                    userDoc.role = role
+                }
+                await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
+            }
+        } catch (error) {
+            console.error("Error setting default admin role:", error)
+            throw new HttpsError("internal", "Error setting default admin role", error)
+        }
+    })
+
+export const setDefaultRole = auth
+    .user()
+    .onCreate(async (user/* , context: EventContext */) => {
+        try {
+            if (isBootstrapAdmin(user.email)) {
+                return
+            }
+
+            const role = "user"
+
+            await adminAuth.setCustomUserClaims(user.uid, { role })
+            // Only set role in Firestore if defined
+            const userDoc: Record<string, unknown> = {}
+            if (role !== undefined) {
+                userDoc.role = role
+            }
+            await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
+        } catch (error) {
+            console.error("Error setting default role:", error)
+            throw new HttpsError("internal", "Error setting default role", error)
+        }
+    })
+
+export const linkGuestToUser = onCallv2(async (req) => {
+    try {
+        const authenticatedUid = req.auth?.uid
+        if (!authenticatedUid) {
+            throw new HttpsError("unauthenticated", "User must be authenticated")
+        }
+
+        const guestIdRaw = req.data?.guestId
+        const uidRaw = req.data?.uid
+        const guestId = typeof guestIdRaw === "string" ? guestIdRaw.trim() : ""
+        const uid = typeof uidRaw === "string" ? uidRaw.trim() : authenticatedUid
+
+        if (!guestId) {
+            throw new HttpsError("invalid-argument", "guestId is required")
+        }
+
+        if (uid !== authenticatedUid) {
+            throw new HttpsError("permission-denied", "uid must match authenticated user")
+        }
+
+        const guestRef = db.collection("guests").doc(guestId)
+        const userRef = db.collection("users").doc(uid)
+        const guestSnap = await guestRef.get()
+        const guestInfo = guestSnap.exists ? guestSnap.data() : null
+
+        const batch = db.batch()
+        batch.set(guestRef, {
+            uid,
+            linkedAt: FieldValue.serverTimestamp(),
+            updated_At: FieldValue.serverTimestamp(),
+        }, { merge: true })
+
+        if (guestInfo) {
+            const details = {
+                latitude: typeof guestInfo.latitude === "number" ? guestInfo.latitude : 0,
+                longitude: typeof guestInfo.longitude === "number" ? guestInfo.longitude : 0,
+                country: typeof guestInfo.country === "string" ? guestInfo.country : "Unknown",
+                geo: guestInfo.geo || { continent: "Unknown", region: "Unknown" },
+                region: typeof guestInfo.region === "string" ? guestInfo.region : "Unknown",
+                timezone: typeof guestInfo.timezone === "string" ? guestInfo.timezone : "UTC",
+                location: typeof guestInfo.location === "string" ? guestInfo.location : "Unknown",
+                updated_At: FieldValue.serverTimestamp(),
+            }
+
+            batch.set(userRef, {
+                uid,
+                details,
+                updated_At: FieldValue.serverTimestamp(),
+            }, { merge: true })
+        }
+
+        await batch.commit()
+
+        return {
+            ok: true,
+            linkedUid: uid,
+            guestId,
+            guestInfo,
+        }
+    } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error
+        }
+        console.error("Error linking guest to user:", error)
+        throw new HttpsError("internal", "Failed to link guest to user")
+    }
+})
 
 // Firebase Function: Create API Key
 export const createMyApiKey = onCallv2(async (req) => {
@@ -165,19 +354,21 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
     }
 })
 
-export const enqueueCrawlOperation = firestore
-    .database(dbName)
-    .document("users/{userId}/operations/{operationId}")
-    .onWrite(async (snap, context) => {
-        const after = snap.after.exists ? snap.after.data() : null
+export const enqueueCrawlOperation = onDocumentWritten(
+    {
+        document: "users/{userId}/operations/{operationId}",
+        database: dbName,
+    },
+    async (event) => {
+        const after = event.data?.after?.exists ? event.data.after.data() : null
         // check to see if the operation is ready to be processed or to be Scheduled
         if (!after || !(after.status === "Start" || after.status === "Scheduled")) {
             return null // Ignore non-ready or deleted operations
         }
-        const operationId = context.params.operationId
-        const userId = context.params.userId
+        const operationId = event.params.operationId
+        const userId = event.params.userId
 
-        const task = {
+        const operation = {
             operationId,
             scheduled_At: after?.scheduled_At,
             status: after.status,
@@ -186,13 +377,14 @@ export const enqueueCrawlOperation = firestore
             urls: after?.urls,
             modelAI: after?.modelAI,
             metadataId: after?.metadataId,
-            sumPrompt: after?.sumPrompt,
+            prompt: after?.prompt,
         }
 
         // const { client: redis, release } = await getRedisClient()
         try {
-            const num = await redis.lpush("operation_queue", JSON.stringify(task))
-            console.log(`Operation ${operationId} queued successfully in position`, num)
+            // const num = await redis.lpush("operation_queue", JSON.stringify(operation))
+            // console.log(`Operation ${operationId} queued successfully in position`, num)
+            console.log(`Operation ${operationId} queued successfully`, operation)
             return true
         } catch (error) {
             console.error(`Error enqueuing operation ${operationId}:`, error)
@@ -200,7 +392,8 @@ export const enqueueCrawlOperation = firestore
         } /* finally {
             release() // Always release the client back to the pool
         } */
-    })
+    }
+)
 
 export const getOperationsPaging = onCallv2(
 
@@ -208,52 +401,114 @@ export const getOperationsPaging = onCallv2(
         const { currPage = 1, pageSize = 10 } = req.data
 
         try {
-            const userId = req?.auth?.uid
-            if (!userId) {
+            // Early validation
+            if (!req?.auth?.uid) {
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
+            if (currPage < 1 || pageSize < 1) {
+                throw new HttpsError("invalid-argument", "Invalid page or size parameters.")
+            }
 
-            const operationsRef = db.collection(`users/${userId}/operations`).orderBy("created_At", "desc")
+            const userId = req.auth.uid
+            const operationsRef = db.collection(`users/${userId}/operations`)
+
+            const [totalSnapshot, firstPageSnapshot] = await Promise.all([
+                operationsRef.count().get(),
+                operationsRef
+                    .orderBy("created_At", "desc")
+                    .limit(pageSize)
+                    .get(),
+            ])
+
+            const inTotal = totalSnapshot.data()?.count || 0
+            // Calculate total pages
+            const totalPages = Math.ceil(inTotal / pageSize)
 
             // Check if collection exists
-            const snapshot = await operationsRef.get()
-            if (snapshot.empty) {
+            // Early return if no operations
+            if (inTotal === 0) {
                 return {
                     error: null,
                     operations: [],
-                    totalPages: 1,
+                    totalPages: 0,
                     inTotal: 0,
-                    message: "Operations retrieved successfully",
+                    message: "No operations found",
                 }
             }
 
-            // Get total count of operations
-            const totalOperationsQuery = await operationsRef.count().get()
-            const inTotal = totalOperationsQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
+            // Validate page number
             if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
+                throw new HttpsError("invalid-argument", `Page ${currPage} exceeds total pages (${totalPages}).`)
             }
 
-            let query = operationsRef.limit(pageSize)
+            let operationDocs
 
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await operationsRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
+            // For first page, use the result we already have
+            if (currPage === 1) {
+                operationDocs = firstPageSnapshot.docs
+            } else {
+                // For other pages, get the last document of the previous page
+                const lastVisibleDoc = await operationsRef
+                    .orderBy("created_At", "desc")
+                    .limit((currPage - 1) * pageSize)
+                    .get()
+                    .then((snap) => snap.docs[snap.size - 1])
+
+                // Get the requested page
+                const operationsSnapshot = await operationsRef
+                    .orderBy("created_At", "desc")
+                    .startAfter(lastVisibleDoc)
+                    .limit(pageSize)
+                    .get()
+
+                operationDocs = operationsSnapshot.docs
+            }
+
+            // Extract operation IDs for metrics lookup
+            const operationIds = operationDocs.map((doc) => doc.id)
+
+            // Fetch metrics in batches to avoid potential limitations
+            const BATCH_SIZE = 10
+            const metricsPromises = []
+
+            for (let i = 0; i < operationIds.length; i += BATCH_SIZE) {
+                const batchIds = operationIds.slice(i, i + BATCH_SIZE)
+                metricsPromises.push(
+                    db.collection("operation_metrics")
+                        .where(FieldPath.documentId(), "in", batchIds)
+                        .get()
+                )
+            }
+
+            // Wait for all metrics queries to complete
+            const metricsSnapshots = await Promise.all(metricsPromises)
+
+            // Create a map of operation ID to metrics data
+            const metricsMap = new Map()
+            metricsSnapshots.forEach((snapshot) => {
+                snapshot.docs.forEach((doc) => {
+                    metricsMap.set(doc.id, doc.data())
+                })
+            })
+
+            // Merge operations with their metrics
+            const operations = operationDocs.map((doc) => {
+                const operationData = {
+                    id: doc.id,
+                    ...doc.data(),
                 }
-            }
 
-            // Fetch operations for the current page
-            const operationsSnapshot = await query.get()
-            const operations = operationsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
+                // Merge metrics data if available
+                const metrics = metricsMap.get(doc.id)
+                if (metrics) {
+                    return {
+                        ...operationData,
+                        metrics,
+                    }
+                }
+
+                return operationData
+            })
 
             return {
                 error: null,
@@ -264,7 +519,11 @@ export const getOperationsPaging = onCallv2(
             }
         } catch (error) {
             console.error("Error retrieving operations:", error)
-            throw new HttpsError("internal", "Failed to retrieve operations by pagination.")
+            throw new HttpsError(
+                (error instanceof HttpsError ? error.code : "internal"),
+                error instanceof HttpsError ? error.message : "Failed to retrieve operations.",
+                error
+            )
         }
     })
 
@@ -493,7 +752,7 @@ export const receiveLogs = onRequest(async (request, response) => {
         logs.forEach((log: any) => {
             console.log(log, authHeader) // Log to Firebase Function logs for debugging
             // Optionally, store in Firestore or another database
-            // Example: admin.firestore().collection('logs').add(JSON.parse(log));
+            // Example: admin.firestore().collection('logs').add(JSON.parse(log))
         })
         await Promise.all(logPromises)
         response.sendStatus(200) // Respond with success

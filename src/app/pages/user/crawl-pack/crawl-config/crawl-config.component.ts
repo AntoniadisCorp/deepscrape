@@ -1,5 +1,5 @@
-import { AsyncPipe, DatePipe, DOCUMENT, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, inject, Inject } from '@angular/core';
+import { AsyncPipe, DatePipe, JsonPipe, NgClass } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, inject, Inject, DOCUMENT } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -21,9 +21,7 @@ import { CrawlConfig, CrawlerRunConfig, DropDownOption } from 'src/app/core/type
 
 @Component({
   selector: 'app-crawl-config',
-  imports: [ReactiveFormsModule, NgIf, MatIcon, RadioToggleComponent, FormControlPipe, NgClass,
-    StinputComponent, DropdownComponent, AsyncPipe, DatePipe, NgFor, MatProgressSpinner, JsonPipe
-  ],
+  imports: [ReactiveFormsModule, MatIcon, RadioToggleComponent, FormControlPipe, NgClass, StinputComponent, DropdownComponent, AsyncPipe, DatePipe, MatProgressSpinner, JsonPipe],
   templateUrl: './crawl-config.component.html',
   styleUrl: './crawl-config.component.scss'
 })
@@ -55,6 +53,7 @@ export class CrawlConfigComponent {
   protected showLink: boolean
   protected newConfigOpened: boolean
   protected savingNewConfig: boolean
+  protected editMode: boolean
   protected showSettings: boolean
 
   protected cachModeOptions: DropDownOption[] = []
@@ -108,7 +107,8 @@ export class CrawlConfigComponent {
     this.setCrawlConfiguration()
 
     // set toggle buttons
-    this.showLink = this.showSettings = this.newConfigOpened = this.savingNewConfig = false
+    this.showLink = this.showSettings = this.editMode = 
+      this.newConfigOpened = this.savingNewConfig = false
   }
 
   ngAfterViewInit(): void {
@@ -118,12 +118,12 @@ export class CrawlConfigComponent {
     this.cdr.detectChanges()
   }
 
-
   initForm() {
 
     this.activeLink = ''
 
-    this.configForm = this.fb.group({
+    this.configForm = this.fb.group<CrawlerRunConfig | any>({
+      created_at: this.fb.control(null, { nonNullable: true }) as FormControl<number | null>,
       // Crawler Configuration Title
       title: this.fb.control('', {
         nonNullable: true, validators: [
@@ -305,13 +305,21 @@ export class CrawlConfigComponent {
     )
 
   }
-
   getAndFilterConfirmForm(): CrawlerRunConfig {
     // get form values
     const config = this.configForm.getRawValue()
     const newConfig = { ...config }; // Create a copy of the config object
     delete newConfig.title; // Remove the 'title' attribute from the config object
+    delete newConfig.created_at; // Remove the 'created_at' attribute from the config object
 
+    const fields = 
+      ['delayBeforeReturnHtml', 'wordCountThreshold', 'pageTimeout', 
+       'screenshotHeightThreshold', 'screenshotWaitFor','scrollDelay',
+       'imageDescriptionMinWordThreshold', 'imageScoreThreshold'
+      ]
+
+    // Convert specific fields to numbers
+    this.convertFormFieldsToNumber(newConfig, fields)
 
     // Filter out null, unchanged, or default values
     const filteredConfig: CrawlerRunConfig = Object.keys(newConfig).reduce((acc: any, key) => {
@@ -331,6 +339,17 @@ export class CrawlConfigComponent {
     }, {})
 
     return filteredConfig
+  }
+
+  private convertFormFieldsToNumber(config: any, fields: string[]) {
+    fields.forEach(field => {
+      if (config[field] !== null && config[field] !== undefined && config[field] !== '') {
+        const parsedValue = parseFloat(config[field]);
+        if (!isNaN(parsedValue)) {
+          config[field] = parsedValue;
+        }
+      }
+    })
   }
 
   private setCrawlConfiguration() {
@@ -364,52 +383,89 @@ export class CrawlConfigComponent {
 
     // reset form to default values
     this.configForm.reset()
+
+    this.configForm.enable() // enable form
     console.log('reset form', this.configForm.valid, this.configForm.errors)
   }
 
   saveCrawlConfiguration() {
 
     // validate form before saving
-    if (this.configForm.invalid)
+    if (this.configForm.invalid || (this.editMode && this.configForm.pristine))
       return
-
+    
+    this.configForm.disable();
+    
     // get form values
-    const config: CrawlerRunConfig = this.getAndFilterConfirmForm()
+    const config = this.getAndFilterConfirmForm()
+    const now = Date.now();
+    
     const newCrawlConfig: CrawlConfig = {
+      ...!this.editMode ? {} : {id: this.configSelectedById},
       title: this.configForm.get('title')?.value,
       config,
-      created_At: Date.now(),
+      ...!this.editMode ? {created_At: now} : {updated_At: now, created_At: this.configForm.get('created_at')?.value},
     }
-
-    // console.log('newCrawlConfig', newCrawlConfig)
 
     // loading state
     this.savingNewConfig = true
 
     this.crawlConfigSubs = this.packService.storeCrawlConfig(newCrawlConfig)
       .subscribe({
-        next: (res) => {
-          //  console.log(res)
-        },
+        next: (res) => {},
         error: (err) => {
-          console.log(err)
+          console.log(err);
+          this.savingNewConfig = false;
           // show snackbar Error
-          this.showSnackbar(err || "", SnackBarType.error, '', 5000)
+          this.showSnackbar(err || "", SnackBarType.error, '', 5000);
+          this.configForm.enable();
         },
         complete: () => {
           // reset the form
-          this.savingNewConfig = false
-          this.newConfigOpened = false
-          this.showSettings = false
-          this.newConfigOpened = false
-          this.configForm.reset()
-          // show snackbar Error
-          this.showSnackbar('Crawler Configuration saved successfully.', SnackBarType.success, '', 5000)
+          this.savingNewConfig = this.newConfigOpened = false;
+          this.showSettings = false;
+          
+          if (!this.editMode)
+            this.configForm.reset();
+            
+          this.configForm.enable();
+          // show snackbar success
+          this.showSnackbar('Crawl configuration saved successfully.', SnackBarType.success, '', 5000);
         }
-      })
+      });
   }
 
+  protected makeEditable() {
+    if (this.newConfigOpened)
+      return
 
+    this.editMode = !this.editMode
+
+    if (this.editMode) {
+      this.configForm.enable() // enable form
+    } else {
+      // refill the form with the selected profile values stored by profileSelectedById
+      this.crawlConfigs$.forEach(configs => {
+        const config = configs?.find(c => c.id === this.configSelectedById)
+        if (!config) return
+        this.setConfigFormFromInput(config)
+        return
+      })
+      this.configForm.disable() // disable form
+      this.configForm.markAllAsTouched() // mark form
+      this.configForm.markAsPristine() // mark form
+    }
+  }
+
+  private setConfigFormFromInput(crawlConfig: CrawlConfig) {
+    this.configForm.get('title')?.setValue(crawlConfig.title)
+    this.configForm.get('created_at')?.setValue(crawlConfig.created_At || null)
+    this.configForm.patchValue(crawlConfig.config)
+    this.configForm.get('cacheMode')?.patchValue({ 
+      code: crawlConfig.config.cacheMode, 
+      name: crawlConfig.config.cacheMode?.toUpperCase() 
+    })
+  }
 
   onSelectCrawlConfig(crawl: CrawlConfig) {
     // this.selectedProfile = profile
@@ -417,24 +473,25 @@ export class CrawlConfigComponent {
 
     if (this.newConfigOpened)
       this.newConfigOpened = false
-    else
-      this.showSettings = true
+    else {
+      this.showSettings = this.configSelectedById === crawl.id ? 
+        !this.showSettings : true
+    }
 
     if (this.showSettings) {
       this.configSelectedById = crawl.id
-      this.configForm.get('title')?.setValue(crawl.title)
-
-      // set form values
-      this.configForm.patchValue(crawl.config)
-      this.configForm.get('cacheMode')?.patchValue({ code: crawl.config.cacheMode, name: crawl.config.cacheMode?.toUpperCase() })
+      
+      this.setConfigFormFromInput(crawl)
+      this.configForm.disable() // disable form
+      
+      // always reset editable when new profile selected
+      this.editMode = false
     } else {
       this.configSelectedById = ''
+      this.configForm.enable() // enable form
       this.configForm.reset()
     }
-
   }
-
-
 
   actionProfileClicked(event: Event, crawl: CrawlConfig) {
     event.stopPropagation() // prevent default behavior of outer div

@@ -5,7 +5,7 @@ export interface ApiKey {
     key: string;
     type: ApiKeyType
     showKey: string;
-    created_At: Date;
+    created_At: any; // Changed to any to accommodate Firestore Timestamp
     created_By?: string
     lastUsed?: Date;
     permissions?: string[];

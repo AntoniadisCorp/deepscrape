@@ -7,12 +7,15 @@
 import { Request, Response, NextFunction } from "express"
 import fetch, { RequestInit } from "node-fetch"
 import { Buffer } from "node:buffer" // Import Buffer for file handling
+import { env } from "../config/env"
 // import FormData from "form-data" // Import FormData for handling form data
 import { pipeline } from "node:stream"
 import { createGunzip } from "node:zlib"
 
 // Only allow UUID-like or alphanumeric-dash-underscore ids (adapt as needed)
 const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
+const toSingleParam = (value: string | string[] | undefined): string =>
+    Array.isArray(value) ? (value[0] || "") : (value || "")
 
 class MachinesHandler {
     constructor() {
@@ -29,8 +32,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] === "true"?
-        process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev": "http://localhost:8080"
+        const apiUrl = env.PRODUCTION === "true"?
+        env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev": "http://localhost:8080"
         const url = new URL(`${apiUrl}/api/check-image`)
         url.searchParams.set("name", imageName)
 
@@ -90,7 +93,7 @@ class MachinesHandler {
     }
 
     async getMachine(req: Request, res: Response, next: NextFunction) {
-        const machineId: string = req.params.id
+        const machineId = toSingleParam(req.params.id as string | string[] | undefined)
         res.type("application/json")
         if (!machineId) {
             res.status(400).json({ error: "Missing required parameter: machineId" })
@@ -103,7 +106,7 @@ class MachinesHandler {
         }
 
         // const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}`)
         const headers = req.headers as any
 
@@ -152,7 +155,7 @@ class MachinesHandler {
 
         // get tken from request include in locals
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
         // const authHeader = req.headers["api-key"] as string
         // eslint-disable-next-line prefer-const
@@ -220,7 +223,7 @@ class MachinesHandler {
     }
 
     async waitForState(req: Request, res: Response, next: NextFunction) {
-        const { machineId } = req.params
+        const machineId = toSingleParam(req.params.machineId as string | string[] | undefined)
         // Validate machineId: allow only alphanumeric, dash, and underscore (change regex as needed for your IDs)
         if (!machineId || !/^[a-zA-Z0-9_-]+$/.test(machineId)) {
             res.status(400).json({ error: "Invalid machineId format." })
@@ -236,7 +239,7 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ? process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/waitforstate/${machineId}`)
 
         url.searchParams.set("state", state as string)
@@ -280,7 +283,7 @@ class MachinesHandler {
     }
 
     async startMachine(req: Request, res: Response) {
-        const machineId: string = req.params.machineId
+        const machineId = toSingleParam(req.params.machineId as string | string[] | undefined)
         res.type("application/json")
         // Only allow machine IDs that are alphanumeric, dash or underscore (adjust pattern as needed)
         const SAFE_MACHINE_ID_REGEX = /^[a-zA-Z0-9_-]+$/
@@ -294,8 +297,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
 
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}/start`)
@@ -335,7 +338,7 @@ class MachinesHandler {
     }
 
     async suspendMachine(req: Request, res: Response) {
-        const machineId: string = req.params.machineId
+        const machineId = toSingleParam(req.params.machineId as string | string[] | undefined)
         res.type("application/json")
         // Only allow UUID-like or alphanumeric-dash-underscore ids (adapt as needed)
         const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
@@ -349,8 +352,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}/suspend`)
         const headers = {
@@ -388,7 +391,7 @@ class MachinesHandler {
     }
 
     async stopMachine(req: Request, res: Response) {
-        const machineId: string = req.params.machineId
+        const machineId = toSingleParam(req.params.machineId as string | string[] | undefined)
         res.type("application/json")
         if (!validIdPattern.test(machineId)) {
             res.status(400).json({ error: "Invalid machineId format" })
@@ -399,8 +402,8 @@ class MachinesHandler {
             return
         }
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
 
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}/stop`)
         const headers = {
@@ -438,7 +441,7 @@ class MachinesHandler {
     }
 
     async destroyMachine(req: Request, res: Response) {
-        const machineId: string = req.params.machineId
+        const machineId = toSingleParam(req.params.machineId as string | string[] | undefined)
         const force: boolean = req.query.force === "true"
         res.type("application/json")
         // Add same validation as stopMachine
@@ -452,8 +455,8 @@ class MachinesHandler {
         }
 
         const token = req.app.locals["user"]
-        const apiUrl = process.env["PRODUCTION"] == "true" ?
-            process.env["API_ARACHNEFLY_URL"] || "https://arachnefly.fly.dev" : "http://localhost:8080"
+        const apiUrl = env.PRODUCTION == "true" ?
+            env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}`)
         url.searchParams.set("force", force.toString())
 

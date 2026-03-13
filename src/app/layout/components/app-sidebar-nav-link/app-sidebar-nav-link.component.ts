@@ -1,28 +1,33 @@
-import { NgClass, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { RemoveClassDirective, RippleDirective } from 'src/app/core/directives';
 import { cleanAndParseJSON } from 'src/app/core/functions';
-import { LocalStorage, ScreenResizeService } from 'src/app/core/services';
+import { AuthService, LocalStorage, ScreenResizeService } from 'src/app/core/services';
 import { Session } from 'src/app/core/types';
 import { themeStorageKey } from 'src/app/shared';
 import { AppUserLayoutComponent } from '../../full';
 
 @Component({
   selector: 'app-sidebar-nav-link',
-  imports: [NgClass, NgIf, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
+  imports: [NgClass, MatIcon, RouterLink, RippleDirective, RemoveClassDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app-sidebar-nav-link.component.html',
   styleUrl: './app-sidebar-nav-link.component.scss'
 })
 export class AppSidebarNavLinkComponent {
   private userLayout = inject(AppUserLayoutComponent)
+  private authService = inject(AuthService)
   @Input() link: any
-  private localStorage: Storage
+  private localStorage: Storage = inject(LocalStorage)
 
   private routeSub: Subscription
+
+  public get isAdmin() {
+    return this.authService.isAdmin
+  }
   public hasVariant() {
     return this.link.variant ? true : false
   }
@@ -62,9 +67,6 @@ export class AppSidebarNavLinkComponent {
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {
-
-    this.localStorage = inject(LocalStorage)
-
 
     // this.toggleMenu = false
   }
@@ -115,11 +117,14 @@ export class AppSidebarNavLinkComponent {
     return this.router.url.startsWith(url)
   }
   protected closeSideBar() {
+    
     const { screenWidth } = this.resizeSvc.updateScreenSize()
 
     if (screenWidth >= 992)
       return
 
+    if (this.hasChildren())
+      return
 
     this.userLayout.onCloseAsideBar(true)
   }

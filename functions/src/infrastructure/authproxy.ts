@@ -5,8 +5,15 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 import { Router } from "express"
-import { checkUserEmailForDifferentProvider,
-    verifyLogin} from "../handlers/fire_auth"
+import {
+    checkUserEmailForDifferentProvider,
+    updateEmailVerificationStatus,
+    verifyLogin,
+    verifyPhoneNumber,
+    linkPhoneToAccount,
+    updatePhoneVerificationStatus,
+    checkPhoneNumberExists,
+} from "../handlers"
 
 /* eslint-disable max-len */
 class AuthAPIProxy {
@@ -26,9 +33,20 @@ class AuthAPIProxy {
     }
 
     private httpRoutesPosts(): void {
+        // Check if phone number exists (moved from GET to POST for security)
+        this.router.post("/provider/phone/check", checkPhoneNumberExists)
+
         // Verify and link provider
         // This is used to link a new provider to an existing user account
         this.router.post("/verify-login", verifyLogin)
+
+        // Email verification
+        this.router.post("/email/verification", updateEmailVerificationStatus)
+
+        // Phone verification endpoints
+        this.router.post("/phone/verify", verifyPhoneNumber)
+        this.router.post("/phone/link", linkPhoneToAccount)
+        this.router.post("/phone/update-verification", updatePhoneVerificationStatus)
     }
 }
 

@@ -14,12 +14,13 @@ export type Users = {
     providerData: UserInfo[]
     mfa_enabled?: boolean
     emailVerified: boolean
+    lastSeen?: Date
     last_login_at: any // Timestamp | null
     created_At: Date
     updated_At?:Date
 
     // Phone authentication fields
-    phoneNumber?: string
+    phoneNumber?: string | null
     phoneVerified?: boolean | null // Optional, may not be present in all user objects
 
     // Stripe customer ID
@@ -31,10 +32,9 @@ export type Users = {
     balance?: number
     itemId?: string
 
-    // User Authorization fields
+    // User Authorization fieldsrole
     role?: string
-    plan?: 'free' | 'pro' | 'enterprise'
-    isAdmin?: boolean
+    plan?: 'free' | 'trial' | 'starter' | 'pro' | 'enterprise'
 
     // Profile status
     profileStatus?: ProfileStatus
@@ -77,6 +77,9 @@ export type ProfileStatus = {
 
 export type loginMetrics = {
     id?: string
+    
+    // Guest tracking
+    guestId: string // created by guestId
     lastGuestId: string
     /** Time the user was created. */
     creationTime?: string
@@ -102,6 +105,7 @@ export type loginHistoryInfo = {
     guestId?: string // Optional field to store geolocation data
     signOutTime?: Date // Optional field to store sign out time
     sessionKey?: string // Optional field to link to a session
+    deviceFingerprintHash?: string
 }
 
 export type Guest = {
@@ -123,6 +127,7 @@ export type Guest = {
   latitude: number
   longitude: number
   location: string
+  fingerprint?: string // Unique fingerprint for guest tracking
   createdAt: Date
   lastSeen: Date
   linkedAt?: Date | null

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { CrawlPack, Users } from '../../types';
-import { AsyncPipe, DatePipe, NgFor } from '@angular/common';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { Timestamp } from '@angular/fire/firestore';
 import { AuthService, FirestoreService } from '../../services';
 import { Observable } from 'rxjs/internal/Observable';
@@ -13,7 +13,7 @@ import { ImageSrcsetDirective } from '../../directives';
 
 @Component({
   selector: 'app-cpack',
-  imports: [DatePipe, NgFor, ProviderPipe, AsyncPipe, ImageSrcsetDirective],
+  imports: [DatePipe, ProviderPipe, AsyncPipe, ImageSrcsetDirective],
   templateUrl: './cpack.component.html',
   styleUrl: './cpack.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +41,14 @@ export class CPackComponent {
       return createdAt.toDate();
     }
     return undefined;
+  }
+
+  displayPackType(type: string | undefined): string {
+    if (!type) {
+      return 'crawler'
+    }
+
+    return type.toLowerCase() === 'crawl4ai' ? 'crawler' : type
   }
 
 }

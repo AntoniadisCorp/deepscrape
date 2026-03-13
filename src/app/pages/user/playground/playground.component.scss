@@ -1,0 +1,48 @@
+.scrollbar-thin {
+  cursor: grab;
+  position: relative;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  -webkit-user-select: none;
+  user-select: none;
+  
+  &:active {
+    cursor: grabbing;
+  }
+  
+  /* Hide scrollbar across all browsers */
+  &::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+    display: none;
+  }
+  
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  
+  /* Fix for momentum scrolling */
+  &:after {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 100%;
+  }
+  
+  /* Improve GPU acceleration for smoother scrolling */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: scroll-position;
+}
+
+/* For mobile devices */
+@media (max-width: 768px) {
+  .scrollbar-thin {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Microsoft Edge style for hiding scrollbars */
+.ms-overflow-style-none {
+  -ms-overflow-style: none !important;
+}

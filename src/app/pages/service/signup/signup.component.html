@@ -1,174 +1,332 @@
-<main class="relative inset-0 min-h-full bg-gray-200 dark:bg-gray-900">
-  <section class="absolute inset-0 h-full w-full">
-    <div class="relative top-48 w-full bg-cover bg-no-repeat">
-      <div class="container mx-auto h-full px-4">
-        <div class="flex h-full content-center items-center justify-center">
-          <div class="w-full px-4 lg:w-4/12">
-            <form
-              class="group relative mt-10 mb-6 flex w-full min-w-0 flex-col break-words rounded-lg border-0 bg-slate-900 bg-opacity-60 shadow-lg dark:bg-gray6"
-              [formGroup]="signupForm"
-              (ngSubmit)="signup()"
-            >
-              <div class="mb-0 rounded-t px-6 py-6">
-                <div class="mb-3 text-center">
-                  <h6 class="text-sm font-bold text-gray-400">
-                    Sign up with Credentials
-                  </h6>
-                </div>
-
-                @if (errorMessage) {
-                <div
-                  class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
-                  role="alert"
-                >
-                  <span class="block sm:inline">{{ errorMessage }}</span>
-                </div>
+<main
+  class="h-full flex items-center justify-center px-2 py-4 bg-gradient-to-br from-white via-blue-200 to-indigo-400 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen">
+  <!-- <app-animated-bg></app-animated-bg> -->
+  <!-- Card Container -->
+  <section
+    class="w-full max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-2xl rounded-xl p-4 flex flex-col gap-4 relative z-10 border border-gray-100 dark:border-gray-800 transition-all duration-300">
+    <!-- Logo/Icon placeholder -->
+    <div class="flex justify-center mb-1">
+      <img
+        alt="Logo"
+        [srcset]="
+          (isDarkMode$ | async)
+            ? 'assets/logo-512x512_sky.png 2x'
+            : 'assets/logo-512x512.png 2x'
+        "
+        class="mt-4 h-9 w-9 rounded-full shadow-md border-none max-h-[80%] xs:max-h-max"
+        loading="lazy" />
+      </div>
+      <header class="flex gap-2 mb-2 text-center">
+        <div
+          class="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center shadow-md font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]"
+          aria-hidden="true">
+          <svg
+            class="w-5 h-5 text-white"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              class="cc-surface-fill"
+            fill="#6366f1"></circle>
+            <path
+              d="M8 13.5L10.5 16L16 8"
+              stroke="white"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <div>
+          <h1
+            id="signup-title"
+            class="text-xl font-extrabold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">
+            {{ 'SIGNUP.CREATE_ACCOUNT_TITLE' | translate }}
+          </h1>
+          <p
+            id="signup-subtitle"
+            class="text-gray-600 dark:text-gray-300 text-xs">
+            {{ 'SIGNUP.JOIN_MESSAGE' | translate }}
+          </p>
+        </div>
+      </header>
+      <div class="flex items-center gap-2 my-1">
+        <div
+        class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
+        <span class="text-xs text-gray-400 dark:text-gray-500 font-medium"></span>
+        <div
+        class="flex-1 h-px bg-gradient-to-l from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
+      </div>
+      <form
+        [formGroup]="signupForm"
+        (ngSubmit)="signup()"
+        id="signup-form"
+        autocomplete="off"
+        novalidate
+        class="flex flex-col gap-3">
+        @if (errorMessage) {
+          <div
+            class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-2 py-2 rounded-lg relative mb-2 font-semibold flex items-center gap-2 animate-pulse text-xs"
+            role="alert">
+            <svg
+              class="w-4 h-4 text-red-500 dark:text-red-300"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+              </svg>
+              <span class="block sm:inline">{{ errorMessage }}</span>
+            </div>
+          }
+          <!-- Name -->
+          <div>
+            <label
+              id="label-name"
+              for="name"
+              class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+              {{ 'SIGNUP.FULL_NAME_LABEL' | translate }}
+            </label>
+            <input
+              id="name"
+              type="text"
+              formControlName="name"
+              required
+              placeholder="{{ 'SIGNUP.FULL_NAME_PLACEHOLDER' | translate }}"
+              class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+          [ngClass]="{
+            'border-red-500 dark:border-red-400':
+              signupForm.get('name')?.invalid &&
+              (signupForm.get('name')?.dirty ||
+                signupForm.get('name')?.touched),
+            'border-green-500 dark:border-green-400':
+              signupForm.get('name')?.valid &&
+              (signupForm.get('name')?.dirty || signupForm.get('name')?.touched)
+          }" />
+              @if (
+                signupForm.get('name')?.invalid &&
+                (signupForm.get('name')?.dirty || signupForm.get('name')?.touched)
+                ) {
+                <small
+                  class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                  @if (signupForm.get('name')?.errors?.['required']) {
+                    {{ 'SIGNUP.FULL_NAME_REQUIRED' | translate }}
+                  }
+                  @if (signupForm.get('name')?.errors?.['minlength']) {
+                    {{ 'SIGNUP.FULL_NAME_MINLENGTH' | translate }}
+                  }
+                </small>
+              }
+            </div>
+            <!-- Email -->
+            <div>
+              <label
+                id="label-email"
+                for="email"
+                class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+                {{ 'SIGNUP.EMAIL_LABEL' | translate }}
+              </label>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                required
+                placeholder="{{ 'SIGNUP.EMAIL_PLACEHOLDER' | translate }}"
+                autocomplete="username"
+                class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+          [ngClass]="{
+            'border-red-500 dark:border-red-400':
+              signupForm.get('email')?.invalid &&
+              (signupForm.get('email')?.dirty ||
+                signupForm.get('email')?.touched),
+            'border-green-500 dark:border-green-400':
+              signupForm.get('email')?.valid &&
+              (signupForm.get('email')?.dirty ||
+                signupForm.get('email')?.touched)
+          }" />
+                @if (
+                  signupForm.get('email')?.invalid &&
+                  (signupForm.get('email')?.dirty || signupForm.get('email')?.touched)
+                  ) {
+                  <small
+                    class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                    @if (signupForm.get('email')?.errors?.['required']) {
+                      {{ 'SIGNUP.EMAIL_REQUIRED' | translate }}
+                    }
+                    @if (signupForm.get('email')?.errors?.['email']) {
+                      {{ 'SIGNUP.INVALID_EMAIL' | translate }}
+                    }
+                  </small>
                 }
-
-                <div class="flex-auto px-4 py-10 pt-0 lg:px-10">
-                  <div class="relative mb-3 w-full">
-                    <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
-                      >Full Name</label
-                    >
-                    <input
-                      type="text"
-                      formControlName="name"
-                      required
-                      placeholder="Enter your Full Name"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
-                    />
-                    @if (signupForm.get('name')?.invalid &&
-                    (signupForm.get('name')?.dirty ||
-                    signupForm.get('name')?.touched)) {
-                    <small class="text-red-500">
-                      @if (signupForm.get('name')?.errors?.['required']) { Name
-                      is required } @if
-                      (signupForm.get('name')?.errors?.['minlength']) { Name
-                      must be at least 2 characters }
-                    </small>
-                    }
-                  </div>
-                  <div class="relative mb-3 w-full">
-                    <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
-                      >Email</label
-                    >
-                    <input
-                      autocomplete="username"
-                      type="text"
-                      formControlName="email"
-                      required
-                      placeholder="Enter your Email"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
-                    />
-                    @if (signupForm.get('email')?.invalid &&
-                    (signupForm.get('email')?.dirty ||
-                    signupForm.get('email')?.touched)) {
-                    <small class="text-red-500">
-                      @if (signupForm.get('email')?.errors?.['required']) {
-                      Email is required } @if
-                      (signupForm.get('email')?.errors?.['email']) { Invalid
-                      email format }
-                    </small>
-                    }
-                  </div>
-                  <div class="relative mb-3 w-full">
-                    <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-700 dark:text-gray-400"
-                      >Password</label
-                    >
-                    <input
-                      type="password"
-                      formControlName="password"
-                      required
-                      placeholder="Enter your Password"
-                      autocomplete="new-password"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-400 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
-                    />
-                    @if (signupForm.get('password')?.invalid &&
+              </div>
+              <!-- Password -->
+              <div>
+                <label
+                  id="label-password"
+                  for="password"
+                  class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+                  {{ 'SIGNUP.PASSWORD_LABEL' | translate }}
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  formControlName="password"
+                  required
+                  placeholder="{{ 'SIGNUP.PASSWORD_PLACEHOLDER' | translate }}"
+                  autocomplete="new-password"
+                  class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+          [ngClass]="{
+            'border-red-500 dark:border-red-400':
+              signupForm.get('password')?.invalid &&
+              (signupForm.get('password')?.dirty ||
+                signupForm.get('password')?.touched),
+            'border-green-500 dark:border-green-400':
+              signupForm.get('password')?.valid &&
+              (signupForm.get('password')?.dirty ||
+                signupForm.get('password')?.touched)
+          }" />
+                  @if (
+                    signupForm.get('password')?.invalid &&
                     (signupForm.get('password')?.dirty ||
-                    signupForm.get('password')?.touched)) {
-                    <small class="text-red-500">
+                    signupForm.get('password')?.touched)
+                    ) {
+                    <small
+                      class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
                       @if (signupForm.get('password')?.errors?.['required']) {
-                      Password is required } 
-                      {{signupForm.get('password')?.errors?.['passwordStrength']
-                          ? checkPasswordStrength(signupForm.get('password')?.value)
-                          : 'Invalid format'
-                         }}
-                    </small>
-                    }
-                  </div>
-                  <div class="relative mb-3 w-full">
-                    <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
-                      >Confirm Password</label
-                    >
-                    <input
-                      type="password"
-                      formControlName="confirmPassword"
-                      required
-                      placeholder="Confirm your Password"
-                      autocomplete="new-password"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
-                    />
-                    @if (signupForm.get('confirmPassword')?.invalid &&
-                    (signupForm.get('confirmPassword')?.dirty ||
-                    signupForm.get('confirmPassword')?.touched)) {
-                    <small class="text-red-500">
-                      @if
-                      (signupForm.get('confirmPassword')?.errors?.['passwordMismatch'])
-                      { Passwords do not match }
-                    </small>
-                    }
-                  </div>
-                  <div class="relative mb-3 w-full">
-                    <label
-                      class="mb-2 block text-xs font-bold uppercase text-gray-400 dark:text-gray-400"
-                      >Phone Number (Optional)</label
-                    >
-                    <input
-                      type="text"
-                      formControlName="phoneNumber"
-                      placeholder="Enter your Phone Number (e.g., +1234567890)"
-                      class="w-full rounded border-0 bg-white px-3 py-3 text-sm text-gray-700 placeholder-gray-400 shadow ring-[#3d77f3] transition-all duration-150 ease-linear focus:outline-none focus:ring dark:bg-gray5 dark:text-gray2"
-                    />
-                    @if (signupForm.get('phoneNumber')?.invalid &&
-                    (signupForm.get('phoneNumber')?.dirty ||
-                    signupForm.get('phoneNumber')?.touched)) {
-                    <small class="text-red-500">
-                      @if (signupForm.get('phoneNumber')?.errors?.['pattern']) {
-                      Invalid phone number format (e.g., +1234567890).
+                        {{ 'SIGNUP.PASSWORD_REQUIRED' | translate }}
+                      }
+                      @if (signupForm.get('password')?.errors?.['passwordStrength']) {
+                        {{ checkPasswordStrength(signupForm.get('password')?.value) }}
+                      }
+                      @if (!signupForm.get('password')?.errors?.['passwordStrength'] && !signupForm.get('password')?.errors?.['required']) {
+                        {{ 'SIGNUP.INVALID_PASSWORD_FORMAT' | translate }}
                       }
                     </small>
+                  }
+                </div>
+                <!-- Confirm Password -->
+                <div>
+                  <label
+                    id="label-confirm-password"
+                    for="confirmPassword"
+                    class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+                    {{ 'SIGNUP.CONFIRM_PASSWORD_LABEL' | translate }}
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    formControlName="confirmPassword"
+                    required
+                    placeholder="{{ 'SIGNUP.CONFIRM_PASSWORD_PLACEHOLDER' | translate }}"
+                    autocomplete="new-password"
+                    class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+          [ngClass]="{
+            'border-red-500 dark:border-red-400':
+              signupForm.get('confirmPassword')?.invalid &&
+              (signupForm.get('confirmPassword')?.dirty ||
+                signupForm.get('confirmPassword')?.touched),
+            'border-green-500 dark:border-green-400':
+              signupForm.get('confirmPassword')?.valid &&
+              (signupForm.get('confirmPassword')?.dirty ||
+                signupForm.get('confirmPassword')?.touched)
+          }" />
+                    @if (
+                      signupForm.get('confirmPassword')?.invalid &&
+                      (signupForm.get('confirmPassword')?.dirty ||
+                      signupForm.get('confirmPassword')?.touched)
+                      ) {
+                      <small
+                        class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                        @if (signupForm.get('confirmPassword')?.errors?.['passwordMismatch']) {
+                          {{ 'SIGNUP.PASSWORDS_DO_NOT_MATCH' | translate }}
+                        }
+                      </small>
                     }
                   </div>
-                  <div class="mt-6 flex flex-wrap">
-                    <div class="w-full text-center">
+                  <!-- Phone Number (Optional) -->
+                  <div>
+                    <label
+                      id="label-phone"
+                      for="phoneNumber"
+                      class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+                      {{ 'SIGNUP.PHONE_LABEL' | translate }}
+                    </label>
+                    <input
+                      id="phoneNumber"
+                      type="text"
+                      formControlName="phoneNumber"
+                      placeholder="{{ 'SIGNUP.PHONE_PLACEHOLDER' | translate }}"
+                      class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+          [ngClass]="{
+            'border-red-500 dark:border-red-400':
+              signupForm.get('phoneNumber')?.invalid &&
+              (signupForm.get('phoneNumber')?.dirty ||
+                signupForm.get('phoneNumber')?.touched),
+            'border-green-500 dark:border-green-400':
+              signupForm.get('phoneNumber')?.valid &&
+              (signupForm.get('phoneNumber')?.dirty ||
+                signupForm.get('phoneNumber')?.touched)
+          }" />
+                      @if (
+                        signupForm.get('phoneNumber')?.invalid &&
+                        (signupForm.get('phoneNumber')?.dirty ||
+                        signupForm.get('phoneNumber')?.touched)
+                        ) {
+                        <small
+                          class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+                          @if (signupForm.get('phoneNumber')?.errors?.['pattern']) {
+                            {{ 'SIGNUP.INVALID_PHONE_FORMAT' | translate }}
+                          }
+                        </small>
+                      }
+                    </div>
+                    <div class="mt-4">
+                      <button
+                        id="signup-button"
+                        type="submit"
+                        [disabled]="!signupForm.valid"
+                        class="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white font-bold py-2 px-3 shadow-xl transition-all duration-200 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 cc-focus-ring text-sm">
+                        @if (loading.email) {
+                          <svg
+                            class="animate-spin h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24">
+                            <circle
+                              class="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                            stroke-width="4"></circle>
+                            <path
+                              class="opacity-75"
+                              fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"></path>
+                          </svg>
+                        }
+                        <span id="signup-button-text">
+                          {{ 'SIGNUP.CREATE_ACCOUNT_BUTTON' | translate }}
+                        </span>
+                      </button>
+                    </div>
+                  </form>
+                  <footer class="mt-3 text-center text-xs text-gray-600 dark:text-gray-300">
+                    <span id="footer-main-text">
+                      {{ 'SIGNUP.ALREADY_HAVE_ACCOUNT' | translate }}
                       <a
                         [routerLink]="['/service/login']"
-                        routerLinkActive="router-link-active"
-                        class=" text-gray-500 dark:text-gray-50"
-                        ><small>Already have an account? Sign in</small></a
-                      >
-                    </div>
-                  </div>
-                  <div class="mt-6 text-center">
-                    <button
-                      type="submit"
-                      title="signup"
-                      [disabled]="!signupForm.valid"
-                      class="mb-1 mr-1 w-full cursor-pointer dark:bg-blue-600/[0.4] dark:hover:bg-blue-600/[0.7] disabled:bg-gray-900/50 dark:disabled:bg-gray-900 rounded px-6 py-3 text-sm font-bold uppercase text-white shadow outline-none transition-all duration-150 ease-in-out hover:shadow-lg focus:outline-none active:bg-gray-700"
-                    >
-                      SIGN UP
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
+                        class="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 cc-focus-ring">
+                        {{ 'SIGNUP.LOGIN_LINK' | translate }}
+                      </a>
+                    </span>
+                  </footer>
+                </section>
+                <div hidden #recaptchaContainer id="recaptcha-container"></div>
+              </main>
+              <!-- Tailwind-based animated background and card structure, Angular form bindings, and error messages integrated. Light and dark mode supported. -->

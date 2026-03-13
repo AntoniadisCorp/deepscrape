@@ -1,0 +1,126 @@
+/* Minimal SCSS - Most styling is now handled by Tailwind CSS */
+
+/* Only keep essential custom animations and components that Tailwind doesn't provide */
+
+/* Custom animations not available in Tailwind */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Any component-specific styling that needs to override Tailwind */
+.chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.toggle-checkbox {
+  @apply sr-only;
+}
+
+.toggle-checkbox + span::before {
+  content: '';
+  @apply w-10 h-6 bg-gray-300 rounded-full inline-block relative transition-all duration-200 cursor-pointer;
+}
+
+.toggle-checkbox + span::after {
+  content: '';
+  @apply w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all duration-200;
+  transform: translateX(0);
+}
+
+.toggle-checkbox:checked + span::before {
+  @apply bg-blue-500;
+}
+
+.toggle-checkbox:checked + span::after {
+  transform: translateX(16px);
+}
+
+.admin-analytics-theme {
+  --admin-glass-bg: rgb(7 11 14 / 40%);
+  --admin-glass-bg-soft: rgb(7 11 14 / 24%);
+  --admin-glass-border: rgb(148 163 184 / 30%);
+}
+
+.admin-analytics-theme .bg-slate-50 {
+  @apply bg-gray-50;
+}
+
+.admin-analytics-theme .text-slate-900 {
+  @apply text-gray5;
+}
+
+.admin-analytics-theme .text-slate-700 {
+  @apply text-gray5;
+}
+
+.admin-analytics-theme .text-slate-600 {
+  @apply text-gray5/70;
+}
+
+.admin-analytics-theme .text-slate-500,
+.admin-analytics-theme .text-slate-400 {
+  @apply text-gray5/60;
+}
+
+.admin-analytics-theme .border-slate-300 {
+  @apply border-gray-300;
+}
+
+.admin-analytics-theme .border-slate-200,
+.admin-analytics-theme .border-slate-200\/60,
+.admin-analytics-theme .border-slate-200\/50 {
+  @apply border-gray-300/70;
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:bg-gray-900,
+:host-context(.dark) .admin-analytics-theme .dark\:bg-slate-900,
+:host-context(.dark) .admin-analytics-theme .dark\:bg-slate-800 {
+  background: linear-gradient(to bottom right, var(--admin-glass-bg-soft), var(--admin-glass-bg));
+  border-color: var(--admin-glass-border);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:bg-slate-700,
+:host-context(.dark) .admin-analytics-theme .dark\:bg-slate-700\/50,
+:host-context(.dark) .admin-analytics-theme .dark\:bg-slate-700\/60 {
+  @apply bg-gray6/60;
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:border-slate-700,
+:host-context(.dark) .admin-analytics-theme .dark\:border-slate-700\/60,
+:host-context(.dark) .admin-analytics-theme .dark\:border-slate-600,
+:host-context(.dark) .admin-analytics-theme .dark\:border-slate-600\/50 {
+  @apply border-gray5;
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:text-slate-50,
+:host-context(.dark) .admin-analytics-theme .dark\:text-slate-100 {
+  @apply text-gray-100;
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:text-slate-400,
+:host-context(.dark) .admin-analytics-theme .dark\:text-slate-300,
+:host-context(.dark) .admin-analytics-theme .dark\:text-slate-200 {
+  @apply text-gray-300;
+}
+
+.admin-analytics-theme .hover\:bg-slate-100:hover {
+  @apply bg-gray-100;
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:hover\:bg-slate-700:hover {
+  @apply bg-gray6;
+}
+
+:host-context(.dark) .admin-analytics-theme .dark\:hover\:text-slate-300:hover {
+  @apply text-gray-200;
+}
+
+.admin-analytics-theme .admin-loader {
+  border-top-color: #3b82f6;
+  box-shadow: 0 0 18px rgb(59 130 246 / 28%);
+}

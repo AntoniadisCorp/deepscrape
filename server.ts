@@ -1,12 +1,13 @@
-// import { APP_BASE_HREF } from '@angular/common'
-import { AngularNodeAppEngine, CommonEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
+import { AngularNodeAppEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node'
 import express, { NextFunction, Request, Response } from 'express'
 // import { fileURLToPath } from 'node:url'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import chalk from 'chalk'
 // import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
-import { apiLimiter, limiter } from 'api/handlers'
+import { upstashApiLimiter, upstashGeneralLimiter } from 'api/handlers'
+import { fileURLToPath } from 'node:url'
+import { env } from './src/config/env'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -20,26 +21,27 @@ function serveapp(): express.Application {
   */
   const AI: SyncAIapis = new SyncAIapis()
 
-  // const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
-  const serverDistFolder =  resolve(process.cwd(), 'dist/deepscrape/server') // serverDistFolderD //
+  const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
+  const serverDistFolder =  serverDistFolderD // resolve(process.cwd(), 'dist/deepscrape/server')
   const browserDistFolder = resolve(process.cwd(), 'dist/deepscrape/browser')
 
   const indexHtml = join(serverDistFolder, 'index.server.html')
   // const indexHtmlB = join(browserDistFolder, 'index.html')
   console.log('indexHtml', indexHtml, /* serverDistFolderD */)
 
-  // Here, we now use the `AngularNodeAppEngine` instead of the `CommonEngine`
   const angularNodeAppEngine = new AngularNodeAppEngine()
-  // const commonEngine = new CommonEngine()
 
   server.set('view engine', 'html')
   server.set('views', browserDistFolder)
-  server.set('trust proxy', false)
+  server.set('trust proxy', false) // Enable trust proxy for accurate IP detection in production
 
   server.use(express.urlencoded({ limit: '3mb', extended: false }))
-  server.use(express.json({ limit: '3mb' })) // To pars
+  server.use(express.json({ limit: '3mb' })) // Parse JSON bodies
 
-  // Use Routers for API
+  // Apply advanced Upstash rate limiter to all requests (except /api which has its own limiter)
+  server.use(upstashGeneralLimiter)
+
+  // Use Routers for API with stricter Upstash rate limiting
   server.use('/api', (req: Request, res: Response, next: NextFunction) => {
 
     console.log(
@@ -53,8 +55,7 @@ function serveapp(): express.Application {
       chalk.bgBlue.black('Host:'), req.hostname
     )
     next()
-  }, apiLimiter, AI.isJwtAuth, AI.router)
-  server.use(limiter)
+  }, upstashApiLimiter, AI.isJwtAuth, AI.router)
 
   // *PWA Service Worker (if running in production)
   server.use((req: Request, res: Response, next: NextFunction) => {
@@ -75,16 +76,13 @@ function serveapp(): express.Application {
   })
 
   // Serve static files from /browser
-  server.get('*.*', express.static(browserDistFolder, {
+  server.get(/.*\..*/, express.static(browserDistFolder, {
     maxAge: '1y',
     index: "index.html",
   }))
 
   // All regular routes use the Angular engine **
-  server.get('**', (req: Request, res: Response, next: any) => {
-    // const { protocol, originalUrl, baseUrl, headers } = req
-    // res.render(indexHtmlB, { req, providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }] })
-    // Yes, this is executed in devMode via the Vite DevServer
+  server.get(/.*/, (req: Request, res: Response, next: any) => {
     console.log(
       chalk.bgYellow('Request Method:'), req.method,
       chalk.bgYellow('Request URL:'), req.url,
@@ -95,19 +93,9 @@ function serveapp(): express.Application {
       chalk.bgBlue.black('IP:'), req.ip,
       chalk.bgBlue.black('Host:'), req.hostname
     )
-     
-    // commonEngine
-    //   .render({
-    //     bootstrap,
-    //     documentFilePath: indexHtml,
-    //     url: `${protocol}://${headers.host}${originalUrl}`,
-    //     publicPath: browserDistFolder,
-    //     providers: [{provide: APP_BASE_HREF, useValue: baseUrl}],
-    //   })
-    //   .then((html) => res.send(html))
-    //   .catch((err) => next(err));
+
     angularNodeAppEngine
-      .handle(req, { server: 'express' })
+      .handle(req)
       .then((response) =>
         response ? writeResponseToNodeResponse(response, res) : next()
       )
@@ -122,10 +110,10 @@ function serveapp(): express.Application {
 const server = serveapp()
 
 function run(): void {
-  const host = process.env['HOST'] || 'localhost'
+  const host = env.HOST
 
   if (isMainModule(import.meta.url)) {
-    const port = process.env['PORT'] || 4000
+    const port = env.PORT
     server.listen(port, () => {
       console.log(`%s server listening on %s`, chalk.yellow('Node Express'), chalk.green(`http://${host}:${port}`))
       return host
@@ -140,10 +128,10 @@ function run(): void {
 
 let reqHandler: express.Application
 
-if (process.env['PRODUCTION'] === 'false') {
+if (env.PRODUCTION === 'true') {
   run()
 } 
-console.log(chalk.blue('Environment:'), process.env['PRODUCTION'] === 'true' ? chalk.green('Production') : chalk.red('Development'))
+console.log(chalk.blue('Environment:'), env.PRODUCTION === 'true' ? chalk.green('Production') : chalk.red('Development'))
 
 reqHandler = createNodeRequestHandler(server)
 

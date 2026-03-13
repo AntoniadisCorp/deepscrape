@@ -1,4 +1,4 @@
-import { NgIf } from '@angular/common';
+
 import { ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { LocalStorage, WindowToken } from '../../services';
 import { MatIcon } from '@angular/material/icon';
@@ -8,7 +8,7 @@ import { RippleDirective } from '../../directives';
 
 @Component({
     selector: 'app-consent-modal',
-    imports: [NgIf, MatIcon, RippleDirective],
+    imports: [MatIcon, RippleDirective],
     templateUrl: './consent-modal.component.html',
     styleUrl: './consent-modal.component.scss'
 })

@@ -1,63 +1,57 @@
-import { ChangeDetectorRef, Component, DestroyRef, HostBinding, inject, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectorRef, ChangeDetectionStrategy, Component, DestroyRef, HostBinding, inject, signal, WritableSignal } from '@angular/core';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { GinputComponent } from '../ginput/ginput.component';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { AsyncPipe, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, JsonPipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 import { takeUntil } from 'rxjs/internal/operators/takeUntil';
 import { tap } from 'rxjs/internal/operators/tap';
-import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, SnackbarService } from '../../services';
+import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, OperationStatusService, SnackbarService, WebSocketService } from '../../services';
 import { Subject } from 'rxjs/internal/Subject';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { delay } from 'rxjs/internal/operators/delay';
-import { CrawlPack, CrawlStatus, CrawlTask, DropDownOption, Users } from '../../types'; // Removed CrawlResult from here
-import { arrayBufferToString, setCrawlPackList } from '../../functions';
+import { CrawlOperation, CrawlPack, CrawlStatus, CrawlStreamBatch, CrawlTask, DropDownOption, Users } from '../../types'; // Removed CrawlResult from here
+import { arrayBufferToString, crawlOperationStatusColor, setCrawlPackList } from '../../functions';
 import { SnackBarType } from '../snackbar/snackbar.component';
 import { MatIcon } from '@angular/material/icon';
 import { RemoveToolbarDirective, RippleDirective } from '../../directives';
 import { DropdownComponent } from '../dropdown/dropdown.component';
 import { FormControlPipe } from '../../pipes';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { from } from 'rxjs/internal/observable/from';
 import { startWith } from 'rxjs/internal/operators/startWith';
 import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component';
 import { expandCollapseAnimation } from 'src/app/animations';
 import { MarkdownModule } from 'ngx-markdown';
-import { BehaviorSubject, finalize, map, mergeMap, Observable, of, Subscription, takeLast, takeWhile } from 'rxjs';
+import { BehaviorSubject, finalize, map, mergeMap, Observable, of, shareReplay, Subscription, takeLast, takeWhile, timer } from 'rxjs';
 import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component';
 import { CrawlResult } from '../../types/crawl-result.type'; // Import the CrawlResult interface
 import { CrawlResultItemComponent } from '../crawl-result-item/crawl-result-item.component';
 import { CrawlOperationStatus } from '../../enum';
 import { UserInfo } from '@angular/fire/auth';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 const DEFAULT_CRAWL_PACK_SELECTION = { name: "select a crawlpack", code: "default" }
 @Component({
   selector: 'app-crawl',
-  imports: [MatProgressSpinner, GinputComponent, NgFor, NgIf, MatIcon, NgClass, RippleDirective,
-    DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe,
-    RadioToggleComponent, CrawlResultItemComponent, AsyncPipe // Add the new component to imports
-  ],
+  imports: [MatProgressSpinner, GinputComponent, MatIcon, NgClass, RippleDirective, DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe, RadioToggleComponent, CrawlResultItemComponent, AsyncPipe, MatProgressBarModule],
   animations: [expandCollapseAnimation],
   templateUrl: './app-crawl.component.html',
-  styleUrl: './app-crawl.component.scss'
+  styleUrl: './app-crawl.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppCrawlComponent {
+  @HostBinding('class') classes = 'flex items-center flex-col relative';
+  readonly clipboardButton = ClipboardbuttonComponent
 
   private destroyRef = inject(DestroyRef)
-  private user: Users & { currProviderData: UserInfo | null } | null = null
   private localStorage = inject(LocalStorage)
-  readonly clipboardButton = ClipboardbuttonComponent
+  private user: Users & { currProviderData: UserInfo | null } | null = null
   private destroy$ = new Subject<void>()
 
-  // clear the timeout when the component is destroyed.
-  private timeoutId: any;
+  protected latestTaskId = signal<string | null>(null); // Initialize with null if no task ID initially
 
-  private tempTaskId: string
-  private latestTaskId = signal<string | null>(null); // Initialize with null if no task ID initially
-
-
-  @HostBinding('class') classes = 'flex items-center flex-col relative';
 
   crawlOptions: FormGroup
 
@@ -71,20 +65,21 @@ export class AppCrawlComponent {
 
 
   // Action Buttons
-  enableClearBtn?: boolean = false
   protected itemVisibility: { [key: string]: WritableSignal<boolean> } = {};
 
+  // FIXME: REMOVE THIS TWO VARS NOT NEEDED 
   protected isResultsProcessing: boolean
-  protected isCrawlProcessing: boolean
   protected isGetResults: boolean
+  protected isCrawlProcessing: boolean
   protected errorMessage = ''
 
   protected abortButtonPressed: boolean
 
   // Results Area
   crawlResults: any[] = []; // Array to hold results (keeping as any[] as per instruction)
-  taskStatus$: Observable<string | undefined | null>
-
+  taskStatus$: Observable<Pick<CrawlStatus, 'error' | 'status' | 'result'> | undefined | null>
+  batchStringBuffer: string = ''
+  progress: number | null // Progress percentage (0 to 100)
   
 
   // Data Lists
@@ -95,6 +90,7 @@ export class AppCrawlComponent {
   loadPackSubscription: Subscription
   crawlSubscription: Subscription
   cancelSubscription: Subscription
+  timerSub: Subscription
 
 
   // Get Variables 
@@ -107,10 +103,11 @@ export class AppCrawlComponent {
     private authService: AuthService,
     private fireService: FirestoreService,
     private crawlService: CrawlAPIService,
+    private operStatusService: OperationStatusService,
     private snackbarService: SnackbarService,
     private cdr: ChangeDetectorRef,
     private fb: FormBuilder,
-
+    private router: Router,
 
   ) {
 
@@ -128,6 +125,7 @@ export class AppCrawlComponent {
     this.isCrawlProcessing = false
     this.isGetResults = false
     this.abortButtonPressed = false
+    this.progress = null
 
     this.taskStatus$ = of(undefined)
 
@@ -198,12 +196,14 @@ export class AppCrawlComponent {
               setCrawlPackList(pack, this.crawlConfigPack)
 
             this.localStorage.setItem("crawlpack", JSON.stringify(pack))
+            this.cdr.markForCheck() // Notify Angular of the change
 
           },
           error: (err: any) => {
             console.error(err)
           }
         })
+
   }
 
   submitCrawlJob() {
@@ -213,6 +213,8 @@ export class AppCrawlComponent {
     if (!this.urls.valid || this.crawlPackSelector.value?.code === 'default')
       return
 
+    this.crawlResults = [] // reset the results array
+    
     // reset the results
     this.closeResults()
 
@@ -229,20 +231,12 @@ export class AppCrawlComponent {
   crawlEnqueue(formInput: string) {
 
     let urls = formInput.trim().split(',')
-
+    const operationData = this.setupOperationData()
     // Create a new CrawlConfig object
-    this.crawlSubscription = this.crawlService.getTempTaskId()
+    this.crawlSubscription = this.crawlService.multiCrawlEnqueue(urls, operationData, this.crawlpack as CrawlPack)
       .pipe(
         takeUntil(this.destroy$),
-        tap((id: string) => this.tempTaskId = id),
-        mergeMap((id: string) => {
-
-          // ensure that ui prints the task status
-          this.updateUIStatus(id)
-
-          // add crawl task to the queue
-          return this.crawlService.crawlEnqueue(urls, id, this.crawlpack as CrawlPack)
-        }),
+        tap((task: CrawlTask) => this.updateUIStatus(task.id)), // ensure that ui prints the task status
         // tap((task: CrawlTask) => console.log('a new crawl task' + ' added' + ' to the qeueu: ', task)),
         delay(3000), // Delay to ensure the request is sent
         concatMap((task: CrawlTask) => {
@@ -252,23 +246,31 @@ export class AppCrawlComponent {
           this.isResultsProcessing = true
 
           this.latestTaskId.set(task.id) // Emit the current task ID
+          console.log('Crawl task started with id:', task.id)
 
           // process the data return streaming response
-          return this.crawlService.getCrawlAIStream(task._links.self.href, task.id)
+          return this.crawlService.streamTaskResults(task._links.self.href, task.id)
         })
       ).subscribe({
-        next: (taskResult: any) => {
+        next: (taskResult: CrawlStreamBatch) => {
 
+          if (taskResult.progress !== undefined) {
+            this.progress = taskResult.progress
+          }
           // add data to the dom as they coming to the frontend
           this.addCrawlResult(taskResult)
+          this.cdr.markForCheck() // Mark for check after data updates
         },
         complete: () => {
           // reset the processing status
           this.isResultsProcessing = this.isCrawlProcessing = false
 
+          this.progress = 100 // Set progress to 100% when complete
+
           // reset the form
           this.enableForm()
-
+          this.latestTaskId.set(null)
+          this.cdr.markForCheck() // Mark for check on completion
           // detect changes
           // this.cdr?.detectChanges()
         },
@@ -277,16 +279,37 @@ export class AppCrawlComponent {
           // print the error
           console.error('Error processing data:', error, error.message);
           // set the error message to show on the screen by snackbar popup
-          this.errorMessage = 'Error processing data. Please check console for details.';
+          this.errorMessage = error.message || 'Error processing data. Please check console for details.';
 
-          // reset the processing status
-          this.isResultsProcessing = false
+          this.latestTaskId.set(null)
+          this.cdr.markForCheck() // Mark for check on error
           // show snackbar Error
           this.showSnackbar(this.errorMessage || "", SnackBarType.error, '', 5000)
         }
       })
   }
 
+  setupOperationData(): CrawlOperation {
+
+    const operationData: CrawlOperation = {
+      type: 'playground',
+      author: {
+        displayName: this.user?.currProviderData?.displayName || "anonymous",
+        uid: this.user?.uid || "anonymous"
+      },
+      name: `Crawl Job - Playground`,
+      created_At: Date.now(),
+      scheduled_At: Date.now(),
+      prompt: this.userprompt.value || '',
+      urlPath: this.router.url || 'unknown',
+      metadataId: this.crawlpack?.id || 'unknown',
+      urls: this.urls.value.trim().split(',') || [],
+      status: CrawlOperationStatus.READY,
+      color: crawlOperationStatusColor(CrawlOperationStatus.READY),
+    }
+
+    return operationData
+  }
 
   onDropDownSelected(event: DropDownOption) {
 
@@ -318,6 +341,7 @@ export class AppCrawlComponent {
     else {
       this.stream?.setValue(isConfigStreamON)
     }
+    this.cdr.markForCheck() // Mark for check after dropdown selection
 
   }
 
@@ -336,9 +360,9 @@ export class AppCrawlComponent {
       return true
     })
 
-    this.timeoutId = setTimeout(() => {
-      this.itemVisibility['markdown'].set(this.itemVisibility[packKey]())
-    }, 300) // Adjust the timeout duration as needed
+    this.timerSub = timer(300).subscribe(() => {
+      this.itemVisibility['markdown'].set(this.itemVisibility[packKey]());
+    });
 
   }
 
@@ -348,60 +372,63 @@ export class AppCrawlComponent {
    */
 
   /**
-   * The function `updateUIStatus` retrieves the status of a task from a service by SSE, displays
-   * corresponding messages based on the status, and updates the UI accordingly.
-   * @param {string} id - The `updateUIStatus` function takes an `id` parameter of type string. This
-   * function is responsible for updating the UI status based on the task status retrieved from the
-   * `crawlService`.
+   * Updates the UI status based on the task status retrieved from the `crawlService`.
+   * @param {string} id - The task ID for which the status is being updated.
    */
   updateUIStatus(id: string) {
-
-    this.taskStatus$ = this.crawlService.getTaskStatus(id).pipe(
-      tap((status: string) => {
-        console.log(`status: ${status}`)
-        if (status === (CrawlOperationStatus.COMPLETED || CrawlOperationStatus.CANCELED || CrawlOperationStatus.FAILED)) {
-          this.taskStatus$ = of(status)
-          switch (status) {
-            case CrawlOperationStatus.COMPLETED as string:
-              this.showSnackbar("Task completed successfully!", SnackBarType.success)
-              break
-            case CrawlOperationStatus.CANCELED as string:
-              this.showSnackbar("Task canceled successfully!", SnackBarType.info)
-              break
-            case CrawlOperationStatus.FAILED as string:
-              this.showSnackbar("Task failed!", SnackBarType.error)
-              break
-            default:
-              break
-          }
-        }
-      }),
-      takeWhile(status =>
-        status !== ""
-      )
-    )
+    this.taskStatus$ = this.operStatusService.getTaskStatusWithSnackbar(
+      id,
+      (msg, type) => this.showSnackbar(msg, type)
+    ).pipe(
+    shareReplay(1) // Ensures only one HTTP request is made, even with multiple subscribers
+  )
   }
 
   // Method to add new results (this would be called when a new streaming event arrives)
-  addCrawlResult(line: any) {
+  addCrawlResult(line: CrawlStreamBatch) {
+    if (!line) return;
 
-    if (!line)
-      return
-
-    if (line?.dump && typeof line?.dump === 'string') {
-      try {
-        const dump: CrawlResult = JSON.parse(line.dump);
-        console.log(dump);
-        // Ensure the object conforms to CrawlResult structure and add necessary UI properties
-        this.crawlResults.push({
-          ...dump,
-          message: line.message || "processing", // Use line.message if available, otherwise "processing"
-          expanded: true // Initialize as expanded for the new item
-        });
-      } catch (e) {
-        console.error('Failed to parse dump JSON:', e);
-      }
+    if (line.status === "ok") {
+      this.handleOkChunk(line);
+    } else if (line.status === "error" && line.message) {
+      this.handleError(line.message);
     }
+  }
+
+  private handleOkChunk(chunk: CrawlStreamBatch) {
+    if (chunk.chunk_index === '0' && this.batchStringBuffer) {
+      this.processBatchBuffer(chunk.message)
+    }
+
+    if (chunk.type === 'batch_chunk' && chunk.dump && typeof chunk.dump === 'string') {
+      this.batchStringBuffer += chunk.dump;
+    }
+
+    if (chunk.message === "completed") {
+      this.processBatchBuffer("completed")
+    }
+  }
+
+  private processBatchBuffer(message?: string) {
+    try {
+      const dump: CrawlResult = JSON.parse(this.batchStringBuffer);
+      this.crawlResults.push({
+        ...dump,
+        message: message || "processing",
+        expanded: true,
+      })
+    } catch (error) {
+      console.error("Failed to parse dump JSON:", error);
+      this.showSnackbar("Error parsing crawl result data.", SnackBarType.error, '', 5000);
+    } finally {
+      this.batchStringBuffer = '';
+    }
+  }
+
+  private handleError(message: string) {
+    console.error("Error chunk received:", message);
+    this.errorMessage = message;
+    this.showSnackbar(message, SnackBarType.error, '', 5000);
   }
 
   // Toggle visibility of a result item
@@ -437,7 +464,7 @@ export class AppCrawlComponent {
 
     // remove results
     this.crawlResults = []
-
+    
     this.closeResults()
   }
 
@@ -445,13 +472,14 @@ export class AppCrawlComponent {
 
     this.urls.enable()
     this.stream?.enable()
+    this.crawlPackSelector.enable()
     this.submitButton.setValue(false)
   }
 
   private disableForm() {
     this.urls.disable()
     this.stream?.disable()
-
+    this.crawlPackSelector.disable()
     this.submitButton.setValue(true)
   }
 
@@ -459,9 +487,10 @@ export class AppCrawlComponent {
 
     // Close results, reset results variables and subscribers
     this.isGetResults = false
-    this.tempTaskId = ''
     this.taskStatus$ = of(undefined)
     this.abortButtonPressed = false
+    this.progress = null
+    this.batchStringBuffer = '' // reset the batch string buffer
 
     // this.jsonChunk['usage'] = null
     // this.jsonChunk['content'] = '']
@@ -474,21 +503,20 @@ export class AppCrawlComponent {
   }
 
   abortRequests() {
-    // const taskId = this.latestTaskId()
-    const tempTaskId = this.tempTaskId
+    const taskId = this.latestTaskId()
 
-    console.log("cancel task by id ",tempTaskId)
-    if(!tempTaskId || this.abortButtonPressed)
+    console.log("cancel task by id ",taskId)
+    if(!taskId || this.abortButtonPressed)
       return
     
     
     // Emit a signal to cancel the request
     this.destroy$.next()
-    this.crawlSubscription?.unsubscribe()
+    // this.crawlSubscription?.unsubscribe()
     this.abortButtonPressed = true
 
     // send cancel job request
-    this.cancelSubscription = this.crawlService.cancelTask(tempTaskId)
+    this.cancelSubscription = this.crawlService.cancelTask(taskId)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (res: {status: string, message: string}) => {
@@ -497,6 +525,7 @@ export class AppCrawlComponent {
             this.showSnackbar(res.message, SnackBarType.warning)
             break
           case "ok":
+            // this.closeResults()
             // new request to cancel and terminate the celery task
             this.showSnackbar(res.message, SnackBarType.info)
             break
@@ -504,14 +533,14 @@ export class AppCrawlComponent {
       },
 
       error: (error) => {
+        this.abortButtonPressed = this.isCrawlProcessing = false
+        this.enableForm()
         console.log("an error occured on cancelation process: ", error)
       },
       complete: () => {
         
-        this.isResultsProcessing = this.isCrawlProcessing = false
+        this.abortButtonPressed = this.isCrawlProcessing = false
         this.enableForm()
-        this.abortButtonPressed = false
-        this.closeResults()
       }
     })
   }
@@ -520,16 +549,10 @@ export class AppCrawlComponent {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     // Complete the Subject to prevent memory leaks
-    this.destroy$.next()
+    this.crawlResults = []
+    this.closeResults()
     this.destroy$.complete()
-
-    this.loadPackSubscription?.unsubscribe()
-    this.crawlSubscription?.unsubscribe()
-    this.cancelSubscription?.unsubscribe()
-    
-
-    if (this.timeoutId)
-      clearTimeout(this.timeoutId)
+    this.timerSub?.unsubscribe()
   }
 
 }

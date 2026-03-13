@@ -1,22 +1,23 @@
-import { NgClass, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppSidebarNavComponent } from '../app-sidebar-nav/app-sidebar-nav.component';
 import { LoadingService } from 'src/app/core/services';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs';
 import { asideBarAnimation } from 'src/app/animations';
 import { Outsideclick } from 'src/app/core/directives';
 
 @Component({
     selector: 'app-sidebar',
-    imports: [NgClass, NgIf, AppSidebarNavComponent, MatProgressSpinner, Outsideclick],
+    imports: [NgClass, AppSidebarNavComponent, MatProgressSpinner, Outsideclick],
     templateUrl: './app-sidebar.component.html',
     styleUrl: './app-sidebar.component.scss',
     animations: [
         asideBarAnimation
     ]
 })
-export class AppSidebarComponent {
+export class AppSidebarComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
 
   @Input() barClosed: boolean
   @Input() resizeScreen: boolean
@@ -24,22 +25,17 @@ export class AppSidebarComponent {
   @Output() backDropPressed: EventEmitter<boolean> = new EventEmitter<boolean>()
   isLoading = false;
 
-  constructor(private loadingService: LoadingService, private cdr: ChangeDetectorRef) {
+  constructor(private loadingService: LoadingService) {
 
     this.barClosed = false
   }
 
-  ngAfterViewInit(): void {
-    //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
-    //Add 'implements AfterViewInit' to the class.
-    this.loadingService.loadingSubject$.pipe(
-      finalize(() => {
-        this.loadingService.loadingSubject$.unsubscribe()
-      })).subscribe((isLoading) => {
+  ngOnInit(): void {
+    this.loadingService.loadingSubject$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((isLoading) => {
         this.isLoading = isLoading;
-      },)
-
-    this.cdr.detectChanges()
+      });
   }
 
   onSidebarClose(event: boolean): void {

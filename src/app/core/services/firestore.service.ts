@@ -1,16 +1,17 @@
-import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector } from '@angular/core'
+import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector, PLATFORM_ID } from '@angular/core'
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database'
-import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, User, UserCredential } from '@angular/fire/auth'
+import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, getRedirectResult, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, updateProfile, User, UserCredential } from '@angular/fire/auth'
 import {
   addDoc,
-  collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, DocumentData, DocumentReference,
+  collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, docData, DocumentData, DocumentReference,
   FieldValue,
   Firestore, getDoc, getDocs, getFirestore, increment, limit, query, Query,
   QueryConstraint, QuerySnapshot, serverTimestamp, setDoc, SetOptions,
   Timestamp, writeBatch, WriteBatch,
   where
 } from '@angular/fire/firestore'
-import { CartPack, CrawlPack, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
+import { connectFunctionsEmulator, Functions, httpsCallable } from '@angular/fire/functions'
+import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
 import { map, Observable, of, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
@@ -19,11 +20,17 @@ import {
   fromTask, uploadBytesResumable, TaskEvent
 } from '@angular/fire/storage'
 import { createSessionKey } from '../functions'
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Analytics, logEvent, setUserId } from '@angular/fire/analytics'
+import { isPlatformBrowser } from '@angular/common'
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
+  private analytics = inject(Analytics, { optional: true })
+  private platformId = inject(PLATFORM_ID)
+  private functions = inject(Functions, { optional: true })
   private firestore = inject(Firestore) // inject()
 
   private storage = inject(Storage)
@@ -34,13 +41,14 @@ export class FirestoreService {
   constructor(
     private afAuth: Auth,
     private ngZone: NgZone, // Inject NgZone
+    private http: HttpClient
   ) {
     // this.app = initializeApp(environment.firebaseConfig)
     this.firestore = this.getInstanceDB('easyscrape')
 
     this.storage = this.getStorage()
 
-    if (this.isLocalhost() && environment.emulators) {
+    if (this.isBrowserRuntime() && this.isLocalhost() && environment.emulators) {
 
       console.log('🔥 Connecting Firestore Service to Firebase Emulators')
 
@@ -48,8 +56,15 @@ export class FirestoreService {
       connectFirestoreEmulator(this.firestore, 'localhost', 5001)
       connectAuthEmulator(this.afAuth, 'http://localhost:9099')
       connectStorageEmulator(this.storage, 'localhost', 9199) // <-- Add this line
+      if (this.functions) {
+        connectFunctionsEmulator(this.functions, 'localhost', 8081)
+      }
 
     }
+  }
+
+  private isBrowserRuntime(): boolean {
+    return isPlatformBrowser(this.platformId)
   }
 
   getInstanceDB(databaseName?: string): Firestore {
@@ -98,31 +113,27 @@ export class FirestoreService {
    * error retrieving the data.
    */
   async getUserData(userId: string): Promise<Users | null> {
+    try {
+      const userRef = this.doc('users', userId)
+      const docSnapshot = await this.getDoc(userRef)
 
+      if (docSnapshot['exists']()) {
+        const data = docSnapshot['data']() as any
 
-    const userRef = this.doc('users', userId)
-    let err, docSnapshot = await this.getDoc(userRef)
+        return {
+          ...data,
+          last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null,
+          created_At: data.created_At ? (data.created_At as any).toDate() : null,
+          updated_At: data.updated_At ? (data.updated_At as any).toDate() : null
+        } as Users
+      }
 
-    if (err) {
+      return null
+    } catch (err) {
       console.error("Failed to get user's data:", err)
       return null
     }
-
-    if (docSnapshot['exists']()) {
-      const data = docSnapshot['data']() as any
-
-      return {
-        ...data,
-        last_login_at: data.last_login_at ? (data.last_login_at as any).toDate() : null,
-        created_At: data.created_At ? (data.created_At as any).toDate() : null,
-        updated_At: data.updated_At ? (data.updated_At as any).toDate() : null
-      } as Users
-    }
-
-    return null
-
   }
-
 
   async setUserData(userId: string, data: Partial<Users>, merge: boolean = true): Promise<boolean | Error> {
 
@@ -134,6 +145,81 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error storing user data:', error)
       throw error as any
+    }
+  }
+
+  /**
+   * Updates email verification status in Firestore
+   * Should be called after Firebase Auth email is verified via applyActionCode()
+   * This ensures Firestore stays in sync with Firebase Auth
+   * 
+   * @param uid - User's UID
+   * @param emailVerified - Email verification status
+   */
+  async updateEmailVerificationStatus(uid: string, emailVerified: boolean): Promise<void> {
+    try {
+      const userRef = this.doc('users', uid);
+      await this.setDoc(userRef, {
+        emailVerified,
+        updated_At: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log(`Email verification status updated for user ${uid}: ${emailVerified}`);
+    } catch (error) {
+      console.error('Error updating email verification status:', error);
+      throw error;
+    }
+  }
+
+  async updatePhoneVerificationStatus(uid: string, phoneVerified: boolean): Promise<void> {
+    try {
+      const userRef = this.doc('users', uid);
+      await this.setDoc(userRef, {
+        phoneVerified,
+        updated_At: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log(`Phone verification status updated for user ${uid}: ${phoneVerified}`);
+    } catch (error) {
+      console.error('Error updating phone verification status:', error);
+      throw error;
+    }
+  }
+
+  async updateUserPhoneNumber(uid: string, phoneNumber: string, phoneVerified: boolean = false): Promise<void> {
+    try {
+      const userRef = this.doc('users', uid);
+      await this.setDoc(userRef, {
+        phoneNumber,
+        phoneVerified,
+        updated_At: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log(`Phone number updated for user ${uid}: ${phoneNumber}`);
+    } catch (error) {
+      console.error('Error updating phone number:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refreshes user data from Firestore
+   * Used after profile changes (like email verification) to get fresh data
+   * 
+   * @param uid - User's UID
+   * @returns Fresh user data from Firestore or null if not found
+   */
+  async refreshUserFromFirestore(uid: string): Promise<Users | null> {
+    try {
+      const userData = await this.getUserData(uid);
+      if (!userData) {
+        throw new Error(`User data not found for UID: ${uid}`);
+      }
+      console.log(`User data refreshed from Firestore for ${uid}`);
+      return userData;
+    } catch (error) {
+      console.error('Error refreshing user data from Firestore:', error);
+      throw error;
     }
   }
 
@@ -170,8 +256,9 @@ export class FirestoreService {
     }
   }
 
-  async setUserLoginMetrics(userId: string, metrics: any, guestInfo?: Guest) {
-    const { ipAddress, userAgent, location, deviceType, connection, providerId, browser } = metrics
+  async setUserLoginMetrics(userId: string, metrics: loginHistoryInfo, guestInfo?: Guest) {
+    // deviceFingerprintHash
+    const { ipAddress, userAgent, location, deviceType, connection, providerId, browser, deviceFingerprintHash } = metrics
 
     if (!userId || !ipAddress || !userAgent) {
       throw new Error('UID, IP Address, and User Agent are required.')
@@ -200,22 +287,13 @@ export class FirestoreService {
       }
 
       if (!guestInfo) {
-        const loginMetrics = loginMetricsSnap["data"]() as loginMetrics
-
-        let err2, guestSnap = await this.getDoc(this.doc('guests', loginMetrics.lastGuestId))
-
-        if (err2) {
-          console.warn("Failed to get guest data:", err2)
-        } else if (guestSnap['exists']()) {
-          guestInfo = guestSnap['data']() as Guest
-          console.log("Guest info retrieved from lastGuestId:", guestInfo)
-        }
+        console.warn('Guest info not provided. Continuing metrics without guest enrichment.')
       }
 
       // Prepare login history entry
       const ip = guestInfo?.ip.raw || ipAddress;
       const currentLocation = guestInfo?.location || location || 'Unknown'
-      const currentBrowser = browser || guestInfo?.browser
+      const currentBrowser = browser || guestInfo?.browser || 'Unknown'
       const currentOS = guestInfo?.os || 'Unknown'
       const currDeviceType = deviceType || guestInfo?.device || 'Unknown'
       const currUserAgent = userAgent || guestInfo?.userAgent || 'Unknown'
@@ -237,6 +315,7 @@ export class FirestoreService {
         sessionKey,
         // Only include guestInfo if it's defined and not undefined
         ...(guestInfo ? { guestId: guestInfo.id } : {}),
+        deviceFingerprintHash
       }
 
 
@@ -278,7 +357,7 @@ export class FirestoreService {
         id: userId,
         lastLoginId: newlogin.id,
         lastSignInTime: currentTime,
-        loginCount: increment(1),
+        loginCount: this.increment(1),
       }
 
       // Update existing document
@@ -297,9 +376,16 @@ export class FirestoreService {
 
   async setSignOutMetrics(userId: string, loginId: string) {
 
-    if (!userId || !loginId) {
-      throw new Error('UID and Login ID are required. ' + `Received UID: ${userId}, Login ID: ${loginId}`)
+    if (!userId) {
+      throw new Error('User ID is required for sign-out metrics.')
     }
+
+    // If loginId is missing, log warning but don't fail - user logout should still proceed
+    if (!loginId) {
+      console.warn('Login ID not available for sign-out metrics - will skip recording sign-out time')
+      return { success: true, message: `Sign-out recorded for user ${userId} (no login session found).` }
+    }
+
     try {
       const loginHistoryRef = this.doc(`login_metrics/${userId}/login_history_Info`, loginId)
 
@@ -324,52 +410,18 @@ export class FirestoreService {
       throw new Error("User ID and Guest ID are required.");
     }
 
-    let guestInfo: Guest | null = null;
-
     try {
-      const guestRef = this.doc('guests', guestId);
-      let err, guestSnap = await this.getDoc(guestRef);
+      const response = await this.callFunction<
+        { uid: string; guestId: string },
+        { ok: boolean; linkedUid: string; guestId: string; guestInfo?: Guest | null }
+      >('linkGuestToUser', { uid, guestId });
 
-      if (err) {
-        console.error("Failed to get guest data:", err);
-        return { err, guestInfo };
-      }
-
-      if (!guestSnap['exists']()) {
-        return { err: "Guest not found", guestInfo: null };
-      }
-
-      guestInfo = guestSnap['data']() as Guest;
-
-      const details: Partial<UserDetails> = {
-        latitude: guestInfo.latitude || 0,
-        longitude: guestInfo.longitude || 0,
-        country: guestInfo.country || "Unknown",
-        geo: guestInfo.geo || { continent: "Unknown", region: "Unknown" },
-        region: guestInfo.region || "Unknown",
-        timezone: guestInfo.timezone || "UTC",
-        location: guestInfo.location || "Unknown",
-        updated_At: new Date(),
-      };
-
-      const userDetails: any = {
-        details,
-        updated_At: new Date(),
-      };
-
-      // Batch write: user first, then guest
-      const userRef = this.doc('users', uid);
-      const batch = this.writeBatch();
-      batch.set(userRef, userDetails, { merge: true });
-      batch.set(guestRef, { uid, linkedAt: new Date() }, { merge: true });
-
-      await batch.commit();
-
-      console.log(`Guest ${guestId} linked to user ${uid}.`);
+      const guestInfo = response?.guestInfo ?? null;
+      console.log(`Guest ${guestId} linked to user ${uid} via backend function.`);
       return { err: null, guestInfo };
     } catch (error) {
       console.error("Error linking guest data to user:", error);
-      return { err: error as string, guestInfo };
+      return { err: error as string, guestInfo: null };
     }
   }
 
@@ -485,7 +537,358 @@ export class FirestoreService {
     }
   }
 
+  /* Crawler Packs - Browser Profiles - Crawler Configurations - Crawler Results - Crawler Strategies 
+  *  Each of these should be their own collections and subcollections
+  *  under the user document.
+  */
 
+  async storeBrowserProfile(userId: string, profile: BrowserProfile): Promise<void> {
+    return this.storeUserConfig(userId, profile, 'browser', 'Browser profile')
+  }
+
+  async storeCrawlConfig(userId: string, config: CrawlConfig): Promise<void> {
+    return this.storeUserConfig(userId, config, 'crawlconfigs', 'Crawl Config')
+  }
+
+  async storeCrawlResultsConfig(userId: string, config: CrawlResultConfig): Promise<void> {
+    return this.storeUserConfig(userId, config, 'crawlresultsconfig', 'CrawlResult Config')
+  }
+
+
+  /**
+ * Generic method to store user-related configurations in Firestore
+ * @param userId The user ID
+ * @param data The data object to store
+ * @param collectionPath The subcollection path where data should be stored
+ * @param itemName Human-readable name for logging
+ * @returns Promise that resolves when the operation completes
+ */
+  async storeUserConfig<T extends { id?: string; uid?: string }>(
+    userId: string,
+    data: T,
+    collectionPath: string,
+    itemName: string
+  ): Promise<void> {
+    try {
+      const configCollection = this.collection(this.firestore, `users/${userId}/${collectionPath}`);
+      data.uid = userId
+
+      const configRef = data.id
+        ? this.docRef(configCollection, data.id) // Update existing item
+        : this.newDocRef(configCollection) // Create new item
+
+      // Exclude 'id' property when storing the data
+      const { id, ...dataWithoutId } = data as any
+      await this.setDoc(configRef, dataWithoutId, { merge: !!data.id })
+      console.log(`${data.id ? `${itemName} updated` : `New ${itemName} created`} in Firestore.`)
+    } catch (error) {
+      console.error(`Error storing user ${itemName.toLowerCase()} data:`, error)
+      throw error
+    }
+  }
+
+
+   // ============================================================================
+  // GUEST ANALYTICS METHODS
+  // ============================================================================
+
+  /**
+   * Get guest analytics by country (Top N countries)
+   * INDEX REQUIRED: Collection: guests, Fields: country (Ascending)
+   */
+  async getGuestsByCountry(topN: number = 10): Promise<{ [country: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const countryMap: { [country: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const country = data['country'] || 'Unknown';
+      countryMap[country] = (countryMap[country] || 0) + 1;
+    });
+
+    // Sort and get top N
+    const sorted = Object.entries(countryMap)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, topN);
+    
+    return Object.fromEntries(sorted);
+  }
+
+  /**
+   * Get guest analytics by browser
+   * INDEX REQUIRED: Collection: guests, Fields: browser (Ascending)
+   */
+  async getGuestsByBrowser(): Promise<{ [browser: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const browserMap: { [browser: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const browser = data['browser'] || 'Unknown';
+      browserMap[browser] = (browserMap[browser] || 0) + 1;
+    });
+
+    return browserMap;
+  }
+
+  /**
+   * Get guest analytics by device type
+   * INDEX REQUIRED: Collection: guests, Fields: device (Ascending)
+   */
+  async getGuestsByDevice(): Promise<{ [device: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const deviceMap: { [device: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const device = data['device'] || 'Unknown';
+      deviceMap[device] = (deviceMap[device] || 0) + 1;
+    });
+
+    return deviceMap;
+  }
+
+  /**
+   * Get guest analytics by OS
+   * INDEX REQUIRED: Collection: guests, Fields: os (Ascending)
+   */
+  async getGuestsByOS(): Promise<{ [os: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const osMap: { [os: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const os = data['os'] || 'Unknown';
+      osMap[os] = (osMap[os] || 0) + 1;
+    });
+
+    return osMap;
+  }
+
+  /**
+   * Get conversion metrics: Guests who registered vs unregistered
+   * COMPOSITE INDEX REQUIRED: Collection: guests, Fields: linkedAt (Ascending), uid (Ascending)
+   * 
+   * Guests with uid field populated have registered/logged in
+   */
+  async getGuestConversionMetrics(): Promise<{
+    registered: number;
+    unregistered: number;
+    conversionRate: number;
+  }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return { registered: 0, unregistered: 0, conversionRate: 0 };
+    }
+
+    let registered = 0;
+    let unregistered = 0;
+
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      // Check if guest has been linked to a user (has uid or linkedAt)
+      if (data['uid'] || data['linkedAt']) {
+        registered++;
+      } else {
+        unregistered++;
+      }
+    });
+
+    const total = registered + unregistered;
+    const conversionRate = total > 0 ? (registered / total) * 100 : 0;
+
+    return {
+      registered,
+      unregistered,
+      conversionRate: Math.round(conversionRate * 100) / 100
+    };
+  }
+
+  /**
+   * Get guest activity over time (by creation date)
+   * INDEX REQUIRED: Collection: guests, Fields: createdAt (Ascending)
+   */
+  async getGuestActivityByDay(limitDays: number = 7): Promise<{ [date: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const result: { [date: string]: number } = {};
+
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const createdAt = data['createdAt'];
+      if (createdAt) {
+        // Handle Firestore Timestamp
+        const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+        const dateKey = date.toISOString().split('T')[0];
+        result[dateKey] = (result[dateKey] || 0) + 1;
+      }
+    });
+
+    // Limit to last N days
+    const sortedDates = Object.keys(result).sort().slice(-limitDays);
+    const limitedResult: { [date: string]: number } = {};
+    for (const date of sortedDates) {
+      limitedResult[date] = result[date];
+    }
+
+    return limitedResult;
+  }
+
+  /**
+   * Get guest analytics by timezone (Top N timezones)
+   * INDEX REQUIRED: Collection: guests, Fields: timezone (Ascending)
+   */
+  async getGuestsByTimezone(topN: number = 10): Promise<{ [timezone: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const timezoneMap: { [timezone: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const timezone = data['timezone'] || 'Unknown';
+      timezoneMap[timezone] = (timezoneMap[timezone] || 0) + 1;
+    });
+
+    // Sort and get top N
+    const sorted = Object.entries(timezoneMap)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, topN);
+    
+    return Object.fromEntries(sorted);
+  }
+
+  /**
+   * Get guest analytics by language
+   * INDEX REQUIRED: Collection: guests, Fields: language (Ascending)
+   */
+  async getGuestsByLanguage(): Promise<{ [language: string]: number }> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return {};
+    }
+
+    const languageMap: { [language: string]: number } = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const language = data['language'] || 'Unknown';
+      languageMap[language] = (languageMap[language] || 0) + 1;
+    });
+
+    return languageMap;
+  }
+
+  /**
+   * Get comprehensive guest analytics in one call
+   * This reduces the number of round trips to Firestore
+   */
+  async getComprehensiveGuestAnalytics() {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests data:", err);
+      return null;
+    }
+
+    const analytics = {
+      total: querySnapshot.size,
+      byCountry: {} as { [key: string]: number },
+      byBrowser: {} as { [key: string]: number },
+      byDevice: {} as { [key: string]: number },
+      byOS: {} as { [key: string]: number },
+      byLanguage: {} as { [key: string]: number },
+      byTimezone: {} as { [key: string]: number },
+      registered: 0,
+      unregistered: 0,
+      byDay: {} as { [key: string]: number }
+    };
+
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+
+      // Country
+      const country = data['country'] || 'Unknown';
+      analytics.byCountry[country] = (analytics.byCountry[country] || 0) + 1;
+
+      // Browser
+      const browser = data['browser'] || 'Unknown';
+      analytics.byBrowser[browser] = (analytics.byBrowser[browser] || 0) + 1;
+
+      // Device
+      const device = data['device'] || 'Unknown';
+      analytics.byDevice[device] = (analytics.byDevice[device] || 0) + 1;
+
+      // OS
+      const os = data['os'] || 'Unknown';
+      analytics.byOS[os] = (analytics.byOS[os] || 0) + 1;
+
+      // Language
+      const language = data['language'] || 'Unknown';
+      analytics.byLanguage[language] = (analytics.byLanguage[language] || 0) + 1;
+
+      // Timezone
+      const timezone = data['timezone'] || 'Unknown';
+      analytics.byTimezone[timezone] = (analytics.byTimezone[timezone] || 0) + 1;
+
+      // Conversion
+      if (data['uid'] || data['linkedAt']) {
+        analytics.registered++;
+      } else {
+        analytics.unregistered++;
+      }
+
+      // Activity by day
+      const createdAt = data['createdAt'];
+      if (createdAt) {
+        const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+        const dateKey = date.toISOString().split('T')[0];
+        analytics.byDay[dateKey] = (analytics.byDay[dateKey] || 0) + 1;
+      }
+    });
+
+    return analytics;
+  }
 
   /**
    * This TypeScript function returns an observable that emits user data indicating whether a user is
@@ -513,6 +916,17 @@ export class FirestoreService {
   }
 
   /**
+   * Note that the doc method could accept a CollectionReference or DocumentReference in addition to
+   * Firestore.
+   */
+  public docRef<AppModelType, DbModelType extends DocumentData>(reference: CollectionReference<AppModelType, DbModelType>, path?: string, ...pathSegments: string[]): DocumentReference {
+    return runInInjectionContext(
+      this._injector,
+      (): DocumentReference => doc(reference, path, ...pathSegments) as DocumentReference<DocumentData, DocumentData>,
+    )
+  }
+
+  /**
    * This TypeScript function asynchronously retrieves a document from a Firestore database using the
    * provided user reference.
    * database. It is of type `DocumentReference<DocumentData>`, where `DocumentData` represents the
@@ -530,6 +944,13 @@ export class FirestoreService {
       async (): Promise<DocumentData> => {
         return await getDoc(userRef)
       },
+    )
+  }
+
+  public docData<T = DocumentData>(userRef: DocumentReference<DocumentData>): Observable<T | undefined> {
+    return runInInjectionContext(
+      this._injector,
+      (): Observable<T | undefined> => docData(userRef) as Observable<T | undefined>,
     )
   }
 
@@ -715,6 +1136,79 @@ export class FirestoreService {
     )
   }
 
+  public async getRedirectResult(): Promise<UserCredential | null> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential | null> => {
+        return await getRedirectResult(this.afAuth)
+      },
+    )
+  }
+
+  public async updateUserProfile(user: User, profile: { displayName?: string | null; photoURL?: string | null }): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await updateProfile(user, profile)
+      },
+    )
+  }
+
+  public async callFunction<RequestData = void, ResponseData = unknown>(
+    functionName: string,
+    data?: RequestData,
+  ): Promise<ResponseData> {
+    if (!this.functions) {
+      throw new Error('Firebase Functions is not available in the current injector context')
+    }
+
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<ResponseData> => {
+        const callable = httpsCallable<RequestData, ResponseData>(this.functions!, functionName)
+        const response = await callable(data as RequestData)
+        return response.data
+      },
+    )
+  }
+
+  public setAnalyticsUserId(analytics: Analytics | null | undefined, userId: string): void {
+    if (!analytics) {
+      return
+    }
+
+    runInInjectionContext(
+      this._injector,
+      (): void => {
+        setUserId(analytics, userId)
+      },
+    )
+  }
+
+  public logEvent(eventName: string, eventParams?: { [key: string]: any }): void {
+    if (!isPlatformBrowser(this.platformId) || !this.analytics) {
+      return
+    }
+
+    runInInjectionContext(
+      this._injector,
+      (): void => {
+        try {
+          logEvent(this.analytics!, eventName, eventParams)
+        } catch (error) {
+          console.warn('Analytics logEvent skipped:', error)
+        }
+      },
+    )
+  }
+
+  private increment(value: number): FieldValue {
+    return runInInjectionContext(
+      this._injector,
+      (): FieldValue => increment(value),
+    )
+  }
+
   /**
  * Runs an async function in the injection context. This can be awaited, unlike @see {runInInjectionContext}.
  * For some ungodly reason, only the first awaited call inside the fn callback is actually inside the injection context.
@@ -741,4 +1235,205 @@ export class FirestoreService {
   runInsideAngular<T>(fn: () => T): T { // Helper function
     return this.ngZone.run(fn)
   }
+
+  /**
+ * Get total guest count efficiently
+ */
+  async getGuestCount(): Promise<number> {
+    const guestsCollection = this.collection(this.firestore, 'guests');
+    const q = this.query(guestsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get guests count:", err);
+      return 0;
+    }
+    return querySnapshot.size;
+  }
+
+  /**
+   * Get total authenticated user count efficiently
+   */
+  async getAuthenticatedUserCount(): Promise<number> {
+    const metricsCollection = this.collection(this.firestore, 'login_metrics');
+    const q = this.query(metricsCollection);
+    let err, querySnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get login_metrics count:", err);
+      return 0;
+    }
+    return querySnapshot.size;
+  }
+
+  /**
+   * Get total login count and logins per day (aggregated)
+   */
+  async getLoginCountsByDay(limitDays: number = 7): Promise<{ [date: string]: number }> {
+    // This assumes each login_metrics/{userId}/login_history_Info contains login events with a timestamp
+    const metricsCollection = this.collection(this.firestore, 'login_metrics');
+    const q = this.query(metricsCollection);
+    let err, metricsSnapshot = await this.getDocs(q);
+    if (err) {
+      console.error("Failed to get login_metrics:", err);
+      return {};
+    }
+    const result: { [date: string]: number } = {};
+    for (const doc of metricsSnapshot.docs) {
+      const userId = doc.id;
+      const historyCollection = this.collection(this.firestore, `login_metrics/${userId}/login_history_Info`);
+      const historyQ = this.query(historyCollection);
+      let err2, historySnapshot = await this.getDocs(historyQ);
+      if (err2) continue;
+      for (const loginDoc of historySnapshot.docs) {
+        const data = loginDoc.data();
+        const ts = data['timestamp'] instanceof Date ? data['timestamp'] : (data['timestamp']?.toDate?.() ?? null);
+        if (!ts) continue;
+        const dateStr = ts.toISOString().slice(0, 10);
+        result[dateStr] = (result[dateStr] || 0) + 1;
+      }
+    }
+    // Optionally limit to last N days
+    const sortedDates = Object.keys(result).sort().slice(-limitDays);
+    const limitedResult: { [date: string]: number } = {};
+    for (const date of sortedDates) limitedResult[date] = result[date];
+    return limitedResult;
+  }
+  // ============================================================================
+  // ANALYTICS METRICS METHODS (NEW ARCHITECTURE)
+  // ============================================================================
+
+  /**
+   * Get dashboard summary (single read from metrics_summary/global)
+   */
+  async getDashboardSummary(): Promise<any | null> {
+    try {
+      const docRef = this.doc('metrics_summary/dashboard');
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting dashboard summary:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get metrics for a specific date
+   */
+  async getMetricsForDate(date: string): Promise<any | null> {
+    try {
+      const docRef = this.doc(`metrics_daily/${date}`);
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting metrics for date:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get metrics for date range (efficient query)
+   */
+  async getMetricsByDateRange(startDate: string, endDate: string): Promise<any[]> {
+    try {
+      const metricsCollection = this.collection(this.firestore, 'metrics_daily');
+      const q = this.query(
+        metricsCollection,
+        this.where('date', '>=', startDate),
+        this.where('date', '<=', endDate)
+      );
+      const snapshot = await this.getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting metrics by date range:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get pre-computed range metrics (single read)
+   * @param rangeId - 'last-7d', 'last-30d', 'last-90d', etc.
+   */
+  async getRangeMetrics(rangeId: string): Promise<any | null> {
+    try {
+      const docRef = this.doc(`metrics_range/${rangeId}`);
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting range metrics:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get hourly metrics by datetime key range.
+   * Datetime key format: YYYY-MM-DD-HH
+   */
+  async getHourlyMetricsByDateTimeRange(startKey: string, endKey: string): Promise<any[]> {
+    try {
+      const hourlyCollection = this.collection(this.firestore, 'metrics_hourly');
+      const q = this.query(
+        hourlyCollection,
+        this.where('datetime', '>=', startKey),
+        this.where('datetime', '<=', endKey),
+      );
+      const snapshot = await this.getDocs(q);
+      return snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a: any, b: any) => String(a.datetime || '').localeCompare(String(b.datetime || '')));
+    } catch (error) {
+      console.error('Error getting hourly metrics by datetime range:', error);
+      return [];
+    }
+  }
+  /**
+   * Get login history for user (with pagination)
+   * Reads from login_metrics/{userId}/login_history_Info subcollection
+   */
+  async getLoginHistoryNew(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    limitCount: number = 50
+  ): Promise<any[]> {
+    try {
+      const historyCollection = this.collection(
+        this.firestore,
+        `login_metrics/${userId}/login_history_Info`
+      );
+      
+      const constraints: QueryConstraint[] = [this.limit(limitCount)];
+      
+      if (startDate) {
+        constraints.push(this.where('timestamp', '>=', new Date(startDate)));
+      }
+      if (endDate) {
+        constraints.push(this.where('timestamp', '<=', new Date(endDate)));
+      }
+
+      const q = this.query(historyCollection, ...constraints);
+      const snapshot = await this.getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting login history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get user login metrics summary (single read)
+   * Reads from login_metrics/{userId} document
+   */
+  async getUserLoginMetricsNew(userId: string): Promise<any | null> {
+    try {
+      const docRef = this.doc(`login_metrics/${userId}`);
+      const docSnap = await this.getDoc(docRef);
+      return docSnap['exists']() ? docSnap['data']() : null;
+    } catch (error) {
+      console.error('Error getting user login metrics:', error);
+      return null;
+    }
+  }
+
+  // ============================================================================
+  // END ANALYTICS METRICS METHODS
+  // ============================================================================
 }

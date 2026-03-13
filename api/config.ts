@@ -1,42 +1,62 @@
 // import { CopyCommand, Redis, } from "@upstash/redis"
 import { RedisOptions, Redis } from 'ioredis'
 import chalk from 'chalk'
-import { config } from 'dotenv'
+import { config } from '@dotenvx/dotenvx'
+import { env } from '../src/config/env'
+
 // Load environment variables from .env file
-config()
+config({ quiet: true })
 
 // Initialize Upstash Redis client
 // export const redisClient = new Redis({
 //     url: process.env["UPSTASH_REDIS_REST_URL"] || "",
 //     token: process.env["UPSTASH_REDIS_REST_TOKEN"] || "",
 // })
-const HttpHost = process.env['UPSTASH_REDIS_REST_URL']
-const port = process.env['UPSTASH_REDIS_REST_PORT']
-const username = process.env['UPSTASH_REDIS_REST_USER'] // Default username for Redis
-const p4ss = process.env['UPSTASH_REDIS_REST_PASSWORD']
+const tcpHostRaw = env.UPSTASH_REDIS_REST_URL || env.UPSTASH_REDIS_REST_URL
+const tcpPortRaw = env.UPSTASH_REDIS_REST_PORT || env.UPSTASH_REDIS_REST_PORT
+const tcpUsername = env.UPSTASH_REDIS_REST_USER || env.UPSTASH_REDIS_REST_USER // Default username for Redis
+const tcpPassword = env.UPSTASH_REDIS_REST_PASSWORD || env.UPSTASH_REDIS_REST_PASSWORD
 
 
 let client: Redis | null = null
 
+const parseRedisHost = (value: string): string => {
+    try {
+        const parsed = new URL(value)
+        let host = parsed.hostname.trim().toLowerCase()
+
+        const duplicatedSuffix = '.upstash.io.upstash.io'
+        if (host.endsWith(duplicatedSuffix)) {
+            host = host.replace(/\.upstash\.io\.upstash\.io$/, '.upstash.io')
+        }
+
+        return host
+    } catch {
+        const host = value.replace(/^https?:\/\//, '').trim().toLowerCase()
+
+        if (host.endsWith('.upstash.io.upstash.io')) {
+            return host.replace(/\.upstash\.io\.upstash\.io$/, '.upstash.io')
+        }
+
+        return host
+    }
+}
 
 
-if (HttpHost?.length && port?.length && p4ss?.length) {
-    // remove https:// from the host if it exists
-
-    const host = HttpHost.split('https://')[1]
+if (tcpHostRaw?.length && tcpPortRaw?.length && tcpPassword?.length) {
+    const host = parseRedisHost(tcpHostRaw)
+    const port = parseInt(tcpPortRaw || '30766', 10)
     const redisOptions: RedisOptions = {
-        host: HttpHost || 'localhost', // Read from env
-        port: parseInt(port || '30766'), // Read from env
-        username: username || 'default', // Default username for Redis
-        password: p4ss || '', // Read from env
+        host: host || 'localhost', // Read from env
+        port, // Read from env
+        username: tcpUsername || 'default', // Default username for Redis
+        password: tcpPassword || '', // Read from env
         db: 0, // Default database
         lazyConnect: true, // Use lazy connect to avoid immediate connection
+        tls: {},
     }
 
-    // Configure your Redis client.  IMPORTANT: Use environment variables
-    // for sensitive information like host, port, password.
-    const redisUrl = `rediss://${redisOptions.username}:${redisOptions.password}@${host}:${port}`
-    client = new Redis(redisUrl, redisOptions)
+    client = new Redis(redisOptions)
     console.log(chalk.hex('#028C9E').bold('Upstash Redis client initialized ') + chalk.yellow.bold(`${host}:${port}`))
     // client.quit() // Ensure we start with a clean slate
     client.on('reconnecting', () => {

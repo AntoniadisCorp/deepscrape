@@ -1,65 +1,68 @@
-<div
-  class="modal-overlay bg-gray-900/[.5]"
-  *ngIf="(!isConsent || !isExtensionInstalled) && forwardCookiesBtnEnabled"
->
+@if ((!isConsent || !isExtensionInstalled) && forwardCookiesBtnEnabled) {
   <div
-    class="modal-content relative bg-gray-100 dark:bg-gray6 dark:text-gray-100 text-gray5"
-  >
-    @if(!isConsent && forwardCookiesBtnEnabled) {
-
-    <div>
-      <h2>Privacy Consent</h2>
-      <p>
-        ⚠️ By proceeding, you are giving us permission to fetch cookies and
-        other data from your browser to improve your experience.
-        <br />
-        We take your privacy seriously and will only use the data for this
-        purpose. We do not save your privacy information on cloud
-      </p>
-    </div>
-    } @if(!isExtensionInstalled && forwardCookiesBtnEnabled) {
-    <div>
-      <h2>Download The Extension</h2>
-      <p>you will redirect to chrome web store</p>
-    </div>
-    }
-    <button
-      title="close"
-      appRipple
-      ripplColor="dark"
-      class="!absolute top-2 right-2 flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 p-1 rounded-full transition-[colors,border]"
-      (click)="declineExtension()"
+    class="modal-overlay bg-gray-900/[.5]"
     >
-      <mat-icon>close</mat-icon>
-    </button>
-    <div class="buttons">
+    <div
+      class="modal-content relative bg-gray-100 dark:bg-gray6 dark:text-gray-100 text-gray5"
+      >
+      @if(!isConsent && forwardCookiesBtnEnabled) {
+        <div>
+          <h2>Privacy Consent</h2>
+          <p>
+            ⚠️ By proceeding, you are giving us permission to fetch cookies and
+            other data from your browser to improve your experience.
+            <br />
+            We take your privacy seriously and will only use the data for this
+            purpose. We do not save your privacy information on cloud
+          </p>
+        </div>
+        } @if(!isExtensionInstalled && forwardCookiesBtnEnabled) {
+        <div>
+          <h2>Download The Extension</h2>
+          <p>you will redirect to chrome web store</p>
+        </div>
+      }
       <button
+        title="close"
         appRipple
         ripplColor="dark"
-        *ngIf="!isConsent"
-        (click)="acceptConsent()"
-        class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
-      >
-        Accept
+        class="!absolute top-2 right-2 flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 p-1 rounded-full transition-[colors,border]"
+        (click)="declineExtension()"
+        >
+        <mat-icon>close</mat-icon>
       </button>
-      <button
-        appRipple
-        ripplColor="dark"
-        *ngIf="!isConsent"
-        (click)="declineConsent()"
-        class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
-      >
-        Decline
-      </button>
-      <button
-        appRipple
-        ripplColor="dark"
-        class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
-        *ngIf="!isExtensionInstalled && forwardCookiesBtnEnabled"
-        (click)="downloadExtension()"
-      >
-        Download Extension
-      </button>
+      <div class="buttons">
+        @if (!isConsent) {
+          <button
+            appRipple
+            ripplColor="dark"
+            (click)="acceptConsent()"
+            class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
+            >
+            Accept
+          </button>
+        }
+        @if (!isConsent) {
+          <button
+            appRipple
+            ripplColor="dark"
+            (click)="declineConsent()"
+            class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
+            >
+            Decline
+          </button>
+        }
+        @if (!isExtensionInstalled && forwardCookiesBtnEnabled) {
+          <button
+            appRipple
+            ripplColor="dark"
+            class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
+            (click)="downloadExtension()"
+            >
+            Download Extension
+          </button>
+        }
+      </div>
     </div>
   </div>
-</div>
+}

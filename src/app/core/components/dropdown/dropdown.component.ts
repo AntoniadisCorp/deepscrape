@@ -147,6 +147,7 @@ export class DropdownComponent {
   }
   onToggle() {
     this.isOpen = !this.isOpen;
+    this.control.markAsUntouched()
   }
   closeDropDown() {
 
@@ -158,6 +159,7 @@ export class DropdownComponent {
 
   onOptionSelected(option: any) {
     this.control.setValue(option)
+    this.control.markAsDirty()
     this.select.emit(option);
     this.isOpen = !this.isOpen;
     this.doFocus()

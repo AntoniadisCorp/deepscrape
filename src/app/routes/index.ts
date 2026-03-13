@@ -1,3 +1,3 @@
-export * from './main.route'
-export * from './service.route'
-export * from './user.route'
+export { MainRoutes } from './main.route';
+export { UserRoutes } from './user.route';
+export { ServiceRoutes } from './service.route';

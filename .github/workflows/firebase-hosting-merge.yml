@@ -9,6 +9,8 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    env:
+      DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20
@@ -18,7 +20,7 @@ jobs:
       - name: Get npm cache directory
         id: npm-cache-dir
         run: |
-          echo "::set-output name=dir::$(npm config get cache)"
+          echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v3
         id: npm-cache
         with:
@@ -27,27 +29,42 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
       - name: Install Dependencies
-        run: npm i && npm ci
-      # Debugging step to check environment variables
-      - name: Debug Environment Variables
+        run: npm ci
+      - name: Validate Required Environment Variables
         run: |
-          echo "PRODUCTION=true"
-          echo "API_KEY=$API_KEY"
-          echo "AUTH_DOMAIN=$AUTH_DOMAIN"
-          echo "DATABASE_URL=$DATABASE_URL"
-          echo "PROJECT_ID=$PROJECT_ID"
-          echo "STORAGE_BUCKET=$STORAGE_BUCKET"
-          echo "MESSAGING_SENDER_ID=$MESSAGING_SENDER_ID"
-          echo "APP_ID=$APP_ID"
-          echo "RECAPTCHA_KEY=$RECAPTCHA_KEY"
-          echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
-          echo "CRAWL4AI_API_KEY=$CRAWL4AI_API_KEY"
-          echo "OPENAI_API_KEY=$OPENAI_API_KEY"
-          echo "GROQ_API_KEY=$GROQ_API_KEY"
-          echo "GOOGLE_API_KEY=$GOOGLE_API_KEY"
-          echo "JINAAI_API_KEY=$JINAAI_API_KEY"
+          missing=0
+          required_vars=(
+            PRODUCTION API_KEY AUTH_DOMAIN DATABASE_URL PROJECT_ID STORAGE_BUCKET
+            MESSAGING_SENDER_ID APP_ID RECAPTCHA_KEY ANTHROPIC_API_KEY CRAWL4AI_API_KEY
+            OPENAI_API_KEY GROQ_API_KEY GOOGLE_API_KEY JINAAI_API_KEY UPSTASH_REDIS_REST_URL
+            UPSTASH_REDIS_REST_PORT UPSTASH_REDIS_REST_USER UPSTASH_REDIS_REST_PASSWORD
+            UPSTASH_REDIS_REST_TOKEN API_CRAWL4AI_URL API_ARACHNEFLY_URL 
+            STRIPE_PUBLIC_KEY GCP_PROJECT_ID MEASUREMENT_ID COOKIE_SECRET CSRF_COOKIE_SECRET
+          )
+
+          for var_name in "${required_vars[@]}"; do
+            if [ -z "${!var_name}" ]; then
+              echo "Missing required env: $var_name"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
         env:
           PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -62,11 +79,24 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       # Generate environment.ts
       - name: Generate environment.ts
         run: npm run prbuild
         env:
           PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -81,10 +111,23 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       # Build Angular App in production mode
       - name: Build Angular App
         env:
           PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -99,6 +142,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
         run: npm run build
       - name: Install Functions Dependencies
         working-directory: ./functions
@@ -114,34 +159,64 @@ jobs:
           expires: "never"
         env:
           PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+      - name: Build Firebase Functions
+        working-directory: ./functions
+        run: npm run build
+
+      - name: Deploy Firebase Functions
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only functions --project ${{ secrets.GCP_PROJECT_ID }}
+        env:
+          PRODUCTION: true
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          STRIPE_PRICE_STARTER_PAYG: ${{ vars.STRIPE_PRICE_STARTER_PAYG }}
+          STRIPE_PRICE_STARTER_MONTHLY: ${{ vars.STRIPE_PRICE_STARTER_MONTHLY }}
+          STRIPE_PRICE_STARTER_QUARTERLY: ${{ vars.STRIPE_PRICE_STARTER_QUARTERLY }}
+          STRIPE_PRICE_STARTER_ANNUAL: ${{ vars.STRIPE_PRICE_STARTER_ANNUAL }}
+          STRIPE_PRICE_PRO_PAYG: ${{ vars.STRIPE_PRICE_PRO_PAYG }}
+          STRIPE_PRICE_PRO_MONTHLY: ${{ vars.STRIPE_PRICE_PRO_MONTHLY }}
+          STRIPE_PRICE_PRO_QUARTERLY: ${{ vars.STRIPE_PRICE_PRO_QUARTERLY }}
+          STRIPE_PRICE_PRO_ANNUAL: ${{ vars.STRIPE_PRICE_PRO_ANNUAL }}
+          STRIPE_PRICE_ENTERPRISE_MONTHLY: ${{ vars.STRIPE_PRICE_ENTERPRISE_MONTHLY }}
+          STRIPE_PRICE_ENTERPRISE_QUARTERLY: ${{ vars.STRIPE_PRICE_ENTERPRISE_QUARTERLY }}
+          STRIPE_PRICE_ENTERPRISE_ANNUAL: ${{ vars.STRIPE_PRICE_ENTERPRISE_ANNUAL }}
+          STRIPE_PRICE_CREDITS_100: ${{ vars.STRIPE_PRICE_CREDITS_100 }}
+          STRIPE_PRICE_CREDITS_500: ${{ vars.STRIPE_PRICE_CREDITS_500 }}
+          STRIPE_PRICE_CREDITS_2000: ${{ vars.STRIPE_PRICE_CREDITS_2000 }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
           UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
-          API_CRAWL4AI_URL: "https://crawlagent.fly.dev"
-      # - name: Deploy Firebase Functions
-      #   uses: w9jds/firebase-action@master
-      #   with:
-      #     args: deploy --only functions --project libnet-d76db
-      #   env:
-      #     PRODUCTION: true
-      #     FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-      #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      #     GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      #     JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
-      #     STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
-      #     GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      #     UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-      #     UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-      #     UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
-      #     UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
-      #     API_CRAWL4AI_URL: "https://crawlagent.fly.dev"
-      #     GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
+      

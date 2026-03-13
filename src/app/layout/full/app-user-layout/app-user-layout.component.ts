@@ -1,10 +1,10 @@
-import { AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage } from '@angular/common'
+import { AsyncPipe, isPlatformBrowser, NgClass, NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
 import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
-import { ActivatedRoute, ChildrenOutletContexts, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router'
+import { ActivatedRoute, ChildrenOutletContexts, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
 import { catchError, delay, finalize, from, map, switchMap, throwError, timer, fromEvent } from 'rxjs' // Added fromEvent
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
@@ -13,19 +13,20 @@ import { Subscription } from 'rxjs/internal/Subscription'
 import { asideBarAnimation, fadeInOutAnimation, PopupAnimation } from 'src/app/animations'
 import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, WindowToken } from 'src/app/core/services'
+import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, ThemeService, WindowToken } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
-import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
+import { LangPickerComponent, themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
 import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
-
+/**
+ * TODO: comment Component
+ * @description Component for user layout including sidebar, header, and footer
+ */
 @Component({
   selector: 'app-user-layout',
-  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, NgIf,
-    MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent,
-    AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent],
+  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
@@ -34,10 +35,16 @@ export class AppUserLayoutComponent {
 
   private window: Window = inject(WindowToken)
   private localStorage = inject(LocalStorage)
-  @HostBinding('class') classes = 'h-full w-full bg-gray-100 dark:bg-gray-900 min-h-svh'
+
+  private themePicker = inject(ThemeService)
+  isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$
+
+  // bg-gray-100 dark:bg-gray-900
+  @HostBinding('class') classes = 'h-full w-full flex flex-col  min-h-svh'
   private firestoreService = inject(FirestoreService)
   size!: SCREEN_SIZE;
-
+  
+  footerColor: string = '';
   sizeSub: Subscription = new Subscription(); // Initialize sizeSub
 
   user: Users & { currProviderData: UserInfo | null } | null = null
@@ -77,8 +84,12 @@ export class AppUserLayoutComponent {
   ) {
 
     this.routerEventSubscription = this.router.events.subscribe((event: any) => {
+      if (event instanceof NavigationStart) {
+        this.compIsLoading = true
+      }
+
       if (event instanceof NavigationEnd) {
-        setTimeout(() => { this.compIsLoading = false; }, 1000)
+        this.compIsLoading = false
         // Update the animation state when navigation ends
         const outlet = this.contexts.getContext('primary')?.outlet;
         if (outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation']) {
@@ -86,6 +97,10 @@ export class AppUserLayoutComponent {
         } else {
           this.currentRouteAnimation = undefined;
         }
+      }
+
+      if (event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.compIsLoading = false
       }
     })
 
@@ -119,6 +134,8 @@ export class AppUserLayoutComponent {
       }));
     }
 
+    this.footerColor = 'userlayout';
+    this.compIsLoading = !this.router.navigated
     this.InitCloseSideBarOnSmallDevices()
   }
 
@@ -241,7 +258,6 @@ export class AppUserLayoutComponent {
       }
     })
   }
-
   getAnimationData(outlet: RouterOutlet) {
     // return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']
     return this.currentRouteAnimation;

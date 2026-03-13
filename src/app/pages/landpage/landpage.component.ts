@@ -1,9 +1,10 @@
-import { Component, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, HostListener, inject } from '@angular/core';
+import { WindowToken } from 'src/app/core/services';
+
 import { trigger, state, style, animate, transition } from '@angular/animations';
 @Component({
     selector: 'app-landpage',
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './landpage.component.html',
     styleUrl: './landpage.component.scss',
     animations: [
@@ -19,6 +20,7 @@ import { trigger, state, style, animate, transition } from '@angular/animations'
     ]
 })
 export class LandPageComponent {
+  private window: Window = inject(WindowToken);
 
   isVisible = false;
   selectedPlan: 'monthly' | 'yearly' = 'monthly';
@@ -62,12 +64,12 @@ export class LandPageComponent {
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
-    const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const scrollPosition = this.window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     this.isVisible = scrollPosition > 100;
   }
 
   scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   togglePlan() {

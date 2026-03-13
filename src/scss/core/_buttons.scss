@@ -1,7 +1,15 @@
 .btn {
-    @apply bg-white text-black rounded-lg font-sans font-semibold leading-6 inline-flex cursor-pointer text-center items-center justify-center shadow-md no-underline px-5 py-2 text-lg transition-all duration-150 my-0.5;
+    @apply relative isolate overflow-hidden inline-flex items-center justify-center gap-2 whitespace-nowrap select-none rounded-full no-underline font-sans font-medium leading-6 cursor-pointer transition-all duration-200 my-0.5;
+    @apply min-h-10 px-5 py-2 text-sm;
+    @apply bg-white text-gray-900 border border-gray-300/90;
+    @apply shadow-[0_1px_2px_rgba(15,23,42,0.12),0_1px_1px_rgba(15,23,42,0.06)];
+    @apply hover:shadow-[0_2px_8px_rgba(15,23,42,0.14)] hover:-translate-y-[1px];
+    @apply active:translate-y-0 active:shadow-[0_1px_2px_rgba(15,23,42,0.12)];
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400 dark:focus-visible:ring-blue-700;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0;
+
     &.glow {
-        @apply hover:drop-shadow-[0_0_4px_rgba(225,225,225,0.5)];
+        @apply hover:drop-shadow-[0_0_10px_rgba(148,163,184,0.35)];
     }
 }
 
@@ -10,47 +18,47 @@
 }
 
 .btn-sm {
-    @apply px-3 py-1 text-sm font-sans uppercase font-semibold;
+    @apply min-h-9 px-4 py-1.5 text-xs tracking-wide font-semibold uppercase;
 }
 
 .btn-md {
-    @apply px-3 py-3 text-base;
+    @apply min-h-10 px-5 py-2 text-sm;
 }
 
 .btn-lg {
-    @apply px-5 py-5 text-xl;
+    @apply min-h-12 px-6 py-2.5 text-base;
 }
 
 .btn-circle {
-    @apply rounded-full p-2 w-12 h-12;
+    @apply rounded-full p-0 w-12 h-12;
 }
 
 .btn-ring {
-    @apply focus:outline-none focus:shadow-inner focus:ring-2 focus:ring-opacity-75;
+    @apply focus-visible:ring-2 focus-visible:ring-offset-2;
 }
 
 .btn-ring-blue {
-    @apply focus:ring-blue-300 dark:focus:ring-blue-800;
+    @apply focus-visible:ring-blue-300 dark:focus-visible:ring-blue-800;
 }
 
 .btn-ring-green {
-    @apply focus:ring-green-300 dark:focus:ring-green-800;
+    @apply focus-visible:ring-green-300 dark:focus-visible:ring-green-800;
 }
 
 .btn-ring-red {
-    @apply focus:ring-red-300 dark:focus:ring-red-800;
+    @apply focus-visible:ring-red-300 dark:focus-visible:ring-red-800;
 }
 
 .btn-ring-orange {
-    @apply focus:ring-orange-300 dark:focus:ring-orange-800;
+    @apply focus-visible:ring-orange-300 dark:focus-visible:ring-orange-800;
 }
 
 .btn-ring-purple {
-    @apply focus:ring-purple-300 dark:focus:ring-purple-800;
+    @apply focus-visible:ring-purple-300 dark:focus-visible:ring-purple-800;
 }
 
 .btn-icon {
-    @apply active:text-gray-200/90;
+    @apply active:opacity-90;
 }
 
 .btn-display {
@@ -58,7 +66,8 @@
 }
 
 .btn-transparent {
-    @apply bg-black bg-opacity-20 text-white hover:bg-opacity-40;
+    @apply bg-transparent text-gray-800 dark:text-gray-100 border border-gray-300/80 dark:border-gray-600/70;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-700/40;
 }
 
 .btn-sans {
@@ -66,52 +75,63 @@
 }
 
 .btn-gray {
-    @apply bg-gray1/70 text-gray-500 hover:bg-gray3/70;
+    @apply bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200 active:bg-slate-300;
+    @apply dark:bg-slate-700/60 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-700 dark:active:bg-slate-800;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(201,201,201,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(148,163,184,0.35)];
     }
 }
 
 .btn-red {
-    @apply bg-red-500 text-white hover:bg-red-600 active:bg-red-700;
+    @apply bg-red-500 text-white border-red-500 hover:bg-red-600 active:bg-red-700;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(239,68,68,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.45)];
     }
 }
 
 .btn-green {
-    @apply bg-green-500 text-white hover:bg-green-600 active:bg-green-700;
+    @apply bg-green-500 text-white border-green-500 hover:bg-green-600 active:bg-green-700;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(34,197,94,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.45)];
     }
 }
 
 .btn-orange {
-    @apply bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700;
+    @apply bg-orange-500 text-white border-orange-500 hover:bg-orange-600 active:bg-orange-700;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(249,115,22,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.45)];
     }
 }
 
 .btn-blue {
-    @apply bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700;
+    @apply bg-blue-500 text-white border-blue-500 hover:bg-blue-600 active:bg-blue-700;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(59,130,246,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.45)];
     }
 }
 
 .btn-blue-dark {
-    @apply bg-blue-800 text-white hover:bg-blue-800/80 active:bg-blue-900;
+    @apply bg-blue-800 text-white border-blue-800 hover:bg-blue-700 active:bg-blue-900;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(59,130,246,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.45)];
     }
 }
 
 .btn-purple {
-    @apply bg-purple-500 text-white active:bg-purple-700;
+    @apply bg-purple-500 text-white border-purple-500 hover:bg-purple-600 active:bg-purple-700;
     &.glow {
-        @apply hover:drop-shadow-[0_0_5px_rgba(168,85,247,0.5)];
+        @apply hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.45)];
     }
+}
+
+.btn-tonal {
+    @apply bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 active:bg-blue-300;
+    @apply dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-800 dark:hover:bg-blue-900/60;
+}
+
+.btn-text {
+    @apply bg-transparent border-transparent shadow-none text-blue-700 dark:text-blue-300;
+    @apply hover:bg-blue-50 dark:hover:bg-blue-900/30 active:bg-blue-100 dark:active:bg-blue-900/50;
 }
 
 .btn-remove > .mat-icon {

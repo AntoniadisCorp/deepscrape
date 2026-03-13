@@ -11,7 +11,7 @@ export function handleError(error: HttpErrorResponse | any): Observable<never> {
     } else {
         console.error(
             `Backend returned code ${error.status}, ` +
-            `body was: ${error.error}`)
+            `body was:`, error.error, error)
     }
     return throwError(() => 'Something bad happened; please try again later.');
 }
@@ -20,17 +20,90 @@ export function handleError(error: HttpErrorResponse | any): Observable<never> {
 export function isArray(arr: any): boolean {
     return Array.isArray(arr) && arr.length > 0
 }
+
+function extractBalancedJsonFragment(input: string, startIndex: number): string | null {
+    const openingChar = input[startIndex]
+
+    if (openingChar !== '{' && openingChar !== '[')
+        return null
+
+    const expectedClosing = openingChar === '{' ? '}' : ']'
+    const stack: string[] = [expectedClosing]
+
+    let inString = false
+    let isEscaped = false
+
+    for (let index = startIndex + 1; index < input.length; index++) {
+        const char = input[index]
+
+        if (inString) {
+            if (isEscaped) {
+                isEscaped = false
+                continue
+            }
+
+            if (char === '\\') {
+                isEscaped = true
+                continue
+            }
+
+            if (char === '"') {
+                inString = false
+            }
+
+            continue
+        }
+
+        if (char === '"') {
+            inString = true
+            continue
+        }
+
+        if (char === '{') {
+            stack.push('}')
+            continue
+        }
+
+        if (char === '[') {
+            stack.push(']')
+            continue
+        }
+
+        if (char === '}' || char === ']') {
+            const expected = stack.pop()
+
+            if (expected !== char)
+                return null
+
+            if (stack.length === 0)
+                return input.slice(startIndex, index + 1)
+        }
+    }
+
+    return null
+}
+
 export function cleanAndParseJSON(dirtyJsonString: string): any | null {
     try {
-        // Use a regular expression to extract the JSON object match(/\[[^[\]]*\]|{[^}]*}/) //
-        const jsonMatch = dirtyJsonString.match(/(\[|\{)(?:[^[\]{}]|\{(?:[^{}]|\{[^{}]*\})*\}|\[(?:[^[\]]|\[.*?\])*\])*(\]|\})/)
+        for (let index = 0; index < dirtyJsonString.length; index++) {
+            const char = dirtyJsonString[index]
 
-        if (!jsonMatch)
-            return null
-        // throw new Error('No valid JSON array of objects found in the string')
+            if (char !== '{' && char !== '[')
+                continue
 
-        // Parse the extracted JSON string
-        return JSON.parse(jsonMatch[0])
+            const candidate = extractBalancedJsonFragment(dirtyJsonString, index)
+
+            if (!candidate)
+                continue
+
+            try {
+                return JSON.parse(candidate)
+            } catch {
+                continue
+            }
+        }
+
+        return null
     } catch (error) {
 
         // console.log('Error parsing JSON:', error)
@@ -255,13 +328,64 @@ export function checkPasswordStrength(password: string) {
         )
 }
 
-export async function getBrowser(navigator: any) {
+export async function getBrowser(navigator: any): Promise<string> {
+    // Check for Brave browser
+    if ((navigator as any).brave && typeof (navigator as any).brave.isBrave === 'function') {
+        if (await (navigator as any).brave.isBrave()) return 'brave';
+    }
+    const ua = navigator.userAgent.toLowerCase();
 
-return (navigator as any).brave && (navigator as any).brave.isBrave && 
-        (await (navigator as any).brave.isBrave()) ? 'brave' : 
-          navigator.userAgent.match(/chrome|chromium|crios/i) ? 'chrome' : 
-            navigator.userAgent.match(/firefox|fxios/i) ? 'firefox' : 
-              navigator.userAgent.match(/safari/i) ? 'safari' : navigator.userAgent.match(/opr\//i) ? 
-                'opera' : navigator.userAgent.match(/edg/i) ? 'edge' : 
-                  'other'
+    if (ua.includes('chrome') && !ua.includes('edg') && !ua.includes('opr') && !ua.includes('brave')) return 'chrome';
+    if (ua.includes('chromium')) return 'chromium';
+    if (ua.includes('crios')) return 'chrome-ios';
+    if (ua.includes('firefox')) return 'firefox';
+    if (ua.includes('fxios')) return 'firefox-ios';
+    if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('chromium')) return 'safari';
+    if (ua.includes('opr') || ua.includes('opera')) return 'opera';
+    if (ua.includes('edg')) return 'edge';
+    if (ua.includes('msie') || ua.includes('trident')) return 'ie';
+    if (ua.includes('vivaldi')) return 'vivaldi';
+    if (ua.includes('yabrowser')) return 'yandex';
+    if (ua.includes('ucbrowser')) return 'ucbrowser';
+    if (ua.includes('qqbrowser')) return 'qqbrowser';
+    if (ua.includes('baidubrowser')) return 'baidubrowser';
+    if (ua.includes('maxthon')) return 'maxthon';
+    if (ua.includes('samsungbrowser')) return 'samsung';
+    if (ua.includes('puffin')) return 'puffin';
+    if (ua.includes('palemoon')) return 'palemoon';
+    if (ua.includes('waterfox')) return 'waterfox';
+    if (ua.includes('seamonkey')) return 'seamonkey';
+    if (ua.includes('avant browser')) return 'avant';
+    if (ua.includes('sleipnir')) return 'sleipnir';
+    if (ua.includes('epiphany')) return 'epiphany';
+    if (ua.includes('konqueror')) return 'konqueror';
+    if (ua.includes('midori')) return 'midori';
+    if (ua.includes('lunascape')) return 'lunascape';
+    if (ua.includes('comodo')) return 'comodo';
+    if (ua.includes('icecat')) return 'icecat';
+    if (ua.includes('iceweasel')) return 'iceweasel';
+    if (ua.includes('qutebrowser')) return 'qutebrowser';
+    if (ua.includes('torbrowser')) return 'tor';
+    if (ua.includes('falkon')) return 'falkon';
+    if (ua.includes('netscape')) return 'netscape';
+
+    return 'other';
+}
+
+
+export async function getDeviceFingerprintHash(fingerprintData: string | null, window: Window): Promise<string> {
+    let deviceFingerprintHash = '';
+    try {
+      if (fingerprintData) {
+        // Hash the fingerprint for privacy
+        const encoder = new TextEncoder();
+        const data = encoder.encode(fingerprintData);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data)
+        deviceFingerprintHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+    } catch (e) {
+      deviceFingerprintHash = '';
+    }
+
+    return deviceFingerprintHash
 }

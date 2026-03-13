@@ -1,3 +1,40 @@
+@use "../_core-variables.scss" as *;
+
 .backdropchain {
     overscroll-behavior: contain; // stop background scroll chaining
 }
+
+.glow-on-hover {
+    transition:
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+
+    &:hover {
+        box-shadow:
+            0 0 3px $glow-color,
+            0 0 6px $glow-color;
+        transform: translateY(-1px);
+    }
+}
+
+
+.dark {
+    .glow-on-hover {
+        &:hover {
+            box-shadow:
+                0 0 10px $glow-color-dark,
+                0 0 20px $glow-color-dark;
+        }
+    }
+}
+
+.magic-mask {
+    -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 70%);
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+// .dark .glow-on-hover {
+//     box-shadow:
+//         0 0 10px $glow-color-dark,
+//         0 0 20px $glow-color-dark;
+// }

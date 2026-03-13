@@ -5,15 +5,18 @@
     <h1
       class="text-lg font-bold text-gray5 dark:text-gray-100 items-center gap-2 inline-flex">
       API Keys
-      <span
-        *ngIf="apiKeys$ | async as apiKeys"
-        class="dark:text-gray-300 text-sm dark:bg-gray5 bg-lime-200 rounded-full px-[.7rem] py-1 font-medium">
-        {{ apiKeys.length }}
-      </span>
-      <div *ngIf="!(apiKeys$ | async)">
-        <div
+      @if (apiKeys$ | async; as apiKeys) {
+        <span
+          class="dark:text-gray-300 text-sm dark:bg-gray5 bg-lime-200 rounded-full px-[.7rem] py-1 font-medium">
+          {{ apiKeys.length }}
+        </span>
+      }
+      @if (!(apiKeys$ | async)) {
+        <div>
+          <div
           class="relative h-6 w-6 px-[.7rem] py-1 animate-pulse rounded-full bg-gray4 dark:bg-slate-700"></div>
-      </div>
+        </div>
+      }
     </h1>
 
     <div class="relative">
@@ -36,270 +39,272 @@
               id="newApiKeyName"
               [formControl]="newApiKeyName"
               placeholder="my-own-secret-key" />
-          </div>
-          <div class="text-lg relative w-full">
-            <input
-              class="relative mt-1 block w-full rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray5 dark:text-gray-300 dark:shadow-inner focus:dark:shadow-gray-800 dark:focus:ring-gray5"
-              type="text"
-              [formControl]="newApiKey"
-              placeholder="fill out the new key.." />
-            <mat-icon
-              class="absolute top-[.7rem] right-[6px] text-gray-200 dark:text-gray-100"
+            </div>
+            <div class="text-lg relative w-full">
+              <input
+                class="relative mt-1 block w-full rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray5 dark:text-gray-300 dark:shadow-inner focus:dark:shadow-gray-800 dark:focus:ring-gray5"
+                type="text"
+                [formControl]="newApiKey"
+                placeholder="fill out the new key.." />
+                <mat-icon
+                  class="absolute top-[.7rem] right-[6px] text-gray-200 dark:text-gray-100"
               [svgIcon]="
                 keyModalTitle.toLowerCase() === 'custom'
                   ? ''
                   : keyModalTitle.toLowerCase()
               ">
-              auto_fix_high
-            </mat-icon>
-          </div>
-        </div>
+                  auto_fix_high
+                </mat-icon>
+              </div>
+            </div>
 
-        <div class="mt-4 flex items-center justify-between">
-          <div
-            class="relative flex"
-            [tooltip]="'Clear hashtags'"
-            position="left">
-            <button
-              (click)="clearKeysInput()"
-              appRipple
+            <div class="mt-4 flex items-center justify-between">
+              <div
+                class="relative flex"
+                [tooltip]="'Clear hashtags'"
+                position="left">
+                <button
+                  (click)="clearKeysInput()"
+                  appRipple
               rippleColor="{{
                 themeIsDark()
                   ? 'rgba(255, 255, 255, 0.35)'
                   : 'rgba(33, 33, 33, 0.35)'
               }}"
-              type="button"
-              title="Clear hashtags"
-              class="h-11 w-11 rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60">
-              <mat-icon
-                svgIcon="clear"
-                faria-hidden="false"
-                aria-label="clear"></mat-icon>
-            </button>
-          </div>
-          <app-checkbox
-            class="h-8 font-code inline-flex justify-end w-full"
-            [control]="defaultKey"
-            [title]="'default'"
-            (change)="onCheckBoxChange()"></app-checkbox>
-          <!-- create button -->
-          <button
-            class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/[.1] dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60 disabled:opacity-50"
-            type="button"
+                  type="button"
+                  title="Clear hashtags"
+                  class="h-11 w-11 rounded-full text-orange-500 transition-colors duration-200 hover:bg-gray-100/60 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:bg-transparent dark:text-orange-500 dark:hover:bg-gray5/60 dark:hover:text-orange-700 dark:focus:ring-gray4/60">
+                  <mat-icon
+                    svgIcon="clear"
+                    faria-hidden="false"
+                  aria-label="clear"></mat-icon>
+                </button>
+              </div>
+              <app-checkbox
+                class="h-8 font-code inline-flex justify-end w-full"
+                [control]="defaultKey"
+                [title]="'default'"
+              (change)="onCheckBoxChange()"></app-checkbox>
+              <!-- create button -->
+              <button
+                class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/[.1] dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60 disabled:opacity-50"
+                type="button"
             [disabled]="
               newApiKey.invalid || newApiKeyName.invalid || apiKeyLoading.modal
             "
-            (click)="keyModalCompleted()">
-            Ok
-            <mat-icon class="!h-5 !w-5">check</mat-icon>
+                (click)="keyModalCompleted()">
+                Ok
+                <mat-icon class="!h-5 !w-5">check</mat-icon>
+              </button>
+            </div>
+          </app-slideinmodal>
+          <button
+            appRipple
+            rippleColor="dark"
+            type="button"
+            class="flex items-center leading-6 flex-row flex-nowrap text-lg gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
+            (click)="generateApiKey()"
+            aria-label="Create Key">
+            <mat-icon>add</mat-icon>
+            Create Key
           </button>
+          <ul
+            appOutsideClick
+            (outsideClick)="closePopupNewKey()"
+            aria-current="menu"
+            [id]="'newkey'"
+            class="devsite-appearance-selector-menu transition-shadow duration-300 before:absolute dark:before:border-b-gray5/10 dark:after:border-b-gray7 dark:hover:shadow-md dark:hover:shadow-gray7 before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-gray-200 before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-gray-200 after:content-[''] hover:shadow-lg bg-gray-200 dark:bg-gray7 border-0.5 border-gray-300 absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-[.5rem] px-1 py-1 shadow-lg focus:outline-none transform opacity-100 scale-100"
+            [hidden]="!popupNewKeyVisible">
+            <li>
+              <a
+                (click)="addApiKey('Jina')"
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                [id]="'newkey jina'">
+                <mat-icon svgIcon="jina"></mat-icon>
+                Jina API Key
+                <span class="flex-grow"></span>
+              </a>
+            </li>
+            <li>
+              <a
+                (click)="addApiKey('Anthropic')"
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                [id]="'newkey anthropic'">
+                <mat-icon
+                  svgIcon="anthropic"
+                class="text-gray-200 dark:text-gray-100"></mat-icon>
+                Anthropic API Key
+                <span class="flex-grow"></span>
+              </a>
+            </li>
+            <li>
+              <a
+                (click)="addApiKey('Openai')"
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                [id]="'newkey openai'">
+                <mat-icon svgIcon="openai"></mat-icon>
+                OpenAI API Key
+                <span class="flex-grow"></span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                [id]="'newkey custom'"
+                (click)="addApiKey('custom')">
+                <mat-icon>auto_fix_high</mat-icon>
+                Custom API Key
+                <span class="flex-grow"></span>
+              </a>
+            </li>
+          </ul>
         </div>
-      </app-slideinmodal>
-      <button
-        appRipple
-        rippleColor="dark"
-        type="button"
-        class="flex items-center leading-6 flex-row flex-nowrap text-lg gap-1 hover:bg-green-600/[0.5] focus:bg-green-900/[0.8] bg-green-600/[.8] text-gray1/[.8] dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors"
-        (click)="generateApiKey()"
-        aria-label="Create Key">
-        <mat-icon>add</mat-icon>
-        Create Key
-      </button>
-      <ul
-        appOutsideClick
-        (outsideClick)="closePopupNewKey()"
-        aria-current="menu"
-        [id]="'newkey'"
-        class="devsite-appearance-selector-menu transition-shadow duration-300 before:absolute dark:before:border-b-gray5/10 dark:after:border-b-gray7 dark:hover:shadow-md dark:hover:shadow-gray7 before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-gray-200 before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-gray-200 after:content-[''] hover:shadow-lg bg-gray-200 dark:bg-gray7 border-0.5 border-gray-300 absolute right-0 z-10 mt-3 w-48 origin-top-right rounded-[.5rem] px-1 py-1 shadow-lg focus:outline-none transform opacity-100 scale-100"
-        [hidden]="!popupNewKeyVisible">
-        <li>
-          <a
-            (click)="addApiKey('Jina')"
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-            [id]="'newkey jina'">
-            <mat-icon svgIcon="jina"></mat-icon>
-            Jina API Key
-            <span class="flex-grow"></span>
-          </a>
-        </li>
-        <li>
-          <a
-            (click)="addApiKey('Anthropic')"
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-            [id]="'newkey anthropic'">
-            <mat-icon
-              svgIcon="anthropic"
-              class="text-gray-200 dark:text-gray-100"></mat-icon>
-            Anthropic API Key
-            <span class="flex-grow"></span>
-          </a>
-        </li>
-        <li>
-          <a
-            (click)="addApiKey('Openai')"
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-            [id]="'newkey openai'">
-            <mat-icon svgIcon="openai"></mat-icon>
-            OpenAI API Key
-            <span class="flex-grow"></span>
-          </a>
-        </li>
-        <li>
-          <a
-            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-gray5 dark:text-gray-100/[.8] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-            [id]="'newkey custom'"
-            (click)="addApiKey('custom')">
-            <mat-icon>auto_fix_high</mat-icon>
-            Custom API Key
-            <span class="flex-grow"></span>
-          </a>
-        </li>
-      </ul>
-    </div>
-  </div>
-  <div class="text-gray-100 text-sm leading-normal">
-    API keys are owned by workspaces and remain active even after the creator is
-    removed
-  </div>
+      </div>
+      <div class="text-gray-100 text-sm leading-normal">
+        API keys are owned by workspaces and remain active even after the creator is
+        removed
+      </div>
 
-  <!-- Fetching keys - Completed State -->
-  <div
-    *ngIf="apiKeys$ | async as apiKeys"
-    class="grid grid-row-1 w-full md:grid-row-2 lg:grid-row-3 gap-4">
-    @for (key of apiKeys; track key.id) {
-    <div
-      class="bg-gray2/80 dark:bg-deep-purple-600/[0.08] rounded shadow-lg p-4 flex flex-col">
-      <mat-progress-bar
-        class="!h-1 text-blue-600"
-        mode="indeterminate"
-        value="40"
-        *ngIf="apiKeyLoading.visibility[key.id]"></mat-progress-bar>
-
-      <div class="flex justify-between items-center mb-2 gap-2">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white">
-          {{ key.name }}
-        </h2>
-
-        <div class="items-center flex flex-wrap">
-          <span
-            class="text-gray-500 inline-block relative top-1 dark:text-gray-400">
-            <mat-icon
-              class="text-pink-600 text-lg !w-6 !h-6 dark:text-gray-100"
+      <!-- Fetching keys - Completed State -->
+      @if (apiKeys$ | async; as apiKeys) {
+        <div
+          class="grid grid-row-1 w-full md:grid-row-2 lg:grid-row-3 gap-4">
+          @for (key of apiKeys; track key.id) {
+            <div
+              class="bg-gray2/80 dark:bg-deep-purple-600/[0.08] rounded shadow-lg p-4 flex flex-col">
+              @if (apiKeyLoading.visibility[key.id]) {
+                <mat-progress-bar
+                  class="!h-1 text-blue-600"
+                  mode="indeterminate"
+                  value="40"
+                ></mat-progress-bar>
+              }
+              <div class="flex justify-between items-center mb-2 gap-2">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+                  {{ key.name }}
+                </h2>
+                <div class="items-center flex flex-wrap">
+                  <span
+                    class="text-gray-500 inline-block relative top-1 dark:text-gray-400">
+                    <mat-icon
+                      class="text-pink-600 text-lg !w-6 !h-6 dark:text-gray-100"
               [svgIcon]="
                 key.type.toLowerCase() === 'custom'
                   ? ''
                   : key.type.toLowerCase()
               ">
-              auto_fix_high
-            </mat-icon>
-          </span>
-          <span class="mx-1 text-gray-500 dark:text-gray-400">•</span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
-            {{ key.created_At | date : 'shortDate' }}
-          </span>
+                      auto_fix_high
+                    </mat-icon>
+                  </span>
+                  <span class="mx-1 text-gray-500 dark:text-gray-400">•</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ key.created_At | date : 'shortDate' }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center mb-4 gap-2">
+                <div class="flex items-start w-full flex-col gap-2 relative">
+                  <!-- <label [for]="'api-key-' + key.id" class="sr-only"
+                  >API Key for {{ key.name }}</label
+                  > -->
+                  <input
+                    [id]="'api-key-' + key.id"
+                    type="text"
+                    [value]="key.showKey"
+                    readonly
+                    placeholder="API Key"
+                    class="flex-grow w-full min-h-[3rem] bg-gray-100 dark:bg-gray-700/[.5] pr-10 p-2 rounded mr-2 text-gray-800 dark:text-white focus:drop-shadow-md dark:focus:shadow-inner shadow-md outline-none" />
+                    <button
+                      type="button"
+                      appRipple
+                      rippleColor="dark"
+                      [disabled]="apiKeyLoading.visibility[key.id]"
+                      (click)="toggleKeyVisibility(key)"
+                      class="!absolute top-1 lg:top-2 right-0 lg:right-1 flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700/[.5] px-[.3rem] py-1 rounded-full transition-[colors,border]">
+                      <mat-icon class="">
+                        {{ key.visibility ? 'visibility' : 'visibility_off' }}
+                      </mat-icon>
+                    </button>
+                  </div>
+                  <div class="relative">
+                    <button
+                      type="button"
+                      appRipple
+                      rippleColor="dark"
+                      (click)="toggleMenuVisible(key)"
+                      class="flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700/[.5] px-[.3rem] py-1 rounded-full transition-[colors,border]">
+                      <mat-icon class="">more_horiz</mat-icon>
+                    </button>
+                    <app-popup-menu [popupValue]="key">
+                      <li>
+                        <app-clipboard-button
+                          appRipple
+                          rippleColor="dark"
+                          class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                          (click)="copyToClipboard(key)"
+                        [inline]="false"></app-clipboard-button>
+                      </li>
+                      <li>
+                        <a
+                          appRipple
+                          rippleColor="dark"
+                          class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                          [id]="'api-key-dis-' + key.id"
+                          (click)="disableApiKey(key)">
+                          <mat-icon>hide_source</mat-icon>
+                          Disable API Key
+                          <span class="flex-grow"></span>
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          appRipple
+                          rippleColor="dark"
+                          (click)="openDialog(key)"
+                          class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] cursor-pointer font-medium duration-300 transition-colors"
+                          [id]="'api-key-del-' + key.id">
+                          <mat-icon>delete</mat-icon>
+                          Delete API Key
+                          <span class="flex-grow"></span>
+                        </a>
+                      </li>
+                    </app-popup-menu>
+                  </div>
+                </div>
+                <div class="flex justify-between mt-auto">
+                  <span class="text-sm text-gray-500 dark:text-gray-400">
+                    Permissions: {{ key.permissions?.join(', ') || 'None' }}
+                  </span>
+                </div>
+                @if (dialogOpen() && KeyIdToDelete()) {
+                  <app-dialog
+                    class="fixed top-0 left-0 right-0 bottom-0 z-50"
+                    (onClose)="dialogOpen.set(false)"
+                    (onConfirm)="KeyIdToDelete() && deleteApiKey(KeyIdToDelete())"
+                    subtitle="You are gonna delete API Key <br><strong class='text-white'>{{KeyIdToDelete().name}}</strong><br> This action cannot be undone."
+                  title="Are you sure to proceed?"></app-dialog>
+                }
+              </div>}
+            </div>
+          }
+
+          <!-- Loading state -->
+          @if (!(apiKeys$ | async)) {
+            <div
+              class="w-full grid grid-row-1 md:grid-row-2 lg:grid-row-3 gap-4">
+              @for (item of [1, 2, 3, 4]; track item) {
+                <div
+                class="relative h-36 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray4 dark:bg-gray4"></div>
+              }
+            </div>
+          }
+
+          <!-- No API keys Completed State -->
+          @if ((apiKeys$ | async)?.length === 0) {
+            <div class="text-center py-8">
+              <p class="text-gray-600 dark:text-gray-300">
+                No API keys generated yet. Click "Generate New API Key" to create one.
+              </p>
+            </div>
+          }
         </div>
-      </div>
-      <div class="flex items-center mb-4 gap-2">
-        <div class="flex items-start w-full flex-col gap-2 relative">
-          <!-- <label [for]="'api-key-' + key.id" class="sr-only"
-            >API Key for {{ key.name }}</label
-          > -->
-
-          <input
-            [id]="'api-key-' + key.id"
-            type="text"
-            [value]="key.showKey"
-            readonly
-            placeholder="API Key"
-            class="flex-grow w-full min-h-[3rem] bg-gray-100 dark:bg-gray-700/[.5] pr-10 p-2 rounded mr-2 text-gray-800 dark:text-white focus:drop-shadow-md dark:focus:shadow-inner shadow-md outline-none" />
-
-          <button
-            type="button"
-            appRipple
-            rippleColor="dark"
-            [disabled]="apiKeyLoading.visibility[key.id]"
-            (click)="toggleKeyVisibility(key)"
-            class="!absolute top-1 lg:top-2 right-0 lg:right-1 flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700/[.5] px-[.3rem] py-1 rounded-full transition-[colors,border]">
-            <mat-icon class="">
-              {{ key.visibility ? 'visibility' : 'visibility_off' }}
-            </mat-icon>
-          </button>
-        </div>
-
-        <div class="relative">
-          <button
-            type="button"
-            appRipple
-            rippleColor="dark"
-            (click)="toggleMenuVisible(key)"
-            class="flex flex-col items-center cursor-pointer justify-center dark:text-gray-100 border border-transparent focus:border-gray1 focus:border text-center bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700/[.5] px-[.3rem] py-1 rounded-full transition-[colors,border]">
-            <mat-icon class="">more_horiz</mat-icon>
-          </button>
-          <app-popup-menu [popupValue]="key">
-            <li>
-              <app-clipboard-button
-                appRipple
-                rippleColor="dark"
-                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-                (click)="copyToClipboard(key)"
-                [inline]="false"></app-clipboard-button>
-            </li>
-            <li>
-              <a
-                appRipple
-                rippleColor="dark"
-                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-                [id]="'api-key-dis-' + key.id"
-                (click)="disableApiKey(key)">
-                <mat-icon>hide_source</mat-icon>
-                Disable API Key
-                <span class="flex-grow"></span>
-              </a>
-            </li>
-            <li>
-              <a
-                appRipple
-                rippleColor="dark"
-                (click)="openDialog(key)"
-                class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] cursor-pointer font-medium duration-300 transition-colors"
-                [id]="'api-key-del-' + key.id">
-                <mat-icon>delete</mat-icon>
-                Delete API Key
-                <span class="flex-grow"></span>
-              </a>
-            </li>
-          </app-popup-menu>
-        </div>
-      </div>
-      <div class="flex justify-between mt-auto">
-        <span class="text-sm text-gray-500 dark:text-gray-400">
-          Permissions: {{ key.permissions?.join(', ') || 'None' }}
-        </span>
-      </div>
-      @if (dialogOpen() && KeyIdToDelete()) {
-        <app-dialog
-          class="fixed top-0 left-0 right-0 bottom-0 z-50"
-          (onClose)="dialogOpen.set(false)"
-          (onConfirm)="KeyIdToDelete() && deleteApiKey(KeyIdToDelete())"
-          subtitle="You are gonna delete API Key <br><strong class='text-white'>{{KeyIdToDelete().name}}</strong><br> This action cannot be undone."
-          title="Are you sure to proceed?"></app-dialog>
-        } 
-    </div>}
-  </div>
-
-  <!-- Loading state -->
-  <div
-    *ngIf="!(apiKeys$ | async)"
-    class="w-full grid grid-row-1 md:grid-row-2 lg:grid-row-3 gap-4">
-    <div
-      *ngFor="let item of [1, 2, 3, 4]"
-      class="relative h-36 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray4 dark:bg-gray4"></div>
-  </div>
-
-  <!-- No API keys Completed State -->
-  <div *ngIf="(apiKeys$ | async)?.length === 0" class="text-center py-8">
-    <p class="text-gray-600 dark:text-gray-300">
-      No API keys generated yet. Click "Generate New API Key" to create one.
-    </p>
-  </div>
-</div>

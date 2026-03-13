@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, forwardRef, inject } from '@angular/core'
-import { CommonModule, DatePipe, JsonPipe, NgClass, NgIf } from '@angular/common'
+import { CommonModule, DatePipe, JsonPipe, NgClass } from '@angular/common';
 import { FormControl, FormGroup, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators } from '@angular/forms'
 import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services'
 import { DropdownComponent, PreviewImageComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
@@ -19,10 +19,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 
 @Component({
   selector: 'app-profile-tab',
-  imports: [StinputComponent, FormControlPipe, DatePipe,
-    NgIf, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective,
-     ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent
-    ],
+  imports: [StinputComponent, FormControlPipe, DatePipe, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective, ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
@@ -34,6 +31,8 @@ export class ProfileTabComponent {
   private firestore = inject(FirestoreService)
   private authService = inject(AuthService)
   private snackbarService = inject(SnackbarService)
+
+  protected isAdmin: boolean = false
   profileForm: FormGroup
 
   protected user: Users & { currProviderData: UserInfo | null } | null = null
@@ -80,6 +79,9 @@ export class ProfileTabComponent {
     //Add 'implements OnInit' to the class.
     this.initProfileForm()
     this.initPhotoPreview()
+
+    this.isAdmin = this.authService.isAdmin
+    console.log('isAdmin:', this.isAdmin)
   }
 
 
@@ -506,7 +508,7 @@ export class ProfileTabComponent {
   }
 
   themeIsDark(): boolean {
-    return this.localStorage.getItem(themeStorageKey) === 'dark'
+    return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
   }
 
   showSnackbar(

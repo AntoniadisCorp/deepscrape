@@ -1,17 +1,18 @@
-import { AsyncPipe, DatePipe, NgClass, NgFor, NgIf } from '@angular/common'
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, ViewChild } from '@angular/core'
+import { AsyncPipe, DatePipe, DecimalPipe, JsonPipe, NgClass } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, SimpleChanges, ViewChild } from '@angular/core'
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
+import { FirestoreService } from 'src/app/core/services'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressBarModule } from '@angular/material/progress-bar'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { RouterLink, Router, ActivatedRoute } from '@angular/router'
-import { distinct, distinctUntilChanged, Observable, of, refCount, Subject, Subscription, switchMap, tap } from 'rxjs'
+import { BehaviorSubject, combineLatest, map, Observable, of, Subject, Subscription, tap, timer } from 'rxjs'
 import { DropdownComponent, GinputComponent, LoadingDotsComponent, PromptareaComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
 import { Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { CrawlOperationStatus } from 'src/app/core/enum'
 import { crawlOperationStatusColor, isArray, setAIModel, setOperationStatusList } from 'src/app/core/functions'
 import { FormControlPipe } from 'src/app/core/pipes'
-import { AuthService, CrawlStoreService, ScrollService, SnackbarService } from 'src/app/core/services'
+import { AuthService, CacheService, CrawlStoreService, ScrollService, SnackbarService, TaskStatus, WebSocketService } from 'src/app/core/services'
 import { AIModel, CrawlConfig, CrawlOperation, DropDownOption, Users } from 'src/app/core/types'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -19,25 +20,46 @@ import { provideNativeDateAdapter } from '@angular/material/core'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatTimepickerModule, provideNativeDateTimeAdapter } from '@dhutaryan/ngx-mat-timepicker'
 import { UserInfo } from '@angular/fire/auth'
+import {
+  DocumentData,
+  Firestore,
+  QueryDocumentSnapshot,
+  Timestamp,
+  collection,
+  documentId,
+  deleteDoc,
+  doc,
+  getCountFromServer,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+  writeBatch,
+} from '@angular/fire/firestore'
+
+type OperationPageCursor = {
+  createdAt: number
+  docId: string
+}
 
 
 
 @Component({
   selector: 'app-operations',
-  imports: [NgFor, NgIf, DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe,
-    MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe,
-    GinputComponent, DropdownComponent, RouterLink, PromptareaComponent,
-    ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner,
-    MatInputModule,
-    MatTimepickerModule,
-    MatDatepickerModule,
-  ],
+  imports: [DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe, MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe, GinputComponent, DropdownComponent, RouterLink, PromptareaComponent, ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner, MatInputModule, DecimalPipe, MatTimepickerModule, MatDatepickerModule],
   providers: [provideNativeDateAdapter(), provideNativeDateTimeAdapter()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './operations.component.html',
   styleUrl: './operations.component.scss'
 })
 export class OperationsComponent {
+  private readonly db: Firestore
+  private readonly operationsSubject = new BehaviorSubject<CrawlOperation[] | null | undefined>(undefined)
+  private readonly totalPagesSubject = new BehaviorSubject<number>(1)
+  private readonly inTotalSubject = new BehaviorSubject<number>(0)
+  private readonly pageCursorCacheNamespace = 'operations:lastDocByPage'
+
 
 
   private user: Users & { currProviderData: UserInfo | null } | null = null
@@ -101,6 +123,7 @@ export class OperationsComponent {
   private destroy$ = new Subject<void>()
   private crawlSubs: Subscription
   private pagesSubs: Subscription
+  private timerSubs: Subscription
 
   protected totalOperPerPage: number
 
@@ -108,17 +131,23 @@ export class OperationsComponent {
   protected operOptions: { menu_visible: boolean, id: string }[] = []
 
   protected isOperOptionsLoading: boolean
+  private taskStatuses: TaskStatus[] = []
+  private _seenTaskIds: Set<string> = new Set<string>()
 
   constructor(
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private fb: FormBuilder,
+    private firestoreService: FirestoreService,
+    private cacheService: CacheService,
     private authService: AuthService,
     private crawlStoreService: CrawlStoreService,
     private snackbarService: SnackbarService,
-
     private scroll: ScrollService,
+
+    private wsService: WebSocketService
   ) {
+    this.db = this.firestoreService.getInstanceDB('easyscrape')
     this.initVariables()
     this.initFormBuilders()
     this.initOperations()
@@ -237,9 +266,75 @@ export class OperationsComponent {
   }
   initOperations() {
 
-    this.operations$ = this.crawlStoreService.operations$
-    this.totalOpePages$ = this.crawlStoreService.totalPages$
-    this.inTotal$ = this.crawlStoreService.inTotal$
+    // Subscribe to task status updates
+    this.wsService.taskStatus$
+      .subscribe(
+        statuses => {
+          this.taskStatuses = statuses;
+
+          // Track new non-final statuses for one-time refresh
+          if (!this._seenTaskIds) this._seenTaskIds = new Set<string>();
+          let shouldRefresh = false;
+
+          for (const s of statuses) {
+            if (!s.final && !this._seenTaskIds.has(s.task_id)) {
+              this._seenTaskIds.add(s.task_id);
+              shouldRefresh = true;
+            }
+          }
+
+          if (shouldRefresh) {
+            this.refreshOperationList()
+          }
+
+          // At the end, if all statuses are final, refresh
+          if (statuses.length > 0 && statuses.every(s => s.final)) {
+            this.refreshOperationList()
+            // Optionally clear seenTaskIds for next batch
+            this._seenTaskIds.clear()
+          }
+        }
+      )
+
+
+    // Combine operations$ and taskStatus$
+    this.operations$ = combineLatest([
+      this.operationsSubject.asObservable(),
+      this.wsService.taskStatus$
+    ]).pipe(
+      map(([operations, statuses]) => {
+        if (!operations) return operations;
+        // Map each operation and update its status if found in statuses
+        return operations.map((op: CrawlOperation) => {
+          const taskStatus = statuses.find((ts: any) => ts.task_id === op.task_id);
+          if (taskStatus) {
+            return {
+              ...op,
+              status: taskStatus.status as CrawlOperationStatus,
+              color: crawlOperationStatusColor(taskStatus.status as CrawlOperationStatus)
+            }
+          }
+          return op
+        })
+      }),
+      tap((operations: CrawlOperation[] | null | undefined) => {
+        if (!operations || operations.length === 0) {
+          return
+        }
+        // Connect to websocket for active tasks
+        const taskIds = operations
+          .filter(op => op.status !== CrawlOperationStatus.COMPLETED &&
+            op.status !== CrawlOperationStatus.FAILED &&
+            op.status !== CrawlOperationStatus.CANCELED)
+          .map(op => op.task_id)
+          .filter((taskId): taskId is string => !!taskId) // Type guard to filter out undefined/null taskIds
+        this.connectToTaskWebSocket(taskIds)
+      }),
+      map((operations) => operations)
+    )
+
+    this.totalOpePages$ = this.totalPagesSubject.asObservable()
+    this.inTotal$ = this.inTotalSubject.asObservable()
 
     this.totalOperPerPage = 10 // set a default value and update it later based on the user selection or local storage
     this.isOperOptionsLoading = false
@@ -252,25 +347,25 @@ export class OperationsComponent {
       })
     }
 
-    /* this.addOperation({
-      authorId: "George Konstantine",
-      created_At: Date.now(),
-      name: "Create docs embeddings for given urls",
-      urls: ["https://akispetretzikis.com/recipe/8615/revithada-me-chwriatiko-loukaniko"],
-      sumPrompt: `create a most beautifull custom table not html tabe, for example alist of box operations 
-      with tailwind dark and light mode in angular where each operation has date created author name actions 
-      operation name summerized prompt urls use outer boxes in each light or dark mode`,
-      status: CrawlOperationStatus.READY,
-      color: crawlOperationStatusColor(CrawlOperationStatus.READY),
+    void this.loadOperationsPage(1, true)
+  }
 
-    }) */
+  // ngOnChanges(changes: SimpleChanges): void {
+  //   if (changes['taskIds'] && !changes['taskIds'].firstChange) {
+  //     this.connectToTaskWebSocket();
+  //   }
+  // }
 
+  private connectToTaskWebSocket(taskIds: string[] | undefined): void {
+    if (!taskIds || taskIds.length === 0)
+      return
+
+    this.wsService.connectAndTrackTasks(taskIds)
   }
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-
   }
 
   protected refreshOperationList() {
@@ -278,16 +373,17 @@ export class OperationsComponent {
     // loading Operation List
     this.loadingOperList = true
 
-    // make the request via Firestore Functions
-    this.crawlStoreService.nextPage(this.currentOpePage)
+    void this.loadOperationsPage(this.currentOpePage, true)
 
     // scroll to the search bar target in the page
-    this.scroll.scrollToElement(this.searchBar.nativeElement as HTMLElement)
+    if (this.searchBar.nativeElement)
+      this.scroll.scrollToElement(this.searchBar.nativeElement as HTMLElement)
 
-    setTimeout(() => {
-      // loading Operation List
-      this.loadingOperList = false
-    }, 400)
+    // Keep the existing delayed-loading UX cadence
+    this.timerSubs = timer(400).subscribe(() => {
+      this.loadingOperList = false;
+      this.cdr.markForCheck()
+    })
   }
 
   private prepareCrawlOperation(operation: CrawlOperation) {
@@ -306,6 +402,7 @@ export class OperationsComponent {
         },
         complete: () => {
           this.enableForm()
+          this.refreshOperationList()
         }
       })
 
@@ -333,21 +430,30 @@ export class OperationsComponent {
 
     this.isOperOptionsLoading = true
 
-    this.crawlStoreService.deleteCrawlOperation(operation.author.uid,
-      operation.id, this.currentOpePage, this.totalOperPerPage)
-      .subscribe({
-        next: (done: any) => {
-          // console.log('done', done)
-          this.showSnackbar('Operation deletion successful', SnackBarType.success, '', 5000)
-        },
-        error: (error: any) => {
-          console.log('error', error)
-          this.showSnackbar('Operation deletion failed. Please try again later', SnackBarType.error, '', 5000)
-        },
-        complete: () => {
-          this.isOperOptionsLoading = false
-          this.operOptions[indexOption].menu_visible = false
-        }
+    const ownerId = operation.author.uid
+    const operationId = operation.id
+
+    const operationRef = doc(this.db, `users/${ownerId}/operations/${operationId}`)
+    const operationMetricsRef = doc(this.db, `operation_metrics/${operationId}`)
+    const batch = writeBatch(this.db)
+
+    batch.set(operationMetricsRef, { deleted_At: Date.now(), softDelete: true }, { merge: true })
+    batch.delete(operationRef)
+
+    batch.commit()
+      .then(async () => {
+        this.showSnackbar('Operation deletion successful', SnackBarType.success, '', 5000)
+        this.resetOperationsPaginationCache()
+        await this.loadOperationsPage(this.currentOpePage, true)
+      })
+      .catch((error: any) => {
+        console.log('error', error)
+        this.showSnackbar('Operation deletion failed. Please try again later', SnackBarType.error, '', 5000)
+      })
+      .finally(() => {
+        this.isOperOptionsLoading = false
+        this.operOptions[indexOption].menu_visible = false
+        this.cdr.markForCheck()
       })
   }
 
@@ -476,7 +582,8 @@ export class OperationsComponent {
       created_At: Date.now(),
       name: this.operationName.value,
       urls: arrURL,
-      sumPrompt: this.userprompt.value, // 
+      type: 'operation',
+      prompt: this.userprompt.value, // 
       scheduled_At,  // 30 * 60 * 1000
       status: this.operationStatus.value.code as CrawlOperationStatus,
       color: crawlOperationStatusColor(this.operationStatus.value.code as CrawlOperationStatus),
@@ -548,8 +655,7 @@ export class OperationsComponent {
     // set the currentOpePage
     this.currentOpePage = page
 
-    // make the request via Firestore Functions
-    this.crawlStoreService.nextPage(this.currentOpePage)
+    void this.loadOperationsPage(this.currentOpePage)
 
     // scroll to the search bar target in the page
     this.scroll.scrollToElement(this.searchBar.nativeElement as HTMLElement)
@@ -557,6 +663,28 @@ export class OperationsComponent {
   }
 
 
+  getVisiblePageNumbers(totalPages: number): number[] {
+    // When we have 7 or fewer pages, just return all pages
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // For more than 7 pages, we'll show a sliding window of 5 pages
+    let startPage = Math.max(2, this.currentOpePage - 2);
+    let endPage = Math.min(totalPages - 1, this.currentOpePage + 2);
+
+    // Adjust the window to always show 5 pages when possible
+    if (this.currentOpePage <= 4) {
+      endPage = 6;
+    } else if (this.currentOpePage >= totalPages - 3) {
+      startPage = totalPages - 5;
+    }
+
+    return Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i
+    );
+  }
   // 'info' | 'success' | 'warning' | 'error'
   private showSnackbar(
     message: string,
@@ -567,8 +695,175 @@ export class OperationsComponent {
     this.snackbarService.showSnackbar(message, type, action, duration)
   }
 
-  Array(totalPages: number) {
-    return Array(totalPages).fill(0).map((_, i) => i + 1)
+  private async loadOperationsPage(page: number, forceCountRefresh = false): Promise<void> {
+    if (!this.user?.uid) {
+      this.operationsSubject.next([])
+      this.totalPagesSubject.next(1)
+      this.inTotalSubject.next(0)
+      this.currentOpePage = 1
+      this.cdr.markForCheck()
+      return
+    }
+
+    try {
+      if (forceCountRefresh || this.inTotalSubject.value === 0) {
+        const countSnap = await getCountFromServer(collection(this.db, `users/${this.user.uid}/operations`))
+        const total = countSnap.data().count || 0
+        this.inTotalSubject.next(total)
+        this.totalPagesSubject.next(Math.max(1, Math.ceil(total / this.totalOperPerPage)))
+      }
+
+      const totalItems = this.inTotalSubject.value
+      const totalPages = this.totalPagesSubject.value
+
+      if (totalItems === 0) {
+        this.currentOpePage = 1
+        this.operationsSubject.next([])
+        this.cdr.markForCheck()
+        return
+      }
+
+      const safePage = Math.min(Math.max(page, 1), totalPages)
+      const previousCursor = await this.getOperationsPageStartCursor(safePage)
+      const operationsRef = collection(this.db, `users/${this.user.uid}/operations`)
+      const operationsQuery = previousCursor
+        ? query(
+          operationsRef,
+          orderBy('created_At', 'desc'),
+          orderBy(documentId(), 'desc'),
+          startAfter(previousCursor.createdAt, previousCursor.docId),
+          limit(this.totalOperPerPage)
+        )
+        : query(operationsRef, orderBy('created_At', 'desc'), orderBy(documentId(), 'desc'), limit(this.totalOperPerPage))
+
+      const operationsSnap = await getDocs(operationsQuery)
+      const operations = operationsSnap.docs.map((operationDoc) => this.mapOperationDoc(operationDoc))
+
+      this.currentOpePage = safePage
+      this.operationsSubject.next(operations)
+
+      const pageLastDoc = operationsSnap.empty ? null : operationsSnap.docs[operationsSnap.docs.length - 1]
+      const pageCursor = this.toOperationsPageCursor(pageLastDoc)
+      this.cacheService.set<number, OperationPageCursor | null>(this.pageCursorCacheNamespace, this.currentOpePage, pageCursor)
+    } catch (error) {
+      console.error('Error retrieving Crawl Operations:', error)
+      this.operationsSubject.next(null)
+      this.totalPagesSubject.next(0)
+      this.inTotalSubject.next(0)
+    } finally {
+      this.cdr.markForCheck()
+    }
+  }
+
+  private async getOperationsPageStartCursor(targetPage: number): Promise<OperationPageCursor | null> {
+    if (targetPage <= 1 || !this.user?.uid) {
+      return null
+    }
+
+    const previousPage = targetPage - 1
+    if (this.cacheService.has<number>(this.pageCursorCacheNamespace, previousPage)) {
+      return this.cacheService.get<number, OperationPageCursor | null>(this.pageCursorCacheNamespace, previousPage) || null
+    }
+
+    const highestCachedPage = this.cacheService.getMaxNumericKey(this.pageCursorCacheNamespace)
+    let startPage = highestCachedPage > 0 ? highestCachedPage + 1 : 1
+    let cursor = highestCachedPage > 0
+      ? this.cacheService.get<number, OperationPageCursor | null>(this.pageCursorCacheNamespace, highestCachedPage) || null
+      : null
+    const operationsRef = collection(this.db, `users/${this.user.uid}/operations`)
+
+    for (let page = startPage; page <= previousPage; page += 1) {
+      const pagedQuery = cursor
+        ? query(
+          operationsRef,
+          orderBy('created_At', 'desc'),
+          orderBy(documentId(), 'desc'),
+          startAfter(cursor.createdAt, cursor.docId),
+          limit(this.totalOperPerPage)
+        )
+        : query(operationsRef, orderBy('created_At', 'desc'), orderBy(documentId(), 'desc'), limit(this.totalOperPerPage))
+
+      const pageSnap = await getDocs(pagedQuery)
+      const pageLastDoc = pageSnap.empty ? null : pageSnap.docs[pageSnap.docs.length - 1]
+      const pageCursor = this.toOperationsPageCursor(pageLastDoc)
+      this.cacheService.set<number, OperationPageCursor | null>(this.pageCursorCacheNamespace, page, pageCursor)
+      cursor = pageCursor
+
+      if (pageSnap.empty) {
+        break
+      }
+    }
+
+    return this.cacheService.get<number, OperationPageCursor | null>(this.pageCursorCacheNamespace, previousPage) || null
+  }
+
+  private toOperationsPageCursor(docSnapshot: QueryDocumentSnapshot<DocumentData> | null): OperationPageCursor | null {
+    if (!docSnapshot) {
+      return null
+    }
+
+    return {
+      createdAt: this.normalizeDateValue(docSnapshot.get('created_At')),
+      docId: docSnapshot.id,
+    }
+  }
+
+  private mapOperationDoc(operationDoc: QueryDocumentSnapshot<DocumentData>): CrawlOperation {
+    const raw = operationDoc.data() as CrawlOperation & { created_At?: unknown }
+
+    return {
+      ...raw,
+      id: operationDoc.id,
+      created_At: this.normalizeDateValue(raw.created_At) as number,
+      metrics: raw.metrics
+        ? {
+          ...raw.metrics,
+          timestamp: this.normalizeMetricsTimestamp((raw.metrics as any).timestamp),
+        }
+        : raw.metrics,
+    }
+  }
+
+  private normalizeDateValue(value: unknown): number {
+    if (value instanceof Timestamp) {
+      return value.toMillis()
+    }
+
+    if (value instanceof Date) {
+      return value.getTime()
+    }
+
+    if (typeof value === 'number') {
+      return value
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Date.parse(value)
+      return Number.isNaN(parsed) ? Date.now() : parsed
+    }
+
+    return Date.now()
+  }
+
+  private normalizeMetricsTimestamp(value: unknown): Date {
+    if (value instanceof Timestamp) {
+      return value.toDate()
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? new Date() : value
+    }
+
+    if (typeof value === 'number' || typeof value === 'string') {
+      const parsed = new Date(value)
+      return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+    }
+
+    return new Date()
+  }
+
+  private resetOperationsPaginationCache(): void {
+    this.cacheService.clear(this.pageCursorCacheNamespace)
   }
 
   ngOnDestroy(): void {
@@ -578,5 +873,6 @@ export class OperationsComponent {
     this.destroy$.complete()
     this.crawlSubs?.unsubscribe()
     this.pagesSubs?.unsubscribe()
+    this.timerSubs?.unsubscribe()
   }
 }

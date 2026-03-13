@@ -4,13 +4,11 @@ import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject'
 import { SessionStorage } from './storage.service'
 import { FirestoreService } from './firestore.service'
 import { Firestore } from '@angular/fire/firestore'
-import { Functions, httpsCallable } from '@angular/fire/functions'
 import { LoadingBarService } from '@ngx-loading-bar/core'
 import { Subscription } from 'rxjs/internal/Subscription'
 import { Observable } from 'rxjs/internal/Observable'
 import { from } from 'rxjs/internal/observable/from'
 import { map } from 'rxjs/internal/operators/map'
-import { updateMachineState } from '../functions'
 import { AuthService } from './auth.service'
 
 @Injectable({
@@ -31,8 +29,6 @@ export class MachineStoreService {
 
   constructor(
     private firestoreService: FirestoreService,
-    private firestore: Firestore,
-    private functions: Functions,
     private loadingBar: LoadingBarService,
 
     private auth: AuthService
@@ -40,9 +36,6 @@ export class MachineStoreService {
 
 
     this.initializeOperations(null)
-
-    // set the firestore instance
-    this.firestore = this.firestoreService.getInstanceDB('easyscrape')
   }
 
   private initializeOperations(storeMachines: string | null) {
@@ -75,11 +68,13 @@ export class MachineStoreService {
   }
 
   private getMachinesByPagination(currPage: number = 1, pageSize: number = 10, state: string | null = null): Observable<any> {
-    return from(httpsCallable(this.functions, "getMachinesPaging")
-      ({ currPage, pageSize, state }))
+    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number; state: string | null }, any>(
+      'getMachinesPaging',
+      { currPage, pageSize, state }
+    ))
       .pipe(
-        map((fun: any) => {
-          const { error, machines, inTotal, totalPages, message } = fun.data as any
+        map((data: any) => {
+          const { error, machines, inTotal, totalPages, message } = data as any
 
           if (error) {
             console.error('Error retrieving machines by pagination:', error, machines, message)
@@ -87,7 +82,7 @@ export class MachineStoreService {
           }
 
           const newMachine = machines?.map((machine: FlyMachine): any => {
-            const created_At = machine.created_at // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
+            // const created_At = (machine.created_at as any).toDate() // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
             // const showKey = key.showKey
             return { ...machine }
           })

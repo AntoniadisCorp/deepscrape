@@ -1,5 +1,5 @@
-import { DOCUMENT } from '@angular/common';
-import { Directive, ElementRef, HostListener, Inject, Input } from '@angular/core';
+
+import { Directive, ElementRef, HostListener, Inject, Input, DOCUMENT } from '@angular/core';
 import { Subject } from 'rxjs/internal/Subject';
 
 
@@ -52,7 +52,7 @@ export class RippleDirective {
 
   }
 
-  @HostListener('mouseleave', ['$event'])
+  @HostListener('mouseleave')
   onBlur() {
     if (this.focusedRippleElement) this.focusedRippleElement?.remove()
     this.el.nativeElement.querySelectorAll('.ripple').forEach((element: any) => this.el.nativeElement.removeChild(element))

@@ -1,16 +1,13 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/internal/Observable';
-import { API_CRAWL4AI } from '../variables';
-import { HttpClient, HttpDownloadProgressEvent, HttpErrorResponse, HttpEventType, HttpHeaders, HttpResponse } from '@angular/common/http';
-import { catchError } from 'rxjs/internal/operators/catchError';
-import { AuthService } from './auth.service';
-import { arrayBufferToString, handleError } from '../functions';
-import { map } from 'rxjs/internal/operators/map';
-import { tap } from 'rxjs/internal/operators/tap';
-import { CrawlPack, CrawlStatus, CrawlTask, JinaOptions } from '../types';
-import { filter } from 'rxjs/internal/operators/filter';
-import { environment } from 'src/environments/environment';
-import { switchMap } from 'rxjs/internal/operators/switchMap';
+import { Injectable } from '@angular/core'
+// import { API_CRAWL4AI } from '../variables'
+import { HttpClient, HttpDownloadProgressEvent, HttpErrorResponse, HttpEventType, HttpHeaders, HttpResponse, HttpEvent } from '@angular/common/http'
+import { catchError, map, tap, filter, switchMap, scan, mergeMap, finalize } from 'rxjs/operators'
+import { from, Observable, throwError } from 'rxjs'
+import { AuthService } from './auth.service'
+import { arrayBufferToString, handleError } from '../functions'
+import { CrawlOperation, CrawlPack, CrawlStatus, CrawlStreamBatch, CrawlTask, JinaOptions } from '../types'
+import { environment } from 'src/environments/environment'
+import { API_CRAWL4AI_URL } from '../variables'
 
 @Injectable({
   providedIn: 'root'
@@ -20,30 +17,15 @@ export class CrawlAPIService {
   private crawl4AiEndpoint: string
   constructor(private http: HttpClient, private authService: AuthService) { 
 
-    this.crawl4AiEndpoint = API_CRAWL4AI + '/crawl' // Updated URL
-
-    // initialize auth state
-    // this.authService.initAuth()
+    this.crawl4AiEndpoint = (environment.production ? environment.API_CRAWL4AI_URL + '/api/v1' : 
+      API_CRAWL4AI_URL) + '/crawl' // API_CRAWL4AI // Updated URL
   }
 
-  getfromCrawl4Ai(): Observable<any> {
-
-    const crawl4AiReaderEndpoint: string = API_CRAWL4AI + '/user/data'
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.authService.token}`,
-      'Accept': 'application/json',
-    })
-
-    return this.http.get(crawl4AiReaderEndpoint, { headers, responseType: 'text' })
-      .pipe(
-        catchError(handleError)
-      )
-  }
   
   sendToCrawl4AI(url: string, options: JinaOptions, cookies?: string,
     content_type: "application/octet-stream" | "text/plain" | "application/json" | "text/event-stream" = "application/octet-stream"): Observable<string> {
 
-    const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url// customUrlEncoder(url);
+    const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url// customUrlEncoder(url)
     // console.log("encodedUrl: ", encodedUrl, environment?.CRAWL4AI_API_KEY)
     const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint
     // const cookie = options.forwardCookies && cookies && cookies?.length ? { "X-Set-Cookie": cookies } : null // If cookies are provided, append them to the headers, )
@@ -81,38 +63,15 @@ export class CrawlAPIService {
         map((response: any) => response.data.content),
         catchError(error => {
           console.error('Error in Crawl4 AI API call:', error)
-          throw error
+          return throwError(() => error)
         })
 
       )
   }
 
-  getTempTaskId(): Observable<string> {
+  getTaskId(taskId: string): Observable<string> {
 
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/job/temp-task-id"
-
-
-    const headers = new HttpHeaders({
-      // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
-      'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
-      'Content-Type': 'application/json',
-    })
-
-
-    return this.http.get<{temp_task_id: string}>(crawl4AiEndpoint, {headers})
-      .pipe(
-        tap(res => {
-          console.log(res.temp_task_id)
-        }),
-        map((res) => res.temp_task_id),
-        catchError(handleError)
-      )
-
-  }
-
-  getTaskId(tempTaskId: string): Observable<string> {
-
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/job/" + tempTaskId
+    const crawl4AiEndpoint: string = this.crawl4AiEndpoint.replace('/crawl', '/job') + "/" + taskId
 
 
     const headers = new HttpHeaders({
@@ -135,7 +94,7 @@ export class CrawlAPIService {
 
   getTaskStatus(taskId: string): Observable<any> {
   
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/stream/job/status/" + taskId
+    const crawl4AiEndpoint: string = this.crawl4AiEndpoint.replace('/crawl', '/job') + "/stream/status/" + taskId
 
 
     const headers = new HttpHeaders({
@@ -156,91 +115,97 @@ export class CrawlAPIService {
     }).pipe(
       filter(event => event.type === HttpEventType.DownloadProgress || event.type === HttpEventType.Response),
       map(event => {
-          const fullText = (event as HttpDownloadProgressEvent).partialText || ''
-          const newText = fullText.slice(previousText.length)
-          previousText = fullText
-          // Process the chunk to handle boundaries and send as JSON
-          let buffer = newText;
-          let boundary: number;
-          let result = '';
-          while ((boundary = buffer.indexOf('\n')) !== -1) {
-            const jsonChunk = buffer.slice(0, boundary).trim();
-            buffer = buffer.slice(boundary + 1);
-  
-            if (jsonChunk) {
-              result += `${jsonChunk}\n`; // Add the chunked data to the result
-            }
+        const fullText = (event as HttpDownloadProgressEvent).partialText || ''
+        const newText = fullText.slice(previousText.length)
+        previousText = fullText
+        // Process the chunk to handle boundaries and send as JSON
+        let buffer = newText
+        let boundary: number
+        let result = ''
+        while ((boundary = buffer.indexOf('\n')) !== -1) {
+          const jsonChunk = buffer.slice(0, boundary).trim()
+          buffer = buffer.slice(boundary + 1)
+
+          if (jsonChunk) {
+            result += `${jsonChunk}\n` // Add the chunked data to the result
           }
-  
-          return result;
-        }),
-        // tap((text: string) => { console.log(`event.type`, text.split('\n')[0]) }),
-        switchMap((text: string) => text.split('\n')),
-        filter(line => line.startsWith('data: ')),
-        map(line => line.slice(5).trim()),
-        map((text: string) => {
-          const newText = text?.replace(/^data:\s*/, '')
-          if (newText === '[DONE]') {
-            return null
+        }
+
+        return result
+      }),
+      // tap((text: string) => { console.log(`event.type`, text.split('\n')[0]) }),
+      switchMap((text: string) => text.split('\n')),
+      filter(line => line.startsWith('data: ')),
+      map(line => line.slice(5).trim()),
+      map((text: string) => {
+        const newText = text?.replace(/^data:\s*/, '')
+        if (newText === '[DONE]') {
+          return null
+        }
+        // Fix any structural issues (e.g., mismatched brackets)
+        return newText
+      }),
+      filter((line: string | null) => line !== null), // Filter out null values here
+      map((line: string) => { // Now 'line' is guaranteed to be a string
+          if (!line || line.trim() === '') return null // Skip empty lines
+          let jsonObject = null
+          try {
+              jsonObject = JSON.parse(line) // Parse each completed JSON object
+          } catch (e: any) { // Explicitly type error
+              console.error('Failed to parse JSON chunk:', e)
           }
-          // Fix any structural issues (e.g., mismatched brackets)
-          return newText
-        }),
-        map(line => {
-            if (!line || line.trim() === '') return null; // Skip empty lines
-            let jsonObject = null;
-            try {
-                jsonObject = JSON.parse(line); // Parse each completed JSON object
-            } catch (e) {
-                console.error('Failed to parse JSON chunk:', e);
-            }
-            return jsonObject;
-        }),
-      filter(line => line !== null), // Filter out null values
-      map((jsonObject: CrawlStatus) => jsonObject.status),
-      catchError(error => {
+          return jsonObject
+      }),
+      filter((line: any) => line !== null), // Filter out null values again after JSON parsing
+      // tap((line: any) => console.log(line)),
+      map((jsonObject: CrawlStatus): Pick<CrawlStatus, 'error' | 'status' | 'result'> => ({
+        status: jsonObject.status, 
+        result: {
+          status: jsonObject.result?.status || 'Completed',
+          message: jsonObject.result?.message || ''
+        },
+        error: jsonObject?.error
+    }
+    )),
+      catchError((error: any) => {
         console.error('Error in Crawl4 AI API call:', error)
-        throw error
+        throw throwError(() => error)
       })
     )
 
   }
 
-  cancelTask(tempTaskId: string): Observable<any> {
+  cancelTask(taskId: string): Observable<any> {
 
-    const crawl4AiEndpoint: string = this.crawl4AiEndpoint + "/job/cancel/" + tempTaskId
+    const crawl4AiEndpoint: string = this.crawl4AiEndpoint.replace('/crawl', '/job') + `/${taskId}/cancel`
 
     const headers = new HttpHeaders({
       // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
       'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
       'Content-Type': 'application/json'
     })
-    // const body = {
-    //   "temp_task_id": tempTaskId
-    // }
-
-    return this.http.put(crawl4AiEndpoint, {headers})
+    const body = null
+    return this.http.put(crawl4AiEndpoint, body, {headers})
     .pipe(
-      tap((value) => console.log(value)),
+      // tap((value) => console.log(value)),
       catchError(handleError)
     )
   }
   
-  crawlEnqueue(urls: string[], tempTaskId: string, crawlPack: CrawlPack ): Observable<CrawlTask> {
+  multiCrawlEnqueue(urls: string[], operationData: CrawlOperation, crawlPack: CrawlPack ): Observable<CrawlTask> {
 
-    const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? urls : urls;
+    const URLs = urls // environment.CRAWL4AI_API_KEY !== '' ? urls.map(url => customUrlEncoder(url)) : urls
     const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint + "/stream/job"
 
     const headers = new HttpHeaders({
-      'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
+      // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
       'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
-      'Accept': 'text/event-stream',
+      'Accept': 'application/json',
     })
 
-
     const body = {
-      "urls": encodedUrl,
-      "temp_task_id": tempTaskId,
+      "urls": URLs,
+      "operation_data": operationData,
       // "priority": 10,
       ...crawlPack.config.value,
     }
@@ -251,79 +216,157 @@ export class CrawlAPIService {
         // console.log('response data:', task)
       }),
       map((job: any) => {
-        return {id: job.task_id, ...job} as CrawlTask
+        return {
+          id: job.task_id,
+          operationId: job.operation_id, 
+          ...job} as CrawlTask
       }),
       catchError(error => {
         console.error('Error in Crawl4 AI API call:', error)
-        throw error
+        throw throwError(() => error)
       }))
   }
 
-  getCrawlAIStream(url: string, taskId: string): Observable<any> {
-    const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url;
+  streamTaskResults(url: string, taskId: string): Observable<any> {
+    // const encodedUrl = environment.CRAWL4AI_API_KEY !== '' ? url : url
     // console.log("encodedUrl: ", encodedUrl, environment?.CRAWL4AI_API_KEY)
-    const crawl4AiReaderEndpoint: string = this.crawl4AiEndpoint + "/stream/job/" + taskId
+    const crawl4AiReaderEndpoint: string = /* url ||  */(this.crawl4AiEndpoint.replace('/crawl', '/job') + "/stream/" + taskId)
 
     const headers = new HttpHeaders({
-      'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
+      // 'api-key': `Bearer ${this.authService.token}`, // this is for the ssr express server `,
       'Authorization': `Bearer ${this.authService.token}`, // this is for the python fastapi server
       'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
     })
 
-    let previousText = ''
-      
-    return this.http.get(crawl4AiReaderEndpoint, { 
-      headers/* , transferCache: true */,  
+    let previousText = '' // Persistent buffer for incomplete lines
+    let buffer = '' // To accumulate new text chunks
+    let isErrorState = false // Track if we've encountered an error
+    return this.http.get(crawl4AiReaderEndpoint, {
+      headers/* , transferCache: true */,
       observe: 'events',
       responseType: 'text',
-      reportProgress: true, 
-      withCredentials: true 
+      reportProgress: true,
+      withCredentials: true
     }).pipe(
-      filter(event => event.type === HttpEventType.DownloadProgress || event.type === HttpEventType.Response),
+      filter((event: HttpEvent<string>): event is HttpDownloadProgressEvent | HttpResponse<string> =>
+        event.type === HttpEventType.DownloadProgress || event.type === HttpEventType.Response
+      ),
       map(event => {
+        // if (event.type === HttpEventType.DownloadProgress && event.partialText) {
+          
+        //   // console.log('Final full partialText  received:', )
+        // } else if (event.type === HttpEventType.Response) {
+        //   // previousText = event.body as string
+        //   // newText = previousText
+        //   // console.log('Final full textbody  received:', )
+        // }
         const fullText = (event as HttpDownloadProgressEvent).partialText || ''
         const newText = fullText.slice(previousText.length)
-     
-        previousText += newText; // Concatenate the new text
-    
-        // Match complete JSON objects in the concatenated text
-        const regex = /(\{"status".*?\}"})/g;
-        let completeString = '';
-        let match;
+        previousText = fullText
 
-        // Extract the last complete JSON object (if available)
-        while ((match = regex.exec(previousText)) !== null) {
-            completeString = match[1]; // Store the last complete match
+
+        if (!newText) return [] // No new text to process
+
+        // Split by newline to get complete chunks
+        const lines = (buffer + newText).split('\n')
+        // console.log('Received lines:', lines.length, lines, '...')
+
+        // Buffer the last potentially incomplete line for next chunk
+        if (lines.length && lines[lines.length - 1] !== '') {
+          buffer = lines.pop() || ''
+        } else {
+          buffer = ''
         }
+        // console.log("buffer: ", buffer, previousText)
+        return lines.filter(line => line.trim().length > 0) // Only return non-empty lines
+      }),
+      // Flatten array of lines into individual lines
+      mergeMap(lines => from(lines)), // Flatten array to stream
+      // Handle event types
+      map(line => {
+        // Handle event: error lines
+        if (line.startsWith('event: error')) {
+          isErrorState = true;
+          return line;
+        }
+        // Handle data: lines
+        if (line.startsWith('data: ')) {
+          return line.slice(6).trim();
+        }
+        return line;
+      }),
 
-        // Clean up concatenatedText to keep only the unmatched part
-        if (completeString) {
-            // Adjust the concatenatedText to remove the complete segment if needed
-            previousText = previousText.replace(completeString, '');
+      // Skip the [DONE] message but log it
+      filter(text => {
+        if (text === '[DONE]') {
+          console.log('Stream completed with [DONE] marker');
+          return false;
+        }
+        return text.length > 0;
+      }),
+
+      // Parse JSON objects from text
+      map((line: string) => {
+        if (!line) return null;
+        
+        // Special handling for error events
+        if (isErrorState && line.startsWith('{')) {
+          isErrorState = false;
+          try {
+            const errorObj = JSON.parse(line);
+            throw new Error(errorObj.error || 'Server error');
+          } catch (e) {
+            console.error('Error event received:', e);
+            throw e;
+          }
         }
         
-        return completeString; // Return the last matched complete JSON string    
+        // Regular data parsing
+        try {
+          return JSON.parse(line);
+        } catch (e) {
+          console.error('Failed to parse JSON chunk:', e, line);
+          return null;
+        }
       }),
-      map(line => {
-          if (!line) return null; // Skip empty lines
-          let jsonObject = null;
-          try {
-              jsonObject = JSON.parse(line); // Parse each completed JSON object
-          } catch (e) {
-              console.error('Failed to parse JSON chunk:', e);
+      // tap((line: string | null) => { 
+      //   const chunkIndexMatch = line?.match(/"chunk_index":\s*\"(\d+)\"/)
+      //   const chunkIndex = chunkIndexMatch ? parseInt(chunkIndexMatch[1], 10) : null
+      //   console.log('Extracted chunk_index:', chunkIndex)
+      // }),
+      // Filter out null values
+      filter((parsed: CrawlStreamBatch | null): parsed is CrawlStreamBatch => parsed !== null),
+      // tap((line: CrawlStreamBatch) => console.log('Crawl4AI Stream Line:', line.chunk_index, line.message)), // Explicitly type line as any
+
+      // Add progress calculation
+      map((data: CrawlStreamBatch) => {
+        // Calculate progress if chunk_index and total_chunks are available
+        if (data.chunk_index !== undefined && data.total_chunks !== undefined) {
+          const current = parseInt(data.chunk_index, 10)
+          const total = parseInt(data.total_chunks, 10)
+          if (!isNaN(current) && !isNaN(total) && total > 0) {
+            data.progress = Math.min(Math.round((current / total) * 100), 99);
           }
-          return jsonObject;
+        }
+        return data
       }),
-      filter(line => line !== null), // Filter out null values
-      // tap( line => console.log(line)),
-      catchError(error => {
+
+      catchError((error: any) => { // Explicitly type error
         console.error('Error in Crawl4 AI API call:', error)
-        throw error
+        return throwError(() => error)
+      }),
+      finalize(() => {
+        // Clear the buffer when the observable completes or errors
+        previousText = '';
+        buffer = '';
+        isErrorState = false;
+        console.log('Stream finalized, resources cleaned up')
       })
-    );
+    )
 
   }
   
 }
-
-

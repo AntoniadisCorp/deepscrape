@@ -1,3 +1,5 @@
+# local emulator data
+/local-data
 # Compiled JavaScript files
 /lib
 # Remove lib js files
@@ -16,3 +18,5 @@ dist
 .env
 .env.local
 .env.default
+.env.keys
+.deploy-secrets.json

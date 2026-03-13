@@ -1,0 +1,30 @@
+<div class="admin-workspace-shell mt-8 min-h-screen rounded-md bg-gray-100 dark:bg-gray-900">
+  <header class="mb-6">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray6 dark:text-gray3">Admin Console</h1>
+    <p class="text-sm text-gray6/70 dark:text-gray-300 mt-1">Analytics and migration tools</p>
+  </header>
+
+  <div
+    class="sticky scrollbar-hidden snap-x overflow-auto z-50 flex h-16 flex-nowrap items-center justify-start gap-1 border-b bg-gray-200 text-base text-gray-800 dark:border-b-[#64b5f633] dark:bg-gray-900 mb-6"
+    >
+    @for (tab of tabs; track tab) {
+      <a
+        [routerLink]="tab.route"
+        routerLinkActive="active"
+        #rla="routerLinkActive"
+        [ngClass]="rla.isActive ? 'bg-gray-300/70 transition dark:border-blue-300 dark:bg-gray5/40' : ''"
+        class="flex just snap-normal h-full w-full max-w-[10rem] flex-shrink-0 items-center justify-start rounded-sm rounded-tl-lg rounded-tr-lg border-b-2 border-transparent px-3 py-3 text-gray-900 transition-all hover:border-blue-300 hover:bg-cyan-100 hover:duration-100 hover:ease-in-out dark:text-gray-400 dark:hover:bg-cyan-300/10 dark:hover:text-gray-200"
+        [routerLinkActiveOptions]="{ exact: true }">
+        <lucide-angular
+          [img]="icons[tab.icon]"
+          class="mr-2 h-4 w-4 flex-shrink-0 fill-none"
+        [attr.aria-label]="tab.label + ' icon'"></lucide-angular>
+        <span>{{ tab.label }}</span>
+      </a>
+    }
+  </div>
+
+  <div [@routeChildAnimation]="getRouteAnimationData(outlet)" class="relative min-h-[12rem] overflow-hidden">
+    <router-outlet #outlet="outlet"></router-outlet>
+  </div>
+</div>

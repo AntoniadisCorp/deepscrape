@@ -1,14 +1,17 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ChildrenOutletContexts, RouterLink, RouterOutlet } from '@angular/router';
+import { Observable } from 'rxjs/internal/Observable';
 import { fadeInOutAnimation } from 'src/app/animations';
-import { LocalStorage } from 'src/app/core/services';
-import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
+import { LocalStorage, ThemeService } from 'src/app/core/services';
+import { LangPickerComponent, themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
 
 @Component({
   selector: 'app-service-layout',
-  imports: [RouterOutlet, RouterLink, ThemeToggleComponent],
+  imports: [RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe,
+    LangPickerComponent
+  ],
   templateUrl: './app-service-layout.component.html',
   styleUrl: './app-service-layout.component.scss',
   animations: [fadeInOutAnimation]
@@ -16,6 +19,9 @@ import { themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
 export class AppServiceLayoutComponent {
 
   private localStorage = inject(LocalStorage)
+  private themePicker = inject(ThemeService)
+  isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$
+
   constructor(private contexts: ChildrenOutletContexts) { }
   getAnimationData(outlet: RouterOutlet) {
     return this.contexts.getContext('primary')?.route?.snapshot?.data?.['animation']

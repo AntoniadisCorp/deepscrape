@@ -13,18 +13,51 @@ service cloud.firestore {
     // all client requests to your Firestore database will be denied until you Update
     // your rules
     match /{document=**} {
-      allow read, write: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && requestMatchesUID();
-      allow update: if isAuthenticated() && resourceMatchesUID() && requestMatchesUID();
-      allow delete: if isAuthenticated() && resourceMatchesUID(); 
+      allow read: if isAdmin();
+
+      allow create: if isAuthenticated() && (isAdmin() || requestMatchesUID());
+      allow update: if isAuthenticated() && (isAdmin() || (resourceMatchesUID() && requestMatchesUID()));
+      allow delete: if isAuthenticated() && (isAdmin() || resourceMatchesUID());
     }
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId &&
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId &&
                   (request.auth.token.email_verified || 
                    request.auth.token.phone_number != null ||
                    (request.resource.data.phoneNumber == request.auth.token.phone_number && request.resource.data.phoneVerified == true));
+
+      match /billing/{billingId} {
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      match /cartpack/{cartpackId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /crawlpack/{crawlpackId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /operations/{operationId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /crawlconfigs/{configId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /crawlresultsconfig/{configId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /apikeys/{keyId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /browser/{profileId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
     
     function isAuthenticated() {
@@ -39,5 +72,125 @@ service cloud.firestore {
     function resourceMatchesUID() {
         return request.auth.uid == resource.data.uid;
     }
+
+    function hasRole(roleName) {
+      return request.auth != null
+        && request.auth.token != null
+        && ('role' in request.auth.token)
+        && request.auth.token.role == roleName;
+    }
+
+    function hasTeamsClaim() {
+      return request.auth != null
+        && request.auth.token != null
+        && ('teams' in request.auth.token)
+        && request.auth.token.teams is list;
+    }
+
+    function hasOrganizationClaim(orgId) {
+      return request.auth != null
+        && request.auth.token != null
+        && ('organization' in request.auth.token)
+        && request.auth.token.organization == orgId;
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || (
+        request.auth != null
+        && request.auth.token != null
+        && ('email' in request.auth.token)
+        && request.auth.token.email in [
+          'prokopis123@gmail.com',
+          'prokopis3@gmail.com',
+          'admin@deepscrape.dev'
+        ]
+      );
+    }
+
+    function isModerator() {
+      return hasRole('moderator');
+    }
+
+    function isManager() {
+      return hasRole('manager');
+    }
+
+    function isUser() {
+      return hasRole('user');
+    }
+
+    function isGuest() {
+      return hasRole('guest');
+    }
+
+    function isTeamLeader(teamId) {
+      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]) && hasRole('team_leader');
+    }
+
+    function isTeamMember(teamId) {
+      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]);
+    }
+
+    function isOrganizationAdmin(orgId) {
+      return hasOrganizationClaim(orgId) && hasRole('org_admin');
+    }
+
+    function isOrganizationMember(orgId) {
+      return hasOrganizationClaim(orgId);
+    }
+    
+    match /login_metrics/{docId} {
+      allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
+      allow create, update: if isAuthenticated() && request.auth.uid == docId;
+      allow delete: if false;
+
+      match /login_history_Info/{historyId} {
+        allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
+        allow create, update: if isAuthenticated() && request.auth.uid == docId;
+        allow delete: if false;
+      }
+    }
+
+    match /migration_runs/{runId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /migration_backups/{runId} {
+      allow read, write: if isAdmin();
+
+      match /documents/{docId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    match /guests/{guestId} {
+      allow read: if isAdmin();
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /operation_metrics/{operationId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Analytics collections - Admin full access for migration/ops tooling
+    match /metrics_daily/{date} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /metrics_hourly/{datetime} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /metrics_summary/{docId} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /metrics_range/{rangeId} {
+      allow read, write: if isAdmin();
+    }
+    
   }
 }

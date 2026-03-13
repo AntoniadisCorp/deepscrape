@@ -1,4 +1,4 @@
-import { AsyncPipe, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, DatePipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, signal, ViewChild, WritableSignal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -21,9 +21,7 @@ import { themeStorageKey } from 'src/app/shared';
 
 @Component({
     selector: 'app-machines',
-    imports: [ContainerBoxComponent, NgClass, NgIf, NgFor, ReactiveFormsModule, MatIcon, SlideInModalComponent,
-        RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe, FormControlPipe
-    ],
+    imports: [ContainerBoxComponent, NgClass, ReactiveFormsModule, MatIcon, SlideInModalComponent, RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe, FormControlPipe],
     templateUrl: './machines.component.html',
     styleUrl: './machines.component.scss'
 })

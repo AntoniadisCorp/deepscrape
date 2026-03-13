@@ -1,0 +1,26 @@
+:host {
+  --admin-glass-bg: rgb(7 11 14 / 40%);
+  --admin-glass-border: rgb(148 163 184 / 30%);
+}
+
+.admin-workspace-shell {
+  background: linear-gradient(to bottom right, rgb(241 245 249 / 80%), rgb(226 232 240 / 55%));
+}
+
+:host-context(.dark) .admin-workspace-shell {
+  background: transparent;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+:host ::ng-deep a.active {
+  background: rgba(209, 213, 219, 0.7);
+  color: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host ::ng-deep a.active {
+    background: rgba(51, 65, 85, 0.6);
+    color: #ffffff;
+  }
+}

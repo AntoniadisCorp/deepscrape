@@ -11,6 +11,7 @@ export type Loading = {
     google: boolean
     github: boolean
     email: boolean,
+    remove: boolean,
     password: boolean,
     logout: boolean
     phone: boolean

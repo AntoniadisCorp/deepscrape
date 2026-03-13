@@ -1,0 +1,21 @@
+.gradient-border-root {
+  position: relative;
+  overflow: hidden;
+}
+.gradient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: background 0.2s;
+  will-change: background;
+  z-index: 1;
+}
+.gradient-content {
+  position: relative;
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gradient {
+    display: none;
+  }
+}

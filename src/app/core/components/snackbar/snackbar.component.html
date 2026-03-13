@@ -1,36 +1,40 @@
-<div
-  [@snackbarState]="snackbarState"
-  [ngClass]="[snackbarTypeClass, getSnackbarPositionClass()]"
-  class="z-50 flex items-center justify-between rounded-lg bg-gray-800 px-4 py-3 shadow-lg sm:mx-auto"
->
-  <div class="flex items-center space-x-2">
-    <mat-icon
-      *ngIf="leftIcon"
-      (click)="onLeftIconClick()"
-      [ngClass]="snackBarTypeClassIcon()"
-      class="cursor-pointer text-base !leading-7 w-full max-w-fit"
-    >{{ leftIcon }}</mat-icon>
-    <div class="mr-4 max-w-xs break-words w-full">
-      <span>{{ message }}</span>
+@if (snackbarState ==='visible') {
+  <div
+    [@snackbarState]="snackbarState"
+    [ngClass]="[snackbarTypeClass, getSnackbarPositionClass()]"
+    class="z-50 flex items-center justify-between rounded-lg bg-gray-800 px-4 py-3 shadow-lg !m-auto"
+    >
+    <div class="flex items-center gap-2">
+      <div class="flex items-center justify-center h-full">
+        @if (leftIcon) {
+          <mat-icon
+            (click)="onLeftIconClick()"
+            [ngClass]="snackBarTypeClassIcon()"
+            class="cursor-pointer text-base !leading-7 w-full max-w-fit flex items-center justify-center"
+          >{{ leftIcon }}</mat-icon>
+        }
+      </div>
+      <div class="mr-4 max-w-xs break-words w-full flex items-center">
+        <span>{{ message }}</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      @if (action || close) {
+        <button
+          appRipple
+          ripplColor="light"
+          title="snackbarAction"
+          (click)="onActionClick()"
+          [ngClass]="snackBarTypeClassIcon()"
+          class="group inline-flex items-center justify-center sm:w-10 sm:h-10 max-w-10 max-h-10 hover:bg-gray-400/5 dark:hover:bg-gray-400/5 rounded-full p-2 text-sm font-medium transition-colors duration-150 ease-out focus:outline-none"
+          >
+          @if (close) {
+            <mat-icon
+              class="cursor-pointer !h-fit text-base xs:text-lg flex items-center justify-center ext-blue-200 group-hover:text-gray-300 dark:text-gray-400/30  dark:group-hover:text-gray-400"
+            >{{ closeIcon }}</mat-icon>
+          }
+        </button>
+      }
     </div>
   </div>
-  <div class="flex items-center space-x-2 ">
-    <button
-      appRipple
-      ripplColor="light"
-      title="snackbarAction"
-      *ngIf="action || close"
-      (click)="onActionClick()"
-      [ngClass]="snackBarTypeClassIcon()"
-      class="group inline-flex items-center justify-center sm:w-10 sm:h-10 max-w-10 max-h-10 hover:bg-gray-400/5 dark:hover:bg-gray-400/5 rounded-full p-2 text-sm font-medium transition-colors duration-150 ease-out focus:outline-none"
-    >
-      <mat-icon
-      *ngIf="close"
-      (click)="hide()"
-      [ngClass]="snackBarTypeClassIcon()"
-      class="cursor-pointer text-lg !leading-7"
-    >{{ closeIcon }}</mat-icon>
-    </button>
-    
-  </div>
-</div>
+}

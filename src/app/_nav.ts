@@ -7,6 +7,47 @@ export const navigation = [
         },
         identity: true,
     },
+    {
+        name: 'Admin',
+        url: '',
+        icon: {
+            matIcon: 'admin_panel_settings'
+        },
+        children: [
+            {
+                name: 'Analytics',
+                url: '/admin/analytics',
+                icon: {
+                    matIcon: 'pie_chart'
+                },
+                badge: {
+                    variant: 'info',
+                    text: 'new'
+                },
+            },
+            {
+                name: 'Migration',
+                url: '/admin/migration',
+                icon: {
+                    matIcon: 'sync_alt'
+                }
+            },
+            {
+                name: 'Migration Runs',
+                url: '/admin/migration/runs',
+                icon: {
+                    matIcon: 'history'
+                }
+            },
+            {
+                name: 'Migration Backups',
+                url: '/admin/migration/backups',
+                icon: {
+                    matIcon: 'backup'
+                }
+            },
+        ]
+    },
     /* Posts Management  */
     {
         name: 'Playground',
@@ -63,16 +104,24 @@ export const navigation = [
 
     /* Menu Management  */
     {
-        name: 'Passes',
-        url: '/billing/passes',
+        name: 'Plans',
+        url: '/billing/plans',
         identity: true,
         icon: {
-            matIcon: 'credit_card'
+            matIcon: 'workspace_premium'
         },
         badge: {
             variant: 'new',
             text: 'new'
         },
+    },
+    {
+        name: 'Usage',
+        url: '/billing/usage',
+        identity: true,
+        icon: {
+            matIcon: 'query_stats'
+        }
     },
 
 

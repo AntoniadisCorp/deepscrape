@@ -1,19 +1,23 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, inject, DestroyRef, ViewChild, ElementRef, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, linkWithPhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider } from '@angular/fire/auth';
+import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, linkWithPhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider, RecaptchaVerifier, ActionCodeSettings } from '@angular/fire/auth';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Users, Loading } from 'src/app/core/types';
 import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
-import { FirestoreService, SnackbarService, AuthService } from 'src/app/core/services';
+import { FirestoreService, SnackbarService, AuthService, ThemeService, WindowToken } from 'src/app/core/services';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { createPasswordStrengthValidator } from 'src/app/core/directives';
 import { SnackBarType } from 'src/app/core/components';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
+import { AnimatedBgComponent } from 'src/app/shared';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { I18nService } from 'src/app/core/i18n';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // First, create an interface for your form structure
 interface SignupForm {
@@ -31,12 +35,18 @@ interface SignupForm {
         ReactiveFormsModule,
         RouterModule,
         MatIconModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
+        TranslateModule,
     ],
     templateUrl: './signup.component.html',
     styleUrl: './signup.component.scss'
 })
 export class SignupComponent implements OnInit, OnDestroy {
+    @ViewChild('recaptchaContainer', { static: false }) recaptchaContainer!: ElementRef<HTMLDivElement>;
+    /** Instance of Firebase RecaptchaVerifier for phone authentication. */
+    public recaptchaVerifier!: RecaptchaVerifier;
+    private window = inject(WindowToken)
+    private platformId = inject<Object>(PLATFORM_ID)
     signupForm: FormGroup
     emailCheckSubs: Subscription
     loading: Loading = {
@@ -44,13 +54,21 @@ export class SignupComponent implements OnInit, OnDestroy {
         logout: false,
         google: false,
         email: false,
+        remove: false,
         phone: false,
         code: false,
         password: false,
-        mfa: false
-        
+        mfa: false,
+
     };
     errorMessage = '';
+    private themePicker = inject(ThemeService);
+    protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$;
+    private destroyRef = inject(DestroyRef);
+    private langChangeSubscription: Subscription;
+    public currentAuthMethod: 'email' | 'phone' | null = null;
+    public phoneVerificationSent: boolean = false;
+    confirmationResult: any;
 
     constructor(
         private fb: FormBuilder,
@@ -61,10 +79,19 @@ export class SignupComponent implements OnInit, OnDestroy {
         private snackbarService: SnackbarService,
         private authService: AuthService, // Inject AuthService
         private cookieService: CookieService, // Inject CookieService
+        private translate: TranslateService, // Inject TranslateService
+        private i18nService: I18nService, // Inject I18nService
     ) {
     }
 
+
     ngOnInit(): void {
+        this.translate.use(this.i18nService.currentLang());
+        this.langChangeSubscription = this.i18nService.currentLang$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((lang) => {
+                this.translate.use(lang);
+            });
         this.signupForm = this.fb.group<SignupForm>({
             name: this.fb.control('', {
                 validators: [Validators.required, Validators.minLength(2)],
@@ -96,6 +123,77 @@ export class SignupComponent implements OnInit, OnDestroy {
         });
     }
 
+    /**
+   * @description Lifecycle hook that is called after Angular has fully initialized a component's view.
+   * Placeholder for any view-related initialization.
+   */
+    ngAfterViewInit(): void {
+        // Recaptcha initialization might be placed here if it depends on DOM elements being present.
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
+        this.initializeRecaptcha()
+    }
+
+    /**
+       * @description Initializes the Firebase reCAPTCHA verifier for phone authentication.
+       * This is crucial for preventing abuse of the phone sign-in flow.
+       */
+    private initializeRecaptcha(): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
+        // Check if the reCAPTCHA container element exists in the DOM.
+        if (this.recaptchaContainer && this.recaptchaContainer.nativeElement) {
+            // Initialize RecaptchaVerifier with the Firebase Auth instance and container element (not id).
+            this.recaptchaVerifier = new RecaptchaVerifier(this.auth, this.recaptchaContainer.nativeElement, {
+                'size': 'invisible', // Set to invisible to avoid user interaction initially.
+                callback: (response: any) => {
+                    // Callback function when reCAPTCHA is successfully solved.
+                    console.log('Recaptcha solved:', response);
+                    // If the current register has is phone and the verification code hasn't been sent,
+                    // proceed to send the SMS.
+                    if (this.currentAuthMethod === 'phone' && !this.phoneVerificationSent) {
+                        this.sendPhoneVerificationCode();
+                    }
+                },
+                'expired-callback': () => {
+                    // Callback function when the reCAPTCHA response expires.
+                    // Notify the user to solve reCAPTCHA again.
+                    this.showSnackbar(this.translate.instant('LOGIN.RECAPTCHA_EXPIRED'), SnackBarType.warning);
+                }
+            });
+            // Render the reCAPTCHA widget.
+            this.recaptchaVerifier.render();
+        } else {
+            console.warn('Recaptcha container element not found. Recaptcha will not be initialized.');
+        }
+    }
+    /**
+ * @description Sends a phone verification code to the provided phone number.
+ * This method uses Firebase PhoneAuthProvider and reCAPTCHA for verification.
+ */
+    public async sendPhoneVerificationCode(): Promise<void> {
+        this.loading.phone = true; // Set loading state for phone verification.
+        this.errorMessage = ''; // Clear any previous error messages.
+        try {
+            const phoneNumber = this.signupForm.get('phoneNumber')?.value;
+            if (!phoneNumber) {
+                throw new Error('Phone number is required.');
+            }
+            // Use AuthService to send the phone verification code.
+            this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier);
+            this.phoneVerificationSent = true; // Indicate that the code has been sent.
+            this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT'), SnackBarType.success);
+        } catch (error: any) {
+            // this.handleError(error, 'sendPhoneVerificationCode', 'phone');
+            // this.cdr.detectChanges();
+            // this.resetAuthFlow();
+        } finally {
+            this.loading.phone = false; // Always reset loading state.
+        }
+    }
+
     passwordMatchValidator(control: AbstractControl): { [key: string]: any } | null {
         const form = control as FormGroup;
         const password = form.get('password');
@@ -112,7 +210,7 @@ export class SignupComponent implements OnInit, OnDestroy {
         }
     }
 
-   
+
     protected checkPasswordStrength(password: string): string {
 
         return checkPasswordStrength(password)
@@ -120,65 +218,68 @@ export class SignupComponent implements OnInit, OnDestroy {
 
     async signup() {
         this.errorMessage = ''
-        let confirmationResult: any = null
         if (this.signupForm.valid) {
-
             const { email, confirmPassword, name, phoneNumber } = this.signupForm.value
-
-
             // Check if the email already exists
             this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({
                 next: async (response) => {
                     try {
                         if (response.exists) {
-                            this.errorMessage = `Email already exists!`
+                            this.errorMessage = this.translate.instant('SIGNUP.EMAIL_ALREADY_EXISTS')
                             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                             return
                         }
+                        const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential                        // Configure email verification with proper action code settings
+                        const actionCodeSettings: ActionCodeSettings = {
+                            url: `${this.window.location.origin}/service/verification?mode=verifyEmail`,
+                            // linkDomain: this.window.location.host,
+                            // handleCodeInApp: true, // Important: Tells Firebase to handle code in app
+                            // Only add linkDomain if you plan to support Android/iOS appslinkDomain: 'deepscrape.page.link', // Firebase Hosting domain configured in Firebase Console
+                            // iOS: {
+                            //     bundleId: 'com.deepscrape.ios',
+                            // },
+                            // android: {
+                            //     packageName: 'com.deepscrape.android',
+                            //     installApp: true,
+                            //     minimumVersion: '21',
+                            // },
+                        }
 
-                        const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential
-                        // Verify email after signup
-                        await sendEmailVerification(userCredential.user)
-
-                        // console.log('Email verification sent to:', userCredential.user)
-
-                        // Store additional user info in Firestore
+                        console.log('📧 Sending email verification with actionCodeSettings:', actionCodeSettings);
+                        await sendEmailVerification(userCredential.user, actionCodeSettings)
                         if (userCredential.user) {
-
                             await updateProfile(userCredential.user, {
                                 displayName: name || userCredential.user.email?.split('@')[0] || '',
                                 photoURL: DEFAULT_PROFILE_URL,
                             })
-
+                            let confirmationResult: any = null;
+                            let phoneLinked = false;
                             if (phoneNumber) {
-                                // If phone number is provided, link it to the user
-                                confirmationResult = await linkWithPhoneNumber(userCredential.user, phoneNumber)
+                                confirmationResult = await linkWithPhoneNumber(userCredential.user, phoneNumber, this.recaptchaVerifier)
+                                phoneLinked = true;
                             }
-                            console.log('User profile updated:', userCredential.user.providerData,
-                                userCredential.user.displayName)
-
                             await this.firestoreService.storeUserData(userCredential.user, "password", false, null, phoneNumber ? false : null)
+                            // Redirect logic: only go to phone verification if phone was entered and linked
+                            const navigationState: any = { email: userCredential.user.email };
+                            if (phoneLinked && confirmationResult?.verificationId) {
+                                navigationState.verificationId = confirmationResult.verificationId;
+                                navigationState.phoneNumber = phoneNumber;
+                            }
+                            this.router.navigate(['/service/verification'], { state: navigationState });
                         }
-
-                        // Redirect or show success message
-                        this.router.navigate(['/service/verification'], { state: { 
-                            verificationId: confirmationResult?.verificationId, 
-                            phoneNumber, 
-                            email: userCredential.user.email 
-                        } });
                     } catch (error: any) {
-                        this.errorMessage = getErrorMessage(error)
+                        this.errorMessage = getErrorMessage(error, this.translate)
                         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                     }
                 },
                 error: (error) => {
-                    this.errorMessage = getErrorMessage(error)
-                    this.showSnackbar(error.message, SnackBarType.error, '', 5000)
+                    this.errorMessage = getErrorMessage(error, this.translate)
+                    this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
                 }
-
             })
         }
     }
+
     // 'info' | 'success' | 'warning' | 'error'
     showSnackbar(
         message: string,
@@ -187,11 +288,10 @@ export class SignupComponent implements OnInit, OnDestroy {
         duration: number = 3000) {
 
         this.snackbarService.showSnackbar(message, type, action, duration)
-    }
-
-    ngOnDestroy(): void {
+    } ngOnDestroy(): void {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.emailCheckSubs?.unsubscribe()
+        this.langChangeSubscription?.unsubscribe();
     }
 }

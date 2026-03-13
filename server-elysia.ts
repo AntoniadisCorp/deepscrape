@@ -8,12 +8,14 @@ import { cors } from '@elysiajs/cors'
 // import { AngularAppEngine, createRequestHandler } from '@angular/ssr'
 import { APP_BASE_HREF } from '@angular/common'
 import bootstrap from 'src/main.server'
+import { env } from './src/config/env'
 // import { node } from '@elysiajs/node'
 // import swagger from '@elysiajs/swagger'
-const serverDistFolder = dirname(fileURLToPath(import.meta.url))
-const browserDistFolder = resolve(serverDistFolder, '../browser')
+const serverDistFolderD = dirname(fileURLToPath(import.meta.url))
+const serverDistFolder =  serverDistFolderD // resolve(process.cwd(), 'dist/deepscrape/server')
+const browserDistFolder = resolve(process.cwd(), 'dist/deepscrape/browser')
 
-const indexHtml = join(serverDistFolder, '../browser/index.html')
+const indexHtml = join(serverDistFolder, 'index.server.html')
 console.log('indexHtml', indexHtml, browserDistFolder)
 const commonEngine = new CommonEngine({
     enablePerformanceProfiler: true,
@@ -65,7 +67,7 @@ function serveapp(): Elysia {
     // Use a hook to modify the response headers
     app.onAfterHandle(({ request, set }) => {
         const url = new URL(request.url)
-        console.log('url', url)
+        // console.log('url', url)
         if (url.pathname.endsWith('.js') || url.pathname.includes('ngsw.json')) {
             set.headers['Content-Type'] = 'application/javascript'
             set.headers['Service-Worker-Allowed'] = '/'
@@ -87,14 +89,14 @@ function serveapp(): Elysia {
         .group('/api', (api) => {
             return api
                 .get('/example', () => `just an example`)
-                .get('/test', async (req: any, res: any) => {
+                .get('/test', async (context) => {
                     try {
                         // const models = await SyncAIapis.getModels()
-                        // return res.json(models)
+                        // return { data: models }
                         return 'Hello from Elysia!'
                     } catch (error) {
                         console.error('Error fetching models:', error)
-                        return res.status(500).json({ error: 'Internal Server Error' })
+                        return { error: 'Internal Server Error' }
                     }
                 })
 
@@ -102,7 +104,7 @@ function serveapp(): Elysia {
         .get('*.*', async ({ originalUrl }) => {
             const file = Bun.file(`${browserDistFolder}${originalUrl}`)
 
-            return new Response(Buffer.from(await file.arrayBuffer()), {
+            return new Response(await file.arrayBuffer(), {
                 headers: {
                     'Content-Type': file.type,
                 },
@@ -111,7 +113,7 @@ function serveapp(): Elysia {
         .get('*', async ({ originalUrl, baseUrl, protocol, headers }) => {
 
             let header: HeadersInit | undefined = {}
-            console.log('headers', headers)
+            // console.log('headers', headers)
             if (originalUrl.includes('ngsw')) {
                 header = {
                     'Service-Worker-Allowed': '/',
@@ -122,7 +124,7 @@ function serveapp(): Elysia {
 
                 header['Content-Type'] = file.type
 
-                return new Response(Buffer.from(await file.arrayBuffer()), {
+                return new Response(await file.arrayBuffer(), {
                     headers: header,
                 })
             }
@@ -204,11 +206,11 @@ function serveapp(): Elysia {
 }
 
 // function run(): void {
-const host = process.env['HOST'] || 'localhost'
+const host = env.HOST
 // Start up the Node server
 const app = serveapp()
 if (isMainModule(import.meta.url)) {
-    const port = process.env['PORT'] || 4000
+    const port = env.PORT
 
     app.listen({ port, hostname: host }, () => {
         console.log(

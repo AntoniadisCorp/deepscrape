@@ -1,5 +1,5 @@
-import { AsyncPipe, DatePipe, DOCUMENT, JsonPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, inject, Inject } from '@angular/core';
+import { AsyncPipe, DatePipe, JsonPipe, NgClass } from '@angular/common';
+import { ChangeDetectorRef, Component, HostListener, inject, Inject, DOCUMENT } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -15,15 +15,14 @@ import { BrowserConfig, BrowserProfile, Cookies, Headers, ProxyConfig, DropDownO
 
 @Component({
   selector: 'app-browser-config',
-  imports: [ReactiveFormsModule, MatIcon, NgClass, NgIf, NgFor, AsyncPipe, DatePipe,
-    RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe,
-    DropdownComponent, MatProgressSpinner,
-  ],
+  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe, DropdownComponent, MatProgressSpinner],
   templateUrl: './browser-config.component.html',
   styleUrl: './browser-config.component.scss'
 })
 export class BrowserConfigComponent {
   private window = inject(WindowToken)
+  private packService: PackService
+
   @HostListener('window:scroll', ['$event'])
   onScroll(event: any) {
     const scrollPosition = this.window.scrollY
@@ -40,11 +39,12 @@ export class BrowserConfigComponent {
   protected showLink: boolean
   protected newProfileOpened: boolean
   protected savingNewProfile: boolean
+  protected editMode: boolean
   protected showSettings: boolean
 
   protected profileSelectedById: string | undefined
 
-  browserTypeOptions: DropDownOption[] = []
+  protected browserTypeOptions: DropDownOption[] = []
 
   protected browserProfiles$: Observable<BrowserProfile[] | null | undefined>
 
@@ -55,7 +55,6 @@ export class BrowserConfigComponent {
   protected packCart$: Observable<any>
 
   private browseSubs: Subscription
-  private packService: PackService
 
   private destroy$ = new Subject<void>()
   constructor(
@@ -92,7 +91,8 @@ export class BrowserConfigComponent {
     this.setBrowserProfiles()
 
     // set toggle buttons
-    this.showLink = this.showSettings = this.newProfileOpened = this.savingNewProfile = false
+    this.showLink = this.showSettings = this.editMode =
+      this.newProfileOpened = this.savingNewProfile = false
   }
 
   ngAfterViewInit(): void {
@@ -110,6 +110,8 @@ export class BrowserConfigComponent {
     this.activeLink = ''
 
     this.configForm = this.fb.group({
+
+      created_at: this.fb.control(null, { nonNullable: true }) as FormControl<number | null>,
       // Browser Profile Title
       title: this.fb.control('', {
         nonNullable: true, validators: [
@@ -273,6 +275,7 @@ export class BrowserConfigComponent {
 
     const newConfig = { ...config, /* ...headers */ }; // Create a copy of the config object
     delete newConfig.title; // Remove the 'title' attribute from the config object
+    delete newConfig.created_at; // Remove the 'created_at' attribute from the config object
 
     // Filter out null, unchanged, or default values
     const filteredConfig: BrowserConfig = Object.keys(newConfig).reduce((acc: any, key) => {
@@ -321,6 +324,8 @@ export class BrowserConfigComponent {
 
     // reset form to default values
     this.configForm.reset()
+
+    this.configForm.enable() // enable form
   }
   /**
    * TODO: comment saveBrowserProfile
@@ -329,15 +334,17 @@ export class BrowserConfigComponent {
   saveBrowserProfile() {
 
     // validate form before saving
-    if (this.configForm.invalid)
+    if (this.configForm.invalid || (this.editMode && this.configForm.pristine))
       return
-
+    this.configForm.disable()
     // get form values
-    const config = this.getAndFilterConfirmForm()
+    const config = this.getAndFilterConfirmForm();
+    const now = Date.now()
     const newProfile: BrowserProfile = {
+      ...!this.editMode? {} : {id: this.profileSelectedById},
       title: this.configForm.get('title')?.value,
       config,
-      created_At: Date.now(),
+      ...!this.editMode? {created_At: now} : {updated_At: now, created_At: this.configForm.get('created_at')?.value},
     }
 
     // loading state
@@ -345,21 +352,23 @@ export class BrowserConfigComponent {
 
     this.browseSubs = this.packService.storeBrowserProfile(newProfile)
       .subscribe({
-        next: (res) => {
-          console.log(res)
-        },
+        next: (res) => {},
         error: (err) => {
+
           console.log(err)
+          this.savingNewProfile = false
           // show snackbar Error
           this.showSnackbar(err || "", SnackBarType.error, '', 5000)
+          this.configForm.enable()
         },
         complete: () => {
           // reset the form
-          this.savingNewProfile = false
-          this.newProfileOpened = false
+          this.savingNewProfile = this.newProfileOpened = false
           this.showSettings = false
-          this.savingNewProfile = false
-          this.configForm.reset()
+          if (!this.editMode) 
+           this.configForm.reset()
+
+          this.configForm.enable()
           // show snackbar Error
           this.showSnackbar('Browser profile saved successfully.', SnackBarType.success, '', 5000)
         }
@@ -381,21 +390,57 @@ export class BrowserConfigComponent {
 
     if (this.newProfileOpened)
       this.newProfileOpened = false
-    else
-      this.showSettings = true
+    else {
+      this.showSettings = this.profileSelectedById === profile.id? 
+        !this.showSettings : true
+    }
 
     if (this.showSettings) {
       this.profileSelectedById = profile.id
-      this.configForm.get('title')?.setValue(profile.title)
 
-      // set form values
-      this.configForm.patchValue(profile.config)
-      this.browserType.patchValue({ code: profile.config.browserType, name: profile.config.browserType?.toUpperCase() })
+      this.setConfigFormFromInput(profile) // set form values
+      this.configForm.disable() // disable form
+      
+      // always reset editable when new profile selected
+      this.editMode = true, this.makeEditable()
     } else {
       this.profileSelectedById = ''
+      this.configForm.enable() // disable form
       this.configForm.reset()
     }
 
+  }
+
+  private setConfigFormFromInput(profile: BrowserProfile){
+    
+      // set form values
+      this.configForm.get('title')?.setValue(profile.title)
+      this.configForm.get('created_at')?.setValue(profile.created_At || null)
+      this.configForm.patchValue(profile.config)
+      this.browserType.patchValue({ code: profile.config.browserType, name: profile.config.browserType?.toUpperCase() })
+  }
+
+  protected makeEditable() {
+
+    if (this.newProfileOpened)
+      return
+
+    this.editMode = !this.editMode
+
+    if (this.editMode) {
+      this.configForm.enable() // enable form
+    } else {
+      // refill the form with the selected profile values stored by profileSelectedById
+      this.browserProfiles$.forEach(profiles => {
+        const profile = profiles?.find(p => p.id === this.profileSelectedById)
+        if (!profile) return
+        this.setConfigFormFromInput(profile)
+        return
+      })
+      this.configForm.disable() // disable form
+      this.configForm.markAllAsTouched() // form
+      this.configForm.markAsPristine() // form
+    }
   }
 
   actionProfileClicked(event: Event, profile: BrowserProfile) {
@@ -407,14 +452,9 @@ export class BrowserConfigComponent {
 
     event.stopPropagation() // prevent default behavior of outer div
 
-    console.log(profile)
+    // console.log(profile)
     // add crawler pacakage item,the configuration Browser Profile, to the cart system
     this.cartService.addItemToCart({ browserProfile: profile }, 'crawl4ai')
-
-    // on add to cart, update cart buttons
-    this.packCart$ = this.cartService.getCart$.pipe(
-      map(cart => cart?.browserProfile)
-    )
   }
 
   removePackFromCart(event: Event,) {
@@ -422,11 +462,6 @@ export class BrowserConfigComponent {
 
     // remove crawler pacakage item,the configuration Browser Profile, from the cart system
     this.cartService.removeItemFromCart('browserProfile')
-
-    // one remove update cart buttons
-    this.packCart$ = this.cartService.getCart$.pipe(
-      map(cart => cart?.browserProfile)
-    )
   }
 
   scrollTo(link: string) {
@@ -479,7 +514,7 @@ export class BrowserConfigComponent {
     //Add 'implements OnDestroy' to the class.
     this.browseSubs?.unsubscribe()
     this.destroy$.next()
-    this.destroy$.complete();
+    this.destroy$.complete()
   }
 
 }

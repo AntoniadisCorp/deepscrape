@@ -1,5 +1,6 @@
-<img
-    *ngIf="value"
+@if (value) {
+  <img
     [src]="value"
     alt="Preview"
     class="absolute inset-0 h-full w-full rounded-lg object-cover" />
+}

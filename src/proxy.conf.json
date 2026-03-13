@@ -60,7 +60,16 @@
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/api": ""
+      "^/api": "/api/v1"
+    }
+  },
+  "/ws": {
+    "target": "ws://localhost:8000",
+    "ws": true,
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/ws": "/api/v1/ws"
     }
   },
   "/oauth": {

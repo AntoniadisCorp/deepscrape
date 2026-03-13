@@ -3,9 +3,7 @@ import { BehaviorSubject, catchError, from, map, Observable, of, Subscription, t
 import { ApiKey, ApiKeyType } from '../types/apikey.interface';
 import { SessionStorage } from './storage.service';
 import { FirestoreService } from './firestore.service';
-import { Firestore } from '@angular/fire/firestore';
-import { connectFunctionsEmulator, Functions, getFunctions, httpsCallable, HttpsCallableResult } from '@angular/fire/functions';
-import { environment } from 'src/environments/environment';
+import { toDate } from '../functions';
 @Injectable({
     providedIn: 'root'
 })
@@ -18,25 +16,11 @@ export class ApiKeyService {
     apiKeys$ = this.apiKeysSubject.asObservable()
 
     constructor(
-        private firestoreService: FirestoreService,
-        private firestore: Firestore,
-        private functions: Functions,) {
+        private firestoreService: FirestoreService,) {
         // Load existing API keys from local storage or backend
         const storedKeys = this.SessionStorage.getItem('apiKeys');
 
         this.initializeApiKeys(storedKeys);
-
-
-
-        // Initialize firestore function, select easyscrape db
-        this.firestore = this.firestoreService.getInstanceDB('easyscrape')
-        this.functions = getFunctions(this.firestore.app)
-
-        if ( this.firestoreService.isLocalhost() && environment.emulators) {
-              
-            console.log('🔥 Connecting to Firebase Emulators');
-            connectFunctionsEmulator(this.functions, 'localhost', 8081)
-        }
     }
 
     private initializeApiKeys(storedKeys: string | null) {
@@ -65,11 +49,13 @@ export class ApiKeyService {
     }
 
     private retrieveApiKeysPagination(apiKeyPage: number = 1, apiKeyPageSize: number = 10): Observable<ApiKey[]> {
-        return from(httpsCallable(this.functions, "retrieveMyApiKeysPaging")
-            ({ apiKeyPage, apiKeyPageSize }))
+        return from(this.firestoreService.callFunction<{ apiKeyPage: number; apiKeyPageSize: number }, any>(
+            'retrieveMyApiKeysPaging',
+            { apiKeyPage, apiKeyPageSize }
+        ))
             .pipe(
-                map((fun: any) => {
-                    const { error, apiKeys, message } = fun.data as any
+                map((data: any) => {
+                    const { error, apiKeys, message } = data as any
 
                     if (error) {
                         console.error('Error creating API key:', error, apiKeys, message);
@@ -79,9 +65,9 @@ export class ApiKeyService {
 
                     console.log(apiKeys)
                     const newKeys = apiKeys.map((key: ApiKey): ApiKey => {
-                        const created_At = new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
+                        const created_At = toDate(key.created_At)
                         const showKey = key.showKey
-                        return { ...key, visibility: false, menu_visible: false, key: showKey, created_At: created_At }
+                        return { ...key, visibility: false, menu_visible: false, key: showKey, created_At }
                     })
 
                     return newKeys
@@ -89,13 +75,15 @@ export class ApiKeyService {
             )
     }
 
-    private createApiKey(newkey: ApiKey): Observable<HttpsCallableResult<any>> {
+    private createApiKey(newkey: ApiKey): Observable<any> {
 
-        return from(httpsCallable(this.functions, "createMyApiKey")
-            ({ apiKey: newkey }))
+        return from(this.firestoreService.callFunction<{ apiKey: ApiKey }, any>(
+            'createMyApiKey',
+            { apiKey: newkey }
+        ))
             .pipe(
-                tap((fun: any) => {
-                    const { error, apiKeyId, message } = fun.data as any
+                tap((data: any) => {
+                    const { error, apiKeyId, message } = data as any
 
                     if (error) {
                         console.error('Error creating API key:', error, apiKeyId, message);
@@ -117,11 +105,13 @@ export class ApiKeyService {
 
     private getKeyDoVisible(key: ApiKey, index: number): Observable<ApiKey> {
 
-        return from(httpsCallable(this.functions, "getApiKeyDoVisible")
-            ({ apiKey: key }))
+        return from(this.firestoreService.callFunction<{ apiKey: ApiKey }, any>(
+            'getApiKeyDoVisible',
+            { apiKey: key }
+        ))
             .pipe(
-                map((fun: any) => {
-                    const { error, apiKey, message } = fun.data as any
+                map((data: any) => {
+                    const { error, apiKey, message } = data as any
 
                     if (error) {
                         console.error('Error creating API key:', error, apiKey, message);

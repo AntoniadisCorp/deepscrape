@@ -11,9 +11,12 @@ import { redis } from "../app/cacheConfig"
 import { db } from "../app/config"
 import path from "node:path"
 import net from "node:net"
+import crypto from "crypto"
+import { existsSync } from "node:fs"
+import { env } from "../config/env"
 
 // Determine if running in production based on environment variable
-const isProduction = process.env["PRODUCTION"] === "true"
+const isProduction = env.IS_PRODUCTION
 
 // Class to manage IP2Location database connection
 // https://github.com/onramper/fast-geoip is a faster alternative but less detailed
@@ -30,35 +33,35 @@ const isProduction = process.env["PRODUCTION"] === "true"
 // The LITE version is free and updated monthly, the commercial version is updated weekly and has more data fields
 // The BIN database file should be placed in the 'databases' folder at the root of the project
 
-export type IP2LocationRecord ={
-        ip: string
-        ipNo: string
-        countryShort: string
-        countryLong: string
-        region: string
-        city: string
-        isp: string
-        domain: string
-        zipCode: string
-        latitude: string | number
-        longitude: string | number
-        timeZone: string
-        netSpeed: string
-        iddCode: string
-        areaCode: string
-        weatherStationCode: string
-        weatherStationName: string
-        mcc: string
-        mnc: string
-        mobileBrand: string
-        elevation: string
-        usageType: string
-        addressType: string
-        category: string
-        district: string
-        asn: string
-        as: string
-    }
+export type IP2LocationRecord = {
+  ip: string,
+  ipNo: string,
+  countryShort: string,
+  countryLong: string,
+  region: string,
+  city: string,
+  isp: string,
+  domain: string,
+  zipCode: string,
+  latitude: string | number,
+  longitude: string | number,
+  timeZone: string,
+  netSpeed: string,
+  iddCode: string,
+  areaCode: string,
+  weatherStationCode: string,
+  weatherStationName: string,
+  mcc: string,
+  mnc: string,
+  mobileBrand: string,
+  elevation: string,
+  usageType: string,
+  addressType: string,
+  category: string,
+  district: string,
+  asn: string,
+  as: string,
+}
 export class IP2LocationManager {
   private ip2location: IP2Location.IP2Location | null = null
   private databasePath: string
@@ -107,9 +110,13 @@ export class IP2LocationManager {
 }
 
 // Initialize IP2Location Manager with the database path
-const databaseDir = path.join(__dirname, "../../databases")
 const databaseFile = "IP2LOCATION-LITE-DB11.BIN"
-export const geoDBManager = new IP2LocationManager(path.join(databaseDir, databaseFile))
+const databaseCandidates = [
+  path.join(__dirname, "../../databases", databaseFile),
+  path.join(__dirname, "../../../databases", databaseFile),
+]
+const resolvedDatabasePath = databaseCandidates.find((candidate) => existsSync(candidate)) || databaseCandidates[0]
+export const geoDBManager = new IP2LocationManager(resolvedDatabasePath)
 
 
 // Helper function to map timezone to continent
@@ -127,31 +134,62 @@ function getContinentFromTimezone(timezone: string): string {
 
 // IP2LOCATION-LITE-DB11.BIN
 /* eslint-disable @typescript-eslint/ban-types */
+// Guest tracking middleware for Express
+// Ensures unique guest analytics using fingerprinting and Redis/Firestore
 export async function guestTracker(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
+  console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
   const user = req.app.locals["user"] as string | null
   const isUser = !!user
 
-  console.log("Guest Tracker Invoked - Guest ID:", guestId, "User:", user)
+  // Only track guests, skip if authenticated or has aid cookie
+  if (isUser || req.cookies["aid"]) return next()
 
-  if (isUser || req.cookies["aid"]) {
-    // TODO: Update the user's geo details in Firestore if logged in
-    // If 'aid' cookie exists, skip guest tracking
-    // res.status(200).send({ status: true, message: "Authenticated user, skipping guest tracking" })
+  // Get IP and fingerprint
+  const { raw } = await getClientIps(req)
+  const ip = raw as string
+  const agent = useragent.parse(req.headers["user-agent"] || "")
+  const fingerstring = `${ip}|${agent.family}|${agent.os.family}|${agent.device.family}`
+  // Create SHA-256 hash of the fingerprint for privacy
+  const fingerprint = crypto.createHash("sha256").update(fingerstring).digest("hex")
+  // Always check Redis for fingerprint mapping
+  let existingGuestId: string | null = null
+  try {
+    existingGuestId = await redis.get(`guestfp:${fingerprint}`)
+  } catch (error) {
+    console.warn("guestTracker: Redis unavailable while checking fingerprint mapping", error)
+  }
+  if (!guestId && existingGuestId) {
+    guestId = existingGuestId
+    res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
+    // Update lastSeen in Redis
+    try {
+      await redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ lastSeen: new Date() }))
+    } catch (error) {
+      console.warn("guestTracker: Redis unavailable while updating guest lastSeen", error)
+    }
+    // Update lastSeen in Firestore (throttled)
+    const docRef = db.collection("guests").doc(guestId)
+    const doc = await docRef.get()
+    const docData = doc.exists ? doc.data() as Guest : undefined
+    const lastSeen = docData && docData.lastSeen ? new Date(docData.lastSeen) : undefined
+    const now = new Date()
+    if (!lastSeen || (now.getTime() - lastSeen.getTime() > 300000)) {
+      await docRef.set({ lastSeen: now }, { merge: true })
+    }
     return next()
   }
 
+  // If no guestId and no fingerprint mapping, create new guest and store fingerprint
   if (!guestId) {
     guestId = db.collection("guests").doc().id // Generate a new Firestore ID
     // Set secure flag conditionally
     res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 }) // 1 year
 
     const { ipv4, ipv6, raw } = await getClientIps(req) // Prefer IPv6 if available
-
-    const ip = (raw) as string // Fallback to IPv4 if IPv6 is not available
+    const ip = raw as string // Fallback to IPv4 if IPv6 is not available
     const agent = useragent.parse(req.headers["user-agent"] || "")
     const geo = await getGeolocation(ip)
-
     const guestData: Guest = {
       id: guestId,
       uid: "", // Will be set when linked to a user
@@ -170,27 +208,103 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
       location: geo.location || "Unknown",
       createdAt: new Date(),
       lastSeen: new Date(),
+      fingerprint,
     }
-
-    req.clientIp = ip // Attach IP to request object for downstream use
-
-    // Store in Redis (fast access)
-    await redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData)) // 1 hour expiration
-
-    // Write to Firestore (long-term analytics)
-    await db.collection("guests").doc(guestId).set(guestData, { merge: true })
-
+    req.clientIp = ip
+    try {
+      await Promise.allSettled([
+        redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData)),
+        redis.set(`guestfp:${fingerprint}`, guestId),
+        db.collection("guests").doc(guestId).set(guestData, { merge: true }),
+      ])
+    } catch (error) {
+      console.error("Error storing guest data:", error)
+    }
     res.setHeader("Accept-CH", "Sec-CH-UA, Sec-CH-UA-Platform, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Form-Factors, x-forwarded-for'")
-
-    // res.status(200).send({ status: true, guestId, message: "New guest tracked" })
-  } /* else {
-    // // Guest already exists, update lastSeen timestamp
-    // await db.collection("guests").doc(guestId).update({
-    //   lastSeen: new Date(),
-    // })
-    // res.status(200).send({ status: true, guestId, message: "Guest activity updated" })
-  } */
+  }
   return next()
+}
+
+// API endpoint to receive guest fingerprint data from frontend
+export async function guestFingerprintHandler(req: Request, res: Response) {
+  try {
+    const fingerprintData = req.body
+    // Hash the fingerprint for privacy
+    const fingerprintString = JSON.stringify(fingerprintData)
+    const fingerprintHash = crypto.createHash("sha256").update(fingerprintString).digest("hex")
+    // Attach to session or cookie for guest tracking
+    res.cookie("guest_fp", fingerprintHash, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
+    res.status(200).json({ success: true, fingerprint: fingerprintHash })
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ success: false, error: errorMsg })
+  }
+}
+
+// Standardized analytics event schema
+export type AnalyticsEvent = {
+  timestamp: number,
+  userId?: string,
+  guestId?: string,
+  eventType: string,
+  metadata?: Record<string, unknown>,
+}
+
+// API endpoint to receive analytics events from frontend
+export async function analyticsEventHandler(req: Request, res: Response) {
+  try {
+    const event: AnalyticsEvent = {
+      timestamp: Date.now(),
+      ...req.body,
+    }
+    // Store event in Redis list for batching
+    await redis.lpush("analytics:events", JSON.stringify(event))
+    res.status(200).json({ success: true })
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.warn("analyticsEventHandler: Redis unavailable, dropping event", error)
+    res.status(202).json({ success: false, accepted: false, error: errorMsg })
+  }
+}
+
+export async function batchAnalyticsEventHandler(req: Request, res: Response) {
+  try {
+    const { events } = req.body
+    if (!Array.isArray(events) || events.length === 0) {
+      return res.status(400).json({ error: "No events provided" })
+    }
+    const analyticsEvents = events.map((event) => JSON.stringify({
+      timestamp: Date.now(),
+      ...event,
+    }))
+    await redis.lpush("analytics:events", ...analyticsEvents)
+    return res.status(200).json({ success: true, processed: analyticsEvents.length })
+  } catch (err) {
+    console.error("Batch analytics error:", err)
+    return res.status(500).json({ error: "Failed to process batch analytics events" })
+  }
+}
+
+// Batch sync function (to be called by background job/Cloud Function)
+export async function batchSyncAnalyticsEvents() {
+  try {
+    // Get all events from Redis
+    const events = await redis.lrange("analytics:events", 0, -1)
+    if (!events.length) return
+    // Prepare batch write to Firestore
+    const batch = db.batch()
+    events.forEach((eventStr: string) => {
+      const event = JSON.parse(eventStr)
+      const ref = db.collection("analyticsEvents").doc()
+      batch.set(ref, event)
+    })
+    await batch.commit()
+    // Clear Redis list after sync
+    await redis.del("analytics:events")
+    console.log(`Synced ${events.length} analytics events to Firestore.`)
+  } catch (error) {
+    console.error("Error syncing analytics events:", error)
+  }
 }
 
 async function getClientIps(req: Request): Promise<{ ipv4: string | null, ipv6: string | null, raw: string | null }> {
@@ -245,7 +359,7 @@ async function getGeolocation(ip: string) {
         "UTC"
 
     // Map country code to continent (fallback to 'Unknown' if not found)
-    const continent = {continent: getContinentFromTimezone(geoData.timeZone) || "Unknown", region: geoData.countryShort || "Unknown"}
+    const continent = { continent: getContinentFromTimezone(geoData.timeZone) || "Unknown", region: geoData.countryShort || "Unknown" }
 
     return {
       ip: geoData.ip,

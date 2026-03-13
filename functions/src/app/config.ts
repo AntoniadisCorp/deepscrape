@@ -5,41 +5,80 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as admin from "firebase-admin"
 import Stripe from "stripe"
-import { defineSecret, projectID } from "firebase-functions/params"
+import serviceAccount from "../credentials.json"
+import { defineSecret } from "firebase-functions/params"
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
+import { env } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
-export const stripeSecretDef = defineSecret("stripeSecretTest")
-export const dbName = process.env.DB_NAME || "easyscrape"
+export const stripeSecretParam = defineSecret("STRIPE_SECRET_KEY")
+export const stripeWebhookSecretParam =
+    defineSecret("STRIPE_WEBHOOK_SECRET")
+export const stripeSecrets = [stripeSecretParam, stripeWebhookSecretParam]
+export const dbName = serviceAccount.dbName
 
-const projectId = process.env["GCP_PROJECT_ID"] || projectID
 
-// apiKey: process.env.FIRE_API_KEY,
-// authDomain: process.env.FIRE_AUTH_DOMAIN,
-// databaseURL: process.env.FIRE_DATABASE_URL,
-// projectId: process.env.FIRE_PROJECT_ID,
-// storageBucket: process.env.FIRE_STORAGE_BUCKET,
-// messagingSenderId: process.env.FIRE_MESSAGING_SENDER_ID,
-// appId: process.env.FIRE_APP_ID,
-const firebaseConfig: admin.AppOptions = {
-
-    databaseURL: process.env.FIRE_DATABASE_URL,
-    projectId: process.env.FIRE_PROJECT_ID,
-    storageBucket: process.env.FIRE_STORAGE_BUCKET,
-}
 // Initialize Firebase
-admin.initializeApp(firebaseConfig)
+admin.initializeApp(serviceAccount.firebaseConfig)
 
 export const db = admin.firestore()
 db.settings({ databaseId: dbName })
 
 export const auth = admin.auth()
-/* config().stripe?.secret */
-export const stripeSecret = process.env["STRIPE_PUBLIC_KEY"] || ""
-// export const stripePublishable = serviceAccount.stripe.publishable;
-// export const stripeClientId = serviceAccount.stripe.clientid;
-export const stripe = new Stripe(stripeSecret)
+
+const resolveStripeSecret = (secret: string | undefined) => {
+    const candidate = typeof secret === "string" ? secret.trim() : ""
+
+    if (candidate) {
+        return candidate
+    }
+
+    const fromEnv = env.STRIPE_SECRET_KEY?.trim()
+    if (fromEnv) {
+        return fromEnv
+    }
+
+    const fromServiceAccount =
+        typeof serviceAccount?.stripe?.secret === "string"?
+         serviceAccount.stripe.secret.trim() : ""
+
+    return fromServiceAccount || undefined
+}
+
+export const getStripeWebhookSecret = (secret:string | undefined) => {
+    try {
+        const stripeWebhookKey =
+            secret as string | undefined
+        return stripeWebhookKey ||
+            env.STRIPE_WEBHOOK_SECRET ||
+            ""
+    } catch {
+        return env.STRIPE_WEBHOOK_SECRET || ""
+    }
+}
+
+let stripeClient: Stripe | null = null
+
+export const getStripe = (secret: string | undefined) => {
+    if (stripeClient) {
+        return stripeClient
+    }
+
+    const stripeSecret = resolveStripeSecret(secret) as string | undefined
+    if (!stripeSecret) {
+        throw new Error("Missing Stripe secret key")
+    }
+
+    if (!stripeSecret.startsWith("sk_")) {
+        throw new Error(
+            "Invalid Stripe secret key format. Expected prefix sk_"
+        )
+    }
+
+    stripeClient = new Stripe(stripeSecret)
+    return stripeClient
+}
 
 // Helper: Generate a secure random API key
 export function generateApiKey() {
@@ -48,10 +87,13 @@ export function generateApiKey() {
 
 
 // Helper: Store API key in Cloud Secret Manager
-export async function saveToSecretManager(secretId: any, apiKey: any) {
+export async function saveToSecretManager(
+    secretId: string | null | undefined,
+    apiKey: string
+) {
     // Create a new secret
     const [secret] = await secretManager.createSecret({
-        parent: `projects/${projectId}`,
+        parent: `projects/${env.GCP_PROJECT_ID}`,
         secretId,
         secret: {
             replication: {
@@ -86,7 +128,7 @@ export async function saveToSecretManager(secretId: any, apiKey: any) {
     return secret.name
 }
 
-export async function getSecretFromManager(secretPath: any) {
+export async function getSecretFromManager(secretPath: string) {
     // Get the secret version
     const [version] = await secretManager.accessSecretVersion({
         name: secretPath + "/versions/latest",
@@ -94,3 +136,4 @@ export async function getSecretFromManager(secretPath: any) {
     // Return the API key to show the user
     return version.payload?.data?.toString()
 }
+

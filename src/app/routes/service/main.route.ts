@@ -11,19 +11,11 @@ export const MainRoutes: Routes = [
     },
     {
         path: 'login',
-        data: {
-            title: 'signin',
-            animation: 'signin'
-        },
         loadChildren: () => import('./login.route').then(r => r.authRoutes),
     },
 
     {
         path: 'signup',
-        data: {
-            title: 'signup',
-            animation: 'signup'
-        },
         loadChildren: () => import('./signup.route').then(r => r.signRoutes),
     },
     {
@@ -43,5 +35,14 @@ export const MainRoutes: Routes = [
             animation: 'verification'
         },
         canActivate: [verifyGuard],
+    },
+    {
+        path: 'action',
+        loadComponent: () => import('../../pages').then(m => m.ActionHandlerComponent),
+        data: {
+            title: 'action',
+            animation: 'action'
+        },
+        canActivate: [verifyGuard]
     }
 ]

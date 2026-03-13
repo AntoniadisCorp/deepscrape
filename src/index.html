@@ -13,11 +13,11 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#1976d2" />
+    <link rel="preconnect" href="https://deepscrape.dev" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#1976d2" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#1976d2" />
-    <!-- ... existing code ... -->
     <link
       rel="apple-touch-icon"
       href="/public/icons/icon-180x180.png"
@@ -52,16 +52,19 @@
     <meta name="theme-color" content="#1976d2" />
     <!-- Material Icons Link Fonts -->
     <link
+      nonce="{{nonce}}"
       href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp"
       rel="stylesheet"
     />
 
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&amp;display=swap"
+      nonce="{{nonce}}"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
 
-    <script>
+    <script
+      nonce="{{nonce}}">
       function loadScript(src) {
         return new Promise((resolve, reject) => {
           const script = document.createElement("script");
@@ -92,6 +95,7 @@
     </script>
 
     <link
+      nonce="{{nonce}}"
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css"
       integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w=="

@@ -1,18 +1,14 @@
 import { inject, Injectable } from '@angular/core'
-import { Firestore } from '@angular/fire/firestore'
+import { Firestore, Timestamp } from '@angular/fire/firestore'
 import { FirestoreService } from './firestore.service'
 import { deleteOperationDoc, storeCrawlOperation } from '../functions'
 import { from } from 'rxjs/internal/observable/from'
 import { BehaviorSubject, catchError, map, Observable, of, Subscription, tap, throwError } from 'rxjs'
 import { CrawlOperation } from '../types'
-import { Functions, httpsCallable } from '@angular/fire/functions'
 import { SessionStorage } from './storage.service'
 import { LoadingBarService } from '@ngx-loading-bar/core';
 
-type CrawlOpePages = {
-  operations: CrawlOperation[],
-  totalPages: number
-}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,7 +28,6 @@ export class CrawlStoreService {
   constructor(
     private firestoreService: FirestoreService,
     private firestore: Firestore,
-    private functions: Functions,
     private loadingBar: LoadingBarService,
   ) {
 
@@ -174,11 +169,13 @@ export class CrawlStoreService {
   }
 
   private getOperationsByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
-    return from(httpsCallable(this.functions, "getOperationsPaging")
-      ({ currPage, pageSize }))
+    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+      'getOperationsPaging',
+      { currPage, pageSize }
+    ))
       .pipe(
-        map((fun: any) => {
-          const { error, operations, inTotal, totalPages, message } = fun.data as any
+        map((data: any) => {
+          const { error, operations, inTotal, totalPages, message } = data as any
 
           if (error) {
             console.error('Error retrieving Crawl Operation:', error, operations, message)
@@ -186,7 +183,14 @@ export class CrawlStoreService {
           }
 
           const newOpe = operations?.map((oper: CrawlOperation): any => {
-            const created_At = oper.created_At // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
+            // const created_At = (oper.created_At as any).toDate()
+            // const metrics = oper.metrics ? { 
+            //   ...oper.metrics, 
+            //   timestamp: (oper.metrics.timestamp instanceof Timestamp) 
+            //     ? (oper.metrics.timestamp as any).toDate() 
+            //     : oper.metrics.timestamp 
+            // } : undefined
+            // oper = { ...oper, metrics }
             // const showKey = key.showKey
             return { ...oper }
           })

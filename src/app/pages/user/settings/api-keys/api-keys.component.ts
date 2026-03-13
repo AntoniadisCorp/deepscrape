@@ -1,4 +1,4 @@
-import { NgFor, NgIf, DatePipe, AsyncPipe } from '@angular/common';
+import { DatePipe, AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, HostBinding, HostListener, inject, Inject, OnInit, signal, ViewChild, ViewEncapsulation  } from '@angular/core';
 import { Observable, Subscription, tap, timer } from 'rxjs';
 import { NAVIGATOR } from 'src/app/core/providers';
@@ -15,9 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 @Component({
   selector: 'app-api-keys',
-  imports: [NgFor, NgIf, DatePipe, AsyncPipe, TooltipDirective, PopupMenuComponent, ClipboardbuttonComponent,
-    MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule,
-    CheckboxComponent, FormControlPipe, DialogComponent],
+  imports: [DatePipe, AsyncPipe, TooltipDirective, PopupMenuComponent, ClipboardbuttonComponent, MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule, CheckboxComponent, FormControlPipe, DialogComponent],
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.scss',
   encapsulation: ViewEncapsulation.None,

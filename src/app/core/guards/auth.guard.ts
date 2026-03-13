@@ -11,7 +11,7 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
   const router = inject(Router)
 
   return authService.isAuthenticated().pipe(
-    map(( authData )=> {
+    map((authData) => {
       const { isAuthenticated, user } = authData
 
       if (!isAuthenticated || !user) {
@@ -21,10 +21,18 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
 
       console.log('authGuard - Authenticated:', isAuthenticated, 'User:', user)
 
-      // console.log('User provider id:', user.providerData[0].providerId, 'Email verified:', user.emailVerified)
-      const isPhoneVerified = user?.phoneVerified || false; // Default to false if not present
+      // ✅ Single source of truth: Use Firestore emailVerified (updated after email verification)
+      const isPhoneVerified = user?.phoneVerified || false;
+      const isEmailVerified = user?.emailVerified || false;
 
-      if (user?.currProviderData?.providerId === 'password' && !user.emailVerified || (user?.phoneNumber && !isPhoneVerified)) {
+      // Check if user needs email verification (password provider only)
+      if (user?.currProviderData?.providerId === 'password' && !isEmailVerified) {
+        router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
+        return false
+      }
+
+      // Check if user needs phone verification
+      if (user?.phoneNumber && !isPhoneVerified) {
         router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
         return false
       }

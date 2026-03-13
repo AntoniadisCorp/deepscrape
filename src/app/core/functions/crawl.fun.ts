@@ -67,7 +67,7 @@ export function setBrowserTypeList(browserTypeList: DropDownOption[]) {
 }
 
 export function setCrawlPackList(pack: CrawlPack[], crawlConfigPackList: DropDownOption[]) {
-    const list = pack.map(config => ({ name: config.name, code: config.id }));
+    const list = pack.map(config => ({ name: config.title, code: config.id }))
     crawlConfigPackList.push(...list);
 }
 

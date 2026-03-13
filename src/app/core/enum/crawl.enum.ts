@@ -5,6 +5,8 @@ export enum CrawlOperationStatus {
     SCHEDULED = 'Scheduled',
     IN_PROGRESS = 'In Progress',
     CANCELED = 'Canceled',
+    PENDING = 'Pending',
+    PAUSED = 'Paused',
     COMPLETED = 'Completed',
     FAILED = 'Failed'
 }

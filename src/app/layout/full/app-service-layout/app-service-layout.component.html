@@ -11,18 +11,24 @@
         <img
           src=""
           alt=""
-          srcset="{{!themeIsDark? 'assets/logo-512x512.png 2x' :  'assets/logo-512x512_sky.png 2x'}}"
-          class="mt-4 h-20 border-none" />
+          [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
+          class="mt-4 h-20 border-none max-h-[80%] xs:max-h-max" />
       </h1>
       <h1
-        class="text-2xl hidden xs:block sm:block flex-row flex-nowrap gap-1 dark:text-gray-300 text-gray-300 font-bold rounded-md transition duration-300">
+        class="hidden text-2xl xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
         DeepScrape
       </h1>
     </a>
-    <!-- Theme Mode Switch -->
-    <!-- <app-theme-dark-toggle class="mr-[30px] mt-5 h-8 border-none"></app-theme-dark-toggle> -->
-    <!-- Theme Mode Switch -->
-    <app-theme-toggle></app-theme-toggle>
+    <div class="flex items-center justify-end gap-2 w-full">
+        <!-- Lang Mode Switch -->
+        <app-lang-picker></app-lang-picker>
+        <!-- Theme Mode Switch -->
+        <app-theme-toggle
+          [color]="{
+            dark: '#373737f0',
+            light: '#fff'
+          }"></app-theme-toggle>
+      </div>
   </div>
 </header>
 

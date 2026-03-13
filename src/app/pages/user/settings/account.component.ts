@@ -1,4 +1,4 @@
-import { AsyncPipe, NgClass, NgFor, NgIf, TitleCasePipe } from '@angular/common';
+import { AsyncPipe, NgClass, TitleCasePipe } from '@angular/common';
 import { ChangeDetectorRef, Component, HostBinding, inject } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, ActivatedRoute, ChildrenOutletContexts, NavigationEnd } from '@angular/router';
@@ -15,7 +15,7 @@ import { myIcons } from 'src/app/shared';
 
 @Component({
   selector: 'app-account-settings',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, AsyncPipe, LucideAngularModule, TitleCasePipe, RippleDirective],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, AsyncPipe, LucideAngularModule, TitleCasePipe, RippleDirective],
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss',
   animations: [smoothfadeAnimation]

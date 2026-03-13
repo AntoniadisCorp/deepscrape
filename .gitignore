@@ -12,6 +12,8 @@
 /out-tsc
 /bazel-out
 
+/src/assets/fontawesome
+
 # Node
 /node_modules
 npm-debug.log
@@ -54,3 +56,9 @@ Thumbs.db
 /.env
 .qodo
 functions/databases/IP2LOCATION-LITE-DB11.BIN
+.env.staging
+.env.dev
+.env.keys
+
+*.css.map
+*.css

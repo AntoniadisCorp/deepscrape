@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,7 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
 import { getErrorMessage } from 'src/app/core/functions';
-import { FirestoreService } from 'src/app/core/services';
+import { FirestoreService, ThemeService } from 'src/app/core/services';
+import { AnimatedBgComponent } from 'src/app/shared';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { I18nService } from 'src/app/core/i18n';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-resetpassword',
@@ -15,7 +20,8 @@ import { FirestoreService } from 'src/app/core/services';
         ReactiveFormsModule,
         RouterModule,
         MatIconModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
+        TranslateModule,
     ],
     templateUrl: './resetpassword.component.html',
     styleUrl: './resetpassword.component.scss'
@@ -25,10 +31,16 @@ export class ResetPasswordComponent implements OnInit {
     loading = false;
     resetEmailSent = false;
     errorMessage = '';
+    private destroyRef = inject(DestroyRef)
+    private themePicker = inject(ThemeService)
+    protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$;
+    private langChangeSubscription: Subscription;
 
     constructor(
         private fb: FormBuilder,
-        private fireService: FirestoreService
+        private fireService: FirestoreService,
+        private translate: TranslateService,
+        private i18nService: I18nService,
     ) {
         this.resetPasswordForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]]
@@ -39,7 +51,14 @@ export class ResetPasswordComponent implements OnInit {
         return this.resetPasswordForm.get('email');
     }
 
-    ngOnInit(): void { }
+    ngOnInit(): void {
+        this.translate.use(this.i18nService.currentLang());
+        this.langChangeSubscription = this.i18nService.currentLang$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((lang) => {
+                this.translate.use(lang);
+            });
+    }
 
     async resetPassword() {
         if (this.resetPasswordForm.valid) {
@@ -52,7 +71,7 @@ export class ResetPasswordComponent implements OnInit {
 
                 this.resetEmailSent = true;
             } catch (error: any) {
-                this.errorMessage = getErrorMessage(error);
+                this.errorMessage = getErrorMessage(error, this.translate);
             } finally {
                 this.loading = false;
             }
@@ -71,4 +90,7 @@ export class ResetPasswordComponent implements OnInit {
     //             return 'An error occurred. Please try again.';
     //     }
     // }
+    ngOnDestroy(): void {
+        this.langChangeSubscription?.unsubscribe();
+    }
 }

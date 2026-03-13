@@ -31,8 +31,14 @@ const start = async function () {
     const destinationDir = "./lib"
     const src = "../public"
     const copy = "./lib/public"
+    const serverHtmlSrc = "../dist/deepscrape/server/index.server.html"
+    const serverHtmlDest = `${copy}/index.server.html`
+
     await fs.emptyDir(destinationDir)
     await fs.remove(copy)
     await fs.copy(src, copy)
+    await fs.copy(serverHtmlSrc, serverHtmlDest)
+
+    console.log("index.server.html copied successfully")
 }
 start()

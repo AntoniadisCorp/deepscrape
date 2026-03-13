@@ -1,9 +1,9 @@
 <!-- crawl-pack.component.html -->
 
-<div class="w-full" [@routeChildAnimation]="getRouteAnimationData(outlet)">
+<div class="w-full" [@routeChildAnimation]="getAnimationData()">
   <!-- Choose Source forDishes Section -->
   <div class="sticky top-20 z-[20] border-b-0 app-toolbar">
     <app-tabs [tabs]="tabs" [sourceTabUrl]="'crawlpack'" class=""></app-tabs>
   </div>
-  <router-outlet #outlet="outlet"></router-outlet>
+  <router-outlet ></router-outlet>
 </div>

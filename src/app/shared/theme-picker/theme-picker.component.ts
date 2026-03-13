@@ -1,26 +1,17 @@
-import { DOCUMENT, isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
-import { Component, Inject, PLATFORM_ID, WritableSignal, inject, input, signal } from '@angular/core';
+import { isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
+import { Component, Inject, PLATFORM_ID, WritableSignal, inject, input, signal, DOCUMENT } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
+import { RippleDirective } from 'src/app/core/directives';
 import { AppTheme } from 'src/app/core/enum';
 import { browserProvider, BrowserToken, LocalStorage, STORAGE_PROVIDERS, windowProvider, WindowToken } from 'src/app/core/services';
+import { ThemeService } from 'src/app/core/services';
 
 export const themeStorageKey = 'app-theme-dark';
 
 @Component({
     selector: 'app-theme-toggle',
-    template: `
-    <div (click)="toggleTheme()" class="flex flex-col items-center cursor-pointer justify-center  border-none text-center bg-transparent 
-    hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-full transition-colors">
-    <button mat-icon-button type="button" class="size-7 block md:size-6 " 
-            [title]="getToggleLabel()" [attr.aria-label]="getToggleLabel()">
-      <mat-icon [style]="getIconColorClass()"  class=" !text-[var(--icon-color)] dark:!text-[var(--icon-color-dark)]">
-        {{  isDark ? 'light' : 'dark'  }}_mode
-      </mat-icon>
-
-    </button>
-    </div>
-  `,
-    imports: [MatIcon],
+    templateUrl: './theme-picker.component.html',
+    imports: [MatIcon, RippleDirective],
     providers: [{ provide: WindowToken, useFactory: windowProvider },
     { provide: BrowserToken, useFactory: browserProvider },
         STORAGE_PROVIDERS
@@ -30,6 +21,7 @@ export class ThemeToggleComponent {
 
     private window = inject(WindowToken)
     private storage = inject(LocalStorage)
+    private themeService = inject(ThemeService);
 
     color = input<{ dark: string, light: string } | undefined>()
 
@@ -55,7 +47,8 @@ export class ThemeToggleComponent {
 
     toggleTheme(): void {
         this.isDark = !this.isDark;
-        this.updateRenderedTheme()
+        this.themeService.setDarkMode(this.isDark);
+        this.updateRenderedTheme();
     }
 
     setDefaultTheme(): void {

@@ -1,11 +1,15 @@
 import { Routes } from "@angular/router";
+import { LoginGuard } from "src/app/core/guards";
 
 export const signRoutes: Routes = [
     {
         path: '',
         loadComponent: () => import('../../pages').then(m => m.SignupComponent),
         data: {
-            title: 'signup'
-        }
+            title: 'signup',
+            animation: 'signup'
+        },
+        canActivate: [LoginGuard],
+        canActivateChild: [LoginGuard]
     }
 ];

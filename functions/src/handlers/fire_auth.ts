@@ -48,7 +48,8 @@ export const checkUserEmailExistance = async (req: Request, res: Response) => {
 
 export const checkUserEmailForDifferentProvider =
     async (req: Request, res: Response) => {
-        const { email } = req.params as { email: string }
+        const { email: encodedEmail } = req.params as { email: string }
+        const email = decodeURIComponent(encodedEmail)
         res.type("json")
         try {
             // eslint-disable-next-line max-len
@@ -87,6 +88,40 @@ export const checkUserEmailForDifferentProvider =
         }
     }
 
+export const updateEmailVerificationStatus = async (
+    req: Request,
+    res: Response,
+) => {
+    res.type("application/json")
+    const { uid, emailVerified } = req.body as {
+        uid: string,
+        emailVerified: boolean,
+    }
+
+    try {
+        if (!uid || typeof emailVerified !== "boolean") {
+            return res.status(400).send({
+                error: "Missing required fields",
+                message: "Both uid and emailVerified are required",
+            })
+        }
+
+        // Set custom claims for email verification
+        await auth.setCustomUserClaims(uid, { email_verified: emailVerified })
+
+        return res.status(200).send({
+            success: true,
+            message: "Email verification status updated successfully",
+        })
+    } catch (error: any) {
+        console.error("Error updating email verification status:", error)
+
+        return res.status(500).send({
+            error: "Internal Server Error",
+            message: error.message,
+        })
+    }
+}
 export const verifyLogin = async (req: Request, res: Response) => {
     const { idToken, providerId } = req.body
 
@@ -153,4 +188,23 @@ export const verifyLogin = async (req: Request, res: Response) => {
         return res.status(500)
         .send({ error: "Internal Server Error", message: error.message })
     }
+}
+
+export const setAdminClaimsByEmails = async (req: Request, res: Response) => {
+    const { emails } = req.body as { emails: string[] }
+    if (!Array.isArray(emails) || emails.length === 0) {
+        return res.status(400).send({ error: "No emails provided" })
+    }
+    const results = []
+    for (const email of emails) {
+        try {
+            const user = await auth.getUserByEmail(email)
+            await auth.setCustomUserClaims(user.uid, { admin: true })
+            results.push({ email, uid: user.uid, success: true })
+        } catch (err) {
+            // eslint-disable-next-line max-len
+            results.push({ email, error: (err as Error).message, success: false })
+        }
+    }
+    return res.status(200).send({ results })
 }
