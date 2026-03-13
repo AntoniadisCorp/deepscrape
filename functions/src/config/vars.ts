@@ -35,6 +35,7 @@ const contentSecurityPolicy = {
       "https://www.googletagmanager.com",
       "https://apis.google.com",
       "https://ui-avatars.com",
+      "https://cdn.pixabay.com",
       "https://firebasestorage.googleapis.com",
       "https://firebaseinstallations.googleapis.com",
     ],
