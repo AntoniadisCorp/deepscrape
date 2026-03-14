@@ -62,3 +62,4 @@ functions/databases/IP2LOCATION-LITE-DB11.BIN
 
 *.css.map
 *.css
+functions/src/serviceAccount.json
