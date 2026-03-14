@@ -1,3 +1,10 @@
+## 0.5.0 (2026-03-14)
+
+* Merge pull request #37 from AntoniadisCorp/chore/release-assets-main ([b8c0fe8](https://github.com/AntoniadisCorp/deepscrape/commit/b8c0fe8)), closes [#37](https://github.com/AntoniadisCorp/deepscrape/issues/37)
+* Merge pull request #39 from AntoniadisCorp/next ([d924236](https://github.com/AntoniadisCorp/deepscrape/commit/d924236)), closes [#39](https://github.com/AntoniadisCorp/deepscrape/issues/39)
+* feat(codebase): harden functions env and admin credential loading ([327d4ab](https://github.com/AntoniadisCorp/deepscrape/commit/327d4ab))
+* chore: update changelog and package version [skip ci] ([2c8166a](https://github.com/AntoniadisCorp/deepscrape/commit/2c8166a))
+
 ## 0.4.0 (2026-03-13)
 
 * Bump version from 0.3.0-beta.1 to 0.3.0 ([df52ef8](https://github.com/AntoniadisCorp/deepscrape/commit/df52ef8))
