@@ -5,22 +5,49 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as admin from "firebase-admin"
 import Stripe from "stripe"
-import serviceAccount from "../credentials.json"
-import { defineSecret } from "firebase-functions/params"
+import { defineSecret, defineJsonSecret } from "firebase-functions/params"
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
+import * as fs from "fs"
+import * as path from "path"
 import { env } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
 export const stripeSecretParam = defineSecret("STRIPE_SECRET_KEY")
 export const stripeWebhookSecretParam =
     defineSecret("STRIPE_WEBHOOK_SECRET")
+// Holds the Firebase service account JSON in production
+// (stored in Secret Manager). Must be listed in `secrets`
+// on any Cloud Function that cold-starts a new instance.
+export const serviceAccountKeyParam =
+    defineJsonSecret("FIRE_SERVICE_ACCOUNT_KEY")
 export const stripeSecrets = [stripeSecretParam, stripeWebhookSecretParam]
-export const dbName = serviceAccount.dbName
+export const dbName = env.DB_NAME || "(default)"
+
+const localServiceAccount = !env.IS_PRODUCTION ?
+    (JSON.parse(
+        fs.readFileSync(
+            path.resolve(__dirname, "../serviceAccount.json"),
+            "utf8"
+        )
+    ) as admin.ServiceAccount) : undefined
 
 
-// Initialize Firebase
-admin.initializeApp(serviceAccount.firebaseConfig)
+// Initialize Firebase Admin SDK:
+// - Non-production: use the local credentials.json
+//   file immediately (safe at deploy time).
+// - Production: use defineJsonSecret so the service account key is loaded from
+//   Secret Manager at runtime. env.IS_PRODUCTION is false
+//   during `firebase deploy`
+//   (secret values throw and are caught in env.ts → fallback to false), so
+//   serviceAccountKeyParam.value() is never called at deploy time.
+// Docs: https://firebase.google.com/docs/admin/setup#initialize_the_sdk_in_non-google_environments
+admin.initializeApp({
+    credential: admin.credential.cert( env.IS_PRODUCTION ?
+        (serviceAccountKeyParam.value() as admin.ServiceAccount) :
+         (localServiceAccount as admin.ServiceAccount)
+    ),
+})
 
 export const db = admin.firestore()
 db.settings({ databaseId: dbName })
@@ -39,11 +66,7 @@ const resolveStripeSecret = (secret: string | undefined) => {
         return fromEnv
     }
 
-    const fromServiceAccount =
-        typeof serviceAccount?.stripe?.secret === "string"?
-         serviceAccount.stripe.secret.trim() : ""
-
-    return fromServiceAccount || undefined
+    return env.STRIPE_SECRET_KEY || ""
 }
 
 export const getStripeWebhookSecret = (secret:string | undefined) => {

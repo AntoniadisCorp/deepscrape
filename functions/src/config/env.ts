@@ -160,6 +160,7 @@ const getEnv = () => {
     IS_PRODUCTION: parseBoolean(getConfigValue("PRODUCTION", "false"), false),
     COOKIE_SECRET: getConfigValue("COOKIE_SECRET"),
     CSRF_COOKIE_SECRET: getConfigValue("CSRF_COOKIE_SECRET"),
+    DB_NAME: getConfigValue("DB_NAME", "easyscrape"),
     IS_EMULATOR: parseBoolean(process.env["FUNCTIONS_EMULATOR"], false) || !!process.env["FIREBASE_EMULATOR_HUB"],
     DOTENV_PRIVATE_KEY: getConfigValue("DOTENV_PRIVATE_KEY"),
     PORT: parseInt(getConfigValue("PORT", "4000"), 10),

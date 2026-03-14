@@ -34,6 +34,7 @@ declare namespace NodeJS {
 
     // Google Cloud Platform & Stripe
     GCP_PROJECT_ID: string
+    DB_NAME: string
     STRIPE_PUBLIC_KEY: string
     STRIPE_PRICE_STARTER_PAYG: string
     STRIPE_PRICE_STARTER_MONTHLY: string
