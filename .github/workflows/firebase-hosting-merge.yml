@@ -148,6 +148,9 @@ jobs:
       - name: Install Functions Dependencies
         working-directory: ./functions
         run: npm ci
+      - name: Build Firebase Functions
+        working-directory: ./functions
+        run: npm run build
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -177,17 +180,16 @@ jobs:
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
-      - name: Build Firebase Functions
-        working-directory: ./functions
-        run: npm run build
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Deploy Firebase Functions
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy --only functions --project ${{ secrets.GCP_PROJECT_ID }}
+        working-directory: ./functions
+        run: npx firebase-tools deploy --only functions --project ${{ secrets.GCP_PROJECT_ID }} --force
         env:
           PRODUCTION: true
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -219,4 +221,4 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
           CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
-      
+
