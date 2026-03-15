@@ -11,23 +11,36 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
+      FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 20
-        uses: actions/setup-node@v3
         with:
-          node-version: "20"
-      - name: Get npm cache directory
-        id: npm-cache-dir
+          lfs: true
+          fetch-depth: 0
+      - name: Ensure git-lfs
         run: |
-          echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v3
-        id: npm-cache
+          git lfs install --local || true
+          git lfs pull || true
+
+      - name: Verify IP2LOCATION DB
+        run: |
+          if [ -f "functions/databases/IP2LOCATION-LITE-DB11.BIN" ]; then
+            ls -lh "functions/databases/IP2LOCATION-LITE-DB11.BIN"
+          elif [ -f "databases/IP2LOCATION-LITE-DB11.BIN" ]; then
+            ls -lh "databases/IP2LOCATION-LITE-DB11.BIN"
+          elif [ -f "IP2LOCATION-LITE-DB11.BIN" ]; then
+            ls -lh "IP2LOCATION-LITE-DB11.BIN"
+          else
+            echo "Missing IP2LOCATION-LITE-DB11.BIN in functions/databases or databases or repo root" && exit 1
+          fi
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
       - name: Install Dependencies
         run: npm ci
       - name: Validate Required Environment Variables
@@ -148,12 +161,15 @@ jobs:
       - name: Install Functions Dependencies
         working-directory: ./functions
         run: npm ci
+      - name: Build Firebase Functions
+        working-directory: ./functions
+        run: npm run build
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: libnet-d76db
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
           channelId: live
           entryPoint: "."
           expires: "never"
@@ -177,17 +193,16 @@ jobs:
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
-      - name: Build Firebase Functions
-        working-directory: ./functions
-        run: npm run build
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Deploy Firebase Functions
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy --only functions --project ${{ secrets.GCP_PROJECT_ID }}
+        working-directory: ./functions
+        run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
         env:
           PRODUCTION: true
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -219,4 +234,4 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
           CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
-      
+

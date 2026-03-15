@@ -1,0 +1,2 @@
+**/IP2LOCATION-LITE-DB11.BIN filter=lfs diff=lfs merge=lfs -text
+functions/databases/IP2LOCATION-LITE-DB11.BIN filter=lfs diff=lfs merge=lfs -text
