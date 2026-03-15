@@ -13,6 +13,25 @@ jobs:
       DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Ensure git-lfs
+        run: |
+          git lfs install --local || true
+          git lfs pull || true
+
+      - name: Verify IP2LOCATION DB
+        run: |
+          if [ -f "functions/databases/IP2LOCATION-LITE-DB11.BIN" ]; then
+            ls -lh "functions/databases/IP2LOCATION-LITE-DB11.BIN"
+          elif [ -f "databases/IP2LOCATION-LITE-DB11.BIN" ]; then
+            ls -lh "databases/IP2LOCATION-LITE-DB11.BIN"
+          elif [ -f "IP2LOCATION-LITE-DB11.BIN" ]; then
+            ls -lh "IP2LOCATION-LITE-DB11.BIN"
+          else
+            echo "Missing IP2LOCATION-LITE-DB11.BIN in functions/databases or databases or repo root" && exit 1
+          fi
       - name: Use Node.js 20
         uses: actions/setup-node@v3
         with:
