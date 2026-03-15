@@ -2,123 +2,67 @@
 
 ### Bug Fixes
 
-* fix: correct stray quotes and missing newlines in .env.example files ([a39e271](https://github.com/AntoniadisCorp/deepscrape/commit/a39e271))
-
-### Build
-
-* build(release): align commit-analyzer with conventionalcommits preset and semver rules ([2cef8ed](https://github.com/AntoniadisCorp/deepscrape/commit/2cef8ed))
-
-### CI
-
-* ci: fetch and verify IP2LOCATION DB via LFS ([968032c](https://github.com/AntoniadisCorp/deepscrape/commit/968032c))
-* ci(firebase): migrate functions deploy to firebase-tools CLI with GCP auth ([442e72c](https://github.com/AntoniadisCorp/deepscrape/commit/442e72c))
-
-### Chore
-
-* chore: add IP2LOCATION DB via Git LFS ([a69aa04](https://github.com/AntoniadisCorp/deepscrape/commit/a69aa04))
-* chore: update changelog and package version [skip ci] ([ee2cf18](https://github.com/AntoniadisCorp/deepscrape/commit/ee2cf18))
-* chore: update changelog and package version [skip ci] ([51f2b1a](https://github.com/AntoniadisCorp/deepscrape/commit/51f2b1a))
-* chore(changelog): remove non-conventional commit entries from v0.4.0-beta.13 section ([28854c5](https://github.com/AntoniadisCorp/deepscrape/commit/28854c5))
-* chore(release): fix hosting CI and add env example templates ([bcbf953](https://github.com/AntoniadisCorp/deepscrape/commit/bcbf953))
-
-### Misc
-
-* Initial plan ([380e9d8](https://github.com/AntoniadisCorp/deepscrape/commit/380e9d8))
-* Initial plan ([4fb02aa](https://github.com/AntoniadisCorp/deepscrape/commit/4fb02aa))
-* Merge branch 'main' into next ([0267206](https://github.com/AntoniadisCorp/deepscrape/commit/0267206))
-* Merge branch 'next' of https://github.com/antoniadisCorp/deepscrape into next ([f390839](https://github.com/AntoniadisCorp/deepscrape/commit/f390839))
-* Merge pull request #38 from AntoniadisCorp/chore/release-assets-next ([a906e35](https://github.com/AntoniadisCorp/deepscrape/commit/a906e35)), closes [#38](https://github.com/AntoniadisCorp/deepscrape/issues/38)
-* Merge pull request #40 from AntoniadisCorp/chore/release-assets-main ([ee83dc7](https://github.com/AntoniadisCorp/deepscrape/commit/ee83dc7)), closes [#40](https://github.com/AntoniadisCorp/deepscrape/issues/40)
-* Merge pull request #42 from AntoniadisCorp/copilot/sub-pr-41 ([77b8d9e](https://github.com/AntoniadisCorp/deepscrape/commit/77b8d9e)), closes [#42](https://github.com/AntoniadisCorp/deepscrape/issues/42)
-* Merge pull request #43 from AntoniadisCorp/copilot/sub-pr-41 ([545a443](https://github.com/AntoniadisCorp/deepscrape/commit/545a443)), closes [#43](https://github.com/AntoniadisCorp/deepscrape/issues/43)
-* Potential fix for pull request finding ([0cec9df](https://github.com/AntoniadisCorp/deepscrape/commit/0cec9df))
+* correct stray quotes and missing newlines in .env.example files ([a39e271](https://github.com/AntoniadisCorp/deepscrape/commit/a39e271))
 
 # [0.4.0-beta.13](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.12...v0.4.0-beta.13) (2026-03-14)
 
 ### Features
 
-* feat(codebase): harden functions env and admin credential loading ([327d4ab](https://github.com/AntoniadisCorp/deepscrape/commit/327d4ab))
-
-### CI
-
-* ci(release): overhaul release workflow and expand copilot instructions ([8f81ab4](https://github.com/AntoniadisCorp/deepscrape/commit/8f81ab4))
-
-### Chore
-
-* chore: update changelog and package version [skip ci] ([6fa4954](https://github.com/AntoniadisCorp/deepscrape/commit/6fa4954))
-* chore(changelog): remove outdated entries for version 0.4.0-beta.12 section ([4e8b80e](https://github.com/AntoniadisCorp/deepscrape/commit/4e8b80e))
+* **codebase:** harden functions env and admin credential loading ([327d4ab](https://github.com/AntoniadisCorp/deepscrape/commit/327d4ab))
 
 # [0.4.0-beta.12](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.11...v0.4.0-beta.12) (2026-03-13)
 
 ### Features
 
-* feat: add typed env config, analytics docs, and rate limiting (#codebase) ([8d6f428](https://github.com/AntoniadisCorp/deepscrape/commit/8d6f428))
-* feat(analytics): add real-time online tracking and enhance dashboard metrics ([db55189](https://github.com/AntoniadisCorp/deepscrape/commit/db55189)), closes [#34](https://github.com/AntoniadisCorp/deepscrape/issues/34)
-* feat(auth): add phone verification flows and csrf protection (#codebase) ([5957cd3](https://github.com/AntoniadisCorp/deepscrape/commit/5957cd3))
-* feat(billing): introduce full billing system with Stripe checkout, credit packs, and usage reporting ([3329734](https://github.com/AntoniadisCorp/deepscrape/commit/3329734))
-* feat(codebase): add admin analytics migration workspace and metric upgrades ([36ba6c7](https://github.com/AntoniadisCorp/deepscrape/commit/36ba6c7))
-* feat(codebase): harden migration workflows, analytics, and security plumbing ([585ca36](https://github.com/AntoniadisCorp/deepscrape/commit/585ca36))
-* feat(codebase): update workflows, versioning, and JSON parsing ([f23941f](https://github.com/AntoniadisCorp/deepscrape/commit/f23941f))
-* feat(prompts): add role plan agent prompt for ReBAC implementation ([4d2f12c](https://github.com/AntoniadisCorp/deepscrape/commit/4d2f12c))
+* add typed env config, analytics docs, and rate limiting (#codebase) ([8d6f428](https://github.com/AntoniadisCorp/deepscrape/commit/8d6f428))
+* **analytics:** add real-time online tracking and enhance dashboard metrics ([db55189](https://github.com/AntoniadisCorp/deepscrape/commit/db55189)), closes [#34](https://github.com/AntoniadisCorp/deepscrape/issues/34)
+* **auth:** add phone verification flows and csrf protection (#codebase) ([5957cd3](https://github.com/AntoniadisCorp/deepscrape/commit/5957cd3))
+* **billing:** introduce full billing system with Stripe checkout, credit packs, and usage reporting ([3329734](https://github.com/AntoniadisCorp/deepscrape/commit/3329734))
+* **codebase:** add admin analytics migration workspace and metric upgrades ([36ba6c7](https://github.com/AntoniadisCorp/deepscrape/commit/36ba6c7))
+* **codebase:** harden migration workflows, analytics, and security plumbing ([585ca36](https://github.com/AntoniadisCorp/deepscrape/commit/585ca36))
+* **codebase:** update workflows, versioning, and JSON parsing ([f23941f](https://github.com/AntoniadisCorp/deepscrape/commit/f23941f))
+* **prompts:** add role plan agent prompt for ReBAC implementation ([4d2f12c](https://github.com/AntoniadisCorp/deepscrape/commit/4d2f12c))
 
 ### Bug Fixes
 
-* fix: update Node.js runtime to 22 and clean up environment variable files ([dd43bb3](https://github.com/AntoniadisCorp/deepscrape/commit/dd43bb3))
-* fix: update phoneNumber type to allow null values in Users interface ([efb8820](https://github.com/AntoniadisCorp/deepscrape/commit/efb8820))
-* fix(firestore): add index for migration_runs collection with status and startedAt fields ([f44738d](https://github.com/AntoniadisCorp/deepscrape/commit/f44738d))
-* fix(security): add Pixabay CDN to content security policy ([75243b9](https://github.com/AntoniadisCorp/deepscrape/commit/75243b9))
-
-### Refactor
-
-* refactor(codebase): migrate templates to angular control flow ([f4f82c8](https://github.com/AntoniadisCorp/deepscrape/commit/f4f82c8))
-
-### Chore
-
-* chore: update dependencies and add trustedDependencies section ([f40bb6c](https://github.com/AntoniadisCorp/deepscrape/commit/f40bb6c))
-* chore(release): 0.4.0-beta.12 [skip ci] ([f97b385](https://github.com/AntoniadisCorp/deepscrape/commit/f97b385))
-* chore(release): 0.4.0-beta.12 [skip ci] ([b7bdcae](https://github.com/AntoniadisCorp/deepscrape/commit/b7bdcae))
+* update Node.js runtime to 22 and clean up environment variable files ([dd43bb3](https://github.com/AntoniadisCorp/deepscrape/commit/dd43bb3))
+* update phoneNumber type to allow null values in Users interface ([efb8820](https://github.com/AntoniadisCorp/deepscrape/commit/efb8820))
+* **firestore:** add index for migration_runs collection with status and startedAt fields ([f44738d](https://github.com/AntoniadisCorp/deepscrape/commit/f44738d))
+* **security:** add Pixabay CDN to content security policy ([75243b9](https://github.com/AntoniadisCorp/deepscrape/commit/75243b9))
 
 # [0.4.0-beta.11](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.10...v0.4.0-beta.11) (2025-11-29)
 
 ### Features
 
-* feat(auth): add robust user and admin management features ([f5fc987](https://github.com/AntoniadisCorp/deepscrape/commit/f5fc987))
-* feat(auth): implement internationalization and refactor user features ([ef959ed](https://github.com/AntoniadisCorp/deepscrape/commit/ef959ed))
-* feat(firestore): update csp and add firestore indexes ([8d5cc42](https://github.com/AntoniadisCorp/deepscrape/commit/8d5cc42))
+* **auth:** add robust user and admin management features ([f5fc987](https://github.com/AntoniadisCorp/deepscrape/commit/f5fc987))
+* **auth:** implement internationalization and refactor user features ([ef959ed](https://github.com/AntoniadisCorp/deepscrape/commit/ef959ed))
+* **firestore:** update csp and add firestore indexes ([8d5cc42](https://github.com/AntoniadisCorp/deepscrape/commit/8d5cc42))
 
 # [0.4.0-beta.10](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.9...v0.4.0-beta.10) (2025-11-27)
 
 ### Bug Fixes
 
-* fix(security): add csrf protection, update dependencies, and correct csp domain ([166e251](https://github.com/AntoniadisCorp/deepscrape/commit/166e251))
+* **security:** add csrf protection, update dependencies, and correct csp domain ([166e251](https://github.com/AntoniadisCorp/deepscrape/commit/166e251))
 
 # [0.4.0-beta.9](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.8...v0.4.0-beta.9) (2025-11-26)
 
 ### Features
 
-* feat(auth): add device fingerprint hash to login metrics ([620421b](https://github.com/AntoniadisCorp/deepscrape/commit/620421b))
-
-### Chore
-
-* Merge branch 'next' of https://github.com/antoniadisCorp/deepscrape into next ([7834a03](https://github.com/AntoniadisCorp/deepscrape/commit/7834a03))
+* **auth:** add device fingerprint hash to login metrics ([620421b](https://github.com/AntoniadisCorp/deepscrape/commit/620421b))
 
 # [0.4.0-beta.8](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.7...v0.4.0-beta.8) (2025-11-26)
 
 ### Features
 
-* feat(analytics): hash guest fingerprints for privacy ([0fdd119](https://github.com/AntoniadisCorp/deepscrape/commit/0fdd119))
-* feat(platform): update security, analytics, and UI components ([be3878e](https://github.com/AntoniadisCorp/deepscrape/commit/be3878e))
+* **analytics:** hash guest fingerprints for privacy ([0fdd119](https://github.com/AntoniadisCorp/deepscrape/commit/0fdd119))
+* **platform:** update security, analytics, and UI components ([be3878e](https://github.com/AntoniadisCorp/deepscrape/commit/be3878e))
 
 # [0.4.0-beta.7](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.6...v0.4.0-beta.7) (2025-11-23)
 
 ### Features
 
-* feat(i18n): implement i18n, custom image loader, logger service ([29c4e94](https://github.com/AntoniadisCorp/deepscrape/commit/29c4e94))
-* feat(signup): redesign signup component with enhanced UI and animations ([5579151](https://github.com/AntoniadisCorp/deepscrape/commit/5579151))
-
-### Chore
-
-* chore(i18n): introduce ngx-translate for internationalization support ([fe93c51](https://github.com/AntoniadisCorp/deepscrape/commit/fe93c51))
+* **i18n:** implement i18n, custom image loader, logger service ([29c4e94](https://github.com/AntoniadisCorp/deepscrape/commit/29c4e94))
+* **signup:** redesign signup component with enhanced UI and animations ([5579151](https://github.com/AntoniadisCorp/deepscrape/commit/5579151))
 
 # [0.4.0-beta.6](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.5...v0.4.0-beta.6) (2025-11-19)
 
@@ -253,29 +197,6 @@
 * **authentication:** implement user signup and verification process with email and phone number ([3df1563](https://github.com/AntoniadisCorp/deepscrape/commit/3df1563e9f7de5211c6615cd896ea3fa6a3d100c))
 * **payments:** enhance stripe customer and subscription management ([cb7ea6b](https://github.com/AntoniadisCorp/deepscrape/commit/cb7ea6b19441cdc7fdc87bbe06c6cb8046620250))
 
-# Changelog
-
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
-
-
-### Bug Fixes
-
-* **changelog:** merge commit '00b15661f49433f12c93205bfeb661fb43b2f21c' ([7970f6c](https://github.com/antoniadisCorp/deepscrape/commit/7970f6c6b7820f1fe73db912945c9c8411f459f6))
-* **changelog:** remove version 1.0.1 details and reset for new release cycle ([eac8979](https://github.com/antoniadisCorp/deepscrape/commit/eac897916383f880b825a186a95c488206c428f3))
-* **changelog:** reset CHANGELOG.md for new release cycle ([b5414dd](https://github.com/antoniadisCorp/deepscrape/commit/b5414ddb5dc9cb23d8a040fc647e4b04f8345317))
-* **landpage:** update CORS settings, adjust image sizes, and refine layout positioning ([ca7d737](https://github.com/antoniadisCorp/deepscrape/commit/ca7d737d51990b5fcc87ee4ce07a42f17595d681))
-* **release:** add 'next' branch to push triggers and ensure fetch-tags is enabled ([671fb30](https://github.com/antoniadisCorp/deepscrape/commit/671fb30d2fe118a5751ae9939edcf094a187836c))
-* **release:** remove package-lock.json from assets and ensure GitHub release settings are configured ([bf1e4a7](https://github.com/antoniadisCorp/deepscrape/commit/bf1e4a7eab06a19d0e09e163722009dee0681562))
-* **server:** add rate limiting middleware to all routes ([e8f892d](https://github.com/antoniadisCorp/deepscrape/commit/e8f892d5b57c35524b74e604cbb822914af75539))
-
-
-### Features
-
-* **authentication:** implement user signup and verification process with email and phone number ([3df1563](https://github.com/antoniadisCorp/deepscrape/commit/3df1563e9f7de5211c6615cd896ea3fa6a3d100c))
-* **payments:** enhance stripe customer and subscription management ([cb7ea6b](https://github.com/antoniadisCorp/deepscrape/commit/cb7ea6b19441cdc7fdc87bbe06c6cb8046620250))
-
-# Changelog
-
 ### 0.1.2 (2025-08-07)
 
 
@@ -407,31 +328,3 @@ All notable changes to this project will be documented in this file. See [standa
 *   **tests:** Refactor and enhance core components and services ([9006f7e](https://github.com/antoniadisCorp/deepscrape/commit/9006f7e))
 *   **tsconfig:** enable node types and update package version ([2e7fb5e](https://github.com/antoniadisCorp/deepscrape/commit/2e7fb5e))
 *   **ui:** fix playground UI, improve code highlighting, and refine authentication guards ([e31e685](https://github.com/antoniadisCorp/deepscrape/commit/e31e685))
-
-### Builds
-
-*   **deps:** bump form-data from 2.5.2 to 2.5.5 in /functions ([196393c](https://github.com/antoniadisCorp/deepscrape/commit/196393c))
-*   **deps:** bump vite and @angular-devkit/build-angular ([5d39e83](https://github.com/antoniadisCorp/deepscrape/commit/5d39e83))
-*   **ng19:** upgrade to angular 19 and dependencies ([8b42aef](https://github.com/antoniadisCorp/deepscrape/commit/8b42aef))
-
-
-### Refactor
-
-*   Improve crawl pack configuration and UI components ([bdc9f95](https://github.com/antoniadisCorp/deepscrape/commit/bdc9f95))
-*   clean up unused imports and variables, update theme storage key ([5ea3d6e](https://github.com/antoniadisCorp/deepscrape/commit/5ea3d6e))
-
-
-### Documentation
-
-*   **readme:** update project description, features, and instructions ([035d9aa](https://github.com/antoniadisCorp/deepscrape/commit/035d9aa))
-
-### Chore
-
-*   **api:** implement rate limiting middleware with Redis support ([99156c9](https://github.com/antoniadisCorp/deepscrape/commit/99156c9))
-*   **ci:** update Firebase deployment workflows and enhance caching for pull requests ([b7cb58f](https://github.com/antoniadisCorp/deepscrape/commit/b7cb58f))
-*   **config:** enhance Firebase configuration and project setup ([2b458fc](https://github.com/antoniadisCorp/deepscrape/commit/2b458fc))
-*   **dependencies:** integrate Upstash Redis and Lucide Icons ([0ad755d](https://github.com/antoniadisCorp/deepscrape/commit/0ad755d))
-
-### Initial
-
-*   Initial commit ([e7a4010](https://github.com/antoniadisCorp/deepscrape/commit/e7a4010))
