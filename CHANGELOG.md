@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.0...v0.5.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* correct stray quotes and missing newlines in .env.example files ([a39e271](https://github.com/AntoniadisCorp/deepscrape/commit/a39e271c11c80a75c6851b0c0a0fcc87f189b531))
+
 # [0.5.1-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.13...v0.5.1-beta.1) (2026-03-15)
 
 ### Bug Fixes
