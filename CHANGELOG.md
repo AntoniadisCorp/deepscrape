@@ -1,9 +1,6 @@
 ## 0.4.0-beta.13 (2026-03-14)
 
 * feat(codebase): harden functions env and admin credential loading ([327d4ab](https://github.com/AntoniadisCorp/deepscrape/commit/327d4ab))
-* Merge pull request #35 from AntoniadisCorp/chore/release-assets-next ([7cef602](https://github.com/AntoniadisCorp/deepscrape/commit/7cef602)), closes [#35](https://github.com/AntoniadisCorp/deepscrape/issues/35)
-* Potential fix for pull request finding ([01bc6dd](https://github.com/AntoniadisCorp/deepscrape/commit/01bc6dd))
-* Potential fix for pull request finding ([b5eea36](https://github.com/AntoniadisCorp/deepscrape/commit/b5eea36))
 * ci(release): overhaul release workflow and expand copilot instructions ([8f81ab4](https://github.com/AntoniadisCorp/deepscrape/commit/8f81ab4))
 * chore: update changelog and package version [skip ci] ([6fa4954](https://github.com/AntoniadisCorp/deepscrape/commit/6fa4954))
 * chore(changelog): remove outdated entries for version 0.4.0-beta.12 ([4e8b80e](https://github.com/AntoniadisCorp/deepscrape/commit/4e8b80e))
