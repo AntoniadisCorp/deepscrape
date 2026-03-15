@@ -294,6 +294,14 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
+      - name: Debug GCP principal
+        run: |
+          echo "Active gcloud account:"
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
+          echo "Active gcloud project:"
+          gcloud config get-value project
+          echo "Workflow target project: ${FIREBASE_PROJECT_ID}"
+
       - name: Prepare functions .env for deploy analysis
         run: |
           cat > functions/.env <<EOF
