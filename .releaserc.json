@@ -26,14 +26,14 @@
           "types": [
             { "type": "feat", "section": "Features" },
             { "type": "fix", "section": "Bug Fixes" },
-            { "type": "docs", "section": "Docs" },
+            { "type": "docs", "hidden": true },
             { "type": "style", "hidden": true },
-            { "type": "refactor", "section": "Refactor" },
+            { "type": "refactor", "hidden": true },
             { "type": "perf", "section": "Perf" },
-            { "type": "test", "section": "Test" },
-            { "type": "build", "section": "Build" },
-            { "type": "ci", "section": "CI" },
-            { "type": "chore", "section": "Chore" },
+            { "type": "test", "hidden": true },
+            { "type": "build", "hidden": true },
+            { "type": "ci", "hidden": true },
+            { "type": "chore", "hidden": true },
             { "type": "revert", "section": "Reverts" }
           ]
         }
