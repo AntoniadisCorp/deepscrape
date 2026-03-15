@@ -19,6 +19,7 @@ import { geoDBManager, guestTracker, IP2LocationManager, onListening } from "./g
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
 import { env, functionsEnvJson, helmetConfig } from "./config"
+import { serviceAccountKeyParam } from "./app/config"
 
 // import { createNodeRequestHandler } from "@angular/ssr/node"
 // dotenvx.config({quiet: true, debug: true, verbose: true})
@@ -324,4 +325,4 @@ function setupGracefulShutdown(geoDBManager: IP2LocationManager) {
     return handler(req, res)
 }; */
 // Export the Firebase HTTPS function for SSR
-export const deepscrape = onRequest({ secrets: [functionsEnvJson] }, serveapp())
+export const deepscrape = onRequest({ secrets: [functionsEnvJson, serviceAccountKeyParam] }, serveapp())

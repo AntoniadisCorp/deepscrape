@@ -313,6 +313,8 @@ jobs:
           UPSTASH_REDIS_REST_PORT=${UPSTASH_REDIS_REST_PORT}
           UPSTASH_REDIS_REST_USER=${UPSTASH_REDIS_REST_USER}
           UPSTASH_REDIS_REST_PASSWORD=${UPSTASH_REDIS_REST_PASSWORD}
+          COOKIE_SECRET=${COOKIE_SECRET}
+          CSRF_COOKIE_SECRET=${CSRF_COOKIE_SECRET}
           GCP_PROJECT_ID=${GCP_PROJECT_ID}
           EOF
         env:
@@ -323,7 +325,12 @@ jobs:
           UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
           UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
           UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Verify Firebase Extensions access
+        run: npx firebase-tools ext:list --project ${{ env.FIREBASE_PROJECT_ID }} --json
 
       - name: Deploy Firebase Functions
         working-directory: ./functions

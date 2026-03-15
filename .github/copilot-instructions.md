@@ -199,6 +199,15 @@ Use the same conventional-commit discipline here. When adding a new Function, ad
 - Commit types that trigger a release: `feat` (minor), `fix` / `perf` / `refactor` (patch), `BREAKING CHANGE` footer (major).
 - `semantic-release` runs on push to `main` / `next`. It writes `CHANGELOG.md` locally and opens a PR (`chore/release-assets-{branch}`) to commit the changelog and bumped `package.json`. **Do not manually edit `CHANGELOG.md`.**
 
+### Copilot commit workflow
+- Before staging, review modified files with `get_changed_files` and exclude unrelated/debug files (e.g., `context.txt`, logs, local artifacts).
+- Prefer one focused commit per concern (e.g., `fix(ci): ...`, `refactor(functions): ...`).
+- Use a conventional commit header and include a body that explains:
+  - what changed,
+  - why it changed,
+  - risk/rollback notes when relevant.
+- If `git cz` is unavailable in non-interactive automation, use a conventional `git commit -m "type(scope): subject" -m "body..."` so husky/commitlint still validate the commit.
+
 ---
 
 ## Implementation constraints (summary)

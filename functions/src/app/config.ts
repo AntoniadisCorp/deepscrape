@@ -48,6 +48,19 @@ const resolveLocalServiceAccount = (): admin.ServiceAccount | null => {
 }
 
 const resolveProductionServiceAccount = (): admin.ServiceAccount | null => {
+    const fromEnv = process.env["FIRE_SERVICE_ACCOUNT_KEY"]
+    if (fromEnv) {
+        try {
+            return JSON.parse(fromEnv) as admin.ServiceAccount
+        } catch {
+            console.warn(
+                "FIRE_SERVICE_ACCOUNT_KEY is set but not valid JSON. " +
+                "Falling back to Secret Manager/local Firebase Admin " +
+                "credentials."
+            )
+        }
+    }
+
     try {
         return serviceAccountKeyParam.value() as admin.ServiceAccount
     } catch {
