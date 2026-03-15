@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
+      FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -256,6 +257,9 @@ jobs:
       - name: Install Functions Dependencies
         working-directory: ./functions
         run: npm ci
+      - name: Build Firebase Functions
+        working-directory: ./functions
+        run: npm run build
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -285,3 +289,44 @@ jobs:
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy Firebase Functions
+        working-directory: ./functions
+        run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
+        env:
+          PRODUCTION: true
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          STRIPE_PRICE_STARTER_PAYG: ${{ vars.STRIPE_PRICE_STARTER_PAYG }}
+          STRIPE_PRICE_STARTER_MONTHLY: ${{ vars.STRIPE_PRICE_STARTER_MONTHLY }}
+          STRIPE_PRICE_STARTER_QUARTERLY: ${{ vars.STRIPE_PRICE_STARTER_QUARTERLY }}
+          STRIPE_PRICE_STARTER_ANNUAL: ${{ vars.STRIPE_PRICE_STARTER_ANNUAL }}
+          STRIPE_PRICE_PRO_PAYG: ${{ vars.STRIPE_PRICE_PRO_PAYG }}
+          STRIPE_PRICE_PRO_MONTHLY: ${{ vars.STRIPE_PRICE_PRO_MONTHLY }}
+          STRIPE_PRICE_PRO_QUARTERLY: ${{ vars.STRIPE_PRICE_PRO_QUARTERLY }}
+          STRIPE_PRICE_PRO_ANNUAL: ${{ vars.STRIPE_PRICE_PRO_ANNUAL }}
+          STRIPE_PRICE_ENTERPRISE_MONTHLY: ${{ vars.STRIPE_PRICE_ENTERPRISE_MONTHLY }}
+          STRIPE_PRICE_ENTERPRISE_QUARTERLY: ${{ vars.STRIPE_PRICE_ENTERPRISE_QUARTERLY }}
+          STRIPE_PRICE_ENTERPRISE_ANNUAL: ${{ vars.STRIPE_PRICE_ENTERPRISE_ANNUAL }}
+          STRIPE_PRICE_CREDITS_100: ${{ vars.STRIPE_PRICE_CREDITS_100 }}
+          STRIPE_PRICE_CREDITS_500: ${{ vars.STRIPE_PRICE_CREDITS_500 }}
+          STRIPE_PRICE_CREDITS_2000: ${{ vars.STRIPE_PRICE_CREDITS_2000 }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
