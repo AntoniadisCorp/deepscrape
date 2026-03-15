@@ -1,3 +1,25 @@
+## <small>0.5.1 (2026-03-15)</small>
+
+* Initial plan ([380e9d8](https://github.com/AntoniadisCorp/deepscrape/commit/380e9d8))
+* Initial plan ([4fb02aa](https://github.com/AntoniadisCorp/deepscrape/commit/4fb02aa))
+* Merge branch 'main' into next ([0267206](https://github.com/AntoniadisCorp/deepscrape/commit/0267206))
+* Merge branch 'next' of https://github.com/antoniadisCorp/deepscrape into next ([f390839](https://github.com/AntoniadisCorp/deepscrape/commit/f390839))
+* Merge pull request #38 from AntoniadisCorp/chore/release-assets-next ([a906e35](https://github.com/AntoniadisCorp/deepscrape/commit/a906e35)), closes [#38](https://github.com/AntoniadisCorp/deepscrape/issues/38)
+* Merge pull request #40 from AntoniadisCorp/chore/release-assets-main ([ee83dc7](https://github.com/AntoniadisCorp/deepscrape/commit/ee83dc7)), closes [#40](https://github.com/AntoniadisCorp/deepscrape/issues/40)
+* Merge pull request #41 from AntoniadisCorp/next ([ac54e56](https://github.com/AntoniadisCorp/deepscrape/commit/ac54e56)), closes [#41](https://github.com/AntoniadisCorp/deepscrape/issues/41)
+* Merge pull request #42 from AntoniadisCorp/copilot/sub-pr-41 ([77b8d9e](https://github.com/AntoniadisCorp/deepscrape/commit/77b8d9e)), closes [#42](https://github.com/AntoniadisCorp/deepscrape/issues/42)
+* Merge pull request #43 from AntoniadisCorp/copilot/sub-pr-41 ([545a443](https://github.com/AntoniadisCorp/deepscrape/commit/545a443)), closes [#43](https://github.com/AntoniadisCorp/deepscrape/issues/43)
+* Potential fix for pull request finding ([0cec9df](https://github.com/AntoniadisCorp/deepscrape/commit/0cec9df))
+* fix: correct stray quotes and missing newlines in .env.example files ([a39e271](https://github.com/AntoniadisCorp/deepscrape/commit/a39e271))
+* chore: add IP2LOCATION DB via Git LFS ([a69aa04](https://github.com/AntoniadisCorp/deepscrape/commit/a69aa04))
+* chore: update changelog and package version [skip ci] ([ee2cf18](https://github.com/AntoniadisCorp/deepscrape/commit/ee2cf18))
+* chore: update changelog and package version [skip ci] ([51f2b1a](https://github.com/AntoniadisCorp/deepscrape/commit/51f2b1a))
+* chore(changelog): remove non-conventional commit entries from v0.4.0-beta.13 section ([28854c5](https://github.com/AntoniadisCorp/deepscrape/commit/28854c5))
+* chore(release): fix hosting CI and add env example templates ([bcbf953](https://github.com/AntoniadisCorp/deepscrape/commit/bcbf953))
+* ci: fetch and verify IP2LOCATION DB via LFS ([968032c](https://github.com/AntoniadisCorp/deepscrape/commit/968032c))
+* ci(firebase): migrate functions deploy to firebase-tools CLI with GCP auth ([442e72c](https://github.com/AntoniadisCorp/deepscrape/commit/442e72c))
+* build(release): align commit-analyzer with conventionalcommits preset and semver rules ([2cef8ed](https://github.com/AntoniadisCorp/deepscrape/commit/2cef8ed))
+
 ## 0.4.0-beta.13 (2026-03-14)
 
 * feat(codebase): harden functions env and admin credential loading ([327d4ab](https://github.com/AntoniadisCorp/deepscrape/commit/327d4ab))
