@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
+      FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,21 +33,14 @@ jobs:
           else
             echo "Missing IP2LOCATION-LITE-DB11.BIN in functions/databases or databases or repo root" && exit 1
           fi
-      - name: Use Node.js 20
-        uses: actions/setup-node@v3
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: |
-          echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v3
-        id: npm-cache
-        with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
       - name: Install Dependencies
         run: npm ci
       - name: Validate Required Environment Variables
@@ -175,7 +169,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: libnet-d76db
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
           channelId: live
           entryPoint: "."
           expires: "never"
@@ -206,7 +200,7 @@ jobs:
 
       - name: Deploy Firebase Functions
         working-directory: ./functions
-        run: npx firebase-tools deploy --only functions --project ${{ secrets.GCP_PROJECT_ID }} --force
+        run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
         env:
           PRODUCTION: true
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}

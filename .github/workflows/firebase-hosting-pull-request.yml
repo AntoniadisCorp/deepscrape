@@ -34,33 +34,26 @@ jobs:
           else
             echo "Missing IP2LOCATION-LITE-DB11.BIN in functions/databases or databases or repo root" && exit 1
           fi
-      - name: Use Node.js 20
-        uses: actions/setup-node@v3
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: |
-          echo "dir=$(npm config get cache)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v3
-        id: npm-cache
-        with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
       - name: Install Dependencies
         run: npm ci
-      - name: Install Angular CLI Globally
-        run: npm install -g @angular/cli
       - name: Validate Required Environment Variables
         run: |
           missing=0
           required_vars=(
-            API_KEY AUTH_DOMAIN DATABASE_URL PROJECT_ID STORAGE_BUCKET
+            PRODUCTION API_KEY AUTH_DOMAIN DATABASE_URL PROJECT_ID STORAGE_BUCKET
             MESSAGING_SENDER_ID APP_ID RECAPTCHA_KEY ANTHROPIC_API_KEY CRAWL4AI_API_KEY
-            OPENAI_API_KEY GROQ_API_KEY GOOGLE_API_KEY JINAAI_API_KEY
-            API_CRAWL4AI_URL API_ARACHNEFLY_URL
+            OPENAI_API_KEY GROQ_API_KEY GOOGLE_API_KEY JINAAI_API_KEY UPSTASH_REDIS_REST_URL
+            UPSTASH_REDIS_REST_PORT UPSTASH_REDIS_REST_USER UPSTASH_REDIS_REST_PASSWORD
+            UPSTASH_REDIS_REST_TOKEN API_CRAWL4AI_URL API_ARACHNEFLY_URL 
+            STRIPE_PUBLIC_KEY GCP_PROJECT_ID MEASUREMENT_ID COOKIE_SECRET CSRF_COOKIE_SECRET
           )
 
           for var_name in "${required_vars[@]}"; do
@@ -74,6 +67,145 @@ jobs:
             exit 1
           fi
         env:
+          PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
+          API_KEY: ${{ secrets.API_KEY }}
+          AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
+          MESSAGING_SENDER_ID: ${{ secrets.MESSAGING_SENDER_ID }}
+          APP_ID: ${{ secrets.APP_ID }}
+          RECAPTCHA_KEY: ${{ secrets.RECAPTCHA_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CRAWL4AI_API_KEY: ${{ secrets.CRAWL4AI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+      - name: Prepare dotenvx env files (CI fallback)
+        run: |
+          if [ ! -f ".env" ]; then
+            cat > .env <<EOF
+          PRODUCTION=${PRODUCTION}
+          EMULATORS=${EMULATORS}
+          GCP_PROJECT_ID=${GCP_PROJECT_ID}
+          MEASUREMENT_ID=${MEASUREMENT_ID}
+          STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+          UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+          UPSTASH_REDIS_REST_PORT=${UPSTASH_REDIS_REST_PORT}
+          UPSTASH_REDIS_REST_USER=${UPSTASH_REDIS_REST_USER}
+          UPSTASH_REDIS_REST_PASSWORD=${UPSTASH_REDIS_REST_PASSWORD}
+          UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+          COOKIE_SECRET=${COOKIE_SECRET}
+          CSRF_COOKIE_SECRET=${CSRF_COOKIE_SECRET}
+          API_KEY=${API_KEY}
+          AUTH_DOMAIN=${AUTH_DOMAIN}
+          DATABASE_URL=${DATABASE_URL}
+          PROJECT_ID=${PROJECT_ID}
+          STORAGE_BUCKET=${STORAGE_BUCKET}
+          MESSAGING_SENDER_ID=${MESSAGING_SENDER_ID}
+          APP_ID=${APP_ID}
+          RECAPTCHA_KEY=${RECAPTCHA_KEY}
+          ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+          CRAWL4AI_API_KEY=${CRAWL4AI_API_KEY}
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          GROQ_API_KEY=${GROQ_API_KEY}
+          GOOGLE_API_KEY=${GOOGLE_API_KEY}
+          JINAAI_API_KEY=${JINAAI_API_KEY}
+          API_CRAWL4AI_URL=${API_CRAWL4AI_URL}
+          API_ARACHNEFLY_URL=${API_ARACHNEFLY_URL}
+          EOF
+          fi
+
+          if [ ! -f ".env.staging" ]; then
+            cat > .env.staging <<EOF
+          PRODUCTION=false
+          EMULATORS=${EMULATORS}
+          GCP_PROJECT_ID=${GCP_PROJECT_ID}
+          MEASUREMENT_ID=${MEASUREMENT_ID}
+          STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+          UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+          UPSTASH_REDIS_REST_PORT=${UPSTASH_REDIS_REST_PORT}
+          UPSTASH_REDIS_REST_USER=${UPSTASH_REDIS_REST_USER}
+          UPSTASH_REDIS_REST_PASSWORD=${UPSTASH_REDIS_REST_PASSWORD}
+          UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+          COOKIE_SECRET=${COOKIE_SECRET}
+          CSRF_COOKIE_SECRET=${CSRF_COOKIE_SECRET}
+          API_KEY=${API_KEY}
+          AUTH_DOMAIN=${AUTH_DOMAIN}
+          DATABASE_URL=${DATABASE_URL}
+          PROJECT_ID=${PROJECT_ID}
+          STORAGE_BUCKET=${STORAGE_BUCKET}
+          MESSAGING_SENDER_ID=${MESSAGING_SENDER_ID}
+          APP_ID=${APP_ID}
+          RECAPTCHA_KEY=${RECAPTCHA_KEY}
+          ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+          CRAWL4AI_API_KEY=${CRAWL4AI_API_KEY}
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          GROQ_API_KEY=${GROQ_API_KEY}
+          GOOGLE_API_KEY=${GOOGLE_API_KEY}
+          JINAAI_API_KEY=${JINAAI_API_KEY}
+          API_CRAWL4AI_URL=${API_CRAWL4AI_URL}
+          API_ARACHNEFLY_URL=${API_ARACHNEFLY_URL}
+          EOF
+          fi
+        env:
+          PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
+          API_KEY: ${{ secrets.API_KEY }}
+          AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
+          MESSAGING_SENDER_ID: ${{ secrets.MESSAGING_SENDER_ID }}
+          APP_ID: ${{ secrets.APP_ID }}
+          RECAPTCHA_KEY: ${{ secrets.RECAPTCHA_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CRAWL4AI_API_KEY: ${{ secrets.CRAWL4AI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+      - name: Generate environment.ts
+        run: npm run prbuild:staging
+        env:
+          PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -92,6 +224,18 @@ jobs:
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       - name: Build Angular App
         env:
+          PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           API_KEY: ${{ secrets.API_KEY }}
           AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -123,16 +267,21 @@ jobs:
           expires: 10d
         env:
           PRODUCTION: true
+          EMULATORS: "false"
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
+          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
-          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
-          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
