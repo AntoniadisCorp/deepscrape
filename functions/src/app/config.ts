@@ -24,13 +24,40 @@ export const serviceAccountKeyParam =
 export const stripeSecrets = [stripeSecretParam, stripeWebhookSecretParam]
 export const dbName = env.DB_NAME || "(default)"
 
-const localServiceAccount = !env.IS_PRODUCTION ?
-    (JSON.parse(
-        fs.readFileSync(
-            path.resolve(__dirname, "../serviceAccount.json"),
-            "utf8"
+const resolveLocalServiceAccount = (): admin.ServiceAccount | null => {
+    const candidatePaths = [
+        path.resolve(__dirname, "../serviceAccount.json"),
+        path.resolve(__dirname, "../../src/serviceAccount.json"),
+    ]
+
+    for (const candidatePath of candidatePaths) {
+        if (fs.existsSync(candidatePath)) {
+            return JSON.parse(
+                fs.readFileSync(candidatePath, "utf8")
+            ) as admin.ServiceAccount
+        }
+    }
+
+    console.warn(
+        `serviceAccount.json not found. 
+        Checked: ${candidatePaths.join(", ")}. ` +
+        "Falling back to default Firebase Admin credentials."
+    )
+
+    return null
+}
+
+const resolveProductionServiceAccount = (): admin.ServiceAccount | null => {
+    try {
+        return serviceAccountKeyParam.value() as admin.ServiceAccount
+    } catch {
+        console.warn(
+            "FIRE_SERVICE_ACCOUNT_KEY is unavailable during initialization. " +
+            "Falling back to local/default Firebase Admin credentials."
         )
-    ) as admin.ServiceAccount) : undefined
+        return null
+    }
+}
 
 
 // Initialize Firebase Admin SDK:
@@ -42,12 +69,17 @@ const localServiceAccount = !env.IS_PRODUCTION ?
 //   (secret values throw and are caught in env.ts → fallback to false), so
 //   serviceAccountKeyParam.value() is never called at deploy time.
 // Docs: https://firebase.google.com/docs/admin/setup#initialize_the_sdk_in_non-google_environments
-admin.initializeApp({
-    credential: admin.credential.cert( env.IS_PRODUCTION ?
-        (serviceAccountKeyParam.value() as admin.ServiceAccount) :
-         (localServiceAccount as admin.ServiceAccount)
-    ),
-})
+const localServiceAccount = resolveLocalServiceAccount()
+const productionServiceAccount = env.IS_PRODUCTION ?
+    resolveProductionServiceAccount() :
+    null
+const selectedServiceAccount = productionServiceAccount || localServiceAccount
+
+admin.initializeApp(
+    selectedServiceAccount ?
+        {credential: admin.credential.cert(selectedServiceAccount)} :
+        undefined
+)
 
 export const db = admin.firestore()
 db.settings({ databaseId: dbName })

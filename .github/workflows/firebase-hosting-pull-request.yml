@@ -294,6 +294,29 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
+      - name: Prepare functions .env for deploy analysis
+        run: |
+          cat > functions/.env <<EOF
+          PRODUCTION=true
+          API_CRAWL4AI_URL=${API_CRAWL4AI_URL}
+          API_ARACHNEFLY_URL=${API_ARACHNEFLY_URL}
+          UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+          UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+          UPSTASH_REDIS_REST_PORT=${UPSTASH_REDIS_REST_PORT}
+          UPSTASH_REDIS_REST_USER=${UPSTASH_REDIS_REST_USER}
+          UPSTASH_REDIS_REST_PASSWORD=${UPSTASH_REDIS_REST_PASSWORD}
+          GCP_PROJECT_ID=${GCP_PROJECT_ID}
+          EOF
+        env:
+          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
+          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
+          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
+          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
       - name: Deploy Firebase Functions
         working-directory: ./functions
         run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
