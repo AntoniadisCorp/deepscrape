@@ -1,3 +1,10 @@
+## [0.5.1-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1-beta.3...v0.5.1-beta.4) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** stabilize functions deploy env bootstrap ([4494da1](https://github.com/AntoniadisCorp/deepscrape/commit/4494da1dccb0b814aa75158676f59094a947b237))
+
 # [0.5.1-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.13...v0.5.1-beta.1) (2026-03-15)
 
 ### Bug Fixes
