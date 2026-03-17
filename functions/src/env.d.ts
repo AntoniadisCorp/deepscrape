@@ -50,5 +50,7 @@ declare namespace NodeJS {
     STRIPE_PRICE_CREDITS_100: string
     STRIPE_PRICE_CREDITS_500: string
     STRIPE_PRICE_CREDITS_2000: string
+    IP2LOCATION_GCS_PATH: string
+    IP2LOCATION_SHA256: string
   }
 }

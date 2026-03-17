@@ -325,4 +325,4 @@ function setupGracefulShutdown(geoDBManager: IP2LocationManager) {
     return handler(req, res)
 }; */
 // Export the Firebase HTTPS function for SSR
-export const deepscrape = onRequest({ secrets: [functionsEnvJson, serviceAccountKeyParam] }, serveapp())
+export const deepscrape = onRequest({ minInstances: 1, secrets: [functionsEnvJson, serviceAccountKeyParam] }, serveapp())
