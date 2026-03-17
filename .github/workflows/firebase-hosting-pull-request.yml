@@ -8,23 +8,46 @@ permissions:
   contents: read
   pull-requests: write
 jobs:
+  detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      functions: ${{ steps.changes.outputs.functions }}
+      angular: ${{ steps.changes.outputs.angular }}
+      lfs: ${{ steps.changes.outputs.lfs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            functions:
+              - 'functions/**'
+            angular:
+              - 'src/**'
+            lfs:
+              - '**/*.BIN'
+
   build_and_preview:
+    needs: detect_changes
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     env:
       DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
       FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      IP2LOCATION_GCS_PATH: ${{ vars.IP2LOCATION_GCS_PATH }}
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: true
           fetch-depth: 0
-      - name: Ensure git-lfs
+          
+      - name: Pull Git LFS files (if LFS changes)
+        if: needs.detect_changes.outputs.lfs == 'true'
         run: |
           git lfs install --local || true
-          git lfs pull || true
+          git lfs pull --include="functions/databases/*.BIN" || true
 
       - name: Verify IP2LOCATION DB
+        if: needs.detect_changes.outputs.functions == 'true' || needs.detect_changes.outputs.lfs == 'true'
         run: |
           if [ -f "functions/databases/IP2LOCATION-LITE-DB11.BIN" ]; then
             ls -lh "functions/databases/IP2LOCATION-LITE-DB11.BIN"
@@ -33,18 +56,19 @@ jobs:
           elif [ -f "IP2LOCATION-LITE-DB11.BIN" ]; then
             ls -lh "IP2LOCATION-LITE-DB11.BIN"
           else
-            echo "Missing IP2LOCATION-LITE-DB11.BIN in functions/databases or databases or repo root" && exit 1
+            echo "IP2LOCATION DB not found locally (expected for non-function PRs)"
           fi
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
+          
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            functions/package-lock.json
+          bun-version: latest
+          
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          bun install --frozen-lockfile
+          cd functions && bun install --frozen-lockfile && cd ..
+          
       - name: Validate Required Environment Variables
         run: |
           missing=0
@@ -192,8 +216,8 @@ jobs:
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
-      - name: Generate environment.ts
-        run: npm run prbuild:staging
+      - name: Build Angular App (staging config)
+        if: needs.detect_changes.outputs.angular == 'true'
         env:
           PRODUCTION: true
           EMULATORS: "false"
@@ -223,44 +247,13 @@ jobs:
           JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
-      - name: Build Angular App
-        env:
-          PRODUCTION: true
-          EMULATORS: "false"
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          MEASUREMENT_ID: ${{ vars.MEASUREMENT_ID }}
-          STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_PORT: ${{ vars.UPSTASH_REDIS_REST_PORT }}
-          UPSTASH_REDIS_REST_USER: ${{ secrets.UPSTASH_REDIS_REST_USER }}
-          UPSTASH_REDIS_REST_PASSWORD: ${{ secrets.UPSTASH_REDIS_REST_PASSWORD }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
-          CSRF_COOKIE_SECRET: ${{ secrets.CSRF_COOKIE_SECRET }}
-          API_KEY: ${{ secrets.API_KEY }}
-          AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
-          MESSAGING_SENDER_ID: ${{ secrets.MESSAGING_SENDER_ID }}
-          APP_ID: ${{ secrets.APP_ID }}
-          RECAPTCHA_KEY: ${{ secrets.RECAPTCHA_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CRAWL4AI_API_KEY: ${{ secrets.CRAWL4AI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          JINAAI_API_KEY: ${{ secrets.JINAAI_API_KEY }}
-          API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
-          API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
-        run: npm run build:staging
-      - name: Install Functions Dependencies
-        working-directory: ./functions
-        run: npm ci
+        run: bun run build:staging
       - name: Build Firebase Functions
+        if: needs.detect_changes.outputs.functions == 'true'
         working-directory: ./functions
-        run: npm run build
+        run: bun run build
       - name: Deploy to Firebase Hosting
+        if: needs.detect_changes.outputs.angular == 'true' || needs.detect_changes.outputs.functions == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -293,6 +286,43 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Publish IP2Location BIN and update FUNCTIONS_ENV_JSON
+        run: |
+          set -euo pipefail
+
+          BIN_PATH=""
+          if [ -f "functions/databases/IP2LOCATION-LITE-DB11.BIN" ]; then
+            BIN_PATH="functions/databases/IP2LOCATION-LITE-DB11.BIN"
+          elif [ -f "databases/IP2LOCATION-LITE-DB11.BIN" ]; then
+            BIN_PATH="databases/IP2LOCATION-LITE-DB11.BIN"
+          elif [ -f "IP2LOCATION-LITE-DB11.BIN" ]; then
+            BIN_PATH="IP2LOCATION-LITE-DB11.BIN"
+          fi
+
+          if [ -z "$BIN_PATH" ]; then
+            echo "IP2LOCATION-LITE-DB11.BIN not found" >&2
+            exit 1
+          fi
+
+          BIN_SHA256=$(sha256sum "$BIN_PATH" | awk '{print tolower($1)}')
+
+          gsutil cp "$BIN_PATH" "$IP2LOCATION_GCS_PATH"
+
+          CURRENT_JSON=$(gcloud secrets versions access latest \
+            --secret="FUNCTIONS_ENV_JSON" \
+            --project="$FIREBASE_PROJECT_ID")
+
+          UPDATED_JSON=$(printf '%s' "$CURRENT_JSON" | jq -c \
+            --arg gcsPath "$IP2LOCATION_GCS_PATH" \
+            --arg sha "$BIN_SHA256" \
+            '.IP2LOCATION_GCS_PATH=$gcsPath | .IP2LOCATION_SHA256=$sha')
+
+          printf '%s' "$UPDATED_JSON" | gcloud secrets versions add "FUNCTIONS_ENV_JSON" \
+            --project="$FIREBASE_PROJECT_ID" \
+            --data-file=-
+
+          echo "Published BIN and rotated FUNCTIONS_ENV_JSON with latest checksum"
 
       - name: Debug GCP principal
         run: |
