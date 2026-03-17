@@ -1,3 +1,10 @@
+# [0.6.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.1...v0.6.0-beta.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* **ci:** use gcloud storage cp for IP2Location upload ([c762a73](https://github.com/AntoniadisCorp/deepscrape/commit/c762a73072bc359518bdde89128880d20eed1845))
+
 ## [0.5.2-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1...v0.5.2-beta.1) (2026-03-17)
 
 
