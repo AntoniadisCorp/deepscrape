@@ -199,6 +199,25 @@ Use the same conventional-commit discipline here. When adding a new Function, ad
 - Commit types that trigger a release: `feat` (minor), `fix` / `perf` / `refactor` (patch), `BREAKING CHANGE` footer (major).
 - `semantic-release` runs on push to `main` / `next`. It writes `CHANGELOG.md` locally and opens a PR (`chore/release-assets-{branch}`) to commit the changelog and bumped `package.json`. **Do not manually edit `CHANGELOG.md`.**
 
+### Commit type hints (`git cz`)
+When prompted with “Select the type of change that you're committing”, use:
+
+- `feat`: A new feature (triggers **minor** release)
+- `fix`: A bug fix (triggers **patch** release)
+- `docs`: Documentation-only changes (no release)
+- `style`: Formatting/whitespace/semicolon-only changes, no runtime meaning change (no release)
+- `refactor`: Code change that neither fixes a bug nor adds a feature (triggers **patch** release)
+- `perf`: Performance improvement (triggers **patch** release)
+- `test`: Add or correct tests (no release)
+- `build`: Build system/dependency/tooling changes (no release)
+- `ci`: CI/CD workflow changes (no release)
+- `chore`: Maintenance tasks not affecting src/test (no release)
+- `revert`: Revert a previous commit (triggers **patch** release)
+
+Notes:
+- Use `BREAKING CHANGE:` footer in the commit body for a **major** release.
+- `docs`, `style`, `refactor`, `test`, `build`, `ci`, and `chore` are hidden from release notes sections by current `presetConfig`.
+
 ### Copilot commit workflow
 - Before staging, review modified files with `get_changed_files` and exclude unrelated/debug files (e.g., `context.txt`, logs, local artifacts).
 - Prefer one focused commit per concern (e.g., `fix(ci): ...`, `refactor(functions): ...`).
