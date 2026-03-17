@@ -1,3 +1,12 @@
+## [0.5.2-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1...v0.5.2-beta.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* **ci:** harden functions deploy analysis ([ed0757a](https://github.com/AntoniadisCorp/deepscrape/commit/ed0757ad597ef5544079b7005683a6879edc7061))
+* **ci:** stabilize functions deploy env bootstrap ([4494da1](https://github.com/AntoniadisCorp/deepscrape/commit/4494da1dccb0b814aa75158676f59094a947b237))
+* **config:** enable release links and simplify auth provider ([f3b0527](https://github.com/AntoniadisCorp/deepscrape/commit/f3b05276ac296e60f56ebdafc3edfe55a28a4bff))
+
 ## [0.5.1-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1-beta.3...v0.5.1-beta.4) (2026-03-15)
 
 
