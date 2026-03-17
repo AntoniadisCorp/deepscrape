@@ -12,8 +12,10 @@ import { db } from "../app/config"
 import path from "node:path"
 import net from "node:net"
 import crypto from "crypto"
-import { existsSync } from "node:fs"
+import { existsSync, createReadStream } from "node:fs"
+import { mkdir } from "node:fs/promises"
 import { env } from "../config/env"
+import * as admin from "firebase-admin"
 
 // Determine if running in production based on environment variable
 const isProduction = env.IS_PRODUCTION
@@ -70,6 +72,10 @@ export class IP2LocationManager {
     this.databasePath = databasePath
   }
 
+  setDatabasePath(databasePath: string): void {
+    this.databasePath = databasePath
+  }
+
   // Initialize and open the database
   async open(): Promise<void> {
     try {
@@ -117,6 +123,119 @@ const databaseCandidates = [
 ]
 const resolvedDatabasePath = databaseCandidates.find((candidate) => existsSync(candidate)) || databaseCandidates[0]
 export const geoDBManager = new IP2LocationManager(resolvedDatabasePath)
+const tmpDatabaseDir = path.join("/tmp", "ip2location")
+const tmpDatabasePath = path.join(tmpDatabaseDir, databaseFile)
+
+let geoInitializationPromise: Promise<void> | null = null
+
+type ParsedGcsPath = {
+  bucket: string,
+  objectPath: string,
+}
+
+function parseGcsPath(input: string): ParsedGcsPath | null {
+  const trimmed = input.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  if (trimmed.startsWith("gs://")) {
+    const withoutScheme = trimmed.replace(/^gs:\/\//, "")
+    const slashIndex = withoutScheme.indexOf("/")
+    if (slashIndex <= 0) {
+      return null
+    }
+
+    const bucket = withoutScheme.slice(0, slashIndex)
+    const objectPath = withoutScheme.slice(slashIndex + 1)
+    if (!bucket || !objectPath) {
+      return null
+    }
+
+    return { bucket, objectPath }
+  }
+
+  const slashIndex = trimmed.indexOf("/")
+  if (slashIndex <= 0) {
+    return null
+  }
+
+  const bucket = trimmed.slice(0, slashIndex)
+  const objectPath = trimmed.slice(slashIndex + 1)
+  if (!bucket || !objectPath) {
+    return null
+  }
+
+  return { bucket, objectPath }
+}
+
+async function computeSha256(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash("sha256")
+    const stream = createReadStream(filePath)
+
+    stream.on("error", reject)
+    stream.on("data", (chunk) => hash.update(chunk))
+    stream.on("end", () => resolve(hash.digest("hex")))
+  })
+}
+
+async function resolveDatabasePath(): Promise<string> {
+  const expectedChecksum = env.IP2LOCATION_SHA256.trim().toLowerCase()
+  const gcsPath = env.IP2LOCATION_GCS_PATH.trim()
+
+  if (!gcsPath) {
+    return resolvedDatabasePath
+  }
+
+  const parsed = parseGcsPath(gcsPath)
+  if (!parsed) {
+    throw new Error(`Invalid IP2LOCATION_GCS_PATH value: ${gcsPath}`)
+  }
+
+  await mkdir(tmpDatabaseDir, { recursive: true })
+
+  const localTmpExists = existsSync(tmpDatabasePath)
+  if (localTmpExists && !expectedChecksum) {
+    return tmpDatabasePath
+  }
+
+  if (localTmpExists && expectedChecksum) {
+    const currentChecksum = (await computeSha256(tmpDatabasePath)).toLowerCase()
+    if (currentChecksum === expectedChecksum) {
+      return tmpDatabasePath
+    }
+  }
+
+  const bucket = admin.storage().bucket(parsed.bucket)
+  await bucket.file(parsed.objectPath).download({ destination: tmpDatabasePath })
+
+  if (expectedChecksum) {
+    const downloadedChecksum = (await computeSha256(tmpDatabasePath)).toLowerCase()
+    if (downloadedChecksum !== expectedChecksum) {
+      throw new Error("Downloaded IP2Location BIN checksum mismatch")
+    }
+  }
+
+  return tmpDatabasePath
+}
+
+export async function initializeGeoDatabase(): Promise<void> {
+  if (geoInitializationPromise) {
+    return geoInitializationPromise
+  }
+
+  geoInitializationPromise = (async () => {
+    const databasePath = await resolveDatabasePath()
+    geoDBManager.setDatabasePath(databasePath)
+    await geoDBManager.open()
+  })().catch((error) => {
+    geoInitializationPromise = null
+    throw error
+  })
+
+  return geoInitializationPromise
+}
 
 
 // Helper function to map timezone to continent

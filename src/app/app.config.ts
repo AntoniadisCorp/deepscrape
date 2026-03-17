@@ -95,17 +95,7 @@ export const appConfig: ApplicationConfig = {
       registrationStrategy: 'registerWhenStable:30000'
     }),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideAuth(() => {
-      const isBrowserRuntime = isPlatformBrowser(inject(PLATFORM_ID));
-      if (!isBrowserRuntime) {
-        return initializeAuth(initializeApp(environment.firebaseConfig), {
-          persistence: inMemoryPersistence,
-          popupRedirectResolver: undefined,
-        });
-      }
-
-      return getAuth();
-    }),
+    provideAuth(() => getAuth()),
     provideFirestore(() =>
     {
       const firestore = getFirestore();

@@ -2,7 +2,8 @@
 /* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 /* eslint-disable linebreak-style */
-import {geoDBManager} from "./analytics"
+// import {geoDBManager} from "./analytics"
+import {initializeGeoDatabase} from "./analytics"
 import {env} from "../config/env"
 const port = env.PORT || 4000
 /**
@@ -31,8 +32,7 @@ export function customUrlDecoder(input: string): string {
  */
 export async function onListening() {
     try {
-        // Open the database once when the module is loaded
-        await geoDBManager.open()
+        await initializeGeoDatabase()
         console.log("IP2Location database initialized successfully.")
     } catch (error) {
         console.error("Error initializing IP2Location database:!", error)

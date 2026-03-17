@@ -1,9 +1,25 @@
-## [0.5.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.0...v0.5.1) (2026-03-15)
+# [0.6.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.1...v0.6.0-beta.2) (2026-03-17)
 
 
 ### Bug Fixes
 
-* correct stray quotes and missing newlines in .env.example files ([a39e271](https://github.com/AntoniadisCorp/deepscrape/commit/a39e271c11c80a75c6851b0c0a0fcc87f189b531))
+* **ci:** use gcloud storage cp for IP2Location upload ([c762a73](https://github.com/AntoniadisCorp/deepscrape/commit/c762a73072bc359518bdde89128880d20eed1845))
+
+## [0.5.2-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1...v0.5.2-beta.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* **ci:** harden functions deploy analysis ([ed0757a](https://github.com/AntoniadisCorp/deepscrape/commit/ed0757ad597ef5544079b7005683a6879edc7061))
+* **ci:** stabilize functions deploy env bootstrap ([4494da1](https://github.com/AntoniadisCorp/deepscrape/commit/4494da1dccb0b814aa75158676f59094a947b237))
+* **config:** enable release links and simplify auth provider ([f3b0527](https://github.com/AntoniadisCorp/deepscrape/commit/f3b05276ac296e60f56ebdafc3edfe55a28a4bff))
+
+## [0.5.1-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1-beta.3...v0.5.1-beta.4) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ci:** stabilize functions deploy env bootstrap ([4494da1](https://github.com/AntoniadisCorp/deepscrape/commit/4494da1dccb0b814aa75158676f59094a947b237))
 
 # [0.5.1-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.4.0-beta.13...v0.5.1-beta.1) (2026-03-15)
 
