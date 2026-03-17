@@ -25,7 +25,53 @@
   },
   "config": {
     "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
+      "path": "./node_modules/cz-conventional-changelog",
+      "types": {
+        "feat": {
+          "description": "A new feature",
+          "title": "Features"
+        },
+        "fix": {
+          "description": "A bug fix",
+          "title": "Bug Fixes"
+        },
+        "docs": {
+          "description": "Documentation only changes",
+          "title": "Documentation"
+        },
+        "style": {
+          "description": "Code style changes (formatting, missing semicolons, etc)",
+          "title": "Styles"
+        },
+        "refactor": {
+          "description": "Code change that neither fixes a bug nor adds a feature",
+          "title": "Refactoring"
+        },
+        "perf": {
+          "description": "A code change that improves performance",
+          "title": "Performance"
+        },
+        "test": {
+          "description": "Adding missing tests or correcting existing tests",
+          "title": "Tests"
+        },
+        "build": {
+          "description": "Build system or external dependency changes",
+          "title": "Builds"
+        },
+        "ci": {
+          "description": "CI/CD configuration and pipeline changes",
+          "title": "Continuous Integration"
+        },
+        "chore": {
+          "description": "Maintenance tasks not modifying src or test files",
+          "title": "Chores"
+        },
+        "revert": {
+          "description": "Revert a previous commit",
+          "title": "Reverts"
+        }
+      }
     }
   },
   "dependencies": {
