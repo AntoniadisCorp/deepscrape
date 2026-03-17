@@ -248,7 +248,8 @@ jobs:
 
           BIN_SHA256=$(sha256sum "$BIN_PATH" | awk '{print tolower($1)}')
 
-          gsutil cp "$BIN_PATH" "$IP2LOCATION_GCS_PATH"
+          gcloud storage cp "$BIN_PATH" "$IP2LOCATION_GCS_PATH" \
+            --project="$FIREBASE_PROJECT_ID"
 
           CURRENT_JSON=$(gcloud secrets versions access latest \
             --secret="FUNCTIONS_ENV_JSON" \
