@@ -1,3 +1,19 @@
+# [0.6.0](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1...v0.6.0) (2026-03-17)
+
+
+### Bug Fixes
+
+* **ci:** harden functions deploy analysis ([ed0757a](https://github.com/AntoniadisCorp/deepscrape/commit/ed0757ad597ef5544079b7005683a6879edc7061))
+* **ci:** stabilize functions deploy env bootstrap ([4494da1](https://github.com/AntoniadisCorp/deepscrape/commit/4494da1dccb0b814aa75158676f59094a947b237))
+* **ci:** use gcloud storage cp for IP2Location upload ([c762a73](https://github.com/AntoniadisCorp/deepscrape/commit/c762a73072bc359518bdde89128880d20eed1845))
+* **config:** enable release links and simplify auth provider ([f3b0527](https://github.com/AntoniadisCorp/deepscrape/commit/f3b05276ac296e60f56ebdafc3edfe55a28a4bff))
+* **workflows:** remove redundant prbuild step from merge workflow ([1bee156](https://github.com/AntoniadisCorp/deepscrape/commit/1bee156962b6135061876d1d3086066472a9ee69))
+
+
+### Features
+
+* **codebase:** automate IP2Location BIN sync and runtime loading ([ac0722b](https://github.com/AntoniadisCorp/deepscrape/commit/ac0722beeb724992171f68366eaccdb1b4c44110))
+
 # [0.6.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.1...v0.6.0-beta.2) (2026-03-17)
 
 
