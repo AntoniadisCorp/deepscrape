@@ -1,3 +1,10 @@
+# [0.6.0-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.4...v0.6.0-beta.5) (2026-03-18)
+
+
+### Bug Fixes
+
+* **ci:** deploy functions on merge only for functions changes ([7ebcfe6](https://github.com/AntoniadisCorp/deepscrape/commit/7ebcfe6c1c69366c7e04e1e4a61b2d971a666b94))
+
 # [0.6.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.1...v0.6.0-beta.2) (2026-03-17)
 
 
