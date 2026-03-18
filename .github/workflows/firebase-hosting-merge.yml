@@ -64,6 +64,11 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
           
       - name: Install Dependencies
         run: |
@@ -163,7 +168,7 @@ jobs:
 
       # Deploy to Firebase Hosting
       - name: Deploy to Firebase Hosting
-        if: needs.detect_changes.outputs.angular == 'true' || needs.detect_changes.outputs.functions == 'true'
+        if: needs.detect_changes.outputs.angular == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -298,6 +303,7 @@ jobs:
 
       - name: Deploy Firebase Functions
         working-directory: ./functions
+        if: needs.detect_changes.outputs.functions == 'true'
         run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
         env:
           PRODUCTION: true
