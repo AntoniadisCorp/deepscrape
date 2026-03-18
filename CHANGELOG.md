@@ -1,3 +1,12 @@
+## [0.6.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0...v0.6.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* **ci:** deploy functions on merge only for functions changes ([7ebcfe6](https://github.com/AntoniadisCorp/deepscrape/commit/7ebcfe6c1c69366c7e04e1e4a61b2d971a666b94))
+* **ci:** prevent functions deploy ENOENT in PR workflow ([cbb1da5](https://github.com/AntoniadisCorp/deepscrape/commit/cbb1da534bc4b0090a9a931820bf2c06691fa837))
+* **functions:** guard missing SSR index in cp-angular ([8607abf](https://github.com/AntoniadisCorp/deepscrape/commit/8607abf8c4398cbcad3d8ad46dac0edb017bd07e))
+
 ## [0.6.1-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0...v0.6.1-beta.1) (2026-03-18)
 
 
