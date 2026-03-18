@@ -37,8 +37,16 @@ const start = async function () {
     await fs.emptyDir(destinationDir)
     await fs.remove(copy)
     await fs.copy(src, copy)
-    await fs.copy(serverHtmlSrc, serverHtmlDest)
 
-    console.log("index.server.html copied successfully")
+    if (await fs.pathExists(serverHtmlSrc)) {
+        await fs.copy(serverHtmlSrc, serverHtmlDest)
+        console.log("index.server.html copied successfully")
+        return
+    }
+
+    console.warn(
+        "index.server.html not found at " +
+         "../dist/deepscrape/server/index.server.html; skipping copy."
+    )
 }
 start()
