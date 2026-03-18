@@ -1,18 +1,18 @@
-# [0.6.0](https://github.com/AntoniadisCorp/deepscrape/compare/v0.5.1...v0.6.0) (2026-03-17)
+## [0.6.1-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0...v0.6.1-beta.1) (2026-03-18)
 
 
 ### Bug Fixes
 
-* **ci:** harden functions deploy analysis ([ed0757a](https://github.com/AntoniadisCorp/deepscrape/commit/ed0757ad597ef5544079b7005683a6879edc7061))
-* **ci:** stabilize functions deploy env bootstrap ([4494da1](https://github.com/AntoniadisCorp/deepscrape/commit/4494da1dccb0b814aa75158676f59094a947b237))
-* **ci:** use gcloud storage cp for IP2Location upload ([c762a73](https://github.com/AntoniadisCorp/deepscrape/commit/c762a73072bc359518bdde89128880d20eed1845))
-* **config:** enable release links and simplify auth provider ([f3b0527](https://github.com/AntoniadisCorp/deepscrape/commit/f3b05276ac296e60f56ebdafc3edfe55a28a4bff))
-* **workflows:** remove redundant prbuild step from merge workflow ([1bee156](https://github.com/AntoniadisCorp/deepscrape/commit/1bee156962b6135061876d1d3086066472a9ee69))
+* **ci:** deploy functions on merge only for functions changes ([7ebcfe6](https://github.com/AntoniadisCorp/deepscrape/commit/7ebcfe6c1c69366c7e04e1e4a61b2d971a666b94))
+* **ci:** prevent functions deploy ENOENT in PR workflow ([cbb1da5](https://github.com/AntoniadisCorp/deepscrape/commit/cbb1da534bc4b0090a9a931820bf2c06691fa837))
+* **functions:** guard missing SSR index in cp-angular ([8607abf](https://github.com/AntoniadisCorp/deepscrape/commit/8607abf8c4398cbcad3d8ad46dac0edb017bd07e))
+
+# [0.6.0-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.4...v0.6.0-beta.5) (2026-03-18)
 
 
-### Features
+### Bug Fixes
 
-* **codebase:** automate IP2Location BIN sync and runtime loading ([ac0722b](https://github.com/AntoniadisCorp/deepscrape/commit/ac0722beeb724992171f68366eaccdb1b4c44110))
+* **ci:** deploy functions on merge only for functions changes ([7ebcfe6](https://github.com/AntoniadisCorp/deepscrape/commit/7ebcfe6c1c69366c7e04e1e4a61b2d971a666b94))
 
 # [0.6.0-beta.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.0-beta.1...v0.6.0-beta.2) (2026-03-17)
 

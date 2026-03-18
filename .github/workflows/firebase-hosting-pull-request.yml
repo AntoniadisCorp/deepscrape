@@ -63,6 +63,11 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
           
       - name: Install Dependencies
         run: |
@@ -217,7 +222,7 @@ jobs:
           API_CRAWL4AI_URL: ${{ vars.API_CRAWL4AI_URL }}
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       - name: Build Angular App (staging config)
-        if: needs.detect_changes.outputs.angular == 'true'
+        if: needs.detect_changes.outputs.angular == 'true' || needs.detect_changes.outputs.functions == 'true'
         env:
           PRODUCTION: true
           EMULATORS: "false"
@@ -334,6 +339,7 @@ jobs:
           echo "Workflow target project: ${FIREBASE_PROJECT_ID}"
 
       - name: Prepare functions .env for deploy analysis
+        if: needs.detect_changes.outputs.functions == 'true'
         run: |
           cat > functions/.env <<EOF
           PRODUCTION=true
@@ -361,9 +367,11 @@ jobs:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Verify Firebase Extensions access
+        if: needs.detect_changes.outputs.functions == 'true'
         run: npx firebase-tools ext:list --project ${{ env.FIREBASE_PROJECT_ID }} --json
 
       - name: Deploy Firebase Functions
+        if: needs.detect_changes.outputs.functions == 'true'
         working-directory: ./functions
         run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
         env:

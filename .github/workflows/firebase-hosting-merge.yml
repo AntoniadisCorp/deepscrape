@@ -15,6 +15,7 @@ jobs:
     outputs:
       functions: ${{ steps.changes.outputs.functions }}
       angular: ${{ steps.changes.outputs.angular }}
+      hosting: ${{ steps.changes.outputs.hosting }}
       lfs: ${{ steps.changes.outputs.lfs }}
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +27,12 @@ jobs:
               - 'functions/**'
             angular:
               - 'src/**'
+            hosting:
+              - 'firebase.json'
+              - 'angular.json'
+              - 'package.json'
+              - 'bun.lockb'
+              - 'dist/**'
             lfs:
               - '**/*.BIN'
 
@@ -64,7 +71,15 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: Install npm 11.11.x
+        run: npm install -g npm@11.11.x
+
       - name: Install Dependencies
         run: |
           bun install --frozen-lockfile
@@ -163,7 +178,7 @@ jobs:
 
       # Deploy to Firebase Hosting
       - name: Deploy to Firebase Hosting
-        if: needs.detect_changes.outputs.angular == 'true' || needs.detect_changes.outputs.functions == 'true'
+        if: needs.detect_changes.outputs.angular == 'true' || needs.detect_changes.outputs.hosting == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -298,6 +313,7 @@ jobs:
 
       - name: Deploy Firebase Functions
         working-directory: ./functions
+        if: needs.detect_changes.outputs.functions == 'true'
         run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
         env:
           PRODUCTION: true
