@@ -138,7 +138,7 @@ jobs:
           API_ARACHNEFLY_URL: ${{ vars.API_ARACHNEFLY_URL }}
       # Build Angular App in production mode
       - name: Build Angular App
-        if: needs.detect_changes.outputs.angular == 'true'
+        if: needs.detect_changes.outputs.angular == 'true' || needs.detect_changes.outputs.hosting == 'true'
         run: bun run build
         env:
           PRODUCTION: true
