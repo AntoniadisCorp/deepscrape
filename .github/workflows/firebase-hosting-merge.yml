@@ -313,7 +313,7 @@ jobs:
 
       - name: Deploy Firebase Functions
         working-directory: ./functions
-        if: needs.detect_changes.outputs.functions == 'true' || needs.detect_changes.outputs.angular == 'true'
+        if: needs.detect_changes.outputs.functions == 'true'
         run: npx firebase-tools deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --force
         env:
           PRODUCTION: true
