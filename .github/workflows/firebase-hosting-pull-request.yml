@@ -46,6 +46,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
+
+      - name: Configure Firebase CLI authentication
+        run: |
+          credentials_path="$RUNNER_TEMP/firebase-service-account.json"
+          cat <<'EOF' > "$credentials_path"
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          EOF
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_path" >> "$GITHUB_ENV"
+          echo "GOOGLE_CLOUD_PROJECT=${FIREBASE_PROJECT_ID}" >> "$GITHUB_ENV"
+          echo "GCLOUD_PROJECT=${FIREBASE_PROJECT_ID}" >> "$GITHUB_ENV"
           
       - name: Install Dependencies
         run: |
@@ -241,7 +251,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: libnet-d76db
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
           channelId: pr-${{ github.event.pull_request.number }}
           entryPoint: "."
           expires: 10d
