@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Outsideclick } from './outsideclick.directive';
 import { ElementRef, Component } from '@angular/core';
+import { getTestProviders } from 'src/app/testing';
 
 @Component({
+  standalone: true,
+  imports: [Outsideclick],
   template: '<div appOutsideClick (outsideClick)="handleClick()"></div>',
 
 })
@@ -18,12 +21,14 @@ describe('OutsideclickDirective', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [Outsideclick, TestComponent],
+      imports: [TestComponent],
+      providers: getTestProviders(),
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestComponent);
     component = fixture.componentInstance;
-    elementRef = fixture.debugElement.nativeElement.firstChild;
+    fixture.detectChanges();
+    elementRef = new ElementRef(fixture.debugElement.nativeElement.firstChild);
     directive = new Outsideclick(elementRef);
   });
 

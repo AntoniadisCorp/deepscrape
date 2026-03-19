@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ExtractStrategyComponent } from './extract-strategy.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ExtractStrategyComponent', () => {
   let component: ExtractStrategyComponent;
@@ -8,7 +9,8 @@ describe('ExtractStrategyComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ExtractStrategyComponent]
+      imports: [ExtractStrategyComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

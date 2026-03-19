@@ -8,6 +8,7 @@ import { SnackBarType } from '../snackbar/snackbar.component';
 import { AppLLMScrapeComponent } from './app-llm-scrape.component';
 import { browserProvider, BrowserToken, STORAGE_PROVIDERS, windowProvider, WindowToken } from '../../services';
 import { Subscription } from 'rxjs';
+import { getTestProviders } from 'src/app/testing';
 
 class FirestoreMock { }
 class AuthMock { }
@@ -43,6 +44,7 @@ describe('AppLLMScrapeComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppLLMScrapeComponent],
       providers: [
+        ...getTestProviders(),
         provideHttpClient(),
         { provide: Firestore, useClass: FirestoreMock },
         { provide: Auth, useClass: AuthMock },

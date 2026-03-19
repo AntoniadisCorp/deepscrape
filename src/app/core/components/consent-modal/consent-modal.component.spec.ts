@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ConsentModalComponent } from './consent-modal.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ConsentModalComponent', () => {
   let component: ConsentModalComponent;
@@ -8,7 +9,8 @@ describe('ConsentModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConsentModalComponent]
+      imports: [ConsentModalComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 

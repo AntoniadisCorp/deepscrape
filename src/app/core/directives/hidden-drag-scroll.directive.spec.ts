@@ -2,9 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, DebugElement } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HiddenDragScrollDirective } from './hidden-drag-scroll.directive';
+import { getTestProviders } from 'src/app/testing';
 
 // Test host component
 @Component({
+  standalone: true,
+  imports: [HiddenDragScrollDirective],
   template: `<div
     class="test-container overflow-x-hidden"
     appHiddenDragScroll
@@ -23,7 +26,8 @@ describe('HiddenDragScrollDirective', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [TestHostComponent, HiddenDragScrollDirective]
+      imports: [TestHostComponent],
+      providers: getTestProviders(),
     });
 
     fixture = TestBed.createComponent(TestHostComponent);

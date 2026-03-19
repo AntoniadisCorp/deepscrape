@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PlaygroundComponent } from './playground.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('PlaygroundComponent', () => {
   let component: PlaygroundComponent;
@@ -8,7 +9,8 @@ describe('PlaygroundComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PlaygroundComponent]
+      imports: [PlaygroundComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SizeDetectorComponent } from './size-detector.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('SizeDetectorComponent', () => {
   let component: SizeDetectorComponent;
@@ -8,7 +9,8 @@ describe('SizeDetectorComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SizeDetectorComponent]
+      imports: [SizeDetectorComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

@@ -5,6 +5,7 @@ import { NgswUpdateService } from './ngsw-update.service';
 import { SwUpdate } from '@angular/service-worker';
 
 import { of } from 'rxjs/internal/observable/of';
+import { getTestProviders } from 'src/app/testing';
 
 describe('NgswUpdateService', () => {
   let service: NgswUpdateService;
@@ -21,6 +22,7 @@ describe('NgswUpdateService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         { provide: SwUpdate, useValue: swUpdateMock },
         { provide: DOCUMENT, useValue: documentMock }
       ]

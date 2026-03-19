@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TooltipComponent } from './tooltip.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('TooltipComponent', () => {
   let component: TooltipComponent;
@@ -8,7 +9,8 @@ describe('TooltipComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TooltipComponent]
+      imports: [TooltipComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

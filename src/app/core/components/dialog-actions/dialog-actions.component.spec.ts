@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DialogActionsComponent } from './dialog-actions.component';
+import { DialogComponent } from '../dialog/dialog.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('DialogActionsComponent', () => {
   let component: DialogActionsComponent;
@@ -8,7 +10,11 @@ describe('DialogActionsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DialogActionsComponent]
+      imports: [DialogActionsComponent],
+      providers: [
+        ...getTestProviders(),
+        { provide: DialogComponent, useValue: { close: jasmine.createSpy('close') } },
+      ],
     })
     .compileComponents();
 

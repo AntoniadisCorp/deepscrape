@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PaymentTabComponent } from './payment.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('PaymentTabComponent', () => {
   let component: PaymentTabComponent;
@@ -8,7 +9,8 @@ describe('PaymentTabComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PaymentTabComponent]
+      imports: [PaymentTabComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

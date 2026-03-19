@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SetupIntentComponent } from './setupintent.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('SetupIntentComponent', () => {
   let component: SetupIntentComponent;
@@ -8,7 +9,8 @@ describe('SetupIntentComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SetupIntentComponent]
+      imports: [SetupIntentComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 

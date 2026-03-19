@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ProfileTabComponent } from './profile.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ProfileTabComponent', () => {
   let component: ProfileTabComponent;
@@ -8,7 +9,8 @@ describe('ProfileTabComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProfileTabComponent]
+      imports: [ProfileTabComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

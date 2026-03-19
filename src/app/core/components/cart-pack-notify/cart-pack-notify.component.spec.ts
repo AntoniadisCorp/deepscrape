@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CartPackNotifyComponent } from './cart-pack-notify.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('CartPackNotifyComponent', () => {
   let component: CartPackNotifyComponent;
@@ -8,7 +9,8 @@ describe('CartPackNotifyComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CartPackNotifyComponent]
+      imports: [CartPackNotifyComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

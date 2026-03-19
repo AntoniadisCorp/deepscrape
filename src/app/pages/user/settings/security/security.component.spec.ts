@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SecurityTabComponent } from './security.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('SecurityTabComponent', () => {
   let component: SecurityTabComponent;
@@ -8,7 +9,8 @@ describe('SecurityTabComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SecurityTabComponent]
+      imports: [SecurityTabComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

@@ -6,6 +6,7 @@ import { ThemeService } from 'src/app/core/services';
 import { of } from 'rxjs';
 
 import { ActionHandlerComponent } from './action-handler.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ActionHandlerComponent', () => {
   let component: ActionHandlerComponent;
@@ -26,6 +27,7 @@ describe('ActionHandlerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ActionHandlerComponent],
       providers: [
+        ...getTestProviders(),
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
         { provide: Router, useValue: mockRouter },
         { provide: Auth, useValue: mockAuth },
@@ -36,7 +38,6 @@ describe('ActionHandlerComponent', () => {
 
     fixture = TestBed.createComponent(ActionHandlerComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {
@@ -56,7 +57,8 @@ describe('ActionHandlerComponent', () => {
 
   it('should call confirmPasswordReset and show success on resetPassword', async () => {
     component.oobCode = 'test-oob-code';
-    component.newPassword = 'newpassword123';
+    component.newPassword = 'StrongP@ss1!';
+    component.confirmPassword = 'StrongP@ss1!';
     mockAuth.confirmPasswordReset = jasmine.createSpy().and.returnValue(Promise.resolve());
     spyOn(component, 'resetPassword').and.callThrough();
     await component.resetPassword();
@@ -65,7 +67,8 @@ describe('ActionHandlerComponent', () => {
 
   it('should show error on resetPassword failure', async () => {
     component.oobCode = 'test-oob-code';
-    component.newPassword = 'newpassword123';
+    component.newPassword = 'StrongP@ss1!';
+    component.confirmPassword = 'StrongP@ss1!';
     mockAuth.confirmPasswordReset = jasmine.createSpy().and.returnValue(Promise.reject('error'));
     spyOn(component, 'resetPassword').and.callThrough();
     await component.resetPassword();

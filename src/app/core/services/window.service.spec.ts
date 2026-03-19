@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { WindowToken, windowProvider } from './window.service';
+import { getTestProviders } from 'src/app/testing';
 
 describe('WindowService', () => {
   let windowObj: Window;
@@ -8,6 +9,7 @@ describe('WindowService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         {
           provide: WindowToken,
           useFactory: windowProvider,

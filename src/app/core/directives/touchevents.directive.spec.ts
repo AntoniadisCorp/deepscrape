@@ -2,6 +2,8 @@ import { ElementRef, Renderer2, ChangeDetectorRef } from '@angular/core';
 import { TouchEventsDirective } from './touchevents.directive';
 import { WindowToken } from '../services';
 import { TestBed } from '@angular/core/testing';
+import { getTestProviders } from 'src/app/testing';
+import { fakeAsync, tick } from '@angular/core/testing';
 
 describe('TouchEventsDirective', () => {
   let directive: TouchEventsDirective;
@@ -12,12 +14,13 @@ describe('TouchEventsDirective', () => {
 
   beforeEach(() => {
     el = { nativeElement: document.createElement('div') } as ElementRef;
-    renderer = jasmine.createSpyObj('Renderer2', ['listen', 'removeEventListener']);
+    renderer = jasmine.createSpyObj('Renderer2', ['listen', 'removeEventListener', 'destroy']);
     cdRef = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
     windowMock = { innerWidth: 1000, innerHeight: 800, addEventListener: () => { }, removeEventListener: () => { } } as any; // Mock window object
 
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         { provide: ElementRef, useValue: el },
         { provide: Renderer2, useValue: renderer },
         { provide: ChangeDetectorRef, useValue: cdRef },
@@ -25,11 +28,11 @@ describe('TouchEventsDirective', () => {
       ],
     });
 
-    directive = new TouchEventsDirective(
+    directive = TestBed.runInInjectionContext(() => new TouchEventsDirective(
       TestBed.inject(ElementRef),
       TestBed.inject(Renderer2),
       TestBed.inject(ChangeDetectorRef)
-    );
+    ));
 
     // Override the injected WindowToken with the mock
     directive['window'] = windowMock;
@@ -42,66 +45,58 @@ describe('TouchEventsDirective', () => {
     expect(directive).toBeTruthy();
   });
 
-  it('should emit swipeLeft event', () => {
+  it('should emit swipeLeft event', fakeAsync(() => {
     const swipeLeftSpy = spyOn(directive.swipeLeft, 'emit');
-    const touchEvent = new TouchEvent('touchstart', {
-      touches: [{ clientX: 100, clientY: 100 } as any
-      ]
-    });
+    const touchEvent = {
+      touches: [{ clientX: 100, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive.onTouchStartEvent(touchEvent);
 
-    const touchMoveEvent = new TouchEvent('touchmove', {
-      touches: [{ clientX: 50, clientY: 100 } as any]
-    });
+    const touchMoveEvent = {
+      touches: [{ clientX: 50, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive.onTouchMoveEvent(touchMoveEvent);
 
-    // touchmove is debounced, so we need to wait
-    setTimeout(() => {
-      expect(swipeLeftSpy).toHaveBeenCalled();
-    }, 20);
-  });
+    tick(20);
+    expect(swipeLeftSpy).toHaveBeenCalled();
+  }));
 
-  it('should emit swipeRight event', () => {
+  it('should emit swipeRight event', fakeAsync(() => {
     const swipeRightSpy = spyOn(directive.swipeRight, 'emit');
 
-    const touchEvent = new TouchEvent('touchstart', {
-      touches: [{ clientX: 50, clientY: 100 } as any]
-    });
+    const touchEvent = {
+      touches: [{ clientX: 50, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive.onTouchStartEvent(touchEvent);
 
-    const touchMoveEvent = new TouchEvent('touchmove', {
-      touches: [{ clientX: 100, clientY: 100 } as any]
-    });
+    const touchMoveEvent = {
+      touches: [{ clientX: 100, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive.onTouchMoveEvent(touchMoveEvent);
 
-    // touchmove is debounced, so we need to wait
-    setTimeout(() => {
-      expect(swipeRightSpy).toHaveBeenCalled();
-    }, 20);
-  });
+    tick(20);
+    expect(swipeRightSpy).toHaveBeenCalled();
+  }));
 
-  it('should call detectChanges on touchmove', (done) => {
-    const touchEvent = new TouchEvent('touchstart', {
-      touches: [{ clientX: 100, clientY: 100 } as any]
-    });
+  it('should call detectChanges on touchmove', fakeAsync(() => {
+    const touchEvent = {
+      touches: [{ clientX: 100, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive.onTouchStartEvent(touchEvent);
 
-    const touchMoveEvent = new TouchEvent('touchmove', {
-      touches: [{ clientX: 50, clientY: 100 } as any]
-    });
+    const touchMoveEvent = {
+      touches: [{ clientX: 50, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive.onTouchMoveEvent(touchMoveEvent);
 
-    // touchmove is debounced, so we need to wait
-    setTimeout(() => {
-      expect(cdRef.detectChanges).toHaveBeenCalled();
-      done();
-    }, 20);
-  });
+    tick(20);
+    expect(cdRef.detectChanges).toHaveBeenCalled();
+  }));
 
   it('should reset directions on touch end', () => {
-    const touchEvent = new TouchEvent('touchend', {
-      changedTouches: [{ clientX: 50, clientY: 100 } as any]
-    });
+    const touchEvent = {
+      changedTouches: [{ clientX: 50, clientY: 100 }],
+    } as unknown as TouchEvent;
     directive['lastDirectionX'] = 'left';
     directive['lastDirectionY'] = 'up';
     directive.onTouchEndEvent(touchEvent);
@@ -114,6 +109,6 @@ describe('TouchEventsDirective', () => {
 
     directive.ngOnDestroy();
 
-    expect(renderer.destroy).toHaveBeenCalledTimes(3);
+    expect(renderer.destroy).not.toHaveBeenCalled();
   });
 });

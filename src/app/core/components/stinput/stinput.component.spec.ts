@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { StinputComponent } from './stinput.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('StinputComponent', () => {
   let component: StinputComponent;
@@ -8,7 +9,8 @@ describe('StinputComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [StinputComponent]
+      imports: [StinputComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 
