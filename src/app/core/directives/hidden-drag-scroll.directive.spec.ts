@@ -37,8 +37,11 @@ describe('HiddenDragScrollDirective', () => {
     fixture.detectChanges();
   });
 
-  it('should create an instance', () => {
-    expect(directiveInstance).toBeTruthy();
+  it('should set scrollbar-hiding styles and class on init', () => {
+    const host = directiveEl.nativeElement as HTMLElement;
+    expect(host.style.overflowX).toBe('scroll');
+    expect(host.style.scrollbarWidth).toBe('none');
+    expect(host.classList.contains('ms-overflow-style-none')).toBeTrue();
   });
 
   it('should have default scrollSpeed set to 2.0', () => {

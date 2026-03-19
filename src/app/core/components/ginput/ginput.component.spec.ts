@@ -32,15 +32,15 @@ describe('GinputComponent', () => {
     component = fixture.debugElement.query(By.directive(GinputComponent)).componentInstance;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should update placeholder on focus and blur', () => {
     component.doFocus();
     expect(component.URLPlaceholder).toBe('Set a URL string..');
 
     component.doBlur();
+    expect(component.URLPlaceholder).toBe(' ');
+  });
+
+  it('should initialize placeholder as blank space on init', () => {
     expect(component.URLPlaceholder).toBe(' ');
   });
 });

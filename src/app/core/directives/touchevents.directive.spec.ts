@@ -41,10 +41,6 @@ describe('TouchEventsDirective', () => {
 
   });
 
-  it('should create an instance', () => {
-    expect(directive).toBeTruthy();
-  });
-
   it('should emit swipeLeft event', fakeAsync(() => {
     const swipeLeftSpy = spyOn(directive.swipeLeft, 'emit');
     const touchEvent = {

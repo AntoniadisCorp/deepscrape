@@ -28,12 +28,6 @@ describe('ImageSrcsetDirective', () => {
     imgElement = fixture.nativeElement.querySelector('img') as HTMLImageElement;
   });
 
-  it('should create an instance', () => {
-    const el = document.createElement('img');
-    const directive = new ImageSrcsetDirective(new ElementRef(el));
-    expect(directive).toBeTruthy();
-  });
-
   it('should set srcset on ngAfterViewInit', () => {
     const el = document.createElement('img');
     const directive = new ImageSrcsetDirective(new ElementRef(el));

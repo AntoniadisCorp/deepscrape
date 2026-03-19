@@ -46,10 +46,6 @@ describe('ContainerBoxComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should toggle menu visibility', () => {
     expect(component.machine.menu_visible).toBeFalse();
     component.toggleMenuVisible();
@@ -59,5 +55,17 @@ describe('ContainerBoxComponent', () => {
   it('should set machine state to stopping when stop is called', () => {
     component['stop']();
     expect(component.machine.state).toBe(MACHNINE_STATE.STOPPING);
+  });
+
+  it('should hide menu when clicking outside menu element', () => {
+    component.machine.menu_visible = true;
+    component.menuElement = {
+      nativeElement: {
+        contains: () => false,
+      },
+    };
+
+    component.onDocumentClick(new MouseEvent('mousedown'));
+    expect(component.machine.menu_visible).toBeFalse();
   });
 });

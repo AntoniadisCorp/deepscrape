@@ -1,8 +1,11 @@
 import { FormControlPipe } from './formcontrol.pipe';
+import { FormControl } from '@angular/forms';
 
 describe('FormControlPipe', () => {
-  it('create an instance', () => {
+  it('returns the same control instance cast as FormControl', () => {
     const pipe = new FormControlPipe();
-    expect(pipe).toBeTruthy();
+    const control = new FormControl('value');
+
+    expect(pipe.transform(control)).toBe(control);
   });
 });

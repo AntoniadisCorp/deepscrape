@@ -77,11 +77,6 @@ describe('TooltipDirective', () => {
     }).compileComponents();
   });
 
-  it('should create an instance', () => {
-    const directive = createDirective();
-    expect(directive).toBeTruthy();
-  });
-
   it('should create tooltip component on mouse enter', fakeAsync(() => {
     const directive = createDirective();
 

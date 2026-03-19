@@ -18,13 +18,13 @@ describe('LoadingDotsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
   it('should have three dots', () => {
     const dots = fixture.nativeElement.querySelectorAll('.dot');
     expect(dots.length).toBe(3);
+  });
+
+  it('starts with flash disabled', () => {
+    expect(component.flash).toBeFalse();
   });
 
   it('should have animation', () => {
