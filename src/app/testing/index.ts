@@ -15,7 +15,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideNgxStripe } from 'ngx-stripe';
 import { SwUpdate } from '@angular/service-worker';
-import { EMPTY } from 'rxjs';
+import { of, EMPTY } from 'rxjs';
 
 // @angular/fire modular tokens
 import { Auth } from '@angular/fire/auth';
@@ -45,8 +45,11 @@ import { FirestoreService } from '../core/services/firestore.service';
 import { CartService } from '../core/services/cart.service';
 import { ApiKeyService } from '../core/services/apikey.service';
 import { NgswUpdateService } from '../core/services/ngsw-update.service';
+import { ScreenResizeService } from '../core/services/screen-resize.service';
+import { SnackbarService } from '../core/services/snackbar.service';
+import { SeedingService } from '../core/services/seeding.service';
+import { OperationStatusService } from '../core/services/operation-status.service';
 import { AppUserLayoutComponent } from '../layout/full/app-user-layout/app-user-layout.component';
-import { of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 // Re-export for convenience
@@ -159,6 +162,29 @@ const mockSwUpdate = {
 /** Minimal NgswUpdateService stub */
 const mockNgswUpdateService = {};
 
+/** Minimal ScreenResizeService stub */
+const mockScreenResizeService = {
+  onResize$: EMPTY,
+  onResize: () => {},
+};
+
+/** Minimal SnackbarService stub */
+const mockSnackbarService = {
+  setSnackbar: () => {},
+  showSnackbar: () => {},
+};
+
+/** Minimal SeedingService stub */
+const mockSeedingService = {
+  multiSeedEnqueue: () => EMPTY,
+  cancelTask: () => EMPTY,
+};
+
+/** Minimal OperationStatusService stub */
+const mockOperationStatusService = {
+  getTaskStatusWithSnackbar: () => EMPTY,
+};
+
 // ---------------------------------------------------------------------------
 // Main provider factory
 // ---------------------------------------------------------------------------
@@ -218,6 +244,10 @@ export function getTestProviders(): (Provider | EnvironmentProviders)[] {
     { provide: ApiKeyService, useValue: mockApiKeyService },
     { provide: SwUpdate, useValue: mockSwUpdate },
     { provide: NgswUpdateService, useValue: mockNgswUpdateService },
+    { provide: ScreenResizeService, useValue: mockScreenResizeService },
+    { provide: SnackbarService, useValue: mockSnackbarService },
+    { provide: SeedingService, useValue: mockSeedingService },
+    { provide: OperationStatusService, useValue: mockOperationStatusService },
     { provide: AppUserLayoutComponent, useValue: mockAppUserLayout },
   ];
 }

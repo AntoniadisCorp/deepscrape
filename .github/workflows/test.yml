@@ -1,0 +1,114 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - next
+  pull_request:
+    branches:
+      - main
+      - next
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Angular unit tests (Karma / ChromeHeadless)
+  # ─────────────────────────────────────────────
+  angular-tests:
+    name: Angular Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install Angular project dependencies
+        run: bun install --frozen-lockfile
+
+      # Generate a minimal environment.ts so the build succeeds without secrets.
+      # The generated file only needs to compile – real secrets are not needed
+      # for unit tests because all external services are mocked.
+      - name: Generate stub environment.ts
+        run: |
+          mkdir -p src/environments
+          cat > src/environments/environment.ts << 'EOF'
+          export const environment = {
+            production: false,
+            emulators: false,
+            API_CRAWL4AI_URL: 'http://localhost:8000',
+            agentUrl: 'http://localhost:8000',
+            apiKey: '',
+            authDomain: '',
+            databaseURL: '',
+            projectId: 'test-project',
+            storageBucket: '',
+            messagingSenderId: '',
+            appId: '',
+            recaptchaKey: '',
+            measurementId: '',
+            stripePublicKey: '',
+            upstashRedisRestUrl: '',
+            upstashRedisRestToken: '',
+          };
+          EOF
+
+      - name: Run Angular unit tests (ChromeHeadless)
+        run: bun run test:ci
+        env:
+          CHROME_BIN: /usr/bin/google-chrome-stable
+
+      - name: Upload test coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-coverage
+          path: coverage/
+          retention-days: 14
+
+  # ─────────────────────────────────────────────
+  # Job 2: Firebase Functions unit tests
+  # ─────────────────────────────────────────────
+  functions-tests:
+    name: Firebase Functions Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install functions dependencies
+        working-directory: ./functions
+        run: npm ci
+
+      - name: Run Firebase Functions tests
+        working-directory: ./functions
+        run: npm test
+        env:
+          # Provide placeholder values so env parsing doesn't throw at import time.
+          # Tests mock Firebase / Stripe calls so no real secrets are needed.
+          FUNCTIONS_ENV_JSON: '{}'
+          GCLOUD_PROJECT: test-project
+          FIREBASE_CONFIG: '{"projectId":"test-project","storageBucket":"","databaseURL":""}'
