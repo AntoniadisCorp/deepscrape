@@ -238,3 +238,4 @@ Notes:
 - Run `bun run prebuild` after changing `.env` or `prod_gen.ts`.
 - Follow the `AuthService.token` Bearer pattern for authenticated API calls.
 - Read the UI skill (`SKILL.md`) before writing any new UI.
+- Security hint: never read, print, parse, or expose API keys, secrets, tokens, `.env` files, encrypted env artifacts, or any secret variables. Avoid touching secrets to prevent credential leakage and forced key rotation.
