@@ -49,6 +49,11 @@ jobs:
           echo "Bumping package.json to $NEW_VERSION"
           npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
 
+      - name: Delete stale release assets branch
+        if: steps.update_version.outputs.new_tag != ''
+        run: |
+          git push origin --delete "chore/release-assets-${{ github.ref_name }}" || true
+
       - name: Create Pull Request for Release Assets
         if: steps.update_version.outputs.new_tag != ''
         uses: peter-evans/create-pull-request@v6
