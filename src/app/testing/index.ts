@@ -7,7 +7,7 @@
  *   // or for components:
  *   TestBed.configureTestingModule({ imports: [MyComponent], providers: getTestProviders() });
  */
-import { EnvironmentProviders, NgZone, PLATFORM_ID, Provider } from '@angular/core';
+import { EnvironmentProviders, PLATFORM_ID, Provider } from '@angular/core';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withFetch } from '@angular/common/http';
@@ -145,6 +145,7 @@ const mockCartService = {
 
 const mockApiKeyService = {
   setMenuInVisible: () => {},
+  apiKeys$: of([]),
 };
 
 const mockAppUserLayout = {
@@ -211,7 +212,6 @@ export function getTestProviders(): (Provider | EnvironmentProviders)[] {
 
     // --- Platform---
     { provide: PLATFORM_ID, useValue: 'browser' },
-    { provide: NgZone, useValue: new NgZone({ enableLongStackTrace: false }) },
 
     // --- Firebase mocks ---
     { provide: Auth, useValue: mockAuth },

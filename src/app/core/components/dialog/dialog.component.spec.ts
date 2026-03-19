@@ -16,6 +16,7 @@ describe('SimpleModalComponent', () => {
 
     fixture = TestBed.createComponent(DialogComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('title', 'Test Title');
     fixture.detectChanges();
   });
 

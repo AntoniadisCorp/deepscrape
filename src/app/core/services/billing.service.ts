@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core'
-import { BehaviorSubject, catchError, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
+import { BehaviorSubject, catchError, defer, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
 import {
   BillingAccessMode,
   BillingCatalogPayload,
@@ -59,7 +59,7 @@ export class BillingService {
     return billing.plan && billing.plan !== 'free' ? Number(billing.credits.balance || 0) - Number(billing.credits.reserved || 0) : 0
   }
 
-  readonly billing$: Observable<UserBilling> = this.firestoreService.authState().pipe(
+  readonly billing$: Observable<UserBilling> = defer(() => this.firestoreService.authState().pipe(
     switchMap((firebaseUser) => {
       if (!firebaseUser) {
         return of(this.defaultBilling())
@@ -80,7 +80,7 @@ export class BillingService {
     }),
     catchError(() => of(this.defaultBilling())),
     shareReplay({ bufferSize: 1, refCount: true })
-  )
+  ))
 
   readonly catalog$: Observable<BillingCatalogPayload> = this.fetchCatalog().pipe(
     shareReplay({ bufferSize: 1, refCount: true })

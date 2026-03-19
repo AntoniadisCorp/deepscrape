@@ -47,6 +47,7 @@ jobs:
       # Generate a minimal environment.ts so the build succeeds without secrets.
       # The generated file only needs to compile – real secrets are not needed
       # for unit tests because all external services are mocked.
+      # Shape must exactly match prod_gen.ts so TypeScript compilation passes.
       - name: Generate stub environment.ts
         run: |
           mkdir -p src/environments
@@ -54,20 +55,34 @@ jobs:
           export const environment = {
             production: false,
             emulators: false,
+            assetsUri: 'https://deepscrape.dev/assets/',
+            wsUrl: '',
+            nekoUrl: '',
+            firebaseConfig: {
+              apiKey: '',
+              authDomain: '',
+              databaseURL: '',
+              projectId: 'test-project',
+              storageBucket: '',
+              messagingSenderId: '',
+              appId: '',
+              measurementId: '',
+            },
+            STRIPE_PUBLIC_KEY: '',
+            RECAPTCHA_KEY: '',
+            OPENAI_API_KEY: '',
+            ANTHROPIC_API_KEY: '',
+            JINAAI_API_KEY: '',
+            GROQ_API_KEY: '',
+            GOOGLE_API_KEY: '',
+            CRAWL4AI_API_KEY: '',
             API_CRAWL4AI_URL: 'http://localhost:8000',
+            API_ARACHNEFLY_URL: '',
+            API_ANTHROPIC: 'https://api.anthropic.com',
+            API_OPENAI: 'https://api.openai.com',
+            API_GROQ: 'https://api.groq.com',
+            API_JINAAI: 'https://r.jina.ai',
             agentUrl: 'http://localhost:8000',
-            apiKey: '',
-            authDomain: '',
-            databaseURL: '',
-            projectId: 'test-project',
-            storageBucket: '',
-            messagingSenderId: '',
-            appId: '',
-            recaptchaKey: '',
-            measurementId: '',
-            stripePublicKey: '',
-            upstashRedisRestUrl: '',
-            upstashRedisRestToken: '',
           };
           EOF
 

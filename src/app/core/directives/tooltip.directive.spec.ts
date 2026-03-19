@@ -60,6 +60,8 @@ describe('TooltipDirective', () => {
       body: {
         appendChild: jasmine.createSpy('appendChild'),
       },
+      querySelectorAll: jasmine.createSpy('querySelectorAll').and.returnValue([]),
+      createElement: jasmine.createSpy('createElement').and.returnValue(document.createElement('div')),
     } as unknown as Document;
 
     TestBed.configureTestingModule({

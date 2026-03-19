@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
+import * as fireAuth from '@angular/fire/auth';
 import { TranslateService } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services';
 import { of } from 'rxjs';
@@ -59,8 +60,7 @@ describe('ActionHandlerComponent', () => {
     component.oobCode = 'test-oob-code';
     component.newPassword = 'StrongP@ss1!';
     component.confirmPassword = 'StrongP@ss1!';
-    mockAuth.confirmPasswordReset = jasmine.createSpy().and.returnValue(Promise.resolve());
-    spyOn(component, 'resetPassword').and.callThrough();
+    spyOn(fireAuth, 'confirmPasswordReset').and.returnValue(Promise.resolve());
     await component.resetPassword();
     expect(component.successMessage).toBe('RESET_PASSWORD.SUCCESS');
   });
@@ -69,8 +69,7 @@ describe('ActionHandlerComponent', () => {
     component.oobCode = 'test-oob-code';
     component.newPassword = 'StrongP@ss1!';
     component.confirmPassword = 'StrongP@ss1!';
-    mockAuth.confirmPasswordReset = jasmine.createSpy().and.returnValue(Promise.reject('error'));
-    spyOn(component, 'resetPassword').and.callThrough();
+    spyOn(fireAuth, 'confirmPasswordReset').and.returnValue(Promise.reject('error'));
     await component.resetPassword();
     expect(component.errorMessage).toBe('RESET_PASSWORD.FAILED');
   });
