@@ -22,8 +22,14 @@ describe('DomainSeederComponent', () => {
       imports: [DomainSeederComponent],
       providers: getTestProviders(),
     })
-    // Override the component's imports to exclude directives that are pulled
-    // through the directives barrel (which has a circular chain in test context).
+    // Override the component's imports to exclude `HiddenDragScrollDirective` and
+    // `RippleDirective`, which are re-exported through the directives barrel
+    // (`src/app/core/directives/index.ts → tooltip.directive → TooltipComponent → …`).
+    // In the test bundle the barrel's circular chain causes one of these exports to
+    // resolve as `undefined`, which makes Angular's TestBed compiler throw
+    // `TypeError: Cannot read properties of undefined (reading 'ɵcmp')`.
+    // Removing the directives-barrel items from the imports list is the minimal,
+    // non-invasive fix; they are not exercised by these unit tests anyway.
     .overrideComponent(DomainSeederComponent, {
       set: {
         imports: [
