@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AppUserLayoutComponent } from './app-user-layout.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('AppUserLayoutComponent', () => {
   let component: AppUserLayoutComponent;
@@ -8,7 +9,8 @@ describe('AppUserLayoutComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppUserLayoutComponent]
+      imports: [AppUserLayoutComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

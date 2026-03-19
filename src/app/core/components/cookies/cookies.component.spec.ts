@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BrowserCookiesComponent } from './cookies.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('CookiesComponent', () => {
   let component: BrowserCookiesComponent;
@@ -8,7 +9,8 @@ describe('CookiesComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BrowserCookiesComponent]
+      imports: [BrowserCookiesComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 

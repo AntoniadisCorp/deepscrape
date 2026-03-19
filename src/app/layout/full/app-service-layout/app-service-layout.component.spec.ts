@@ -5,6 +5,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ChildrenOutletContexts, ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { Component, InjectionToken } from '@angular/core';
 import { LocalStorage, STORAGE_PROVIDERS } from 'src/app/core/services';
+import { getTestProviders } from 'src/app/testing';
 
 const LOCAL_STORAGE = new InjectionToken<Storage>('window.localStorage');
 
@@ -34,6 +35,7 @@ describe('AppServiceLayoutComponent', () => {
         NoopAnimationsModule,
       ],
       providers: [
+        ...getTestProviders(),
         ChildrenOutletContexts,
         STORAGE_PROVIDERS,
       ],

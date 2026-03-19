@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
 import { PlutoService } from './pluto.service';
+import { getTestProviders } from 'src/app/testing';
 
 describe('PlutoService', () => {
   let service: PlutoService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: getTestProviders() });
     service = TestBed.inject(PlutoService);
   });
 

@@ -1,18 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CpackComponent } from './cpack.component';
+import { CPackComponent } from './cpack.component';
+import { getTestProviders } from 'src/app/testing';
 
-describe('CpackComponent', () => {
-  let component: CpackComponent;
-  let fixture: ComponentFixture<CpackComponent>;
+describe('CPackComponent', () => {
+  let component: CPackComponent;
+  let fixture: ComponentFixture<CPackComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CpackComponent]
+      imports: [CPackComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CpackComponent);
+    fixture = TestBed.createComponent(CPackComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

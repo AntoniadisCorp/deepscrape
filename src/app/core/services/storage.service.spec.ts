@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { LocalStorage, SessionStorage, NoopStorage, STORAGE_PROVIDERS } from './storage.service';
 import { WindowToken } from './window.service';
+import { getTestProviders } from 'src/app/testing';
 
 describe('StorageService', () => {
   let localStorage: Storage;
@@ -29,6 +30,7 @@ describe('StorageService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         { provide: WindowToken, useValue: windowMock },
         STORAGE_PROVIDERS,
       ],
@@ -61,6 +63,7 @@ describe('StorageService', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         { provide: WindowToken, useValue: windowMockWithException },
         STORAGE_PROVIDERS,
       ],

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { GinputComponent } from './ginput.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('GinputComponent', () => {
   let component: GinputComponent;
@@ -8,7 +9,8 @@ describe('GinputComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GinputComponent]
+      imports: [GinputComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

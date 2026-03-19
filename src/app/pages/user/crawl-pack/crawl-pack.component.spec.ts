@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CrawlPackComponent } from './crawl-pack.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('CrawlPackComponent', () => {
   let component: CrawlPackComponent;
@@ -8,7 +9,8 @@ describe('CrawlPackComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CrawlPackComponent]
+      imports: [CrawlPackComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

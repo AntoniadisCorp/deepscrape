@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AppSidebarNavComponent } from './app-sidebar-nav.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('AppSidebarNavComponent', () => {
   let component: AppSidebarNavComponent;
@@ -8,7 +9,8 @@ describe('AppSidebarNavComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppSidebarNavComponent]
+      imports: [AppSidebarNavComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

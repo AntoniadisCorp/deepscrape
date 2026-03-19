@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImageSrcsetDirective } from './image.srcset.directive';
 import { ElementRef, Component } from '@angular/core';
+import { getTestProviders } from 'src/app/testing';
 
 @Component({
+  standalone: true,
+  imports: [ImageSrcsetDirective],
   template: '<img [dataSrcset]="imageUrl" [name]="name">',
 })
 class TestComponent {
@@ -18,8 +21,8 @@ describe('ImageSrcsetDirective', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [TestComponent],
-      imports: [ImageSrcsetDirective],
+      imports: [TestComponent],
+      providers: getTestProviders(),
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestComponent);

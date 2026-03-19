@@ -4,6 +4,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { getTestProviders } from 'src/app/testing';
+import { LocalStorage } from 'src/app/core/services';
 
 describe('MachinesComponent', () => {
   let component: MachinesComponent;
@@ -11,15 +13,16 @@ describe('MachinesComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
+        MachinesComponent,
         ReactiveFormsModule,
         BrowserAnimationsModule,
         MatIconModule,
         MatProgressSpinnerModule,
       ],
-      declarations: [MachinesComponent],
       providers: [
+        ...getTestProviders(),
         {
-          provide: 'LocalStorage',
+          provide: LocalStorage,
           useValue: {
             getItem: (key: string) => null,
             setItem: (key: string, value: string) => { },

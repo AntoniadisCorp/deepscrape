@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DropdownCartComponent } from './dropdown-cart.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('DropdownCartComponent', () => {
   let component: DropdownCartComponent;
@@ -8,7 +9,8 @@ describe('DropdownCartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DropdownCartComponent]
+      imports: [DropdownCartComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

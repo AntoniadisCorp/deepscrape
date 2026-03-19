@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { OperationsTabComponent } from './operations-tab.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('OperationsTabComponent', () => {
   let component: OperationsTabComponent;
@@ -8,7 +9,8 @@ describe('OperationsTabComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [OperationsTabComponent]
+      imports: [OperationsTabComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

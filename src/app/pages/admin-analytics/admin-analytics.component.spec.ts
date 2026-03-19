@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AdminAnalyticsComponent } from './admin-analytics1.component';
+import { AdminAnalyticsComponent1 as AdminAnalyticsComponent } from './admin-analytics1.component';
+import { getTestProviders } from 'src/app/testing';
 
 
 describe('AdminAnalyticsComponent', () => {
@@ -8,13 +9,13 @@ describe('AdminAnalyticsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminAnalyticsComponent]
+      imports: [AdminAnalyticsComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 
     fixture = TestBed.createComponent(AdminAnalyticsComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AppCrawlComponent } from './app-crawl.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('AppCrawlComponent', () => {
   let component: AppCrawlComponent;
@@ -8,7 +9,8 @@ describe('AppCrawlComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppCrawlComponent]
+      imports: [AppCrawlComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

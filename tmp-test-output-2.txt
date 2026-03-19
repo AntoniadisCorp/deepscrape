@@ -1,0 +1,880 @@
+[33mΓ¥»[39m Building...
+[32mΓ£ö[39m Building...
+[1mInitial chunk files[22m                            [2m | [22m[1mNames[22m                                       [2m | [22m [1mRaw size[22m
+[32mchunk-63FDLP4H.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m4.99 MB[39m[2m | [22m
+[32mchunk-AOCCW63I.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m1.19 MB[39m[2m | [22m
+[32mchunk-IGQ4XRWW.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m1.17 MB[39m[2m | [22m
+[32mpolyfills.js[39m                                   [2m | [22m[2mpolyfills[22m                                   [2m | [22m  [36m1.04 MB[39m[2m | [22m
+[32mspec-operations.component.spec.js[39m              [2m | [22m[2mspec-operations.component.spec[22m              [2m | [22m[36m647.39 kB[39m[2m | [22m
+[32mscripts.js[39m                                     [2m | [22m[2mscripts[22m                                     [2m | [22m[36m544.74 kB[39m[2m | [22m
+[32mstyles.css[39m                                     [2m | [22m[2mstyles[22m                                      [2m | [22m[36m424.86 kB[39m[2m | [22m
+[32mspec-admin-analytics.component.spec.js[39m         [2m | [22m[2mspec-admin-analytics.component.spec[22m         [2m | [22m[36m379.69 kB[39m[2m | [22m
+[32mchunk-OIOBTJOB.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m[36m264.01 kB[39m[2m | [22m
+[32mchunk-B2WAPMPQ.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m[36m198.72 kB[39m[2m | [22m
+[32mspec-crawl-config.component.spec.js[39m            [2m | [22m[2mspec-crawl-config.component.spec[22m            [2m | [22m[36m125.00 kB[39m[2m | [22m
+[32mspec-crawl-results.component.spec.js[39m           [2m | [22m[2mspec-crawl-results.component.spec[22m           [2m | [22m [36m82.10 kB[39m[2m | [22m
+[32mchunk-YMCRCFOZ.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m [36m75.28 kB[39m[2m | [22m
+[32mspec-browser-config.component.spec.js[39m          [2m | [22m[2mspec-browser-config.component.spec[22m          [2m | [22m [36m66.33 kB[39m[2m | [22m
+[32mjasmine-cleanup-1.js[39m                           [2m | [22m[2mjasmine-cleanup-1[22m                           [2m | [22m [36m65.95 kB[39m[2m | [22m
+[32mspec-login.component.spec.js[39m                   [2m | [22m[2mspec-login.component.spec[22m                   [2m | [22m [36m51.04 kB[39m[2m | [22m
+[32mspec-plans.component.spec.js[39m                   [2m | [22m[2mspec-plans.component.spec[22m                   [2m | [22m [36m45.04 kB[39m[2m | [22m
+[32mspec-profile.component.spec.js[39m                 [2m | [22m[2mspec-profile.component.spec[22m                 [2m | [22m [36m37.11 kB[39m[2m | [22m
+[32mspec-security.component.spec.js[39m                [2m | [22m[2mspec-security.component.spec[22m                [2m | [22m [36m34.44 kB[39m[2m | [22m
+[32mspec-action-handler.component.spec.js[39m          [2m | [22m[2mspec-action-handler.component.spec[22m          [2m | [22m [36m34.05 kB[39m[2m | [22m
+[32mspec-machines.component.spec.js[39m                [2m | [22m[2mspec-machines.component.spec[22m                [2m | [22m [36m28.40 kB[39m[2m | [22m
+[32mspec-landpage.component.spec.js[39m                [2m | [22m[2mspec-landpage.component.spec[22m                [2m | [22m [36m27.07 kB[39m[2m | [22m
+[32mspec-api-keys.component.spec.js[39m                [2m | [22m[2mspec-api-keys.component.spec[22m                [2m | [22m [36m26.57 kB[39m[2m | [22m
+[32mchunk-ID35BEDN.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m [36m25.75 kB[39m[2m | [22m
+[32mspec-crawlerpack.component.spec.js[39m             [2m | [22m[2mspec-crawlerpack.component.spec[22m             [2m | [22m [36m25.27 kB[39m[2m | [22m
+[32mchunk-2AWQAZ5K.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m [36m20.50 kB[39m[2m | [22m
+[32mspec-app.component.spec.js[39m                     [2m | [22m[2mspec-app.component.spec[22m                     [2m | [22m [36m18.67 kB[39m[2m | [22m
+[32mspec-app-service-layout.component.spec.js[39m      [2m | [22m[2mspec-app-service-layout.component.spec[22m      [2m | [22m [36m11.12 kB[39m[2m | [22m
+[32mchunk-45SNXEAY.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m [36m10.65 kB[39m[2m | [22m
+[32mspec-playground.component.spec.js[39m              [2m | [22m[2mspec-playground.component.spec[22m              [2m | [22m  [36m9.08 kB[39m[2m | [22m
+[32mchunk-2EJKMQRP.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m8.35 kB[39m[2m | [22m
+[32mspec-account.component.spec.js[39m                 [2m | [22m[2mspec-account.component.spec[22m                 [2m | [22m  [36m7.67 kB[39m[2m | [22m
+[32mspec-home.component.spec.js[39m                    [2m | [22m[2mspec-home.component.spec[22m                    [2m | [22m  [36m7.46 kB[39m[2m | [22m
+[32mspec-login.guard.spec.js[39m                       [2m | [22m[2mspec-login.guard.spec[22m                       [2m | [22m  [36m7.05 kB[39m[2m | [22m
+[32mspec-crawl-pack.component.spec.js[39m              [2m | [22m[2mspec-crawl-pack.component.spec[22m              [2m | [22m  [36m6.36 kB[39m[2m | [22m
+[32mspec-app-llm-scrape.component.spec.js[39m          [2m | [22m[2mspec-app-llm-scrape.component.spec[22m          [2m | [22m  [36m5.89 kB[39m[2m | [22m
+[32mspec-tooltip.directive.spec.js[39m                 [2m | [22m[2mspec-tooltip.directive.spec[22m                 [2m | [22m  [36m5.88 kB[39m[2m | [22m
+[32mspec-payment-required.interceptor.spec.js[39m      [2m | [22m[2mspec-payment-required.interceptor.spec[22m      [2m | [22m  [36m5.24 kB[39m[2m | [22m
+[32mspec-auth.guard.spec.js[39m                        [2m | [22m[2mspec-auth.guard.spec[22m                        [2m | [22m  [36m5.07 kB[39m[2m | [22m
+[32mspec-billing.service.spec.js[39m                   [2m | [22m[2mspec-billing.service.spec[22m                   [2m | [22m  [36m5.02 kB[39m[2m | [22m
+[32mspec-general.component.spec.js[39m                 [2m | [22m[2mspec-general.component.spec[22m                 [2m | [22m  [36m4.84 kB[39m[2m | [22m
+[32mchunk-PSAR3COO.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m4.72 kB[39m[2m | [22m
+[32mspec-payment.component-2.spec.js[39m               [2m | [22m[2mspec-payment.component-2.spec[22m               [2m | [22m  [36m4.63 kB[39m[2m | [22m
+[32mtest_main.js[39m                                   [2m | [22m[2mtest_main[22m                                   [2m | [22m  [36m4.39 kB[39m[2m | [22m
+[32mchunk-FTJWL4R4.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m3.95 kB[39m[2m | [22m
+[32mspec-touchevents.directive.spec.js[39m             [2m | [22m[2mspec-touchevents.directive.spec[22m             [2m | [22m  [36m3.88 kB[39m[2m | [22m
+[32mspec-image.srcset.directive.spec.js[39m            [2m | [22m[2mspec-image.srcset.directive.spec[22m            [2m | [22m  [36m3.79 kB[39m[2m | [22m
+[32mspec-dashboard.component.spec.js[39m               [2m | [22m[2mspec-dashboard.component.spec[22m               [2m | [22m  [36m3.78 kB[39m[2m | [22m
+[32mspec-paywall.guard.spec.js[39m                     [2m | [22m[2mspec-paywall.guard.spec[22m                     [2m | [22m  [36m3.74 kB[39m[2m | [22m
+[32mspec-billing.component.spec.js[39m                 [2m | [22m[2mspec-billing.component.spec[22m                 [2m | [22m  [36m3.55 kB[39m[2m | [22m
+[32mspec-storage.service.spec.js[39m                   [2m | [22m[2mspec-storage.service.spec[22m                   [2m | [22m  [36m3.36 kB[39m[2m | [22m
+[32mspec-extract-strategy.component.spec.js[39m        [2m | [22m[2mspec-extract-strategy.component.spec[22m        [2m | [22m  [36m3.27 kB[39m[2m | [22m
+[32mspec-paymentmethods.component.spec.js[39m          [2m | [22m[2mspec-paymentmethods.component.spec[22m          [2m | [22m  [36m3.16 kB[39m[2m | [22m
+[32mspec-setupintent.component.spec.js[39m             [2m | [22m[2mspec-setupintent.component.spec[22m             [2m | [22m  [36m3.11 kB[39m[2m | [22m
+[32mspec-transactions.component.spec.js[39m            [2m | [22m[2mspec-transactions.component.spec[22m            [2m | [22m  [36m3.07 kB[39m[2m | [22m
+[32mspec-passes.component.spec.js[39m                  [2m | [22m[2mspec-passes.component.spec[22m                  [2m | [22m  [36m2.81 kB[39m[2m | [22m
+[32mspec-outsideclick.directive.spec.js[39m            [2m | [22m[2mspec-outsideclick.directive.spec[22m            [2m | [22m  [36m2.46 kB[39m[2m | [22m
+[32mspec-domain-seeder.component.spec.js[39m           [2m | [22m[2mspec-domain-seeder.component.spec[22m           [2m | [22m  [36m2.30 kB[39m[2m | [22m
+[32mspec-hidden-drag-scroll.directive.spec.js[39m      [2m | [22m[2mspec-hidden-drag-scroll.directive.spec[22m      [2m | [22m  [36m2.15 kB[39m[2m | [22m
+[32mspec-remove-toolbar.directive.spec.js[39m          [2m | [22m[2mspec-remove-toolbar.directive.spec[22m          [2m | [22m  [36m2.14 kB[39m[2m | [22m
+[32mspec-loading-dots.component.spec.js[39m            [2m | [22m[2mspec-loading-dots.component.spec[22m            [2m | [22m  [36m2.06 kB[39m[2m | [22m
+[32mspec-app-sidebar-nav-link.component.spec.js[39m    [2m | [22m[2mspec-app-sidebar-nav-link.component.spec[22m    [2m | [22m  [36m1.91 kB[39m[2m | [22m
+[32mspec-app-sidebar-nav-item.component.spec.js[39m    [2m | [22m[2mspec-app-sidebar-nav-item.component.spec[22m    [2m | [22m  [36m1.86 kB[39m[2m | [22m
+[32mspec-browser.service.spec.js[39m                   [2m | [22m[2mspec-browser.service.spec[22m                   [2m | [22m  [36m1.80 kB[39m[2m | [22m
+[32mspec-ripple.directive.spec.js[39m                  [2m | [22m[2mspec-ripple.directive.spec[22m                  [2m | [22m  [36m1.80 kB[39m[2m | [22m
+[32mspec-app-sidebar-nav-dropdown.component.spec.js[39m[2m | [22m[2mspec-app-sidebar-nav-dropdown.component.spec[22m[2m | [22m  [36m1.76 kB[39m[2m | [22m
+[32mspec-promptarea.component.spec.js[39m              [2m | [22m[2mspec-promptarea.component.spec[22m              [2m | [22m  [36m1.75 kB[39m[2m | [22m
+[32mspec-dropdown.component.spec.js[39m                [2m | [22m[2mspec-dropdown.component.spec[22m                [2m | [22m  [36m1.75 kB[39m[2m | [22m
+[32mchunk-552GLZ4E.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m1.75 kB[39m[2m | [22m
+[32mspec-radio-button.component.spec.js[39m            [2m | [22m[2mspec-radio-button.component.spec[22m            [2m | [22m  [36m1.73 kB[39m[2m | [22m
+[32mspec-radiotoggle.component.spec.js[39m             [2m | [22m[2mspec-radiotoggle.component.spec[22m             [2m | [22m  [36m1.69 kB[39m[2m | [22m
+[32mspec-app-docker-stepper.component.spec.js[39m      [2m | [22m[2mspec-app-docker-stepper.component.spec[22m      [2m | [22m  [36m1.64 kB[39m[2m | [22m
+[32mspec-cart-pack-notify.component.spec.js[39m        [2m | [22m[2mspec-cart-pack-notify.component.spec[22m        [2m | [22m  [36m1.61 kB[39m[2m | [22m
+[32mspec-clipboardbutton.component.spec.js[39m         [2m | [22m[2mspec-clipboardbutton.component.spec[22m         [2m | [22m  [36m1.61 kB[39m[2m | [22m
+[32mspec-app-sidebar-nav.component.spec.js[39m         [2m | [22m[2mspec-app-sidebar-nav.component.spec[22m         [2m | [22m  [36m1.60 kB[39m[2m | [22m
+[32mspec-ngsw-update.service.spec.js[39m               [2m | [22m[2mspec-ngsw-update.service.spec[22m               [2m | [22m  [36m1.60 kB[39m[2m | [22m
+[32mspec-app-user-layout.component.spec.js[39m         [2m | [22m[2mspec-app-user-layout.component.spec[22m         [2m | [22m  [36m1.59 kB[39m[2m | [22m
+[32mspec-operations-tab.component.spec.js[39m          [2m | [22m[2mspec-operations-tab.component.spec[22m          [2m | [22m  [36m1.59 kB[39m[2m | [22m
+[32mspec-seeder-results.component.spec.js[39m          [2m | [22m[2mspec-seeder-results.component.spec[22m          [2m | [22m  [36m1.59 kB[39m[2m | [22m
+[32mspec-dialog-actions.component.spec.js[39m          [2m | [22m[2mspec-dialog-actions.component.spec[22m          [2m | [22m  [36m1.59 kB[39m[2m | [22m
+[32mspec-popup-menu.component.spec.js[39m              [2m | [22m[2mspec-popup-menu.component.spec[22m              [2m | [22m  [36m1.59 kB[39m[2m | [22m
+[32mspec-slide-in-modal.component.spec.js[39m          [2m | [22m[2mspec-slide-in-modal.component.spec[22m          [2m | [22m  [36m1.59 kB[39m[2m | [22m
+[32mspec-preview-image.component.spec.js[39m           [2m | [22m[2mspec-preview-image.component.spec[22m           [2m | [22m  [36m1.58 kB[39m[2m | [22m
+[32mspec-size-detector.component.spec.js[39m           [2m | [22m[2mspec-size-detector.component.spec[22m           [2m | [22m  [36m1.58 kB[39m[2m | [22m
+[32mspec-dropdown-cart.component.spec.js[39m           [2m | [22m[2mspec-dropdown-cart.component.spec[22m           [2m | [22m  [36m1.58 kB[39m[2m | [22m
+[32mspec-consent-modal.component.spec.js[39m           [2m | [22m[2mspec-consent-modal.component.spec[22m           [2m | [22m  [36m1.58 kB[39m[2m | [22m
+[32mspec-container-box.component.spec.js[39m           [2m | [22m[2mspec-container-box.component.spec[22m           [2m | [22m  [36m1.58 kB[39m[2m | [22m
+[32mspec-app-not-found.component.spec.js[39m           [2m | [22m[2mspec-app-not-found.component.spec[22m           [2m | [22m  [36m1.56 kB[39m[2m | [22m
+[32mspec-app-sidebar.component.spec.js[39m             [2m | [22m[2mspec-app-sidebar.component.spec[22m             [2m | [22m  [36m1.56 kB[39m[2m | [22m
+[32mspec-features.component.spec.js[39m                [2m | [22m[2mspec-features.component.spec[22m                [2m | [22m  [36m1.56 kB[39m[2m | [22m
+[32mspec-app-footer.component.spec.js[39m              [2m | [22m[2mspec-app-footer.component.spec[22m              [2m | [22m  [36m1.54 kB[39m[2m | [22m
+[32mspec-app-crawl.component.spec.js[39m               [2m | [22m[2mspec-app-crawl.component.spec[22m               [2m | [22m  [36m1.53 kB[39m[2m | [22m
+[32mspec-cookies.component.spec.js[39m                 [2m | [22m[2mspec-cookies.component.spec[22m                 [2m | [22m  [36m1.53 kB[39m[2m | [22m
+[32mspec-snackbar.component.spec.js[39m                [2m | [22m[2mspec-snackbar.component.spec[22m                [2m | [22m  [36m1.52 kB[39m[2m | [22m
+[32mspec-checkbox.component.spec.js[39m                [2m | [22m[2mspec-checkbox.component.spec[22m                [2m | [22m  [36m1.52 kB[39m[2m | [22m
+[32mspec-stinput.component.spec.js[39m                 [2m | [22m[2mspec-stinput.component.spec[22m                 [2m | [22m  [36m1.50 kB[39m[2m | [22m
+[32mspec-tooltip.component.spec.js[39m                 [2m | [22m[2mspec-tooltip.component.spec[22m                 [2m | [22m  [36m1.50 kB[39m[2m | [22m
+[32mspec-payment.component.spec.js[39m                 [2m | [22m[2mspec-payment.component.spec[22m                 [2m | [22m  [36m1.50 kB[39m[2m | [22m
+[32mspec-browser.component.spec.js[39m                 [2m | [22m[2mspec-browser.component.spec[22m                 [2m | [22m  [36m1.50 kB[39m[2m | [22m
+[32mspec-hero.component.spec.js[39m                    [2m | [22m[2mspec-hero.component.spec[22m                    [2m | [22m  [36m1.50 kB[39m[2m | [22m
+[32mspec-dialog.component.spec.js[39m                  [2m | [22m[2mspec-dialog.component.spec[22m                  [2m | [22m  [36m1.50 kB[39m[2m | [22m
+[32mspec-ginput.component.spec.js[39m                  [2m | [22m[2mspec-ginput.component.spec[22m                  [2m | [22m  [36m1.49 kB[39m[2m | [22m
+[32mspec-cpack.component.spec.js[39m                   [2m | [22m[2mspec-cpack.component.spec[22m                   [2m | [22m  [36m1.48 kB[39m[2m | [22m
+[32mspec-tabs.component.spec.js[39m                    [2m | [22m[2mspec-tabs.component.spec[22m                    [2m | [22m  [36m1.48 kB[39m[2m | [22m
+[32mchunk-WY6L36LI.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m1.26 kB[39m[2m | [22m
+[32mspec-window.service.spec.js[39m                    [2m | [22m[2mspec-window.service.spec[22m                    [2m | [22m  [36m1.22 kB[39m[2m | [22m
+[32mchunk-LWVDM4LJ.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m  [36m1.18 kB[39m[2m | [22m
+[32mspec-removeclass.directive.spec.js[39m             [2m | [22m[2mspec-removeclass.directive.spec[22m             [2m | [22m  [36m1.16 kB[39m[2m | [22m
+[32mspec-operation-status.service.spec.js[39m          [2m | [22m[2mspec-operation-status.service.spec[22m          [2m | [22m  [36m1.05 kB[39m[2m | [22m
+[32mspec-machine-store.service.spec.js[39m             [2m | [22m[2mspec-machine-store.service.spec[22m             [2m | [22m  [36m1.03 kB[39m[2m | [22m
+[32mspec-screen-resize.service.spec.js[39m             [2m | [22m[2mspec-screen-resize.service.spec[22m             [2m | [22m  [36m1.03 kB[39m[2m | [22m
+[32mspec-crawl-stream.service.spec.js[39m              [2m | [22m[2mspec-crawl-stream.service.spec[22m              [2m | [22m  [36m1.02 kB[39m[2m | [22m
+[32mspec-crawl-store.service.spec.js[39m               [2m | [22m[2mspec-crawl-store.service.spec[22m               [2m | [22m  [36m1.02 kB[39m[2m | [22m
+[32mspec-deployment.service.spec.js[39m                [2m | [22m[2mspec-deployment.service.spec[22m                [2m | [22m  [36m1.01 kB[39m[2m | [22m
+[32mspec-user-resolver.service.spec.js[39m             [2m | [22m[2mspec-user-resolver.service.spec[22m             [2m | [22m  [36m1.01 kB[39m[2m | [22m
+[32mspec-togglebtn.service.spec.js[39m                 [2m | [22m[2mspec-togglebtn.service.spec[22m                 [2m | [22m  [36m1.00 kB[39m[2m | [22m
+[32mspec-websocket.service.spec.js[39m                 [2m | [22m[2mspec-websocket.service.spec[22m                 [2m | [22m  [36m1.00 kB[39m[2m | [22m
+[32mspec-firestore.service.spec.js[39m                 [2m | [22m[2mspec-firestore.service.spec[22m                 [2m | [22m  [36m1.00 kB[39m[2m | [22m
+[32mspec-analytics.service.spec.js[39m                 [2m | [22m[2mspec-analytics.service.spec[22m                 [2m | [22m  [36m1.00 kB[39m[2m | [22m
+[32mspec-snackbar.service.spec.js[39m                  [2m | [22m[2mspec-snackbar.service.spec[22m                  [2m | [22m[36m998 bytes[39m[2m | [22m
+[32mspec-crawlapi.service.spec.js[39m                  [2m | [22m[2mspec-crawlapi.service.spec[22m                  [2m | [22m[36m998 bytes[39m[2m | [22m
+[32mspec-extgrpc.service.spec.js[39m                   [2m | [22m[2mspec-extgrpc.service.spec[22m                   [2m | [22m[36m995 bytes[39m[2m | [22m
+[32mspec-svgicon.service.spec.js[39m                   [2m | [22m[2mspec-svgicon.service.spec[22m                   [2m | [22m[36m991 bytes[39m[2m | [22m
+[32mspec-loading.service.spec.js[39m                   [2m | [22m[2mspec-loading.service.spec[22m                   [2m | [22m[36m991 bytes[39m[2m | [22m
+[32mspec-scroll.service.spec.js[39m                    [2m | [22m[2mspec-scroll.service.spec[22m                    [2m | [22m[36m984 bytes[39m[2m | [22m
+[32mspec-webrtc.service.spec.js[39m                    [2m | [22m[2mspec-webrtc.service.spec[22m                    [2m | [22m[36m984 bytes[39m[2m | [22m
+[32mspec-logger.service.spec.js[39m                    [2m | [22m[2mspec-logger.service.spec[22m                    [2m | [22m[36m984 bytes[39m[2m | [22m
+[32mspec-aiapi.service.spec.js[39m                     [2m | [22m[2mspec-aiapi.service.spec[22m                     [2m | [22m[36m981 bytes[39m[2m | [22m
+[32mspec-pluto.service.spec.js[39m                     [2m | [22m[2mspec-pluto.service.spec[22m                     [2m | [22m[36m977 bytes[39m[2m | [22m
+[32mspec-route.service.spec.js[39m                     [2m | [22m[2mspec-route.service.spec[22m                     [2m | [22m[36m977 bytes[39m[2m | [22m
+[32mspec-pack.service.spec.js[39m                      [2m | [22m[2mspec-pack.service.spec[22m                      [2m | [22m[36m970 bytes[39m[2m | [22m
+[32mspec-cart.service.spec.js[39m                      [2m | [22m[2mspec-cart.service.spec[22m                      [2m | [22m[36m970 bytes[39m[2m | [22m
+[32mspec-auth.service.spec.js[39m                      [2m | [22m[2mspec-auth.service.spec[22m                      [2m | [22m[36m970 bytes[39m[2m | [22m
+[32mchunk-PQLJSK4V.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m[36m837 bytes[39m[2m | [22m
+[32mchunk-OHIOUHE5.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m[36m668 bytes[39m[2m | [22m
+[32mchunk-B3Q7L4YB.js[39m                              [2m | [22m[2m-[22m                                           [2m | [22m[36m642 bytes[39m[2m | [22m
+[32mspec-forbiddenvalidator.directive.spec.js[39m      [2m | [22m[2mspec-forbiddenvalidator.directive.spec[22m      [2m | [22m[36m558 bytes[39m[2m | [22m
+[32mjasmine-cleanup-0.js[39m                           [2m | [22m[2mjasmine-cleanup-0[22m                           [2m | [22m[36m519 bytes[39m[2m | [22m
+[32mspec-format-bytes.pipe.spec.js[39m                 [2m | [22m[2mspec-format-bytes.pipe.spec[22m                 [2m | [22m[36m426 bytes[39m[2m | [22m
+[32mspec-formcontrol.pipe.spec.js[39m                  [2m | [22m[2mspec-formcontrol.pipe.spec[22m                  [2m | [22m[36m422 bytes[39m[2m | [22m
+[32mspec-provider.pipe.spec.js[39m                     [2m | [22m[2mspec-provider.pipe.spec[22m                     [2m | [22m[36m401 bytes[39m[2m | [22m
+[32mspec-reverse.pipe.spec.js[39m                      [2m | [22m[2mspec-reverse.pipe.spec[22m                      [2m | [22m[36m394 bytes[39m[2m | [22m
+[32mspec-pdf-src.pipe.spec.js[39m                      [2m | [22m[2mspec-pdf-src.pipe.spec[22m                      [2m | [22m[36m391 bytes[39m[2m | [22m
+
+[1m [22m                                              [2m | [22m[1mInitial total[22m                               [2m | [22m [1m11.90 MB[22m
+
+[1mLazy chunk files[22m                               [2m | [22m[1mNames[22m                                       [2m | [22m [1mRaw size[22m
+[32mchunk-MSUXILWK.js[39m                              [2m | [22m[2mindex-esm[22m                                   [2m | [22m [36m76.83 kB[39m[2m | [22m
+
+Application bundle generation complete. [6.644 seconds] - 2026-03-19T16:48:16.317Z
+
+[32m19 03 2026 18:48:17.005:INFO [karma-server]: [39mKarma v6.4.4 server started at http://localhost:9876/
+[32m19 03 2026 18:48:17.009:INFO [launcher]: [39mLaunching browsers ChromeHeadless with concurrency unlimited
+[32m19 03 2026 18:48:17.016:INFO [launcher]: [39mStarting browser ChromeHeadless
+[32m19 03 2026 18:48:18.308:INFO [Chrome Headless 146.0.0.0 (Windows 10)]: [39mConnected on socket 0qliNWhLSyULkQY2AAAB with id 87133407
+Chrome Headless 146.0.0.0 (Windows 10): Executed 0 of 175[32m SUCCESS[39m (0 secs / 0 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 1 of 175[32m SUCCESS[39m (0 secs / 0.032 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 2 of 175[32m SUCCESS[39m (0 secs / 0.035 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 2 of 175[32m SUCCESS[39m (0 secs / 0.035 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 2 of 175[32m SUCCESS[39m (0 secs / 0.035 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 2 of 175[32m SUCCESS[39m (0 secs / 0.035 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 2 of 175[32m SUCCESS[39m (0 secs / 0.035 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 3 of 175[32m SUCCESS[39m (0 secs / 0.091 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 4 of 175[32m SUCCESS[39m (0 secs / 0.099 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 5 of 175[32m SUCCESS[39m (0 secs / 0.101 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 6 of 175[32m SUCCESS[39m (0 secs / 0.103 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 7 of 175[32m SUCCESS[39m (0 secs / 0.154 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 8 of 175[32m SUCCESS[39m (0 secs / 0.157 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 9 of 175[32m SUCCESS[39m (0 secs / 0.158 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 10 of 175[32m SUCCESS[39m (0 secs / 0.159 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 11 of 175[32m SUCCESS[39m (0 secs / 0.16 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 12 of 175[32m SUCCESS[39m (0 secs / 0.161 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 13 of 175[32m SUCCESS[39m (0 secs / 0.162 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 13 of 175[32m SUCCESS[39m (0 secs / 0.162 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: 303}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 13 of 175[32m SUCCESS[39m (0 secs / 0.162 secs)
+ERROR: 'ERROR', Object{code: 303}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ImageSrcsetDirective should set srcset on ngAfterViewInit FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at TestComponent2_Template (ng:///TestComponent2.js:7:64)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 14 of 175[31m (1 FAILED)[39m (0 secs / 0.29 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 14 of 175[31m (1 FAILED)[39m (0 secs / 0.29 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: 303}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 14 of 175[31m (1 FAILED)[39m (0 secs / 0.29 secs)
+ERROR: 'ERROR', Object{code: 303}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ImageSrcsetDirective should generate correct avatar URL FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at TestComponent2_Template (ng:///TestComponent2.js:7:64)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 15 of 175[31m (2 FAILED)[39m (0 secs / 0.292 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 15 of 175[31m (2 FAILED)[39m (0 secs / 0.292 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: 303}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 15 of 175[31m (2 FAILED)[39m (0 secs / 0.292 secs)
+ERROR: 'ERROR', Object{code: 303}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 16 of 175[31m (2 FAILED)[39m (0 secs / 0.293 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 16 of 175[31m (2 FAILED)[39m (0 secs / 0.293 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: 303}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 16 of 175[31m (2 FAILED)[39m (0 secs / 0.293 secs)
+ERROR: 'ERROR', Object{code: 303}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ImageSrcsetDirective should clear onload and onerror on load FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at TestComponent2_Template (ng:///TestComponent2.js:7:64)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 17 of 175[31m (3 FAILED)[39m (0 secs / 0.294 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 17 of 175[31m (3 FAILED)[39m (0 secs / 0.294 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: 303}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 17 of 175[31m (3 FAILED)[39m (0 secs / 0.294 secs)
+ERROR: 'ERROR', Object{code: 303}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ImageSrcsetDirective should handle error and set fallback image FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at TestComponent2_Template (ng:///TestComponent2.js:7:64)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 18 of 175[31m (4 FAILED)[39m (0 secs / 0.297 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 18 of 175[31m (4 FAILED)[39m (0 secs / 0.297 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: 303}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 18 of 175[31m (4 FAILED)[39m (0 secs / 0.297 secs)
+ERROR: 'ERROR', Object{code: 303}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ImageSrcsetDirective should use "NA" as default name if name is not provided FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at TestComponent2_Template (ng:///TestComponent2.js:7:64)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 19 of 175[31m (5 FAILED)[39m (0 secs / 0.3 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 20 of 175[31m (5 FAILED)[39m (0 secs / 0.301 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 21 of 175[31m (5 FAILED)[39m (0 secs / 0.302 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 22 of 175[31m (5 FAILED)[39m (0 secs / 0.306 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 22 of 175[31m (5 FAILED)[39m (0 secs / 0.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: -950}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 22 of 175[31m (5 FAILED)[39m (0 secs / 0.306 secs)
+ERROR: 'ERROR', Object{code: -950}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 23 of 175[31m (5 FAILED)[39m (0 secs / 0.312 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 24 of 175[31m (5 FAILED)[39m (0 secs / 0.314 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 25 of 175[31m (5 FAILED)[39m (0 secs / 0.315 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 25 of 175[31m (5 FAILED)[39m (0 secs / 0.315 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 25 of 175[31m (5 FAILED)[39m (0 secs / 0.315 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 25 of 175[31m (5 FAILED)[39m (0 secs / 0.315 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: -100}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 25 of 175[31m (5 FAILED)[39m (0 secs / 0.315 secs)
+ERROR: 'ERROR', Object{code: -100}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) LoginComponent should create FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'LOGIN.SIGN_IN_TITLE'. Expression location: LoginComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at interpolation1 (node_modules/@angular/core/fesm2022/debug_node.mjs:27456:23)
+	    at ╔╡╔╡textInterpolate1 (node_modules/@angular/core/fesm2022/debug_node.mjs:27644:26)
+	    at ╔╡╔╡textInterpolate (node_modules/@angular/core/fesm2022/debug_node.mjs:27620:5)
+	    at LoginComponent2_Template (ng:///LoginComponent2.js:428:9)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 26 of 175[31m (6 FAILED)[39m (0 secs / 0.34 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 27 of 175[31m (6 FAILED)[39m (0 secs / 0.341 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 27 of 175[31m (6 FAILED)[39m (0 secs / 0.341 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 27 of 175[31m (6 FAILED)[39m (0 secs / 0.341 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) SlideInModalComponent should create FAILED[39m
+	TypeError: Cannot read properties of undefined (reading 'value')
+	    at SlideInModalComponent2_Template (ng:///SlideInModalComponent2.js:95:42)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10223:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewWhileDirty (node_modules/@angular/core/fesm2022/debug_node.mjs:10077:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 28 of 175[31m (7 FAILED)[39m (0 secs / 0.349 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 29 of 175[31m (7 FAILED)[39m (0 secs / 0.352 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 30 of 175[31m (7 FAILED)[39m (0 secs / 0.354 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) DialogActionsComponent should create FAILED[39m
+	╔╡NotFound: NG0201: No provider found for `DialogComponent2`. Source: DynamicTestModule. Find more at https://v20.angular.dev/errors/NG0201
+	error properties: Object({ code: -201, ngErrorCode: -201, ngErrorMessage: 'No provider found for `DialogComponent2`.', ngTokenPath: [ 'DialogComponent2' ] })
+	╔╡NotFound: NG0201: No provider found for `DialogComponent2`. Source: DynamicTestModule. Find more at https://v20.angular.dev/errors/NG0201
+	    at createRuntimeError (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:924:19)
+	    at NullInjector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:1494:27)
+	    at R3Injector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:2052:33)
+	    at R3Injector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:2052:33)
+	    at ChainedInjector.get (node_modules/@angular/core/fesm2022/debug_node.mjs:13498:36)
+	    at lookupTokenUsingModuleInjector (node_modules/@angular/core/fesm2022/debug_node.mjs:1718:39)
+	    at getOrCreateInjectable (node_modules/@angular/core/fesm2022/debug_node.mjs:1766:12)
+	    at ╔╡╔╡directiveInject (node_modules/@angular/core/fesm2022/debug_node.mjs:13549:19)
+	    at ╔╡╔╡inject (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:1061:42)
+	    at inject2 (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:1149:12)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 31 of 175[31m (8 FAILED)[39m (0 secs / 0.357 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 32 of 175[31m (8 FAILED)[39m (0 secs / 0.358 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 33 of 175[31m (8 FAILED)[39m (0 secs / 0.359 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 34 of 175[31m (8 FAILED)[39m (0 secs / 0.36 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 34 of 175[31m (8 FAILED)[39m (0 secs / 0.36 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 34 of 175[31m (8 FAILED)[39m (0 secs / 0.36 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) RadioToggleComponent should create FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: '{"_pendingDirty":false,"_hasOwnPendingAsyncValidator":null,"_pendingTouched":false,"_parent":null,"_composedValidatorFn":null,"_composedAsyncValidatorFn":null,"_rawValidators":null,"_rawAsyncValidatorΓÇª'. Expression location: RadioToggleComponent2 component. Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at RadioToggleComponent2_Template (ng:///RadioToggleComponent2.js:29:105)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 35 of 175[31m (9 FAILED)[39m (0 secs / 0.373 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 35 of 175[31m (9 FAILED)[39m (0 secs / 0.373 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 35 of 175[31m (9 FAILED)[39m (0 secs / 0.373 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) RadioButtonComponent should create FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'value'. Expression location: RadioButtonComponent2 component. Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡interpolate (node_modules/@angular/core/fesm2022/debug_node.mjs:28062:12)
+	    at RadioButtonComponent2_Template (ng:///RadioButtonComponent2.js:28:31)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 36 of 175[31m (10 FAILED)[39m (0 secs / 0.381 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 37 of 175[31m (10 FAILED)[39m (0 secs / 0.383 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 38 of 175[31m (10 FAILED)[39m (0 secs / 0.385 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 38 of 175[31m (10 FAILED)[39m (0 secs / 0.385 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 38 of 175[31m (10 FAILED)[39m (0 secs / 0.385 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) CheckboxComponent should create FAILED[39m
+	TypeError: Cannot read properties of undefined (reading 'value')
+	    at CheckboxComponent2_Template (ng:///CheckboxComponent2.js:40:49)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10223:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewWhileDirty (node_modules/@angular/core/fesm2022/debug_node.mjs:10077:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 39 of 175[31m (11 FAILED)[39m (0 secs / 0.391 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 40 of 175[31m (11 FAILED)[39m (0 secs / 0.392 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 41 of 175[31m (11 FAILED)[39m (0 secs / 0.392 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 42 of 175[31m (11 FAILED)[39m (0 secs / 0.392 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 43 of 175[31m (11 FAILED)[39m (0 secs / 0.392 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 44 of 175[31m (11 FAILED)[39m (0 secs / 0.404 secs)
+[33m19 03 2026 18:48:19.933:WARN [web-server]: [39m404: /images/bgland-optimized.webp
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 45 of 175[31m (11 FAILED)[39m (0 secs / 0.406 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 45 of 175[31m (11 FAILED)[39m (0 secs / 0.406 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 45 of 175[31m (11 FAILED)[39m (0 secs / 0.406 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 45 of 175[31m (11 FAILED)[39m (0 secs / 0.406 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 45 of 175[31m (11 FAILED)[39m (0 secs / 0.406 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 46 of 175[31m (11 FAILED)[39m (0 secs / 0.47 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 47 of 175[31m (11 FAILED)[39m (0 secs / 0.472 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 48 of 175[31m (11 FAILED)[39m (0 secs / 0.481 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 49 of 175[31m (11 FAILED)[39m (0 secs / 0.485 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 50 of 175[31m (11 FAILED)[39m (0 secs / 0.502 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 51 of 175[31m (11 FAILED)[39m (0 secs / 0.505 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 51 of 175[31m (11 FAILED)[39m (0 secs / 0.505 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 51 of 175[31m (11 FAILED)[39m (0 secs / 0.505 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 52 of 175[31m (11 FAILED)[39m (0 secs / 0.508 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 53 of 175[31m (11 FAILED)[39m (0 secs / 0.509 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 54 of 175[31m (11 FAILED)[39m (0 secs / 0.51 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) AppComponent should create the app FAILED[39m
+	╔╡NotFound: NG0201: No provider found for `_SwUpdate`. Source: Standalone[AppComponent2]. Find more at https://v20.angular.dev/errors/NG0201
+	error properties: Object({ code: -201, ngErrorCode: -201, ngErrorMessage: 'No provider found for `_SwUpdate`.', ngTokenPath: [ '_SwUpdate' ] })
+	╔╡NotFound: NG0201: No provider found for `_SwUpdate`. Source: Standalone[AppComponent2]. Find more at https://v20.angular.dev/errors/NG0201
+	    at createRuntimeError (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:924:19)
+	    at NullInjector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:1494:27)
+	    at R3Injector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:2052:33)
+	    at R3Injector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:2052:33)
+	    at R3Injector.get (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:2052:33)
+	    at ChainedInjector.get (node_modules/@angular/core/fesm2022/debug_node.mjs:13498:36)
+	    at lookupTokenUsingModuleInjector (node_modules/@angular/core/fesm2022/debug_node.mjs:1718:39)
+	    at getOrCreateInjectable (node_modules/@angular/core/fesm2022/debug_node.mjs:1766:12)
+	    at ╔╡╔╡directiveInject (node_modules/@angular/core/fesm2022/debug_node.mjs:13549:19)
+	    at ╔╡╔╡inject (node_modules/@angular/core/fesm2022/root_effect_scheduler.mjs:1061:42)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 55 of 175[31m (12 FAILED)[39m (0 secs / 0.52 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 55 of 175[31m (12 FAILED)[39m (0 secs / 0.52 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 55 of 175[31m (12 FAILED)[39m (0 secs / 0.52 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 55 of 175[31m (12 FAILED)[39m (0 secs / 0.52 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 55 of 175[31m (12 FAILED)[39m (0 secs / 0.52 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 56 of 175[31m (12 FAILED)[39m (0 secs / 0.53 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 57 of 175[31m (12 FAILED)[39m (0 secs / 0.533 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 58 of 175[31m (12 FAILED)[39m (0 secs / 0.541 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) LoadingDotsComponent should create FAILED[39m
+	Error: Unexpected "LoadingDotsComponent2" found in the "declarations" array of the "TestBed.configureTestingModule" call, "LoadingDotsComponent2" is marked as standalone and can't be declared in any NgModule - did you intend to import it instead (by adding it to the "imports" array)?
+	    at node_modules/@angular/core/fesm2022/testing.mjs:774:23
+	    at Array.forEach (<anonymous>)
+	    at assertNoStandaloneComponents (node_modules/@angular/core/fesm2022/testing.mjs:770:11)
+	    at TestBedCompiler.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:850:13)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+	    at src/app/core/components/loading-dots/loading-dots.component.spec.ts:11:19
+	    at Generator.next (<anonymous>)
+	    at chunk-FTJWL4R4.js:64:61
+	    at new ZoneAwarePromise (node_modules/zone.js/fesm2015/zone.js:2702:25)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 59 of 175[31m (13 FAILED)[39m (0 secs / 0.672 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) LoadingDotsComponent should have animation FAILED[39m
+	Error: Unexpected "LoadingDotsComponent2" found in the "declarations" array of the "TestBed.configureTestingModule" call, "LoadingDotsComponent2" is marked as standalone and can't be declared in any NgModule - did you intend to import it instead (by adding it to the "imports" array)?
+	    at node_modules/@angular/core/fesm2022/testing.mjs:774:23
+	    at Array.forEach (<anonymous>)
+	    at assertNoStandaloneComponents (node_modules/@angular/core/fesm2022/testing.mjs:770:11)
+	    at TestBedCompiler.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:850:13)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+	    at src/app/core/components/loading-dots/loading-dots.component.spec.ts:11:19
+	    at Generator.next (<anonymous>)
+	    at chunk-FTJWL4R4.js:64:61
+	    at new ZoneAwarePromise (node_modules/zone.js/fesm2015/zone.js:2702:25)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 60 of 175[31m (14 FAILED)[39m (0 secs / 0.672 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) LoadingDotsComponent should have three dots FAILED[39m
+	Error: Unexpected "LoadingDotsComponent2" found in the "declarations" array of the "TestBed.configureTestingModule" call, "LoadingDotsComponent2" is marked as standalone and can't be declared in any NgModule - did you intend to import it instead (by adding it to the "imports" array)?
+	    at node_modules/@angular/core/fesm2022/testing.mjs:774:23
+	    at Array.forEach (<anonymous>)
+	    at assertNoStandaloneComponents (node_modules/@angular/core/fesm2022/testing.mjs:770:11)
+	    at TestBedCompiler.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:850:13)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+	    at src/app/core/components/loading-dots/loading-dots.component.spec.ts:11:19
+	    at Generator.next (<anonymous>)
+	    at chunk-FTJWL4R4.js:64:61
+	    at new ZoneAwarePromise (node_modules/zone.js/fesm2015/zone.js:2702:25)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 61 of 175[31m (15 FAILED)[39m (0 secs / 0.673 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 61 of 175[31m (15 FAILED)[39m (0 secs / 0.673 secs)
+LOG: ''
+[1A[2KERROR: [36m'Γ¥î Error fetching dashboard summary:', Object{code: 'invalid-argument', customData: undefined, name: 'FirebaseError', toString: () => `${ ... }`}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 61 of 175[31m (15 FAILED)[39m (0 secs / 0.673 secs)
+ERROR: 'Γ¥î Error fetching dashboard summary:', Object{code: 'invalid-argument', customData: undefined, name: 'FirebaseError', toString: () => `${ ... }`}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 61 of 175[31m (15 FAILED)[39m (0 secs / 0.673 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 61 of 175[31m (15 FAILED)[39m (0 secs / 0.673 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 62 of 175[31m (15 FAILED)[39m (0 secs / 0.697 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 62 of 175[31m (15 FAILED)[39m (0 secs / 0.697 secs)
+LOG: ''
+[1A[2KERROR: [36m'Γ¥î Analytics initialization error:', Object{code: 'invalid-argument', customData: undefined, name: 'FirebaseError', toString: () => `${ ... }`}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 62 of 175[31m (15 FAILED)[39m (0 secs / 0.697 secs)
+ERROR: 'Γ¥î Analytics initialization error:', Object{code: 'invalid-argument', customData: undefined, name: 'FirebaseError', toString: () => `${ ... }`}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 63 of 175[31m (15 FAILED)[39m (0 secs / 0.727 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 64 of 175[31m (15 FAILED)[39m (0 secs / 0.729 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 65 of 175[31m (15 FAILED)[39m (0 secs / 0.73 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 66 of 175[31m (15 FAILED)[39m (0 secs / 0.731 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 66 of 175[31m (15 FAILED)[39m (0 secs / 0.731 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 66 of 175[31m (15 FAILED)[39m (0 secs / 0.731 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 67 of 175[31m (15 FAILED)[39m (0 secs / 1.294 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 67 of 175[31m (15 FAILED)[39m (0 secs / 1.294 secs)
+LOG: ''
+[1A[2KERROR: [36m'Password reset verification error:', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 67 of 175[31m (15 FAILED)[39m (0 secs / 1.294 secs)
+ERROR: 'Password reset verification error:', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 67 of 175[31m (15 FAILED)[39m (0 secs / 1.294 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 67 of 175[31m (15 FAILED)[39m (0 secs / 1.294 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ActionHandlerComponent should call confirmPasswordReset and show success on resetPassword FAILED[39m
+	Expected '' to be 'RESET_PASSWORD.SUCCESS'.
+	    at <Jasmine>
+	    at src/app/pages/service/action/action-handler.component.spec.ts:64:38
+	    at Generator.next (<anonymous>)
+	    at fulfilled (chunk-FTJWL4R4.js:51:24)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 68 of 175[31m (16 FAILED)[39m (0 secs / 1.301 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 68 of 175[31m (16 FAILED)[39m (0 secs / 1.301 secs)
+LOG: ''
+[1A[2KERROR: [36m'Password reset verification error:', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 68 of 175[31m (16 FAILED)[39m (0 secs / 1.301 secs)
+ERROR: 'Password reset verification error:', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 68 of 175[31m (16 FAILED)[39m (0 secs / 1.301 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 68 of 175[31m (16 FAILED)[39m (0 secs / 1.301 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ActionHandlerComponent should show error on resetPassword failure FAILED[39m
+	Expected 'RESET_PASSWORD.FORM_INVALID' to be 'RESET_PASSWORD.FAILED'.
+	    at <Jasmine>
+	    at src/app/pages/service/action/action-handler.component.spec.ts:73:36
+	    at Generator.next (<anonymous>)
+	    at fulfilled (chunk-FTJWL4R4.js:51:24)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'Password reset verification error:', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+ERROR: 'Password reset verification error:', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'error'[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+ERROR: 'error'
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'Password reset verification error:', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+ERROR: 'Password reset verification error:', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{code: -100}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+ERROR: 'ERROR', Object{code: -100}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+LOG: ''
+[1A[2KERROR: [36m'Password reset verification error:', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 69 of 175[31m (17 FAILED)[39m (0 secs / 1.306 secs)
+ERROR: 'Password reset verification error:', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 70 of 175[31m (17 FAILED)[39m (0 secs / 1.311 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 70 of 175[31m (17 FAILED)[39m (0 secs / 1.311 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 70 of 175[31m (17 FAILED)[39m (0 secs / 1.311 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 71 of 175[31m (17 FAILED)[39m (0 secs / 1.316 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 71 of 175[31m (17 FAILED)[39m (0 secs / 1.316 secs)
+LOG: ''
+[1A[2KERROR: [36m'Password reset verification error:', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 71 of 175[31m (17 FAILED)[39m (0 secs / 1.316 secs)
+ERROR: 'Password reset verification error:', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 72 of 175[31m (17 FAILED)[39m (0 secs / 1.322 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 73 of 175[31m (17 FAILED)[39m (0 secs / 1.323 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 74 of 175[31m (17 FAILED)[39m (0 secs / 1.324 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 75 of 175[31m (17 FAILED)[39m (0 secs / 1.326 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 76 of 175[31m (17 FAILED)[39m (0 secs / 1.327 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 76 of 175[31m (17 FAILED)[39m (0 secs / 1.327 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 76 of 175[31m (17 FAILED)[39m (0 secs / 1.327 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 76 of 175[31m (17 FAILED)[39m (0 secs / 1.327 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 76 of 175[31m (17 FAILED)[39m (0 secs / 1.327 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 77 of 175[31m (17 FAILED)[39m (0 secs / 1.335 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 78 of 175[31m (17 FAILED)[39m (0 secs / 1.337 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 79 of 175[31m (17 FAILED)[39m (0 secs / 1.338 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) TooltipDirective should create tooltip component on mouseenter FAILED[39m
+	TypeError: this._doc.querySelectorAll is not a function
+	    at _DOMTestComponentRenderer.removeAllRootElementsImpl (node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+	    at _DOMTestComponentRenderer.insertRootElement (node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+	    at UserContext.<anonymous> (src/app/core/directives/tooltip.directive.spec.ts:76:23)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at _ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 80 of 175[31m (18 FAILED)[39m (0 secs / 1.345 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) TooltipDirective should destroy tooltip component on mouseleave after delay FAILED[39m
+	TypeError: this._doc.querySelectorAll is not a function
+	    at _DOMTestComponentRenderer.removeAllRootElementsImpl (node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+	    at _DOMTestComponentRenderer.insertRootElement (node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+	    at UserContext.<anonymous> (src/app/core/directives/tooltip.directive.spec.ts:76:23)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at _ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 81 of 175[31m (19 FAILED)[39m (0 secs / 1.347 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) TooltipDirective should destroy the component on ngOnDestroy FAILED[39m
+	TypeError: this._doc.querySelectorAll is not a function
+	    at _DOMTestComponentRenderer.removeAllRootElementsImpl (node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+	    at _DOMTestComponentRenderer.insertRootElement (node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+	    at UserContext.<anonymous> (src/app/core/directives/tooltip.directive.spec.ts:76:23)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at _ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 82 of 175[31m (20 FAILED)[39m (0 secs / 1.35 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) TooltipDirective should set tooltip text and position to tooltip component FAILED[39m
+	TypeError: this._doc.querySelectorAll is not a function
+	    at _DOMTestComponentRenderer.removeAllRootElementsImpl (node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+	    at _DOMTestComponentRenderer.insertRootElement (node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+	    at UserContext.<anonymous> (src/app/core/directives/tooltip.directive.spec.ts:76:23)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at _ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 83 of 175[31m (21 FAILED)[39m (0 secs / 1.352 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) TooltipDirective should create an instance FAILED[39m
+	TypeError: this._doc.querySelectorAll is not a function
+	    at _DOMTestComponentRenderer.removeAllRootElementsImpl (node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+	    at _DOMTestComponentRenderer.insertRootElement (node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+	    at _TestBedImpl.createComponent (node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+	    at UserContext.<anonymous> (src/app/core/directives/tooltip.directive.spec.ts:76:23)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at _ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 84 of 175[31m (22 FAILED)[39m (0 secs / 1.354 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 85 of 175[31m (22 FAILED)[39m (0 secs / 1.355 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 86 of 175[31m (22 FAILED)[39m (0 secs / 1.355 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 87 of 175[31m (22 FAILED)[39m (0 secs / 1.355 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 88 of 175[31m (22 FAILED)[39m (0 secs / 1.355 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 89 of 175[31m (22 FAILED)[39m (0 secs / 1.356 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) BrowserConfigComponent should create FAILED[39m
+	TypeError: Cannot read properties of undefined (reading 'pipe')
+	    at new BrowserConfigComponent2 (src/app/pages/user/crawl-pack/browser-config/browser-config.component.ts:77:48)
+	    at NodeInjectorFactory.BrowserConfigComponent2_Factory [as factory] (ng:///BrowserConfigComponent2/╔╡fac.js:4:10)
+	    at getNodeInjectable (node_modules/@angular/core/fesm2022/debug_node.mjs:1989:44)
+	    at instantiateAllDirectives (node_modules/@angular/core/fesm2022/debug_node.mjs:9373:27)
+	    at createDirectivesInstances (node_modules/@angular/core/fesm2022/debug_node.mjs:9146:5)
+	    at ComponentFactory2.create (node_modules/@angular/core/fesm2022/debug_node.mjs:14697:17)
+	    at initComponent (node_modules/@angular/core/fesm2022/testing.mjs:2068:51)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at _ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 90 of 175[31m (23 FAILED)[39m (0 secs / 1.408 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 90 of 175[31m (23 FAILED)[39m (0 secs / 1.408 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 90 of 175[31m (23 FAILED)[39m (0 secs / 1.408 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) GinputComponent should create FAILED[39m
+	TypeError: Cannot read properties of undefined (reading 'valid')
+	    at GinputComponent2_Template (ng:///GinputComponent2.js:90:79)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10223:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewWhileDirty (node_modules/@angular/core/fesm2022/debug_node.mjs:10077:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 91 of 175[31m (24 FAILED)[39m (0 secs / 1.419 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 91 of 175[31m (24 FAILED)[39m (0 secs / 1.419 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 91 of 175[31m (24 FAILED)[39m (0 secs / 1.419 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 92 of 175[31m (24 FAILED)[39m (0 secs / 1.423 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 93 of 175[31m (24 FAILED)[39m (0 secs / 1.424 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 94 of 175[31m (24 FAILED)[39m (0 secs / 1.424 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 95 of 175[31m (24 FAILED)[39m (0 secs / 1.425 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 96 of 175[31m (24 FAILED)[39m (0 secs / 1.426 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 96 of 175[31m (24 FAILED)[39m (0 secs / 1.426 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 96 of 175[31m (24 FAILED)[39m (0 secs / 1.426 secs)
+ERROR: 'ERROR', Object{}
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) PromptareaComponent should create FAILED[39m
+	Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: '{"_pendingDirty":false,"_hasOwnPendingAsyncValidator":null,"_pendingTouched":false,"_parent":null,"_composedValidatorFn":null,"_composedAsyncValidatorFn":null,"_rawValidators":null,"_rawAsyncValidatorΓÇª'. Expression location: PromptareaComponent2 component. Find more at https://v20.angular.dev/errors/NG0100
+	error properties: Object({ code: -100 })
+	    at throwErrorIfNoChangesMode (node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+	    at bindingUpdated (node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+	    at ╔╡╔╡property (node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+	    at PromptareaComponent2_Template (ng:///PromptareaComponent2.js:177:9)
+	    at executeTemplate (node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+	    at refreshView (node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+	    at detectChangesInView (node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+	    at detectChangesInViewIfAttached (node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+	    at detectChangesInComponent (node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+	    at detectChangesInChildComponents (node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 97 of 175[31m (25 FAILED)[39m (0 secs / 1.435 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) DomainSeederComponent should create FAILED[39m
+	TypeError: Cannot read properties of undefined (reading '╔╡cmp')
+	    at getComponentDef (node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+	    at isStandaloneComponent (node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+	    at node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+	    at Array.forEach (<anonymous>)
+	    at queueTypesFromModulesArrayRecur (node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+	    at TestBedCompiler.queueTypesFromModulesArray (node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+	    at TestBedCompiler.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+	    at _TestBedImpl.configureTestingModule (node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+	    at src/app/core/components/domain-seeder/domain-seeder.component.spec.ts:13:19
+Chrome Headless 146.0.0.0 (Windows 10): Executed 98 of 175[31m (26 FAILED)[39m (0 secs / 1.475 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 99 of 175[31m (26 FAILED)[39m (0 secs / 1.477 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 100 of 175[31m (26 FAILED)[39m (0 secs / 1.477 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 101 of 175[31m (26 FAILED)[39m (0 secs / 1.48 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 102 of 175[31m (26 FAILED)[39m (0 secs / 1.483 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 103 of 175[31m (26 FAILED)[39m (0 secs / 1.485 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 104 of 175[31m (26 FAILED)[39m (0 secs / 1.487 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 105 of 175[31m (26 FAILED)[39m (0 secs / 1.488 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 106 of 175[31m (26 FAILED)[39m (0 secs / 1.489 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 107 of 175[31m (26 FAILED)[39m (0 secs / 1.49 secs)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 108 of 175[31m (26 FAILED)[39m (0 secs / 1.497 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 108 of 175[31m (26 FAILED)[39m (0 secs / 1.497 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 108 of 175[31m (26 FAILED)[39m (0 secs / 1.497 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 108 of 175[31m (26 FAILED)[39m (0 secs / 1.497 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 108 of 175[31m (26 FAILED)[39m (0 secs / 1.497 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 109 of 175[31m (26 FAILED)[39m (0 secs / 1.553 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 109 of 175[31m (26 FAILED)[39m (0 secs / 1.553 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 109 of 175[31m (26 FAILED)[39m (0 secs / 1.553 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 109 of 175[31m (26 FAILED)[39m (0 secs / 1.553 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 109 of 175[31m (26 FAILED)[39m (0 secs / 1.553 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 110 of 175[31m (26 FAILED)[39m (0 secs / 1.562 secs)
+[1A[2K[31mChrome Headless 146.0.0.0 (Windows 10) ERROR[39m
+  An error was thrown in afterAll
+  Expected <span class="ripple" style="background-color: rgba(255, 255, 255, 0.3); border-radius: 50%; pointer-events: none; position: ; left: 0px; top: 0px; height: 0px; width: 0px;"> to be null.
+      at <Jasmine>
+      at src/app/core/directives/ripple.directive.spec.ts:40:48
+      at timer (node_modules/zone.js/fesm2015/zone.js:1809:37)
+      at _ZoneDelegate.invokeTask (node_modules/zone.js/fesm2015/zone.js:402:33)
+      at _ProxyZoneSpec.onInvokeTask (node_modules/zone.js/fesm2015/zone-testing.js:2113:39)
+Chrome Headless 146.0.0.0 (Windows 10): Executed 110 of 175[31m (26 FAILED)[39m[31m ERROR[39m (0 secs / 1.562 secs)
+Chrome Headless 146.0.0.0 (Windows 10) ERROR
+  An error was thrown in afterAll
+  Expected <span class="ripple" style="background-color: rgba(255, 255, 255, 0.3); border-radius: 50%; pointer-events: none; position: ; left: 0px; top: 0px; height: 0px; width: 0px;"> to be null.
+      at <Jasmine>
+      at src/app/core/directives/ripple.directive.spec.ts:40:48
+      at timer (node_modules/zone.js/fesm2015/zone.js:1809:37)
+      at _ZoneDelegate.invokeTask (node_modules/zone.js/fesm2015/zone.js:402:33)
+      at _ProxyZoneSpec.onInvokeTask (node_modules/zone.js/fesm2015/zone-testing.js:2113:39)
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 110 of 175[31m (26 FAILED)[39m[31m ERROR[39m (1.693 secs / 1.562 secs)
+[1A[2KLOG: [36m''[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 110 of 175[31m (26 FAILED)[39m[31m ERROR[39m (1.693 secs / 1.562 secs)
+LOG: ''
+[1A[2KERROR: [36m'ERROR', Object{}[39m
+Chrome Headless 146.0.0.0 (Windows 10): Executed 110 of 175[31m (26 FAILED)[39m[31m ERROR[39m (1.693 secs / 1.562 secs)
+ERROR: 'ERROR', Object{}
+[1A[2KChrome Headless 146.0.0.0 (Windows 10): Executed 111 of 175[31m (26 FAILED)[39m[31m ERROR[39m (1.693 secs / 1.568 secs)

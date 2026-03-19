@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ClipboardbuttonComponent } from './clipboardbutton.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ClipboardbuttonComponent', () => {
   let component: ClipboardbuttonComponent;
@@ -8,7 +9,8 @@ describe('ClipboardbuttonComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ClipboardbuttonComponent]
+      imports: [ClipboardbuttonComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

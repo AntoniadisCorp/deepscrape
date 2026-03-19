@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { RemoveToolbarDirective } from './remove-toolbar.directive';
+import { getTestProviders } from 'src/app/testing';
 
 @Component({
     template: `<div appRemoveToolbar>
@@ -18,6 +19,7 @@ describe('RemoveToolbarDirective', () => {
     beforeEach(() => {
         TestBed.configureTestingModule({
             imports: [TestComponent, RemoveToolbarDirective], // Importing the standalone component
+          providers: getTestProviders(),
         }).compileComponents();
 
         fixture = TestBed.createComponent(TestComponent);

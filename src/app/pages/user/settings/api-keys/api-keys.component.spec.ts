@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ApiKeysComponent } from './api-keys.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ApiKeysComponent', () => {
   let component: ApiKeysComponent;
@@ -8,7 +9,8 @@ describe('ApiKeysComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ApiKeysComponent]
+      imports: [ApiKeysComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

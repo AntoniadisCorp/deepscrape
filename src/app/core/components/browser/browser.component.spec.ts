@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BrowserComponent } from './browser.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('BrowserComponent', () => {
   let component: BrowserComponent;
@@ -8,7 +9,8 @@ describe('BrowserComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BrowserComponent]
+      imports: [BrowserComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 

@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DomainSeederComponent } from './domain-seeder.component';
 import { CrawlAPIService, OperationStatusService, SeedingService, SnackbarService } from '../../services';
 import { FormBuilder } from '@angular/forms';
+import { getTestProviders } from 'src/app/testing';
 
 describe('DomainSeederComponent', () => {
   let component: DomainSeederComponent;
@@ -12,6 +13,7 @@ describe('DomainSeederComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DomainSeederComponent],
       providers: [
+        ...getTestProviders(),
         { provide: FormBuilder, useValue: new FormBuilder() },
         { provide: SeedingService, useValue: jasmine.createSpyObj('SeedingService', ['seedDomain']) },
         { provide: CrawlAPIService, useValue: jasmine.createSpyObj('CrawlAPIService', ['crawl']) },
