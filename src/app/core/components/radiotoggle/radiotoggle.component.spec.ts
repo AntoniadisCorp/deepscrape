@@ -17,7 +17,7 @@ describe('RadioToggleComponent', () => {
 
     fixture = TestBed.createComponent(RadioToggleComponent);
     component = fixture.componentInstance;
-    component.control = new FormControl<boolean>(false, { nonNullable: true });
+    fixture.componentRef.setInput('control', new FormControl<boolean>(false, { nonNullable: true }));
     fixture.detectChanges();
   });
 

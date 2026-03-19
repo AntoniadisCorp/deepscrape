@@ -17,14 +17,10 @@ describe('RadioButtonComponent', () => {
 
     fixture = TestBed.createComponent(RadioButtonComponent);
     component = fixture.componentInstance;
-    component.control = new FormControl<string>('', { nonNullable: true });
-    component.value = 'value';
+    fixture.componentRef.setInput('control', new FormControl<string>('', { nonNullable: true }));
+    fixture.componentRef.setInput('value', 'test-value');
     fixture.detectChanges();
-  });/* The code snippet `this.control = new FormControl('', { nonNullable: true, validators:
-  [Validators.required] })` is attempting to create a new instance of a `FormControl` object
-  and assign it to the `control` property of the `RadioButtonComponent` class. However, there
-  are a couple of issues with this code: */
-
+  });
 
   it('should create', () => {
     expect(component).toBeTruthy();

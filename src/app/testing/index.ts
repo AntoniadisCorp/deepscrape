@@ -14,6 +14,8 @@ import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideNgxStripe } from 'ngx-stripe';
+import { SwUpdate } from '@angular/service-worker';
+import { EMPTY } from 'rxjs';
 
 // @angular/fire modular tokens
 import { Auth } from '@angular/fire/auth';
@@ -42,6 +44,7 @@ import { AuthService } from '../core/services/auth.service';
 import { FirestoreService } from '../core/services/firestore.service';
 import { CartService } from '../core/services/cart.service';
 import { ApiKeyService } from '../core/services/apikey.service';
+import { NgswUpdateService } from '../core/services/ngsw-update.service';
 import { AppUserLayoutComponent } from '../layout/full/app-user-layout/app-user-layout.component';
 import { of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -131,6 +134,7 @@ const mockTranslateService = {
 
 const mockCartService = {
   cartPackItem$: of(null),
+  getCart$: of(null),
   addToCart: () => {},
   removeFromCart: () => {},
   clearCart: () => {},
@@ -143,6 +147,17 @@ const mockApiKeyService = {
 const mockAppUserLayout = {
   onCloseAsideBar: () => {},
 };
+
+/** Minimal SwUpdate stub (service worker disabled in tests) */
+const mockSwUpdate = {
+  isEnabled: false,
+  versionUpdates: EMPTY,
+  activateUpdate: () => Promise.resolve(false),
+  checkForUpdate: () => Promise.resolve(false),
+};
+
+/** Minimal NgswUpdateService stub */
+const mockNgswUpdateService = {};
 
 // ---------------------------------------------------------------------------
 // Main provider factory
@@ -201,6 +216,8 @@ export function getTestProviders(): (Provider | EnvironmentProviders)[] {
     { provide: TranslateService, useValue: mockTranslateService },
     { provide: CartService, useValue: mockCartService },
     { provide: ApiKeyService, useValue: mockApiKeyService },
+    { provide: SwUpdate, useValue: mockSwUpdate },
+    { provide: NgswUpdateService, useValue: mockNgswUpdateService },
     { provide: AppUserLayoutComponent, useValue: mockAppUserLayout },
   ];
 }
