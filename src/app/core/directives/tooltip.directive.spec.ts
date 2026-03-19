@@ -1,44 +1,61 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ApplicationRef, ElementRef, Injector, ViewContainerRef } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+
 import { TooltipDirective } from './tooltip.directive';
-import { ElementRef, ApplicationRef, Injector, ViewContainerRef, Component } from '@angular/core';
 import { TooltipComponent } from '../components/tooltip/tooltip.component';
 import { WindowToken } from '../services';
-import { DOCUMENT } from '@angular/common';
 import { getTestProviders } from 'src/app/testing';
 
-// Create a dummy component to host the directive
-@Component({
-  standalone: true,
-  imports: [TooltipDirective],
-  template: '<div tooltip="Test tooltip"></div>',
-})
-class TestComponent { }
-
 describe('TooltipDirective', () => {
-  let fixture: ComponentFixture<TestComponent>;
-  let elementRef: ElementRef;
-  let injector: any;
-  let viewContainerRef: any;
-  let windowMock: Pick<Window, 'innerWidth' | 'innerHeight'>;
-  let documentMock: Document;
+  let hostElement: HTMLElement;
+  let viewContainerRefSpy: jasmine.SpyObj<ViewContainerRef>;
 
-  const createDirective = (): TooltipDirective =>
-    TestBed.runInInjectionContext(() => new TooltipDirective(elementRef, TestBed.inject(ApplicationRef), injector, viewContainerRef));
+  type TooltipInstance = {
+    tooltip: string;
+    position: string;
+    left: number;
+    top: number;
+    setVisibility: jasmine.Spy;
+  };
 
-  beforeEach(() => {
-    injector = jasmine.createSpyObj('Injector', ['get']);
-    viewContainerRef = jasmine.createSpyObj('ViewContainerRef', ['createComponent']);
+  type TooltipRefDouble = {
+    location: { nativeElement: HTMLElement };
+    instance: TooltipInstance;
+    destroy: jasmine.Spy;
+  };
 
-    const tooltipNativeElement = {
-      classList: { add: jasmine.createSpy('add') },
-      style: { visibility: '', display: '', position: '' },
-      offsetWidth: 140,
-      offsetHeight: 40,
-      parentNode: { removeChild: jasmine.createSpy('removeChild') },
-    } as any;
+  const createDirective = (): TooltipDirective => {
+    const appRef = TestBed.inject(ApplicationRef);
+    const injector = TestBed.inject(Injector);
 
-    const componentRefMock = {
-      location: { nativeElement: tooltipNativeElement },
+    return TestBed.runInInjectionContext(
+      () => new TooltipDirective(new ElementRef(hostElement), appRef, injector, viewContainerRefSpy)
+    );
+  };
+
+  beforeEach(async () => {
+    hostElement = document.createElement('div');
+    hostElement.getBoundingClientRect = jasmine.createSpy().and.returnValue({
+      left: 10,
+      right: 110,
+      top: 10,
+      bottom: 30,
+      width: 100,
+      height: 20,
+      x: 10,
+      y: 10,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    viewContainerRefSpy = jasmine.createSpyObj<ViewContainerRef>('ViewContainerRef', ['createComponent']);
+
+    const tooltipElement = document.createElement('div');
+    Object.defineProperty(tooltipElement, 'offsetWidth', { value: 140, configurable: true });
+    Object.defineProperty(tooltipElement, 'offsetHeight', { value: 40, configurable: true });
+
+    const componentRefMock: TooltipRefDouble = {
+      location: { nativeElement: tooltipElement },
       instance: {
         tooltip: '',
         position: '',
@@ -49,42 +66,15 @@ describe('TooltipDirective', () => {
       destroy: jasmine.createSpy('destroy'),
     };
 
-    (viewContainerRef.createComponent as jasmine.Spy).and.returnValue(componentRefMock);
+    viewContainerRefSpy.createComponent.and.returnValue(componentRefMock as unknown as ReturnType<ViewContainerRef['createComponent']>);
 
-    windowMock = {
-      innerWidth: 1200,
-      innerHeight: 800,
-    };
-
-    documentMock = {
-      body: {
-        appendChild: jasmine.createSpy('appendChild'),
-      },
-      querySelectorAll: jasmine.createSpy('querySelectorAll').and.returnValue([]),
-      createElement: jasmine.createSpy('createElement').and.returnValue(document.createElement('div')),
-    } as unknown as Document;
-
-    TestBed.configureTestingModule({
-      imports: [TestComponent],
+    await TestBed.configureTestingModule({
       providers: [
         ...getTestProviders(),
-        { provide: Injector, useValue: injector },
-        { provide: ViewContainerRef, useValue: viewContainerRef },
-        { provide: WindowToken, useValue: windowMock },
-        { provide: DOCUMENT, useValue: documentMock },
+        { provide: DOCUMENT, useValue: document },
+        { provide: WindowToken, useValue: { innerWidth: 1200, innerHeight: 800 } },
       ],
     }).compileComponents();
-
-    fixture = TestBed.createComponent(TestComponent);
-    // Wrap the raw DOM node in an ElementRef so the directive constructor receives
-    // an object with a `.nativeElement` property, matching Angular's DI contract.
-    const hostEl = fixture.debugElement.nativeElement.firstChild as HTMLElement;
-    elementRef = new ElementRef(hostEl);
-
-    // Mock elementRef.nativeElement.getBoundingClientRect()
-    elementRef.nativeElement.getBoundingClientRect = jasmine.createSpy().and.returnValue({
-      left: 0, top: 0, width: 100, height: 20, right: 100, bottom: 20
-    });
   });
 
   it('should create an instance', () => {
@@ -92,86 +82,83 @@ describe('TooltipDirective', () => {
     expect(directive).toBeTruthy();
   });
 
-  it('should create tooltip component on mouseenter', fakeAsync(() => {
+  it('should create tooltip component on mouse enter', fakeAsync(() => {
     const directive = createDirective();
-    const createComponentSpy = viewContainerRef.createComponent as jasmine.Spy;
 
     directive.ngOnInit();
-    elementRef.nativeElement.dispatchEvent(new Event('mouseenter'));
+    directive.onMouseEnter(new MouseEvent('mouseenter'));
     tick(100);
 
-    expect(createComponentSpy).toHaveBeenCalledWith(TooltipComponent);
+    expect(viewContainerRefSpy.createComponent).toHaveBeenCalled();
+    const latestArgs = viewContainerRefSpy.createComponent.calls.mostRecent().args;
+    expect(latestArgs[0] as unknown).toBe(TooltipComponent as unknown);
   }));
 
-  it('should destroy tooltip component on mouseleave after delay', fakeAsync(() => {
+  it('should destroy tooltip component on mouse leave after delay', fakeAsync(() => {
     const directive = createDirective();
     const destroySpy = jasmine.createSpy('destroy');
 
-    // Mock componentRef and its methods
-    directive['componentRef'] = {
+    (directive as unknown as { componentRef: TooltipRefDouble | null }).componentRef = {
       location: {
-        nativeElement: {
-          parentNode: { removeChild: jasmine.createSpy('removeChild') },
-        },
+        nativeElement: document.createElement('div'),
       },
-      instance: { setVisibility: jasmine.createSpy('setVisibility') },
-      destroy: destroySpy,
-    } as any;
-    directive.hideDelay = 0; // Set hideDelay to 0 for immediate destruction
-
-    directive.onMouseLeave();
-    tick(0);
-
-    expect(destroySpy).toHaveBeenCalled();
-    expect(directive['componentRef']).toBeNull();
-  }));
-
-  it('should set tooltip text and position to tooltip component', () => {
-    const directive = createDirective();
-    const tooltipText = 'Test tooltip text';
-    const tooltipPosition = 'right';
-    directive.tooltip = tooltipText;
-    directive['componentRef'] = {
       instance: {
         tooltip: '',
-        position: '',
+        position: 'above',
         left: 0,
         top: 0,
         setVisibility: jasmine.createSpy('setVisibility'),
       },
-      location: {
-        nativeElement: {
-          classList: { add: jasmine.createSpy('add') },
-          style: { visibility: '', display: '', position: '' },
-          offsetWidth: 140,
-          offsetHeight: 40,
-          parentNode: { removeChild: jasmine.createSpy('removeChild') },
-        },
-      },
-    } as any;
-    directive.position = tooltipPosition;
+      destroy: destroySpy,
+    };
+    document.body.appendChild((directive as unknown as { componentRef: TooltipRefDouble }).componentRef.location.nativeElement);
 
-    directive.setTooltipComponentProperties();
-    expect(directive['componentRef'].instance.tooltip).toBe(tooltipText);
-    expect(directive['componentRef'].instance.position).toBe(tooltipPosition);
-  });
+    directive.hideDelay = 0;
+    directive.onMouseLeave();
+    tick(0);
 
-  it('should destroy the component on ngOnDestroy', () => {
+    expect(destroySpy).toHaveBeenCalled();
+    expect((directive as unknown as { componentRef: TooltipRefDouble | null }).componentRef).toBeNull();
+  }));
+
+  it('should set tooltip content and coordinates on component', fakeAsync(() => {
+    const directive = createDirective();
+    directive.tooltip = 'Hello tooltip';
+    directive.position = 'right';
+
+    directive.ngOnInit();
+    directive.onMouseEnter(new MouseEvent('mouseenter'));
+    tick(100);
+
+    const componentRef = (directive as unknown as { componentRef: TooltipRefDouble }).componentRef;
+    expect(componentRef.instance.tooltip).toBe('Hello tooltip');
+    expect(componentRef.instance.position).toBe('right');
+    expect(componentRef.instance.left).toBeGreaterThanOrEqual(10);
+    expect(componentRef.instance.top).toBeGreaterThanOrEqual(10);
+  }));
+
+  it('should cleanup on destroy', () => {
     const directive = createDirective();
     const destroySpy = jasmine.createSpy('destroy');
 
-    // Mock componentRef and its methods
-    directive['componentRef'] = {
+    (directive as unknown as { componentRef: TooltipRefDouble | null }).componentRef = {
       location: {
-        nativeElement: {
-          parentNode: { removeChild: jasmine.createSpy('removeChild') },
-        },
+        nativeElement: document.createElement('div'),
+      },
+      instance: {
+        tooltip: '',
+        position: 'above',
+        left: 0,
+        top: 0,
+        setVisibility: jasmine.createSpy('setVisibility'),
       },
       destroy: destroySpy,
-    } as any;
+    };
+    document.body.appendChild((directive as unknown as { componentRef: TooltipRefDouble }).componentRef.location.nativeElement);
+
     directive.ngOnDestroy();
 
     expect(destroySpy).toHaveBeenCalled();
-    expect(directive['componentRef']).toBeNull();
+    expect((directive as unknown as { componentRef: TooltipRefDouble | null }).componentRef).toBeNull();
   });
 });

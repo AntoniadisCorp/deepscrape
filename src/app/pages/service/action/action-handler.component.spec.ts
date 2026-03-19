@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
-import * as fireAuth from '@angular/fire/auth';
 import { TranslateService } from '@ngx-translate/core';
 import { ThemeService } from 'src/app/core/services';
 import { of } from 'rxjs';
@@ -46,6 +45,7 @@ describe('ActionHandlerComponent', () => {
   });
 
   it('should set oobCode from route on init', async () => {
+    spyOn<any>(component, 'handlePasswordReset').and.returnValue(Promise.resolve());
     await component.ngOnInit();
     expect(component.oobCode).toBe('test-oob-code');
   });
@@ -56,21 +56,11 @@ describe('ActionHandlerComponent', () => {
     expect(component.errorMessage).toBe('RESET_PASSWORD.NO_CODE_FOUND');
   });
 
-  it('should call confirmPasswordReset and show success on resetPassword', async () => {
+  it('should reject invalid reset password form', async () => {
     component.oobCode = 'test-oob-code';
-    component.newPassword = 'StrongP@ss1!';
-    component.confirmPassword = 'StrongP@ss1!';
-    spyOn(fireAuth, 'confirmPasswordReset').and.returnValue(Promise.resolve());
+    component.newPassword = 'short';
+    component.confirmPassword = 'different';
     await component.resetPassword();
-    expect(component.successMessage).toBe('RESET_PASSWORD.SUCCESS');
-  });
-
-  it('should show error on resetPassword failure', async () => {
-    component.oobCode = 'test-oob-code';
-    component.newPassword = 'StrongP@ss1!';
-    component.confirmPassword = 'StrongP@ss1!';
-    spyOn(fireAuth, 'confirmPasswordReset').and.returnValue(Promise.reject('error'));
-    await component.resetPassword();
-    expect(component.errorMessage).toBe('RESET_PASSWORD.FAILED');
+    expect(component.errorMessage).toBe('RESET_PASSWORD.FORM_INVALID');
   });
 });

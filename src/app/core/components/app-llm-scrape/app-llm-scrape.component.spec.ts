@@ -1,127 +1,159 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { Firestore } from '@angular/fire/firestore';
-import { Auth } from '@angular/fire/auth';
-import { InjectionToken } from '@angular/core';
-import { SnackBarType } from '../snackbar/snackbar.component';
+import { ChangeDetectorRef } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { FormBuilder } from '@angular/forms';
+import { of, Subscription } from 'rxjs';
 
 import { AppLLMScrapeComponent } from './app-llm-scrape.component';
-import { browserProvider, BrowserToken, STORAGE_PROVIDERS, windowProvider, WindowToken } from '../../services';
-import { Subscription } from 'rxjs';
+import { AiAPIService, CrawlAPIService, LocalStorage, SnackbarService } from '../../services';
+import { SnackBarType } from '../snackbar/snackbar.component';
 import { getTestProviders } from 'src/app/testing';
-
-class FirestoreMock { }
-class AuthMock { }
-
 
 describe('AppLLMScrapeComponent', () => {
   let component: AppLLMScrapeComponent;
-  let fixture: ComponentFixture<AppLLMScrapeComponent>;
-  let windowMock = {
-    localStorage: {
-      getItem: jasmine.createSpy('getItem'),
-      setItem: jasmine.createSpy('setItem'),
-      removeItem: jasmine.createSpy('removeItem'),
-      clear: jasmine.createSpy('clear'),
-      key: jasmine.createSpy('key'),
-      length: 0,
-    },
-    sessionStorage: {
-      getItem: jasmine.createSpy('getItem'),
-      setItem: jasmine.createSpy('setItem'),
-      removeItem: jasmine.createSpy('removeItem'),
-      clear: jasmine.createSpy('clear'),
-      key: jasmine.createSpy('key'),
-      length: 0,
-    },
-  } as any;
 
-  let aiResultsSub: Subscription;
-  let forkJoinSubscription: Subscription;
+  const localStorageSpy = jasmine.createSpyObj<Storage>('Storage', ['getItem', 'setItem', 'removeItem', 'clear', 'key']);
+  const aiApiStub = {
+    sendToOpenAI: jasmine.createSpy('sendToOpenAI').and.returnValue(of({ content: 'openai', usage: null, role: null })),
+    sendToClaudeAI: jasmine.createSpy('sendToClaudeAI').and.returnValue(of({ content: 'claude', usage: null, role: 'assistant' })),
+  } as unknown as AiAPIService;
+  const crawlApiStub = {
+    sendToCrawl4AI: jasmine.createSpy('sendToCrawl4AI').and.returnValue(of('crawled data')),
+  } as unknown as CrawlAPIService;
+  const snackbarServiceStub = {
+    showSnackbar: jasmine.createSpy('showSnackbar'),
+  } as unknown as SnackbarService;
+  const cdrStub = {
+    detectChanges: jasmine.createSpy('detectChanges'),
+  } as unknown as ChangeDetectorRef;
 
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [AppLLMScrapeComponent],
+  beforeEach(() => {
+    TestBed.configureTestingModule({
       providers: [
         ...getTestProviders(),
-        provideHttpClient(),
-        { provide: Firestore, useClass: FirestoreMock },
-        { provide: Auth, useClass: AuthMock },
-        STORAGE_PROVIDERS,
-        // { provide: WindowToken, useValue: windowMock },
-        { provide: WindowToken, useFactory: windowProvider },
-        { provide: BrowserToken, useFactory: browserProvider },
-      ]
-    })
-      .compileComponents();
+        FormBuilder,
+        { provide: LocalStorage, useValue: localStorageSpy },
+      ],
+    });
 
-    fixture = TestBed.createComponent(AppLLMScrapeComponent);
-    component = fixture.componentInstance;
-    aiResultsSub = new Subscription();
-    forkJoinSubscription = new Subscription();
-    component.aiResultsSub = aiResultsSub;
-    component.forkJoinSubscription = forkJoinSubscription;
-    fixture.detectChanges();
+    localStorageSpy.getItem.calls.reset();
+    localStorageSpy.setItem.calls.reset();
+    localStorageSpy.getItem.and.callFake((key: string) => key === 'forwardCookies' ? 'true' : null);
+    (aiApiStub.sendToOpenAI as jasmine.Spy).calls.reset();
+    (aiApiStub.sendToClaudeAI as jasmine.Spy).calls.reset();
+    (crawlApiStub.sendToCrawl4AI as jasmine.Spy).calls.reset();
+    (snackbarServiceStub.showSnackbar as jasmine.Spy).calls.reset();
+    (cdrStub.detectChanges as jasmine.Spy).calls.reset();
+
+    component = TestBed.runInInjectionContext(
+      () => new AppLLMScrapeComponent(
+        aiApiStub,
+        crawlApiStub,
+        snackbarServiceStub,
+        TestBed.inject(FormBuilder),
+        cdrStub,
+      )
+    );
+
+    component.aiResultsSub = new Subscription();
+    component.forkJoinSubscription = new Subscription();
+    component.ngOnInit();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should initialize form controls with default values', () => {
+  it('should initialize controls and restore the forwardCookies preference', () => {
     expect(component.url.value).toBe('');
     expect(component.userprompt.value).toBe('');
-    expect(component.submitButton.value).toBe(false);
+    expect(component.submitButton.value).toBeFalse();
     expect(component.modelAI.value).toEqual({ name: 'claude-3-5-haiku-20241022', code: 'claude' });
+    expect(component.options.get('forwardCookies')?.value).toBeTrue();
   });
 
-  it('should disable and enable form controls correctly', () => {
-    (component as any).disableForm();
-    expect(component.url.disabled).toBeTruthy();
-    expect(component.userprompt.disabled).toBeTruthy();
-    expect(component.submitButton.value).toBeTruthy();
-    expect(component.modelAI.disabled).toBeTruthy();
+  it('should persist forwardCookies changes to local storage', () => {
+    component.options.get('forwardCookies')?.setValue(false);
 
-    (component as any).enableForm();
-    expect(component.url.enabled).toBeTruthy();
-    expect(component.userprompt.enabled).toBeTruthy();
-    expect(component.submitButton.value).toBeFalsy();
-    expect(component.modelAI.enabled).toBeTruthy();
+    expect(localStorageSpy.setItem).toHaveBeenCalledWith('forwardCookies', 'false');
   });
 
-  it('should reset results and unsubscribe on closeResults', () => {
-    spyOn(component.aiResultsSub, 'unsubscribe').and.callThrough();
-    spyOn(component.forkJoinSubscription, 'unsubscribe').and.callThrough();
+  it('should not start processing while required inputs are invalid', () => {
+    const processDataSpy = spyOn(component as never, 'processData' as never) as jasmine.Spy;
 
-    (component as any).jsonChunk['content'] = 'test content';
-    (component as any).jsonChunk['usage'] = { total_tokens: 10, total_cost: 1 };
-    (component as any).isGetResults = true;
+    (component as unknown as { onPromptSubmited(prompt: string): void }).onPromptSubmited('ignored');
 
-    (component as any).closeResults();
-
-    expect((component as any).isGetResults).toBeFalsy();
-    expect((component as any).jsonChunk['content']).toBe('');
-    expect((component as any).jsonChunk['usage']).toBeNull();
-    expect(component.aiResultsSub.unsubscribe).toHaveBeenCalled();
-    expect(component.forkJoinSubscription.unsubscribe).toHaveBeenCalled();
+    expect(processDataSpy).not.toHaveBeenCalled();
   });
 
-  it('should abort requests and reset states on abortRequests', () => {
-    spyOn((component as any).destroy$, 'next').and.callThrough();
-    spyOn((component as any).destroy$, 'complete').and.callThrough();
-    spyOn(component as any, 'enableForm').and.callThrough();
-    spyOn(component, 'showSnackbar').and.callThrough();
+  it('should disable the form and start processing for valid prompt submissions', () => {
+    const processDataSpy = spyOn(component as never, 'processData' as never) as jasmine.Spy;
+    const closeResultsSpy = spyOn(component as never, 'closeResults' as never).and.callThrough();
 
-    (component as any).isResultsProcessing = true;
-    (component as any).isCrawlProcessing = true;
+    component.url.setValue('https://example.com');
+    component.userprompt.setValue('Summarize the content');
+
+    (component as unknown as { onPromptSubmited(prompt: string): void }).onPromptSubmited('Summarize the content');
+
+    expect(closeResultsSpy).toHaveBeenCalled();
+    expect(component.url.disabled).toBeTrue();
+    expect(component.userprompt.disabled).toBeTrue();
+    expect(component.modelAI.disabled).toBeTrue();
+    expect(component.submitButton.value).toBeTrue();
+    expect(processDataSpy.calls.mostRecent().args).toEqual(['https://example.com', 'claude']);
+    expect((component as unknown as { isCrawlProcessing: boolean }).isCrawlProcessing).toBeTrue();
+  });
+
+  it('should dispatch OpenAI model selection to the OpenAI client', () => {
+    component.modelAI.setValue({ name: 'gpt-4o-mini', code: 'openai' });
+
+    (component as unknown as { chooseAIModel(messages: { role: string; content: string }[]): unknown }).chooseAIModel([{ role: 'user', content: 'hello' }]);
+
+    expect(aiApiStub.sendToOpenAI).toHaveBeenCalledWith([{ role: 'user', content: 'hello' }], 'gpt-4o-mini');
+  });
+
+  it('should reset results and unsubscribe active streams when closing results', () => {
+    const aiResultsSub = new Subscription();
+    const forkJoinSubscription = new Subscription();
+    spyOn(aiResultsSub, 'unsubscribe').and.callThrough();
+    spyOn(forkJoinSubscription, 'unsubscribe').and.callThrough();
+    component.aiResultsSub = aiResultsSub;
+    component.forkJoinSubscription = forkJoinSubscription;
+    component.jsonChunk['content'] = 'partial';
+    component.jsonChunk['usage'] = { total_tokens: 10, total_cost: 2 };
+    (component as unknown as { isGetResults: boolean }).isGetResults = true;
+
+    (component as unknown as { closeResults(): void }).closeResults();
+
+    expect((component as unknown as { isGetResults: boolean }).isGetResults).toBeFalse();
+    expect(component.jsonChunk['content']).toBe('');
+    expect(component.jsonChunk['usage']).toBeNull();
+    expect(aiResultsSub.unsubscribe).toHaveBeenCalled();
+    expect(forkJoinSubscription.unsubscribe).toHaveBeenCalled();
+  });
+
+  it('should clear the URL input when onClearText is invoked', () => {
+    component.url.setValue('https://example.com');
+
+    component.onClearText();
+
+    expect(component.url.value).toBe('');
+  });
+
+  it('should abort requests, re-enable the form, and show feedback', () => {
+    const destroyNextSpy = spyOn((component as unknown as { destroy$: { next(): void } }).destroy$, 'next').and.callThrough();
+
+    component.url.disable();
+    component.userprompt.disable();
+    component.modelAI.disable();
+    component.submitButton.setValue(true);
+    (component as unknown as { isResultsProcessing: boolean; isCrawlProcessing: boolean }).isResultsProcessing = true;
+    (component as unknown as { isResultsProcessing: boolean; isCrawlProcessing: boolean }).isCrawlProcessing = true;
 
     component.abortRequests();
 
-    expect((component as any).destroy$.next).toHaveBeenCalled();
-    expect((component as any).isResultsProcessing).toBeFalsy();
-    expect((component as any).isCrawlProcessing).toBeFalsy();
-    expect((component as any)['enableForm']).toHaveBeenCalled();
-    expect(component.showSnackbar).toHaveBeenCalledWith('Request canceled', SnackBarType.info, '', 5000);
+    expect(destroyNextSpy).toHaveBeenCalled();
+    expect((component as unknown as { isResultsProcessing: boolean }).isResultsProcessing).toBeFalse();
+    expect((component as unknown as { isCrawlProcessing: boolean }).isCrawlProcessing).toBeFalse();
+    expect(component.url.enabled).toBeTrue();
+    expect(component.userprompt.enabled).toBeTrue();
+    expect(component.modelAI.enabled).toBeTrue();
+    expect(component.submitButton.value).toBeFalse();
+    expect(snackbarServiceStub.showSnackbar).toHaveBeenCalledWith('Request canceled', SnackBarType.info, '', 5000);
   });
 });
