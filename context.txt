@@ -1,0 +1,410 @@
+LoginComponent > should create
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'LOGIN.SIGN_IN_TITLE'. Expression location: LoginComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at interpolation1 (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:27456:23)
+    at ɵɵtextInterpolate1 (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:27644:26)
+    at ɵɵtextInterpolate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:27620:5)
+    at LoginComponent2_Template (ng:///LoginComponent2.js:428:9)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+LoginComponent
+TypeError: Cannot read properties of undefined (reading 'subscribe')
+    at _TranslatePipe.transform (http://localhost:9876/base/node_modules/@ngx-translate/core/fesm2022/ngx-translate-core.mjs:1076:75)
+    at ɵɵpipeBind1 (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:29095:24)
+    at LoginComponent2_Template (ng:///LoginComponent2.js:428:33)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10223:13)
+AppTabsComponent > should create
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+    at http://localhost:9876/base/src/app/core/components/tabs/tabs.component.spec.ts:11:19
+AppComponent > should render the component template
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'false'. Expression location: AppComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at AppComponent2_Template (ng:///AppComponent2.js:51:9)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+PopupMenuComponent > should create
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'api-key-ul-test-key'. Expression location: PopupMenuComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵdomProperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23792:9)
+    at PopupMenuComponent2_Template (ng:///PopupMenuComponent2.js:36:21)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+ImageSrcsetDirective > should create an instance
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at TestComponent_Template (ng:///TestComponent.js:7:64)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+ImageSrcsetDirective > should set srcset on ngAfterViewInit
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at TestComponent_Template (ng:///TestComponent.js:7:64)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+ImageSrcsetDirective > should handle error and set fallback image
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at TestComponent_Template (ng:///TestComponent.js:7:64)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+ImageSrcsetDirective > should clear onload and onerror on load
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at TestComponent_Template (ng:///TestComponent.js:7:64)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+ImageSrcsetDirective > should generate correct avatar URL on error
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at TestComponent_Template (ng:///TestComponent.js:7:64)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+ImageSrcsetDirective > should use "NA" as default name if name is not provided
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'John Doe'. Expression location: TestComponent component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at TestComponent_Template (ng:///TestComponent.js:7:64)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+AppCrawlComponent > should create
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+    at http://localhost:9876/base/src/app/core/components/app-crawl/app-crawl.component.spec.ts:11:19
+AppUserLayoutComponent > should create
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'h-full w-full flex flex-col  min-h-svh'. Expression location: AppUserLayoutComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at checkStylingMap (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:26729:32)
+    at ɵɵclassMap (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:26673:5)
+    at AppUserLayoutComponent2_HostBindings (ng:///AppUserLayoutComponent2.js:293:21)
+    at processHostBindingOpCodes (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10445:17)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10219:9)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewWhileDirty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10077:9)
+    at detectChangesInternal (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10065:9)
+LoadingDotsComponent > should have animation
+Expected '0.2s' to be '0.3s'.
+    at <Jasmine>
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/components/loading-dots/loading-dots.component.spec.ts:33:42)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+Expected '0.4s' to be '0.6s'.
+    at <Jasmine>
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/components/loading-dots/loading-dots.component.spec.ts:34:42)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+SimpleModalComponent > should create
+Error: NG0950: Input is required but no value is available yet. Find more at https://v20.angular.dev/errors/NG0950
+error properties: Object({ code: -950 })
+    at DialogComponent2.inputValueFn [as title] (http://localhost:9876/base/node_modules/@angular/core/fesm2022/core.mjs:61:19)
+    at DialogComponent2_Template (ng:///DialogComponent2.js:54:38)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10223:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+GinputComponent > should create
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'border-green-600 focus:border-green-600 dark:border-green-500 dark:focus:border-green-500 bg-gray-50 dark:bg-gray-700'. Current value: 'focus:border-blue-600 dark:focus:border-blue-500 bg-gray-50 dark:bg-gray-700'. Expression location: GinputComponent2 component. Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at GinputComponent2_Template (ng:///GinputComponent2.js:90:53)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+DropdownComponent > should create
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: 'false'. Expression location: DropdownComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵproperty (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23394:9)
+    at DropdownComponent2_Template (ng:///DropdownComponent2.js:131:9)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+AppSidebarNavDropdownComponent > should create
+Error: NG0100: ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'undefined'. Current value: '0'. Expression location: AppSidebarNavDropdownComponent2 component It seems like the view has been created after its parent and its children have been dirty checked. Has it been created in a change detection hook? Find more at https://v20.angular.dev/errors/NG0100
+error properties: Object({ code: -100 })
+    at throwErrorIfNoChangesMode (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:6446:11)
+    at bindingUpdated (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14124:17)
+    at ɵɵconditional (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:23032:9)
+    at AppSidebarNavDropdownComponent2_Template (ng:///AppSidebarNavDropdownComponent2.js:26:21)
+    at executeTemplate (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9132:9)
+    at refreshView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10168:13)
+    at detectChangesInView (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10388:9)
+    at detectChangesInViewIfAttached (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10348:5)
+    at detectChangesInComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10336:5)
+    at detectChangesInChildComponents (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:10414:9)
+TooltipDirective > should set tooltip text and position to tooltip component
+TypeError: this._doc.querySelectorAll is not a function
+    at _DOMTestComponentRenderer.removeAllRootElementsImpl (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+    at _DOMTestComponentRenderer.insertRootElement (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/directives/tooltip.directive.spec.ts:76:23)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+    at ZoneImpl.run (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:111:43)
+    at runInTestZone (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+TooltipDirective > should destroy tooltip component on mouseleave after delay
+TypeError: this._doc.querySelectorAll is not a function
+    at _DOMTestComponentRenderer.removeAllRootElementsImpl (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+    at _DOMTestComponentRenderer.insertRootElement (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/directives/tooltip.directive.spec.ts:76:23)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+    at ZoneImpl.run (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:111:43)
+    at runInTestZone (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+TooltipDirective > should create tooltip component on mouseenter
+TypeError: this._doc.querySelectorAll is not a function
+    at _DOMTestComponentRenderer.removeAllRootElementsImpl (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+    at _DOMTestComponentRenderer.insertRootElement (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/directives/tooltip.directive.spec.ts:76:23)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+    at ZoneImpl.run (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:111:43)
+    at runInTestZone (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+TooltipDirective > should create an instance
+TypeError: this._doc.querySelectorAll is not a function
+    at _DOMTestComponentRenderer.removeAllRootElementsImpl (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+    at _DOMTestComponentRenderer.insertRootElement (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/directives/tooltip.directive.spec.ts:76:23)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+    at ZoneImpl.run (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:111:43)
+    at runInTestZone (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+TooltipDirective > should destroy the component on ngOnDestroy
+TypeError: this._doc.querySelectorAll is not a function
+    at _DOMTestComponentRenderer.removeAllRootElementsImpl (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:41:36)
+    at _DOMTestComponentRenderer.insertRootElement (http://localhost:9876/base/node_modules/@angular/platform-browser/fesm2022/testing.mjs:25:14)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:2065:31)
+    at _TestBedImpl.createComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1854:37)
+    at UserContext.<anonymous> (http://localhost:9876/base/src/app/core/directives/tooltip.directive.spec.ts:76:23)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
+    at ZoneImpl.run (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:111:43)
+    at runInTestZone (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+DomainSeederComponent > should initialise researchForm with default config values
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+    at http://localhost:9876/base/src/app/core/components/domain-seeder/domain-seeder.component.spec.ts:21:19
+DomainSeederComponent > should create
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+    at http://localhost:9876/base/src/app/core/components/domain-seeder/domain-seeder.component.spec.ts:21:19
+DomainSeederComponent > should start with an empty domains FormArray
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1993:23)
+    at _TestBedImpl.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1805:37)
+    at http://localhost:9876/base/src/app/core/components/domain-seeder/domain-seeder.component.spec.ts:21:19
+PlaygroundComponent > should create
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1339:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+CrawlPackComponent > should create
+TypeError: Cannot read properties of undefined (reading 'ɵcmp')
+    at getComponentDef (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1605:18)
+    at isStandaloneComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1601:17)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1338:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1339:29
+    at Array.forEach (<anonymous>)
+    at queueTypesFromModulesArrayRecur (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1333:34)
+    at TestBedCompiler.queueTypesFromModulesArray (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:1348:9)
+    at TestBedCompiler.configureTestingModule (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:856:18)
+ActionHandlerComponent > should call confirmPasswordReset and show success on resetPassword
+Expected '' to be 'RESET_PASSWORD.SUCCESS'.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/pages/service/action/action-handler.component.spec.ts:65:38
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+BillingService > returns plan access mode for paid plans
+Expected 'free' to be 'plan'.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/core/services/billing.service.spec.ts:68:18
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+BillingService > hasFeature$ reflects feature flags from billing payload
+Expected false to be true.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/core/services/billing.service.spec.ts:123:21
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+BillingService > canPurchaseCredits$ is true only for free plan without subscription
+Expected true to be false.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/core/services/billing.service.spec.ts:110:28
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+BillingService > returns credits access mode for free users with purchased credits
+Expected 'free' to be 'credits'.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/core/services/billing.service.spec.ts:86:18
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+Expected 0 to be 10.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/core/services/billing.service.spec.ts:87:30
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+Expected false to be true.
+    at <Jasmine>
+    at http://localhost:9876/base/src/app/core/services/billing.service.spec.ts:88:23
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:9876/base/chunk-FTJWL4R4.js:51:24)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+ApiKeysComponent > should create
+TypeError: Cannot read properties of undefined (reading 'pipe')
+    at new ApiKeysComponent2 (http://localhost:9876/base/src/app/pages/user/settings/api-keys/api-keys.component.ts:50:49)
+    at NodeInjectorFactory.ApiKeysComponent2_Factory [as factory] (ng:///ApiKeysComponent2/ɵfac.js:4:10)
+    at getNodeInjectable (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:1989:44)
+    at instantiateAllDirectives (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9373:27)
+    at createDirectivesInstances (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:9146:5)
+    at ComponentFactory2.create (http://localhost:9876/base/node_modules/@angular/core/fesm2022/debug_node.mjs:14697:17)
+    at initComponent (http://localhost:9876/base/node_modules/@angular/core/fesm2022/testing.mjs:2068:51)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:369:28)
+    at _ProxyZoneSpec.onInvoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+    at _ZoneDelegate.invoke (http://localhost:9876/base/node_modules/zone.js/fesm2015/zone.js:368:34)
