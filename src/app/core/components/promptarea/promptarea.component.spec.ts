@@ -17,8 +17,8 @@ describe('PromptareaComponent', () => {
 
     fixture = TestBed.createComponent(PromptareaComponent);
     component = fixture.componentInstance;
-    component.userPrompt = new FormControl<string>('', { nonNullable: true });
-    component.submitControl = new FormControl<boolean>(false, { nonNullable: true });
+    fixture.componentRef.setInput('userPrompt', new FormControl<string>('', { nonNullable: true }));
+    fixture.componentRef.setInput('submitControl', new FormControl<boolean>(false, { nonNullable: true }));
     fixture.detectChanges();
   });
 

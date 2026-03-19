@@ -74,7 +74,10 @@ describe('TooltipDirective', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestComponent);
-    elementRef = fixture.debugElement.nativeElement.firstChild;
+    // Wrap the raw DOM node in an ElementRef so the directive constructor receives
+    // an object with a `.nativeElement` property, matching Angular's DI contract.
+    const hostEl = fixture.debugElement.nativeElement.firstChild as HTMLElement;
+    elementRef = new ElementRef(hostEl);
 
     // Mock elementRef.nativeElement.getBoundingClientRect()
     elementRef.nativeElement.getBoundingClientRect = jasmine.createSpy().and.returnValue({

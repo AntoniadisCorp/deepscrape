@@ -1,4 +1,3 @@
-// loading-dots.component.spec.ts
 import { TestBed } from '@angular/core/testing';
 import { LoadingDotsComponent } from './loading-dots.component';
 import { getTestProviders } from 'src/app/testing';
@@ -9,13 +8,11 @@ describe('LoadingDotsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [LoadingDotsComponent],
+      imports: [LoadingDotsComponent],
       providers: getTestProviders(),
     })
       .compileComponents();
-  });
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(LoadingDotsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

@@ -63,3 +63,6 @@ functions/databases/*.BIN
 *.css.map
 *.css
 functions/src/serviceAccount.json
+
+# Temporary test output files
+tmp-test-output*.txt

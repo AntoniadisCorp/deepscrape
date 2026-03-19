@@ -1,4 +1,5 @@
 import { ElementRef } from '@angular/core';
+import { fakeAsync, tick } from '@angular/core/testing';
 import { RippleDirective } from './ripple.directive';
 
 describe('RippleDirective', () => {
@@ -30,16 +31,15 @@ describe('RippleDirective', () => {
     expect(directive['ripple'].create).toHaveBeenCalled();
   });
 
-  it('should remove ripples on mouseup', () => {
-    const event = new MouseEvent('mouseup');
+  it('should remove ripples on mouseup', fakeAsync(() => {
     const rippleElement = document.createElement('span');
     rippleElement.classList.add('ripple');
     element.appendChild(rippleElement);
+    const event = new MouseEvent('mouseup');
     directive.onClick(event);
-    setTimeout(() => {
-      expect(element.querySelector('.ripple')).toBeNull();
-    }, 200);
-  });
+    tick(200);
+    expect(element.querySelector('.ripple')).toBeNull();
+  }));
 
   it('should remove ripples on mouseleave', () => {
     const rippleElement = document.createElement('span');
