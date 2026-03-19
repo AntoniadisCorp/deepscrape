@@ -1,3 +1,11 @@
+## [0.6.2-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.4...v0.6.2-beta.5) (2026-03-19)
+
+
+### Bug Fixes
+
+* **tests:** fix CI build failure and upgrade failing Karma specs ([676731e](https://github.com/AntoniadisCorp/deepscrape/commit/676731ebd7b5081325eb94969a6abce9999638d0))
+* **workflow:** update trigger to include push events for 'main' branch ([c99d202](https://github.com/AntoniadisCorp/deepscrape/commit/c99d202b8fd24432c3d7a493a70193784fb7f679))
+
 ## [0.6.2-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.3...v0.6.2-beta.4) (2026-03-19)
 
 
