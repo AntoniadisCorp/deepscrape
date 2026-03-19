@@ -1,3 +1,10 @@
+## [0.6.2-beta.3](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.2...v0.6.2-beta.3) (2026-03-19)
+
+
+### Bug Fixes
+
+* **ci:** recreate release asset branches without stale LFS refs ([62a7910](https://github.com/AntoniadisCorp/deepscrape/commit/62a7910082fd4f59377ec356f11edcf122792a6f))
+
 ## [0.6.2-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.1...v0.6.2-beta.1) (2026-03-18)
 
 
