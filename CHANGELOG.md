@@ -1,3 +1,13 @@
+## [0.6.2-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.3...v0.6.2-beta.4) (2026-03-19)
+
+
+### Bug Fixes
+
+* replace jest type with jasmine in tsconfig.json ([2399533](https://github.com/AntoniadisCorp/deepscrape/commit/23995336e50fdd79fa3b0959f89c7b601cf28e3a))
+* **tests:** address code review - add permissions to CI jobs and improve spec comments ([8e46995](https://github.com/AntoniadisCorp/deepscrape/commit/8e46995efd041671403d2016bc2c129fa5afb27e))
+* **tests:** fix 26 failing Karma tests - Q2-Q4 implementation phase ([0bb2633](https://github.com/AntoniadisCorp/deepscrape/commit/0bb2633741f9cfc208007ba2df562f5a1e9876c2))
+* **tests:** fix 3 remaining failing specs + add test CI workflow ([a23a1b1](https://github.com/AntoniadisCorp/deepscrape/commit/a23a1b10749becf9f1f82cc1483a28d073200d87))
+
 ## [0.6.2-beta.3](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.2...v0.6.2-beta.3) (2026-03-19)
 
 
