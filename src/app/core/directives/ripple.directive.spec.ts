@@ -15,10 +15,6 @@ describe('RippleDirective', () => {
     directive = new RippleDirective(mockElementRef as ElementRef, mockDocument);
   });
 
-  it('should create an instance', () => {
-    expect(directive).toBeTruthy();
-  });
-
   it('should set position and overflow styles on the element', () => {
     expect(element.style.position).toBe('relative');
     expect(element.style.overflow).toBe('hidden');

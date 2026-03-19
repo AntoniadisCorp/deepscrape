@@ -1,25 +1,85 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
 
 import { PlaygroundComponent } from './playground.component';
 import { getTestProviders } from 'src/app/testing';
 
 describe('PlaygroundComponent', () => {
   let component: PlaygroundComponent;
-  let fixture: ComponentFixture<PlaygroundComponent>;
+  const queryParams$ = new Subject<Record<string, string>>();
+  const navigateSpy = jasmine.createSpy('navigate');
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [PlaygroundComponent],
-      providers: getTestProviders(),
-    })
-    .compileComponents();
+  const routeStub = {
+    queryParams: queryParams$,
+  } as unknown as ActivatedRoute;
 
-    fixture = TestBed.createComponent(PlaygroundComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  const routerStub = {
+    navigate: navigateSpy,
+  } as unknown as Router;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [...getTestProviders()],
+    });
+
+    navigateSpy.calls.reset();
+
+    component = TestBed.runInInjectionContext(
+      () => new PlaygroundComponent(routeStub, routerStub)
+    );
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('should default to llm-scrape mode', () => {
+    expect(component.currentMode).toBe('llm-scrape');
   });
+
+  it('should update mode from query params', () => {
+    component.ngOnInit();
+    queryParams$.next({ mode: 'crawl' });
+
+    expect(component.currentMode).toBe('crawl');
+  });
+
+  it('should fallback to llm-scrape for unknown mode', () => {
+    component.ngOnInit();
+    queryParams$.next({ mode: 'unknown' });
+
+    expect(component.currentMode).toBe('llm-scrape');
+  });
+
+  it('should navigate with merged query params when mode changes', () => {
+    component.changeMode('crawl');
+
+    expect(navigateSpy).toHaveBeenCalledWith([], {
+      relativeTo: routeStub,
+      queryParams: { mode: 'crawl' },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('should not navigate when mode is unchanged', () => {
+    component.currentMode = 'llm-scrape';
+    component.changeMode('llm-scrape');
+
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should center active mode button after view init', fakeAsync(() => {
+    const activeButton = {
+      offsetLeft: 120,
+      clientWidth: 80,
+    };
+    const container = {
+      clientWidth: 300,
+      scrollLeft: 0,
+      querySelector: jasmine.createSpy('querySelector').and.returnValue(activeButton),
+    };
+
+    component.modeScrollContainer = { nativeElement: container } as unknown as PlaygroundComponent['modeScrollContainer'];
+    component.ngAfterViewInit();
+    tick(0);
+
+    expect(container.scrollLeft).toBe(10);
+  }));
 });

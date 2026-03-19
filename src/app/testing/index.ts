@@ -7,7 +7,7 @@
  *   // or for components:
  *   TestBed.configureTestingModule({ imports: [MyComponent], providers: getTestProviders() });
  */
-import { EnvironmentProviders, NgZone, PLATFORM_ID, Provider } from '@angular/core';
+import { EnvironmentProviders, PLATFORM_ID, Provider } from '@angular/core';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withFetch } from '@angular/common/http';
@@ -102,10 +102,12 @@ const mockHeartbeatService = {
 
 /** Minimal AnalyticsService stub */
 const mockAnalyticsService = {
-  trackEvent: () => {},
-  logEvent: () => {},
+  trackEvent: () => of(null),
+  logEvent: () => of(null),
   setUser: () => {},
-  track: () => {},
+  track: () => of(null),
+  batchTrackEvents: () => of(null),
+  sendStatus: () => of({ ok: true }),
 };
 
 const mockFirestoreService = {
@@ -128,11 +130,16 @@ const mockAuthService = {
 };
 
 const mockTranslateService = {
+  currentLang: 'en',
+  defaultLang: 'en',
   getBrowserLang: () => 'en',
   use: (_lang: string) => of('en'),
   instant: (key: string) => key,
   get: (key: string) => of(key),
   stream: (key: string) => of(key),
+  onLangChange: of({ lang: 'en', translations: {} }),
+  onTranslationChange: of({ lang: 'en', translations: {} }),
+  onDefaultLangChange: of({ lang: 'en', translations: {} }),
 };
 
 const mockCartService = {
@@ -145,6 +152,7 @@ const mockCartService = {
 
 const mockApiKeyService = {
   setMenuInVisible: () => {},
+  apiKeys$: of([]),
 };
 
 const mockAppUserLayout = {
@@ -165,6 +173,7 @@ const mockNgswUpdateService = {};
 /** Minimal ScreenResizeService stub */
 const mockScreenResizeService = {
   onResize$: EMPTY,
+  updateScreenSize: () => ({ screenWidth: 1280, screenHeight: 720 }),
   onResize: () => {},
 };
 
@@ -211,7 +220,6 @@ export function getTestProviders(): (Provider | EnvironmentProviders)[] {
 
     // --- Platform---
     { provide: PLATFORM_ID, useValue: 'browser' },
-    { provide: NgZone, useValue: new NgZone({ enableLongStackTrace: false }) },
 
     // --- Firebase mocks ---
     { provide: Auth, useValue: mockAuth },

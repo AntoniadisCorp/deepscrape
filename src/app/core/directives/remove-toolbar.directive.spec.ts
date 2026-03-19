@@ -1,43 +1,28 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
 import { RemoveToolbarDirective } from './remove-toolbar.directive';
-import { getTestProviders } from 'src/app/testing';
-
-@Component({
-    template: `<div appRemoveToolbar>
-               <div class="toolbar">Toolbar 1</div>
-               <div class="toolbar">Toolbar 2</div>
-               <div>Other Content</div>
-             </div>`
-})
-class TestComponent { }
 
 describe('RemoveToolbarDirective', () => {
-    let fixture: ComponentFixture<TestComponent>;
-    let component: TestComponent;
+    let host: HTMLElement;
+    let directive: RemoveToolbarDirective;
 
     beforeEach(() => {
-        TestBed.configureTestingModule({
-            imports: [TestComponent, RemoveToolbarDirective], // Importing the standalone component
-          providers: getTestProviders(),
-        }).compileComponents();
+        host = document.createElement('div');
+        host.innerHTML = `
+            <div class="toolbar">Toolbar 1</div>
+            <div class="toolbar">Toolbar 2</div>
+            <div class="content">Other Content</div>
+        `;
 
-        fixture = TestBed.createComponent(TestComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges(); // Trigger ngOnInit
+        directive = new RemoveToolbarDirective({ nativeElement: host } as any);
     });
 
-    it('should create an instance', () => {
-        const directive = new RemoveToolbarDirective(fixture.debugElement.nativeElement);
-        expect(directive).toBeTruthy();
+    it('should remove toolbar elements on init', () => {
+        directive.ngOnInit();
+        const toolbarElements = host.querySelectorAll('.toolbar');
+        expect(toolbarElements.length).toBe(0);
     });
 
-    it('should remove elements with class "toolbar"', () => {
-        let toolbarElements = fixture.debugElement.nativeElement.querySelectorAll('.toolbar');
-        toolbarElements.forEach((element: HTMLElement) => {
-            element.remove();
-        });
-        toolbarElements = fixture.debugElement.nativeElement.querySelectorAll('.toolbar')
-        expect(toolbarElements.length).toBe(0); // Expect no toolbar elements to be present
+    it('should keep non-toolbar content', () => {
+        directive.ngOnInit();
+        expect(host.textContent).toContain('Other Content');
     });
 });

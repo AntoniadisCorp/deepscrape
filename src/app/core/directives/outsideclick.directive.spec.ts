@@ -32,10 +32,6 @@ describe('OutsideclickDirective', () => {
     directive = new Outsideclick(elementRef);
   });
 
-  it('should create an instance', () => {
-    expect(directive).toBeTruthy();
-  });
-
   it('should emit outsideClick event when clicked outside the element', fakeAsync(() => {
     const handleClickSpy = spyOn(component, 'handleClick');
     const event = new MouseEvent('mousedown', { bubbles: true });

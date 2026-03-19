@@ -22,7 +22,17 @@ describe('RadioButtonComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('returns fallback label when no title is set', () => {
+    expect(component.setTitle()).toBe('set a Title');
+  });
+
+  it('returns the title when set', () => {
+    component.title = 'My Option';
+    expect(component.setTitle()).toBe('My Option');
+  });
+
+  it('reflects control value changes', () => {
+    component.control.setValue('test-value');
+    expect(component.control.value).toBe('test-value');
   });
 });
