@@ -3,7 +3,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
-    "test": "node --import tsx --test src/**/*.spec.ts",
+    "test": "tsx --test src/**/*.spec.ts",
     "build:angular": "node cp-angular.js",
     "build": "npm run build:angular && tsc",
     "build:watch": "npm run build:angular && tsc --watch",
