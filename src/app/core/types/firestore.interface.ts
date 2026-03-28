@@ -34,6 +34,7 @@ export type Users = {
 
     // User Authorization fieldsrole
     role?: string
+    defaultOrgId?: string
     plan?: 'free' | 'trial' | 'starter' | 'pro' | 'enterprise'
 
     // Profile status
