@@ -329,6 +329,18 @@ class ReverseAPIProxy {
         }
 
         try {
+            const existingInvite = await db.collection("invitations")
+                .where("orgId", "==", orgId)
+                .where("email", "==", email)
+                .where("status", "==", "pending")
+                .limit(1)
+                .get()
+
+            if (!existingInvite.empty) {
+                res.status(200).json({ id: existingInvite.docs[0].id, deduplicated: true })
+                return
+            }
+
             const inviteRef = db.collection("invitations").doc()
             await inviteRef.set({
                 id: inviteRef.id,
@@ -348,6 +360,167 @@ class ReverseAPIProxy {
         }
     }
 
+    private listOrganizationMembers = async (req: Request, res: Response): Promise<void> => {
+        const orgId = req.params.orgId
+        if (!orgId) {
+            res.status(400).json({ error: "bad_request", code: "bad_request" })
+            return
+        }
+
+        try {
+            const membershipsSnap = await db.collection("memberships")
+                .where("orgId", "==", orgId)
+                .limit(200)
+                .get()
+
+            const members = membershipsSnap.docs.map((doc) => ({
+                id: doc.id,
+                ...(doc.data() || {}),
+            }))
+
+            res.status(200).json({ members })
+        } catch (error) {
+            console.error("Failed to list organization members:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private removeOrganizationMember = async (req: Request, res: Response): Promise<void> => {
+        const orgId = req.params.orgId
+        const memberUid = req.params.userId
+        if (!orgId || !memberUid) {
+            res.status(400).json({ error: "bad_request", code: "bad_request" })
+            return
+        }
+
+        try {
+            const membershipId = `${memberUid}_${orgId}`
+            await db.collection("memberships").doc(membershipId).delete()
+            res.status(204).send()
+        } catch (error) {
+            console.error("Failed to remove organization member:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private listMyInvitations = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        try {
+            const tokenEmail = req.user?.email?.toLowerCase()
+            const userRecord = tokenEmail ? null : await auth.getUser(uid)
+            const userEmail = tokenEmail || userRecord?.email?.toLowerCase()
+
+            if (!userEmail) {
+                res.status(400).json({ error: "bad_request", code: "bad_request", message: "user email unavailable" })
+                return
+            }
+
+            const invitesSnap = await db.collection("invitations")
+                .where("email", "==", userEmail)
+                .where("status", "==", "pending")
+                .limit(200)
+                .get()
+
+            const invitations = invitesSnap.docs.map((doc) => ({
+                id: doc.id,
+                ...(doc.data() || {}),
+            }))
+
+            res.status(200).json({ invitations })
+        } catch (error) {
+            console.error("Failed to list invitations:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private acceptInvitation = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        const invitationId = req.params.invitationId
+        if (!uid || !invitationId) {
+            res.status(400).json({ error: "bad_request", code: "bad_request" })
+            return
+        }
+
+        try {
+            const inviteRef = db.collection("invitations").doc(invitationId)
+            const inviteSnap = await inviteRef.get()
+
+            if (!inviteSnap.exists) {
+                res.status(404).json({ error: "not_found", code: "not_found" })
+                return
+            }
+
+            const invitation = inviteSnap.data() as {
+                email?: string
+                orgId?: string
+                role?: string
+                status?: string
+            }
+
+            if (!invitation.orgId || !invitation.email) {
+                res.status(400).json({ error: "bad_request", code: "bad_request", message: "invalid invitation payload" })
+                return
+            }
+
+            if (invitation.status !== "pending") {
+                res.status(409).json({ error: "conflict", code: "invitation_not_pending" })
+                return
+            }
+
+            const tokenEmail = req.user?.email?.toLowerCase()
+            const userRecord = tokenEmail ? null : await auth.getUser(uid)
+            const userEmail = tokenEmail || userRecord?.email?.toLowerCase()
+
+            if (!userEmail || userEmail !== invitation.email.toLowerCase()) {
+                res.status(403).json({ error: "forbidden", code: "invitation_email_mismatch" })
+                return
+            }
+
+            const role = invitation.role || "member"
+            const membershipId = `${uid}_${invitation.orgId}`
+
+            const batch = db.batch()
+            batch.set(db.collection("memberships").doc(membershipId), {
+                id: membershipId,
+                orgId: invitation.orgId,
+                userId: uid,
+                role,
+                addedBy: invitation.orgId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }, { merge: true })
+
+            batch.set(inviteRef, {
+                status: "accepted",
+                acceptedBy: uid,
+                acceptedAt: new Date(),
+                updatedAt: new Date(),
+            }, { merge: true })
+
+            batch.set(db.collection("users").doc(uid), {
+                defaultOrgId: invitation.orgId,
+                updated_At: new Date(),
+            }, { merge: true })
+
+            await batch.commit()
+
+            res.status(200).json({
+                invitationId,
+                orgId: invitation.orgId,
+                role,
+                accepted: true,
+            })
+        } catch (error) {
+            console.error("Failed to accept invitation:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
     // ------------------- Node JS Routes -------------------
 
     /**
@@ -357,6 +530,8 @@ class ReverseAPIProxy {
     private httpRoutesGets(): void {
         this.router.get("/orgs", this.listOrganizations)
         this.router.get("/orgs/:orgId", requirePermission("organization", "read"), this.getOrganization)
+        this.router.get("/orgs/:orgId/members", requirePermission("organization", "read"), this.listOrganizationMembers)
+        this.router.get("/orgs/invitations/me", this.listMyInvitations)
 
         /* Jina AI */
         // this.router.get("/jina", helloWorld)
@@ -400,6 +575,7 @@ class ReverseAPIProxy {
     private httpRoutesPosts(): void {
         this.router.post("/orgs", requirePermission("organization", "manage"), this.createOrganization)
         this.router.post("/orgs/:orgId/invitations", requirePermission("organization", "invite"), this.createInvitation)
+        this.router.post("/orgs/invitations/:invitationId/accept", this.acceptInvitation)
 
         this.router.post("/anthropic/messages", this.requirePaidAccess, requirePermission("ai", "execute"), anthropicAICore) // Search for Markets
         this.router.post("/openai/chat/completions", this.requirePaidAccess, requirePermission("ai", "execute"), openaiAICore)
@@ -453,6 +629,8 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesDelete(): void {
+        this.router.delete("/orgs/:orgId/members/:userId", requirePermission("organization", "manage"), this.removeOrganizationMember)
+
         /**
          * Machines by Arachnefly
          */

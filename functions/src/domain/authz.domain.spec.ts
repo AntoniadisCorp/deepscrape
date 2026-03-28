@@ -78,3 +78,11 @@ test("denies org invitation without org membership", () => {
 
   assert.equal(denied, false)
 })
+
+test("denies org read when scoped org has no membership and no owner fallback", () => {
+  const denied = canPerform(baseSubject, "organization", "read", {
+    orgId: "org_2",
+  })
+
+  assert.equal(denied, false)
+})

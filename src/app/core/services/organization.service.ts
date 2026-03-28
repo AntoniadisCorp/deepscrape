@@ -21,6 +21,21 @@ type OrganizationListResponse = {
   organizations: OrganizationSummary[]
 }
 
+type OrganizationInvitation = {
+  id: string
+  orgId: string
+  email: string
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+  status: 'pending' | 'accepted' | 'revoked'
+}
+
+type OrganizationMember = {
+  id: string
+  orgId: string
+  userId: string
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -79,6 +94,60 @@ export class OrganizationService {
     ).pipe(
       catchError((error) => {
         console.error('Failed to create organization invitation:', error)
+        return throwError(() => error)
+      }),
+    )
+  }
+
+  listMembers(orgId: string): Observable<{ members: OrganizationMember[] }> {
+    return this.http.get<{ members: OrganizationMember[] }>(
+      `${API_ORGANIZATIONS}/${orgId}/members`,
+      { headers: this.getAuthHeaders() },
+    ).pipe(
+      catchError((error) => {
+        console.error('Failed to list organization members:', error)
+        return throwError(() => error)
+      }),
+    )
+  }
+
+  removeMember(orgId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${API_ORGANIZATIONS}/${orgId}/members/${userId}`,
+      { headers: this.getAuthHeaders() },
+    ).pipe(
+      catchError((error) => {
+        console.error('Failed to remove organization member:', error)
+        return throwError(() => error)
+      }),
+    )
+  }
+
+  listMyInvitations(): Observable<{ invitations: OrganizationInvitation[] }> {
+    return this.http.get<{ invitations: OrganizationInvitation[] }>(
+      `${API_ORGANIZATIONS}/invitations/me`,
+      { headers: this.getAuthHeaders() },
+    ).pipe(
+      catchError((error) => {
+        console.error('Failed to fetch organization invitations:', error)
+        return throwError(() => error)
+      }),
+    )
+  }
+
+  acceptInvitation(invitationId: string): Observable<{ orgId: string; role: string; accepted: true }> {
+    return this.http.post<{ orgId: string; role: string; accepted: true }>(
+      `${API_ORGANIZATIONS}/invitations/${invitationId}/accept`,
+      {},
+      { headers: this.getAuthHeaders() },
+    ).pipe(
+      tap((response) => {
+        if (response?.orgId) {
+          this.authzService.setActiveOrgId(response.orgId)
+        }
+      }),
+      catchError((error) => {
+        console.error('Failed to accept organization invitation:', error)
         return throwError(() => error)
       }),
     )
