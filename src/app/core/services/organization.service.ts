@@ -6,7 +6,7 @@ import { AuthService } from './auth.service'
 import { AuthzService } from './authz.service'
 import { API_ORGANIZATIONS } from '../variables'
 
-type OrganizationSummary = {
+export type OrganizationSummary = {
   id: string
   name?: string
   slug?: string
@@ -21,7 +21,7 @@ type OrganizationListResponse = {
   organizations: OrganizationSummary[]
 }
 
-type OrganizationInvitation = {
+export type OrganizationInvitation = {
   id: string
   orgId: string
   email: string
@@ -29,7 +29,7 @@ type OrganizationInvitation = {
   status: 'pending' | 'accepted' | 'revoked'
 }
 
-type OrganizationMember = {
+export type OrganizationMember = {
   id: string
   orgId: string
   userId: string
@@ -155,5 +155,9 @@ export class OrganizationService {
 
   setActiveOrganization(orgId: string | null): void {
     this.authzService.setActiveOrgId(orgId)
+  }
+
+  getActiveOrganization(): string | null {
+    return this.authzService.activeOrgId
   }
 }
