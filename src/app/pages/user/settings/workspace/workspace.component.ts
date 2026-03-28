@@ -245,10 +245,8 @@ export class WorkspaceTabComponent {
       return false
     }
 
-    return this.authzService.can('organization', 'manage', {
-      orgId: selected.id,
-      ownerId: selected.ownerId,
-    })
+    const role = selected.membership?.role
+    return role === 'owner' || role === 'admin'
   }
 
   private loadMembers(orgId: string): void {
@@ -273,10 +271,10 @@ export class WorkspaceTabComponent {
   }
 
   private showSuccess(message: string): void {
-    this.snackbar.showSnackBar(message, SnackBarType.success)
+    this.snackbar.showSnackbar(message, SnackBarType.success)
   }
 
   private showError(message: string): void {
-    this.snackbar.showSnackBar(message, SnackBarType.error)
+    this.snackbar.showSnackbar(message, SnackBarType.error)
   }
 }

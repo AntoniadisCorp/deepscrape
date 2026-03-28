@@ -31,14 +31,21 @@ export const orgContextInterceptor: HttpInterceptorFn = (
 
   const authz = inject(AuthzService);
   const orgId = authz.activeOrgId;
+  const authzOrgMode = authz.isStrictOrgModeEnabled() ? 'strict' : 'compat';
 
   if (!orgId) {
-    return next(req);
+    const requestWithMode = req.clone({
+      setHeaders: {
+        'x-authz-org-mode': authzOrgMode,
+      },
+    });
+    return next(requestWithMode);
   }
 
   const requestWithOrg = req.clone({
     setHeaders: {
       'x-org-id': orgId,
+      'x-authz-org-mode': authzOrgMode,
     },
   });
 

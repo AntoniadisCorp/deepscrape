@@ -10,6 +10,7 @@ import {
   OrgRole,
   canPerform,
 } from "../domain/authz.domain"
+import {env} from "../config"
 
 type RequirePermissionOptions<Resource extends AuthResource> = {
     getData?: (req: Request) => Partial<AuthData<Resource>>
@@ -17,6 +18,64 @@ type RequirePermissionOptions<Resource extends AuthResource> = {
 
 type LocalsWithAuthz = {
     authzSubject?: AuthorizationSubject
+    authzDecisionEvent?: AuthorizationDecisionEvent
+}
+
+const AUTHZ_STRICT_ORG_MODE = env.AUTHZ_STRICT_ORG_MODE === "true"
+
+type AuthorizationDecisionEvent = {
+    version: "v1"
+    timestamp: number
+    correlationId: string
+    subjectUid: string
+    isPlatformAdmin: boolean
+    resource: string
+    action: string
+    result: "allow" | "deny"
+    reasonCode: string
+    orgId?: string
+    ownerId?: string
+    source: "middleware"
+    mode: "strict" | "compat"
+}
+
+function getCorrelationId(req: Request): string {
+  const requestId = req.headers["x-request-id"]
+  if (typeof requestId === "string" && requestId.trim().length > 0) {
+    return requestId.trim()
+  }
+
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+function buildDecisionEvent<Resource extends AuthResource>(
+  req: Request,
+  subject: AuthorizationSubject,
+  resource: Resource,
+  action: AuthAction<Resource>,
+  data: AuthData<Resource>,
+  result: "allow" | "deny",
+  reasonCode: string
+): AuthorizationDecisionEvent {
+  return {
+    version: "v1",
+    timestamp: Date.now(),
+    correlationId: getCorrelationId(req),
+    subjectUid: subject.uid,
+    isPlatformAdmin: subject.isPlatformAdmin,
+    resource,
+    action,
+    result,
+    reasonCode,
+    orgId: data.orgId,
+    ownerId: data.ownerId,
+    source: "middleware",
+    mode: AUTHZ_STRICT_ORG_MODE ? "strict" : "compat",
+  }
+}
+
+function emitAuthorizationDecision(event: AuthorizationDecisionEvent): void {
+  console.info("[authz-decision]", JSON.stringify(event))
 }
 
 async function loadMemberships(uid: string): Promise<Record<string, OrgRole>> {
@@ -107,6 +166,7 @@ export function requirePermission<Resource extends AuthResource>(
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const subject = await buildSubject(req, res)
+      const locals = res.locals as LocalsWithAuthz
       if (!subject) {
         res.status(401).json({error: "unauthorized", code: "unauthorized"})
         return
@@ -117,7 +177,7 @@ export function requirePermission<Resource extends AuthResource>(
 
       const inferredData: Partial<AuthData<Resource>> = {
         orgId: inferredOrgId,
-        ownerId: explicitOwnerId ?? (inferredOrgId ? undefined : subject.uid),
+        ownerId: explicitOwnerId ?? (inferredOrgId ? undefined : (AUTHZ_STRICT_ORG_MODE ? undefined : subject.uid)),
       } as Partial<AuthData<Resource>>
 
       const extraData = options.getData?.(req) ?? {}
@@ -127,6 +187,17 @@ export function requirePermission<Resource extends AuthResource>(
       } as AuthData<Resource>
 
       const allowed = canPerform(subject, resource, action, data)
+      locals.authzDecisionEvent = buildDecisionEvent(
+        req,
+        subject,
+        resource,
+        action,
+        data,
+        allowed ? "allow" : "deny",
+        allowed ? "policy_allow" : "policy_deny",
+      )
+      emitAuthorizationDecision(locals.authzDecisionEvent)
+
       if (!allowed) {
         res.status(403).json({error: "forbidden", code: "forbidden"})
         return

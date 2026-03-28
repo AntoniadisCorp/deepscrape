@@ -528,10 +528,10 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesGets(): void {
-        this.router.get("/orgs", this.listOrganizations)
+        this.router.get("/orgs", requirePermission("organization", "read"), this.listOrganizations)
         this.router.get("/orgs/:orgId", requirePermission("organization", "read"), this.getOrganization)
         this.router.get("/orgs/:orgId/members", requirePermission("organization", "read"), this.listOrganizationMembers)
-        this.router.get("/orgs/invitations/me", this.listMyInvitations)
+        this.router.get("/orgs/invitations/me", requirePermission("organization", "read"), this.listMyInvitations)
 
         /* Jina AI */
         // this.router.get("/jina", helloWorld)
@@ -575,7 +575,7 @@ class ReverseAPIProxy {
     private httpRoutesPosts(): void {
         this.router.post("/orgs", requirePermission("organization", "manage"), this.createOrganization)
         this.router.post("/orgs/:orgId/invitations", requirePermission("organization", "invite"), this.createInvitation)
-        this.router.post("/orgs/invitations/:invitationId/accept", this.acceptInvitation)
+        this.router.post("/orgs/invitations/:invitationId/accept", requirePermission("organization", "read"), this.acceptInvitation)
 
         this.router.post("/anthropic/messages", this.requirePaidAccess, requirePermission("ai", "execute"), anthropicAICore) // Search for Markets
         this.router.post("/openai/chat/completions", this.requirePaidAccess, requirePermission("ai", "execute"), openaiAICore)

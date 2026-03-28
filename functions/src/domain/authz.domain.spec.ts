@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import test from "node:test"
 import assert from "node:assert/strict"
 import {canPerform, AuthorizationSubject} from "./authz.domain"
@@ -71,6 +72,14 @@ test("allows self to manage organization creation context", () => {
   assert.equal(allowed, true)
 })
 
+test("allows self to read organization in self-scoped context", () => {
+  const allowed = canPerform(baseSubject, "organization", "read", {
+    ownerId: "u_1",
+  })
+
+  assert.equal(allowed, true)
+})
+
 test("denies org invitation without org membership", () => {
   const denied = canPerform(baseSubject, "organization", "invite", {
     orgId: "org_1",
@@ -85,4 +94,36 @@ test("denies org read when scoped org has no membership and no owner fallback", 
   })
 
   assert.equal(denied, false)
+})
+
+test("denies cross-tenant machine read when membership is for a different org", () => {
+  const subject: AuthorizationSubject = {
+    ...baseSubject,
+    memberships: {
+      org_alpha: "member",
+    },
+  }
+
+  const denied = canPerform(subject, "machine", "read", {
+    orgId: "org_beta",
+    ownerId: "u_other",
+  })
+
+  assert.equal(denied, false)
+})
+
+test("allows in-tenant machine read for member role", () => {
+  const subject: AuthorizationSubject = {
+    ...baseSubject,
+    memberships: {
+      org_alpha: "member",
+    },
+  }
+
+  const allowed = canPerform(subject, "machine", "read", {
+    orgId: "org_alpha",
+    ownerId: "u_other",
+  })
+
+  assert.equal(allowed, true)
 })

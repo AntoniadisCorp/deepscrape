@@ -80,20 +80,6 @@ service cloud.firestore {
         && request.auth.token.role == roleName;
     }
 
-    function hasTeamsClaim() {
-      return request.auth != null
-        && request.auth.token != null
-        && ('teams' in request.auth.token)
-        && request.auth.token.teams is list;
-    }
-
-    function hasOrganizationClaim(orgId) {
-      return request.auth != null
-        && request.auth.token != null
-        && ('organization' in request.auth.token)
-        && request.auth.token.organization == orgId;
-    }
-
     function isAdmin() {
       return hasRole('admin') || (
         request.auth != null
@@ -112,38 +98,6 @@ service cloud.firestore {
         && orgId is string
         && exists(/databases/$(database)/documents/memberships/$(request.auth.uid + '_' + orgId))
         && get(/databases/$(database)/documents/memberships/$(request.auth.uid + '_' + orgId)).data.role in allowedRoles;
-    }
-
-    function isModerator() {
-      return hasRole('moderator');
-    }
-
-    function isManager() {
-      return hasRole('manager');
-    }
-
-    function isUser() {
-      return hasRole('user');
-    }
-
-    function isGuest() {
-      return hasRole('guest');
-    }
-
-    function isTeamLeader(teamId) {
-      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]) && hasRole('team_leader');
-    }
-
-    function isTeamMember(teamId) {
-      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]);
-    }
-
-    function isOrganizationAdmin(orgId) {
-      return hasOrganizationClaim(orgId) && hasRole('org_admin');
-    }
-
-    function isOrganizationMember(orgId) {
-      return hasOrganizationClaim(orgId);
     }
 
     match /organizations/{orgId} {

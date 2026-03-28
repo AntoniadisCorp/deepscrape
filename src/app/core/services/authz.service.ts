@@ -61,6 +61,7 @@ type MembershipDoc = {
 };
 
 const ACTIVE_ORG_STORAGE_KEY = 'deepscrape.active_org_id';
+const STRICT_ORG_MODE_STORAGE_KEY = 'deepscrape.authz_strict_org_mode';
 
 const POLICIES = {
   owner: {
@@ -95,7 +96,7 @@ const POLICIES = {
     crawl: { execute: true, read: true },
     machine: { read: true, deploy: true, update: true, delete: true },
     billing: { read: true, manage: true },
-    organization: { manage: true },
+    organization: { read: true, manage: true },
   },
 } as const satisfies RolePolicies;
 
@@ -161,11 +162,15 @@ export class AuthzService {
   private activeOrgIdSubject = new BehaviorSubject<string | null>(
     this.localStorage.getItem(ACTIVE_ORG_STORAGE_KEY),
   );
+  private strictOrgModeSubject = new BehaviorSubject<boolean>(
+    this.localStorage.getItem(STRICT_ORG_MODE_STORAGE_KEY) === 'true',
+  );
 
   private membershipsLoadedForUid: string | null = null;
 
   readonly memberships$ = this.membershipsSubject.asObservable();
   readonly activeOrgId$ = this.activeOrgIdSubject.asObservable();
+  readonly strictOrgMode$ = this.strictOrgModeSubject.asObservable();
 
   constructor() {
     this.authService.user$
@@ -202,13 +207,27 @@ export class AuthzService {
     this.activeOrgIdSubject.next(orgId);
   }
 
+  setStrictOrgMode(enabled: boolean): void {
+    if (enabled) {
+      this.localStorage.setItem(STRICT_ORG_MODE_STORAGE_KEY, 'true');
+    } else {
+      this.localStorage.removeItem(STRICT_ORG_MODE_STORAGE_KEY);
+    }
+
+    this.strictOrgModeSubject.next(enabled);
+  }
+
+  isStrictOrgModeEnabled(): boolean {
+    return this.strictOrgModeSubject.value;
+  }
+
   can$<Resource extends keyof AuthResources>(
     resource: Resource,
     action: AuthResources[Resource]['action'],
     data?: Partial<AuthResources[Resource]['dataType']>,
   ): Observable<boolean> {
-    return combineLatest([this.authService.user$, this.memberships$, this.activeOrgId$]).pipe(
-      map(([user, memberships, activeOrgId]) => {
+    return combineLatest([this.authService.user$, this.memberships$, this.activeOrgId$, this.strictOrgMode$]).pipe(
+      map(([user, memberships, activeOrgId, strictOrgMode]) => {
         if (!user?.uid) {
           return false;
         }
@@ -221,7 +240,7 @@ export class AuthzService {
 
         const mergedData = {
           orgId: data?.orgId || activeOrgId || undefined,
-          ownerId: data?.ownerId || ((data?.orgId || activeOrgId) ? undefined : user.uid),
+          ownerId: data?.ownerId || ((data?.orgId || activeOrgId || strictOrgMode) ? undefined : user.uid),
         } as AuthResources[Resource]['dataType'];
 
         return canPerform(subject, resource, action, mergedData);
