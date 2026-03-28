@@ -12,6 +12,7 @@ import {
 import { auth, db } from "../app/config"
 import { BillingSnapshot, getBillingAccessMode, resolveBillingPricingPolicy } from "../domain"
 import { consumeBillingCredits, releaseBillingCredits, reserveBillingCredits } from "../app/billing-credits"
+import { requirePermission } from "./authz.middleware"
 
 type BillingChargeContext = {
     uid: string
@@ -202,20 +203,20 @@ class ReverseAPIProxy {
     private httpRoutesGets(): void {
         /* Jina AI */
         // this.router.get("/jina", helloWorld)
-        this.router.get("/jina/:url", jinaAICrawl)
+        this.router.get("/jina/:url", this.requirePaidAccess, requirePermission("ai", "execute"), jinaAICrawl)
 
         /**
          * Machines by Arachnefly
          */
 
         // Get Machine Details
-        this.router.get("/machines/machine/:id", this.requirePaidAccess, arachnefly.getMachine)
+        this.router.get("/machines/machine/:id", this.requirePaidAccess, requirePermission("machine", "read"), arachnefly.getMachine)
 
         // Check if the image is deployable
-        this.router.get("/machines/check-image", this.requirePaidAccess, arachnefly.checkImageDeployability)
+        this.router.get("/machines/check-image", this.requirePaidAccess, requirePermission("machine", "read"), arachnefly.checkImageDeployability)
 
         // wait for a machine to stabilize a specific state and return the machine details
-        this.router.get("/machines/machine/waitforstate/:machineId", this.requirePaidAccess, arachnefly.waitForState)
+        this.router.get("/machines/machine/waitforstate/:machineId", this.requirePaidAccess, requirePermission("machine", "read"), arachnefly.waitForState)
 
 
         /**
@@ -240,15 +241,15 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesPosts(): void {
-        this.router.post("/anthropic/messages", this.requirePaidAccess, anthropicAICore) // Search for Markets
-        this.router.post("/openai/chat/completions", this.requirePaidAccess, openaiAICore)
-        this.router.post("/groq/chat/completions", this.requirePaidAccess, groqAICore)
+        this.router.post("/anthropic/messages", this.requirePaidAccess, requirePermission("ai", "execute"), anthropicAICore) // Search for Markets
+        this.router.post("/openai/chat/completions", this.requirePaidAccess, requirePermission("ai", "execute"), openaiAICore)
+        this.router.post("/groq/chat/completions", this.requirePaidAccess, requirePermission("ai", "execute"), groqAICore)
 
         /**
          * Crawler Management by crawlagent
         */
 
-        this.router.post("/crawl", this.requirePaidAccess, crawl4aiCore)
+        this.router.post("/crawl", this.requirePaidAccess, requirePermission("crawl", "execute"), crawl4aiCore)
 
         // Enqueue a stream Crawl Task
         // this.router.post("/crawl/stream/job", crawlagent.multiCrawlEnqueue)
@@ -256,12 +257,13 @@ class ReverseAPIProxy {
         /* Machines by Arachnefly */
 
         // Deploy a new Machine
-        this.router.post("/machines/deploy", this.requirePaidAccess, arachnefly.deployMachine)
+        this.router.post("/machines/deploy", this.requirePaidAccess, requirePermission("machine", "deploy"), arachnefly.deployMachine)
         // this.router.post('/api/machines/logs', receiveLogs)
     }
+
     /**
-           * https Router Put
-           */
+       * https Router Put
+       */
 
     private httpRoutesPut(): void {
         /**
@@ -269,13 +271,13 @@ class ReverseAPIProxy {
          */
 
         // Start a Machine
-        this.router.put("/machines/machine/:machineId/start", this.requirePaidAccess, arachnefly.startMachine)
+        this.router.put("/machines/machine/:machineId/start", this.requirePaidAccess, requirePermission("machine", "update"), arachnefly.startMachine)
 
         // Suspend a Machine
-        this.router.put("/machines/machine/:machineId/suspend", this.requirePaidAccess, arachnefly.suspendMachine)
+        this.router.put("/machines/machine/:machineId/suspend", this.requirePaidAccess, requirePermission("machine", "update"), arachnefly.suspendMachine)
 
         // Stop a Machine
-        this.router.put("/machines/machine/:machineId/stop", this.requirePaidAccess, arachnefly.stopMachine)
+        this.router.put("/machines/machine/:machineId/stop", this.requirePaidAccess, requirePermission("machine", "update"), arachnefly.stopMachine)
 
 
         /**
@@ -295,7 +297,7 @@ class ReverseAPIProxy {
          * Machines by Arachnefly
          */
         // Destroy a Machine
-        this.router.delete("/machines/machine/:machineId", this.requirePaidAccess, arachnefly.destroyMachine)
+        this.router.delete("/machines/machine/:machineId", this.requirePaidAccess, requirePermission("machine", "delete"), arachnefly.destroyMachine)
     }
 }
 

@@ -29,6 +29,7 @@ export const linkGuestToUser = auth.linkGuestToUser
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole
 export const setDefaultRole = auth.setDefaultRole
+export const createDefaultOrganization = auth.createDefaultOrganization
 
 
 // STRIPE Functions
