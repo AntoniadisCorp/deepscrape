@@ -40,6 +40,10 @@ async function loadMemberships(uid: string): Promise<Record<string, OrgRole>> {
 }
 
 function getOrgIdFromRequest(req: Request): string | undefined {
+  if (typeof req.params?.orgId === "string" && req.params.orgId.trim().length > 0) {
+    return req.params.orgId.trim()
+  }
+
   const headerOrgId = req.headers["x-org-id"]
   if (typeof headerOrgId === "string" && headerOrgId.trim().length > 0) {
     return headerOrgId.trim()
@@ -51,6 +55,22 @@ function getOrgIdFromRequest(req: Request): string | undefined {
 
   if (typeof req.query?.orgId === "string" && req.query.orgId.trim().length > 0) {
     return req.query.orgId.trim()
+  }
+
+  return undefined
+}
+
+function getOwnerIdFromRequest(req: Request): string | undefined {
+  if (typeof req.params?.ownerId === "string" && req.params.ownerId.trim().length > 0) {
+    return req.params.ownerId.trim()
+  }
+
+  if (typeof req.body?.ownerId === "string" && req.body.ownerId.trim().length > 0) {
+    return req.body.ownerId.trim()
+  }
+
+  if (typeof req.query?.ownerId === "string" && req.query.ownerId.trim().length > 0) {
+    return req.query.ownerId.trim()
   }
 
   return undefined
@@ -92,9 +112,12 @@ export function requirePermission<Resource extends AuthResource>(
         return
       }
 
+      const inferredOrgId = getOrgIdFromRequest(req)
+      const explicitOwnerId = getOwnerIdFromRequest(req)
+
       const inferredData: Partial<AuthData<Resource>> = {
-        orgId: getOrgIdFromRequest(req),
-        ownerId: subject.uid,
+        orgId: inferredOrgId,
+        ownerId: explicitOwnerId ?? (inferredOrgId ? undefined : subject.uid),
       } as Partial<AuthData<Resource>>
 
       const extraData = options.getData?.(req) ?? {}

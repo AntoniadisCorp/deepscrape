@@ -194,6 +194,160 @@ class ReverseAPIProxy {
         }
     }
 
+    private listOrganizations = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        try {
+            const membershipsSnap = await db.collection("memberships")
+                .where("userId", "==", uid)
+                .limit(100)
+                .get()
+
+            const organizations = await Promise.all(membershipsSnap.docs.map(async (membershipDoc) => {
+                const membership = membershipDoc.data() as {
+                    orgId?: string
+                    role?: string
+                }
+
+                if (!membership.orgId) {
+                    return null
+                }
+
+                const orgSnap = await db.collection("organizations").doc(membership.orgId).get()
+                if (!orgSnap.exists) {
+                    return null
+                }
+
+                return {
+                    id: orgSnap.id,
+                    ...(orgSnap.data() || {}),
+                    membership: {
+                        role: membership.role || "member",
+                    },
+                }
+            }))
+
+            res.status(200).json({ organizations: organizations.filter(Boolean) })
+        } catch (error) {
+            console.error("Failed to list organizations:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private getOrganization = async (req: Request, res: Response): Promise<void> => {
+        const orgId = req.params.orgId
+        if (!orgId) {
+            res.status(400).json({ error: "bad_request", code: "bad_request" })
+            return
+        }
+
+        try {
+            const orgSnap = await db.collection("organizations").doc(orgId).get()
+            if (!orgSnap.exists) {
+                res.status(404).json({ error: "not_found", code: "not_found" })
+                return
+            }
+
+            res.status(200).json({ id: orgSnap.id, ...(orgSnap.data() || {}) })
+        } catch (error) {
+            console.error("Failed to get organization:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private createOrganization = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        const name = typeof req.body?.name === "string" ? req.body.name.trim() : ""
+        if (!name) {
+            res.status(400).json({ error: "bad_request", code: "bad_request", message: "name is required" })
+            return
+        }
+
+        const orgId = `org_${uid}_${Date.now().toString(36)}`
+        const membershipId = `${uid}_${orgId}`
+
+        try {
+            const batch = db.batch()
+            batch.set(db.collection("organizations").doc(orgId), {
+                id: orgId,
+                name,
+                slug: orgId,
+                ownerId: uid,
+                billingOwnerUid: uid,
+                plan: "free",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }, { merge: true })
+
+            batch.set(db.collection("memberships").doc(membershipId), {
+                id: membershipId,
+                orgId,
+                userId: uid,
+                role: "owner",
+                addedBy: uid,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }, { merge: true })
+
+            await batch.commit()
+            res.status(201).json({ id: orgId })
+        } catch (error) {
+            console.error("Failed to create organization:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private createInvitation = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        const orgId = req.params.orgId
+        const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : ""
+        const role = typeof req.body?.role === "string" ? req.body.role : "member"
+
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        if (!orgId || !email) {
+            res.status(400).json({ error: "bad_request", code: "bad_request", message: "orgId and email are required" })
+            return
+        }
+
+        const allowedRoles = new Set(["owner", "admin", "member", "viewer"])
+        if (!allowedRoles.has(role)) {
+            res.status(400).json({ error: "bad_request", code: "bad_request", message: "invalid invitation role" })
+            return
+        }
+
+        try {
+            const inviteRef = db.collection("invitations").doc()
+            await inviteRef.set({
+                id: inviteRef.id,
+                orgId,
+                email,
+                role,
+                invitedBy: uid,
+                status: "pending",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            }, { merge: true })
+
+            res.status(201).json({ id: inviteRef.id })
+        } catch (error) {
+            console.error("Failed to create invitation:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
     // ------------------- Node JS Routes -------------------
 
     /**
@@ -201,6 +355,9 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesGets(): void {
+        this.router.get("/orgs", this.listOrganizations)
+        this.router.get("/orgs/:orgId", requirePermission("organization", "read"), this.getOrganization)
+
         /* Jina AI */
         // this.router.get("/jina", helloWorld)
         this.router.get("/jina/:url", this.requirePaidAccess, requirePermission("ai", "execute"), jinaAICrawl)
@@ -241,6 +398,9 @@ class ReverseAPIProxy {
      */
 
     private httpRoutesPosts(): void {
+        this.router.post("/orgs", requirePermission("organization", "manage"), this.createOrganization)
+        this.router.post("/orgs/:orgId/invitations", requirePermission("organization", "invite"), this.createInvitation)
+
         this.router.post("/anthropic/messages", this.requirePaidAccess, requirePermission("ai", "execute"), anthropicAICore) // Search for Markets
         this.router.post("/openai/chat/completions", this.requirePaidAccess, requirePermission("ai", "execute"), openaiAICore)
         this.router.post("/groq/chat/completions", this.requirePaidAccess, requirePermission("ai", "execute"), groqAICore)

@@ -95,6 +95,7 @@ const POLICIES = {
     crawl: { execute: true, read: true },
     machine: { read: true, deploy: true, update: true, delete: true },
     billing: { read: true, manage: true },
+    organization: { manage: true },
   },
 } as const satisfies RolePolicies;
 
@@ -220,7 +221,7 @@ export class AuthzService {
 
         const mergedData = {
           orgId: data?.orgId || activeOrgId || undefined,
-          ownerId: data?.ownerId || user.uid,
+          ownerId: data?.ownerId || ((data?.orgId || activeOrgId) ? undefined : user.uid),
         } as AuthResources[Resource]['dataType'];
 
         return canPerform(subject, resource, action, mergedData);

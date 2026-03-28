@@ -62,3 +62,19 @@ test("allows platform admin bypass", () => {
 
   assert.equal(allowed, true)
 })
+
+test("allows self to manage organization creation context", () => {
+  const allowed = canPerform(baseSubject, "organization", "manage", {
+    ownerId: "u_1",
+  })
+
+  assert.equal(allowed, true)
+})
+
+test("denies org invitation without org membership", () => {
+  const denied = canPerform(baseSubject, "organization", "invite", {
+    orgId: "org_1",
+  })
+
+  assert.equal(denied, false)
+})
