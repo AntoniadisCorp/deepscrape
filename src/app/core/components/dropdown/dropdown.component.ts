@@ -1,4 +1,5 @@
-import { Component, ElementRef, EventEmitter, HostListener, inject, Input, Output, ViewChild } from '@angular/core';
+import { animate, style, transition, trigger } from '@angular/animations';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, inject, Input, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
@@ -10,7 +11,19 @@ import { themeStorageKey } from 'src/app/shared';
   selector: 'app-dropdown',
   imports: [CommonModule, MatIcon, ReactiveFormsModule, Outsideclick],
   templateUrl: './dropdown.component.html',
-  styleUrl: './dropdown.component.scss'
+  styleUrl: './dropdown.component.scss',
+  animations: [
+    trigger('dropdownMenuAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-6px) scale(0.98)' }),
+        animate('180ms cubic-bezier(0.2, 0, 0, 1)', style({ opacity: 1, transform: 'translateY(0) scale(1)' })),
+      ]),
+      transition(':leave', [
+        animate('140ms cubic-bezier(0.4, 0, 1, 1)', style({ opacity: 0, transform: 'translateY(-4px) scale(0.98)' })),
+      ]),
+    ]),
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DropdownComponent {
 
@@ -22,6 +35,7 @@ export class DropdownComponent {
   @Input() dropDownName?: string = 'Region'
   @Input() padding?: string
   @Input() lightColor?: string = 'blue'
+  @Input() enableMenuAnimation: boolean = false
   @Output() select: EventEmitter<any> = new EventEmitter()
   @ViewChild('dropDown') dropDown: ElementRef
   @ViewChild('menu') menu: ElementRef

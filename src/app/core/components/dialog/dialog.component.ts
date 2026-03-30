@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { RippleDirective } from '../../directives';
 import { MatIcon } from '@angular/material/icon';
 
@@ -10,7 +10,8 @@ import { DialogActionsComponent } from '../dialog-actions/dialog-actions.compone
   imports: [MatIcon, RippleDirective, DialogActionsComponent],
   templateUrl: './dialog.component.html',
   styleUrl: './dialog.component.scss',
-  animations: [slideInModalAnimation]
+  animations: [slideInModalAnimation],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DialogComponent {
 

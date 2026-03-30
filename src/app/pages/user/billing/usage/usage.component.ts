@@ -1,11 +1,12 @@
 import { AsyncPipe, CurrencyPipe, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common'
-import { Component, ViewChild } from '@angular/core'
-import { FormsModule } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core'
+import { FormControl, ReactiveFormsModule } from '@angular/forms'
 import { MatIconModule } from '@angular/material/icon'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { DropdownComponent } from 'src/app/core/components/dropdown/dropdown.component'
 import { ChartConfiguration, ChartData } from 'chart.js'
 import { BaseChartDirective } from 'ng2-charts'
-import { fadeInUp } from 'src/app/animations'
+import { fadeInUp, smoothfadeAnimation } from 'src/app/animations'
 import { BillingService } from 'src/app/core/services'
 import {
   BillingUsageBreakdownItem,
@@ -23,20 +24,26 @@ type UsageViewModel = {
 
 @Component({
   selector: 'app-usage',
-  imports: [NgIf, NgFor, AsyncPipe, FormsModule, CurrencyPipe, DecimalPipe, DatePipe, MatIconModule, MatProgressSpinnerModule, BaseChartDirective],
+  imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, CurrencyPipe, DecimalPipe, DatePipe, MatIconModule, MatProgressSpinnerModule, DropdownComponent, BaseChartDirective],
   templateUrl: './usage.component.html',
   styleUrl: './usage.component.scss',
-  animations: [fadeInUp],
+  animations: [fadeInUp, smoothfadeAnimation],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UsageComponent {
   @ViewChild(BaseChartDirective) usageChart?: BaseChartDirective
 
-  readonly rangeOptions: Array<{ value: BillingUsageRangeKey; label: string }> = [
-    { value: 'this_month', label: 'This month' },
-    { value: 'last_month', label: 'Last month' },
-    { value: 'last_30_days', label: 'Last 30 days' },
-    { value: 'last_90_days', label: 'Last 90 days' },
+  readonly rangeDropdownOptions: Array<{ name: string; code: string }> = [
+    { name: 'This month', code: 'this_month' },
+    { name: 'Last month', code: 'last_month' },
+    { name: 'Last 30 days', code: 'last_30_days' },
+    { name: 'Last 90 days', code: 'last_90_days' },
   ]
+
+  readonly rangeControl = new FormControl<{ name: string; code: string }>(
+    { name: 'This month', code: 'this_month' },
+    { nonNullable: true },
+  )
 
   selectedRange: BillingUsageRangeKey = 'this_month'
   errorMessage = ''

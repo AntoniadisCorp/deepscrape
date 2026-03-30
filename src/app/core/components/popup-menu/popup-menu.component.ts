@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, Input, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, Input, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component';
 import { ApiKey } from '../../types';
@@ -8,7 +8,8 @@ import { ApiKeyService } from '../../services';
   selector: 'app-popup-menu',
   imports: [],
   templateUrl: './popup-menu.component.html',
-  styleUrl: './popup-menu.component.scss'
+  styleUrl: './popup-menu.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PopupMenuComponent {
   private apiKeyService = inject(ApiKeyService)

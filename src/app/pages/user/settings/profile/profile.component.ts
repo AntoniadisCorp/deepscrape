@@ -21,7 +21,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
   selector: 'app-profile-tab',
   imports: [StinputComponent, FormControlPipe, DatePipe, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective, ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss']
+  styleUrls: ['./profile.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileTabComponent {
 

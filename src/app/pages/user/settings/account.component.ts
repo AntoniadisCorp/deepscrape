@@ -1,5 +1,5 @@
 import { AsyncPipe, NgClass, TitleCasePipe } from '@angular/common';
-import { ChangeDetectorRef, Component, HostBinding, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, inject } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, ActivatedRoute, ChildrenOutletContexts, NavigationEnd } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
@@ -18,7 +18,8 @@ import { myIcons } from 'src/app/shared';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, AsyncPipe, LucideAngularModule, TitleCasePipe, RippleDirective],
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss',
-  animations: [smoothfadeAnimation]
+  animations: [smoothfadeAnimation],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountSettingsComponent {
   readonly icons = myIcons
@@ -45,6 +46,7 @@ export class AccountSettingsComponent {
       if ((event instanceof NavigationEnd))  {
         const url = this.route.snapshot.url[this.route.snapshot.url.length - 1].toString()
           this.activeLink = this.getRouteId()
+          this.cdr.detectChanges()
       }      
     })
 

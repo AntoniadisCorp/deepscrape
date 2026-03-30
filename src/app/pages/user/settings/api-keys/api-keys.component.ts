@@ -1,5 +1,5 @@
 import { DatePipe, AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, HostBinding, HostListener, inject, Inject, OnInit, signal, ViewChild, ViewEncapsulation  } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, HostBinding, HostListener, inject, Inject, OnInit, signal, ViewChild, ViewEncapsulation  } from '@angular/core';
 import { Observable, Subscription, tap, timer } from 'rxjs';
 import { NAVIGATOR } from 'src/app/core/providers';
 import { CheckboxComponent, ClipboardbuttonComponent, DialogComponent, PopupMenuComponent, SlideInModalComponent } from 'src/app/core/components';
@@ -19,6 +19,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.scss',
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ApiKeysComponent implements OnInit {
 
@@ -39,6 +40,7 @@ export class ApiKeysComponent implements OnInit {
 
   protected dialogOpen = signal(false)
   protected KeyIdToDelete = signal<ApiKey>({} as ApiKey)
+  private cdr = inject(ChangeDetectorRef)
 
   constructor(
     private apiKeyService: ApiKeyService,
@@ -80,6 +82,7 @@ export class ApiKeysComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.closePopupMenu(new Event(''), key);
+        this.cdr.detectChanges()
       })
   }
   disableApiKey(key: ApiKey) {
@@ -87,6 +90,7 @@ export class ApiKeysComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.closePopupMenu(new Event(''), key);
+        this.cdr.detectChanges()
       })
     throw new Error('Method not implemented.');
   }
@@ -99,6 +103,7 @@ export class ApiKeysComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.closePopupMenu(new Event(''), key);
+        this.cdr.detectChanges()
       })
     }).catch(err => {
       console.error('Failed to copy API key: ', err);
@@ -116,8 +121,10 @@ export class ApiKeysComponent implements OnInit {
         error: (err: any) => {
           console.error(err)
           this.apiKeyLoading.visibility[keyId] = false
+          this.cdr.detectChanges()
         }, complete: () => {
           this.apiKeyLoading.visibility[keyId] = false
+          this.cdr.detectChanges()
         }
       })
   }
@@ -188,6 +195,7 @@ export class ApiKeysComponent implements OnInit {
 
           // reset the input field in modal
           this.clearKeysInput()
+          this.cdr.detectChanges()
         },
         complete: () => {
           this.apiKeyLoading.modal = false
@@ -196,6 +204,7 @@ export class ApiKeysComponent implements OnInit {
 
           // close the modal
           this.isKeyModalOpen?.setValue(!this.isKeyModalOpen?.value)
+          this.cdr.detectChanges()
         }
       })
 

@@ -1,5 +1,5 @@
 import { AsyncPipe, DatePipe, JsonPipe, KeyValuePipe } from '@angular/common';
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { Outsideclick } from '../../directives';
 import { MatIcon } from '@angular/material/icon';
 import { PopupAnimation } from 'src/app/animations';
@@ -15,7 +15,8 @@ import { switchPackageIcon } from '../../functions';
   imports: [Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
   templateUrl: './dropdown-cart.component.html',
   styleUrl: './dropdown-cart.component.scss',
-  animations: [PopupAnimation]
+  animations: [PopupAnimation],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DropdownCartComponent {
 

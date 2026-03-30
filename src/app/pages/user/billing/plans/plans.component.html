@@ -1,5 +1,6 @@
 <div class="container mx-auto px-4 py-8">
   <ng-container *ngIf="loadingState$ | async as loading">
+  <ng-container *ngIf="pageReady$ | async; else plansPageLoading">
   <div class="flex justify-end mb-4 gap-2">
     <button
       type="button"
@@ -71,7 +72,7 @@
 
     <div
       *ngIf="shouldShowTrialStatus(trialPlan, billing$ | async)"
-      class="mb-8 rounded-2xl border border-gray-300/60 dark:border-gray-600/60 bg-gray-100/80 dark:bg-gray6/80 px-5 py-4 shadow-sm"
+      class="mb-8 rounded-2xl bg-gray-50 dark:bg-gray6/80 px-5 py-4 shadow-md"
     >
       <div class="flex items-center gap-3">
         <mat-icon fontSet="material-icons-outlined" class="text-primary dark:text-violet-300">info</mat-icon>
@@ -342,7 +343,7 @@
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Custom credit amount</span>
             <input
               type="number"
-              class="w-full rounded-xl border border-gray-300/70 dark:border-gray-700 bg-white/80 dark:bg-gray-800/50 px-4 py-3 text-gray-900 dark:text-gray-100"
+              class="w-full rounded-xl bg-white/80 dark:bg-gray-800/50 px-4 py-3 text-gray-900 shadow-sm dark:text-gray-100"
               [min]="customConfig.minimumCredits"
               [max]="customConfig.maximumCredits"
               [step]="1"
@@ -364,5 +365,14 @@
       </div>
     </ng-container>
   </div>
+  </ng-container>
+
+  <ng-template #plansPageLoading>
+    <div class="flex min-h-[420px] w-full items-center justify-center">
+      <mat-spinner
+        [diameter]="40"
+        class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
+    </div>
+  </ng-template>
   </ng-container>
 </div>

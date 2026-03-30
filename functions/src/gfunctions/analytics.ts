@@ -257,7 +257,10 @@ function getContinentFromTimezone(timezone: string): string {
 // Ensures unique guest analytics using fingerprinting and Redis/Firestore
 export async function guestTracker(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
-  console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
+  if (!env.IS_PRODUCTION) {
+    console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
+  }
+
   const user = req.app.locals["user"] as string | null
   const isUser = !!user
 

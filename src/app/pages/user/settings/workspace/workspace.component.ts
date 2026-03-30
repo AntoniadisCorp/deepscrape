@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { finalize } from 'rxjs'
+import { StinputComponent } from 'src/app/core/components'
 import { IfAuthorizedDirective, RippleDirective } from 'src/app/core/directives'
+import { FormControlPipe } from 'src/app/core/pipes'
 import {
   AuthzService,
   OrganizationInvitation,
@@ -15,7 +17,7 @@ import { SnackBarType } from 'src/app/core/components'
 
 @Component({
   selector: 'app-workspace-tab',
-  imports: [ReactiveFormsModule, IfAuthorizedDirective, RippleDirective],
+  imports: [ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

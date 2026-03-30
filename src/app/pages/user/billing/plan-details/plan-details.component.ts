@@ -1,5 +1,5 @@
 import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common'
-import { Component } from '@angular/core'
+import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 import { combineLatest, map, Observable } from 'rxjs'
 import { BillingService } from 'src/app/core/services'
@@ -17,7 +17,8 @@ type PlanDetailVm = {
   selector: 'app-plan-details',
   imports: [NgIf, NgFor, NgClass, AsyncPipe, CurrencyPipe, RouterLink],
   templateUrl: './plan-details.component.html',
-  styleUrl: './plan-details.component.scss'
+  styleUrl: './plan-details.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanDetailsComponent {
   readonly vm$: Observable<PlanDetailVm>
