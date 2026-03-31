@@ -1,7 +1,7 @@
 <div class="flex justify-center my-6">
   @if (isAdmin) {
     <span
-      class="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-orange-300 via-orange-400 to-deep-orange-400 text-gray-900 shadow border border-yellow-300  dark:from-gray-800 dark:via-gray-700 dark:to-gray-900 dark:text-white dark:shadow-lg dark:border-gray-600">
+      class="inline-flex items-center rounded-full bg-gradient-to-r from-orange-300 via-orange-400 to-deep-orange-400 px-4 py-1 text-sm font-semibold text-gray-900 shadow-sm dark:from-gray-800 dark:via-gray-700 dark:to-gray-900 dark:text-white dark:shadow-md">
       <svg class="w-4 h-4 mr-2 text-yellow-500 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
         <path d="M10 2a1 1 0 01.894.553l2.382 4.764 5.263.765a1 1 0 01.554 1.706l-3.807 3.713.899 5.243a1 1 0 01-1.451 1.054L10 17.347l-4.7 2.472a1 1 0 01-1.451-1.054l.899-5.243-3.807-3.713a1 1 0 01.554-1.706l5.263-.765L9.106 2.553A1 1 0 0110 2z"/>
       </svg>
@@ -23,7 +23,7 @@
       Profile Picture
     </h2>
     <div
-      class="flex w-full max-w-lg flex-col border border-gray-300 p-4 dark:border-gray5 rounded-lg bg-gray-50 dark:bg-gray5/40">
+      class="flex w-full max-w-lg flex-col rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray5/50 dark:text-gray-400">
         Upload a picture to make your profile stand out and let people recognize
         your tasks easily!
@@ -39,8 +39,8 @@
         class="mt-5 flex w-full max-w-lg items-center justify-center dark:shadow-inner focus:dark:shadow-gray-800">
         <label
           for="image"
-          class="flex h-40 w-full flex-auto cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray5 dark:hover:border-gray-500 dark:hover:bg-gray6 relative"
-          [ngClass]="{ 'border-blue-500 ring-2 ring-blue-200': isDragging }">
+          class="relative flex h-40 w-full flex-auto cursor-pointer items-center justify-center rounded-xl bg-white/70 shadow-sm hover:bg-white dark:bg-gray-800/40 dark:hover:bg-gray6"
+          [ngClass]="{ 'ring-2 ring-blue-200 dark:ring-blue-500/40': isDragging }">
           @if(!isLoadingFile && !selectedFile && !previewUrl?.value) {
             <div class="flex w-24 flex-col items-center justify-center pt-5">
               <svg
@@ -149,7 +149,7 @@
               </div>
             </div>
             <div
-              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
+              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
               <!-- Full Name  -->
               <div
                 class="flex w-full flex-row items-center flex-wrap sm:flex-nowrap justify-between gap-4">
@@ -188,18 +188,18 @@
               About
             </h2>
             <div
-              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
+              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
               <!-- Bio Field -->
               <div class="group mt-4 mb-6 flex max-w-lg flex-col items-start gap-2">
                 <div
-                  class="relative flex pr-1 h-auto ring-0 cursor-text w-full flex-row focus-within:border-blue-400 dark:focus-within:border-[#539cfc] focus-within:border-l-blue-500 dark:focus-within:border-l-gray-100 hover:border-l-blue-500 dark:hover:border-l-blue-400 items-center overflow-hidden rounded-lg border border-l-4 bg-white px-4 pl-3 outline-none transition-[border_,_colors] duration-75 ease-out before:absolute before:-left-7 before:top-0 before:h-full before:w-9 before:rounded-l-[14px] before:bg-gradient-to-l before:from-[rgba(252,83,141,0)] before:to-[#e053fc] before:content-[''] dark:bg-gray6">
+                  class="relative flex h-auto w-full cursor-text flex-row items-center overflow-hidden rounded-xl bg-white px-4 pl-3 shadow-sm outline-none transition-[box-shadow,colors] duration-75 ease-out focus-within:ring-2 focus-within:ring-blue-500/30 hover:bg-white dark:bg-gray-800/50 dark:hover:bg-gray6/80">
                   <textarea
                     id="bio"
                     [formControl]="profileForm.get('bio') | formControl"
                     placeholder=" "
                     minlength="0"
                     maxlength="600"
-                  class="mt-2 scrollbar block w-full h-32 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-gray-300 px-2.5 pb-2.5 pr-2 pt-5 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:text-white dark:bg-gray6 bg-white"></textarea>
+                  class="mt-2 scrollbar block h-32 max-h-40 min-h-16 w-full resize-y appearance-none rounded-t-lg bg-white px-2.5 pb-2.5 pr-2 pt-5 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-800/50 dark:text-white"></textarea>
                   <label
                     for="bio"
                     class="absolute start-2 top-[0.8rem] z-10 origin-[0] -translate-y-3 scale-75 transform cursor-text text-sm text-gray5 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 dark:peer-hover:text-blue-400 peer-focus:scale-75 peer-focus:text-blue-700 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 dark:group-hover:text-white peer-focus:dark:text-gray-100">
@@ -245,7 +245,7 @@
               Social Links
             </h2>
             <div
-              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 border border-gray-300 pb-4 dark:border-gray5 rounded-lg bg-blue-gray-50 p-4 dark:bg-gray5/50">
+              class="mt-2 flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
               <app-stinput
                 [control]="profileForm.get('socialLinks.twitter') | formControl"
                 svgIcon="x"
@@ -299,7 +299,7 @@
     }}"
             type="submit"
             [disabled]="!profileForm.valid || profileForm.pristine || isSaving"
-            class="mt-5 w-20 rounded-lg p-2 disabled:bg-green-300/80 shadow-md disabled:shadow shadow-green-400 bg-green-500 focus:bg-green-500/80 hover:bg-green-600 text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-white focus:text-white focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/60 dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60 disabled:opacity-50">
+            class="mt-5 inline-flex w-20 min-w-fit items-center justify-center rounded-full bg-green-600 px-4 py-2 text-white shadow-sm transition-colors duration-200 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-200/70 dark:bg-green-600 dark:hover:bg-green-500 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:opacity-50">
             @if(isSaving) {
               <mat-spinner [diameter]="25" class="mx-auto stroke-white"></mat-spinner>
             } @else { Save }

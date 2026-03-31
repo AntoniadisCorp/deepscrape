@@ -23,6 +23,7 @@ import { TranslateService } from '@ngx-translate/core';
   imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, RadioToggleComponent, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass],
   templateUrl: './security.component.html',
   styleUrl: './security.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SecurityTabComponent {
 
@@ -240,6 +241,7 @@ export class SecurityTabComponent {
               this.loginProviders = this.loginProviders.filter(p => p !== 'github')
               this.remProviders.push('github')
               this.showSnackbar('Github provider linked Sucessfully', SnackBarType.success, '', 3000)
+              this.cdr.detectChanges()
             }
           },
           error: (error) => {
@@ -248,9 +250,11 @@ export class SecurityTabComponent {
             const errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
             this.loading.github = false
+            this.cdr.detectChanges()
           },
           complete: () => {
             this.loading.github = false
+            this.cdr.detectChanges()
           }
         }
 
@@ -307,6 +311,7 @@ export class SecurityTabComponent {
           // Update the UI state after successful unlinking
           this.remProviders = this.remProviders.filter(p => p !== provider)
           this.loginProviders.push(provider)
+          this.cdr.detectChanges()
         },
         error: (error) => {
           if (provider !== 'password')
@@ -317,6 +322,7 @@ export class SecurityTabComponent {
           // Handle errors and show an error message
           const errorMessage = getErrorMessage(error, this.translate);
           this.showSnackbar(errorMessage, SnackBarType.error, '', 5000);
+          this.cdr.detectChanges()
         },
         complete: () => {
           if (provider !== 'password')
@@ -324,6 +330,7 @@ export class SecurityTabComponent {
           else
             this.loading.email = !(provider === 'password')
           this.showSnackbar(`${provider} provider disconnected`, SnackBarType.success, '', 3000);
+          this.cdr.detectChanges()
         }
       })
   }
@@ -358,15 +365,18 @@ export class SecurityTabComponent {
           
          
           this.password?.reset() 
+          this.cdr.detectChanges()
         },
         error: (error) => {
           const errorMessage = getErrorMessage(error, this.translate)
           this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
           this.loading.password = false
+          this.cdr.detectChanges()
         },
         complete: () => {
           this.loading.password = false
           this.showSnackbar('Password changed successfully!', SnackBarType.success, '', 3000)
+          this.cdr.detectChanges()
         }
       })
   }

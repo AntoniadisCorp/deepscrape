@@ -164,6 +164,52 @@ export const setDefaultRole = auth
         }
     })
 
+export const createDefaultOrganization = auth
+    .user()
+    .onCreate(async (user) => {
+        try {
+            const orgId = `org_${user.uid}`
+            const membershipId = `${user.uid}_${orgId}`
+            const orgName = user.displayName ? `${user.displayName} Workspace` : "Personal Workspace"
+
+            const orgRef = db.collection("organizations").doc(orgId)
+            const membershipRef = db.collection("memberships").doc(membershipId)
+            const userRef = db.collection("users").doc(user.uid)
+
+            const batch = db.batch()
+            batch.set(orgRef, {
+                id: orgId,
+                name: orgName,
+                slug: orgId,
+                ownerId: user.uid,
+                billingOwnerUid: user.uid,
+                plan: "free",
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true })
+
+            batch.set(membershipRef, {
+                id: membershipId,
+                orgId,
+                userId: user.uid,
+                role: "owner",
+                addedBy: user.uid,
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true })
+
+            batch.set(userRef, {
+                defaultOrgId: orgId,
+                updated_At: FieldValue.serverTimestamp(),
+            }, { merge: true })
+
+            await batch.commit()
+        } catch (error) {
+            console.error("Error creating default organization:", error)
+            throw new HttpsError("internal", "Error creating default organization", error)
+        }
+    })
+
 export const linkGuestToUser = onCallv2(async (req) => {
     try {
         const authenticatedUid = req.auth?.uid

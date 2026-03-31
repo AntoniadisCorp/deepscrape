@@ -119,6 +119,46 @@
                     </div>
                   </div>
                 </div>
+                <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-600/30" role="none">
+                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Workspace</p>
+                  @if (orgLoading) {
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Loading workspaces...</div>
+                  } @else if (organizations.length) {
+                    <select
+                      title="Select active workspace"
+                      aria-label="Select active workspace"
+                      class="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                      [ngModel]="selectedOrgId"
+                      (ngModelChange)="switchOrganization($event)">
+                      @for (org of organizations; track org.id) {
+                        <option [value]="org.id">
+                          {{ org.name || org.slug || org.id }} ({{ org.membership?.role || 'member' }})
+                        </option>
+                      }
+                    </select>
+                  } @else {
+                    <div class="text-xs text-gray-500 dark:text-gray-400">No workspaces found</div>
+                  }
+                </div>
+                @if (invitations.length) {
+                  <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-600/30" role="none">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Pending Invitations</p>
+                    <div class="space-y-2">
+                      @for (invite of invitations; track invite.id) {
+                        <div class="rounded-md border border-gray-200 p-2 dark:border-gray-600/30">
+                          <div class="text-xs text-gray-500 dark:text-gray-400">{{ invite.orgId }} • {{ invite.role }}</div>
+                          <button
+                            type="button"
+                            class="mt-1 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            [disabled]="inviteActionLoading"
+                            (click)="acceptInvitation(invite.id)">
+                            Accept
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
                 <ul class="py-1">
                   <li>
                     <a

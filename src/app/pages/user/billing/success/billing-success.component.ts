@@ -1,5 +1,5 @@
 import { NgIf } from '@angular/common'
-import { Component } from '@angular/core'
+import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 import { BillingService } from 'src/app/core/services'
 
@@ -7,7 +7,8 @@ import { BillingService } from 'src/app/core/services'
   selector: 'app-billing-success',
   imports: [RouterLink, NgIf],
   templateUrl: './billing-success.component.html',
-  styleUrl: './billing-success.component.scss'
+  styleUrl: './billing-success.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BillingSuccessComponent {
   readonly returnUrl: string | null

@@ -1,4 +1,4 @@
-import { AfterViewChecked, AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, Inject, inject, Input, OnInit, Output, PLATFORM_ID, ViewChild } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, Inject, inject, Input, OnInit, Output, PLATFORM_ID, ViewChild } from '@angular/core';
 import { LocalStorage, ScreenResizeService } from '../../services';
 import { RippleDirective, TouchEventsDirective } from '../../directives';
 import { isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
@@ -12,7 +12,8 @@ import { themeStorageKey } from 'src/app/shared';
   selector: 'app-tabs',
   imports: [RippleDirective, NgClass, NgStyle, MatIcon, RouterLink, TouchEventsDirective],
   templateUrl: './tabs.component.html',
-  styleUrl: './tabs.component.scss'
+  styleUrl: './tabs.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppTabsComponent implements OnInit, AfterViewInit {
 

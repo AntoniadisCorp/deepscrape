@@ -1,4 +1,5 @@
-import { describe, it } from "node:test"
+/* eslint-disable max-len */
+import {describe, it} from "node:test"
 import assert from "node:assert/strict"
 import {
   filterByDimensions,
@@ -26,10 +27,10 @@ describe("analytics-helpers", () => {
   it("filterByDimensions applies country and browser filters", () => {
     const input = [{
       date: "2026-03-19",
-      byCountry: { GR: 5, US: 4 },
-      byBrowser: { Chrome: 8, Firefox: 1 },
-      byDevice: { Mobile: 3, Windows: 6 },
-      byProvider: { "google.com": 7, password: 2 },
+      byCountry: {GR: 5, US: 4},
+      byBrowser: {Chrome: 8, Firefox: 1},
+      byDevice: {Mobile: 3, Windows: 6},
+      byProvider: {"google.com": 7, "password": 2},
     }]
 
     const filtered = filterByDimensions(input as never, {
@@ -40,17 +41,17 @@ describe("analytics-helpers", () => {
       byBrowser: Record<string, number>
     }>
 
-    assert.deepEqual(filtered[0].byCountry, { GR: 5 })
-    assert.deepEqual(filtered[0].byBrowser, { Chrome: 8 })
+    assert.deepEqual(filtered[0].byCountry, {GR: 5})
+    assert.deepEqual(filtered[0].byBrowser, {Chrome: 8})
   })
 
   it("filterByDimensions maps provider and device aliases", () => {
     const input = [{
       date: "2026-03-19",
-      byCountry: { GR: 5 },
-      byBrowser: { Chrome: 8 },
-      byDevice: { Mobile: 3, iPhone: 2, Windows: 6 },
-      byProvider: { "google.com": 7, password: 2 },
+      byCountry: {GR: 5},
+      byBrowser: {Chrome: 8},
+      byDevice: {Mobile: 3, iPhone: 2, Windows: 6},
+      byProvider: {"google.com": 7, "password": 2},
     }]
 
     const providerFiltered = filterByDimensions(input as never, {
@@ -61,16 +62,16 @@ describe("analytics-helpers", () => {
       device: "mobile",
     }) as Array<{ byDevice: Record<string, number> }>
 
-    assert.deepEqual(providerFiltered[0].byProvider, { "google.com": 7 })
-    assert.deepEqual(deviceFiltered[0].byDevice, { Mobile: 3, iPhone: 2 })
+    assert.deepEqual(providerFiltered[0].byProvider, {"google.com": 7})
+    assert.deepEqual(deviceFiltered[0].byDevice, {Mobile: 3, iPhone: 2})
   })
 
   it("getTopN sorts descending and limits entries", () => {
-    const result = getTopN({ A: 10, C: 3, B: 7 }, 2)
+    const result = getTopN({A: 10, C: 3, B: 7}, 2)
 
     assert.deepEqual(result, [
-      { key: "A", value: 10 },
-      { key: "B", value: 7 },
+      {key: "A", value: 10},
+      {key: "B", value: 7},
     ])
   })
 })

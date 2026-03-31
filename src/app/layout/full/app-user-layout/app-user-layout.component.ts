@@ -5,6 +5,7 @@ import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { ActivatedRoute, ChildrenOutletContexts, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
+import { FormsModule } from '@angular/forms'
 import { catchError, delay, finalize, from, map, switchMap, throwError, timer, fromEvent } from 'rxjs' // Added fromEvent
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
@@ -13,7 +14,7 @@ import { Subscription } from 'rxjs/internal/Subscription'
 import { asideBarAnimation, fadeInOutAnimation, PopupAnimation } from 'src/app/animations'
 import { ImageSrcsetDirective, Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { ProviderPipe } from 'src/app/core/pipes'
-import { AuthService, CartService, FirestoreService, LocalStorage, ScreenResizeService, ScrollService, ThemeService, WindowToken } from 'src/app/core/services'
+import { AuthService, CartService, FirestoreService, LocalStorage, OrganizationInvitation, OrganizationService, OrganizationSummary, ScreenResizeService, ScrollService, ThemeService, WindowToken } from 'src/app/core/services'
 import { Users } from 'src/app/core/types'
 import { LangPickerComponent, themeStorageKey, ThemeToggleComponent } from 'src/app/shared'
 import { AppSidebarComponent } from '../../components'
@@ -26,7 +27,7 @@ import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/com
  */
 @Component({
   selector: 'app-user-layout',
-  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent],
+  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent, FormsModule],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
@@ -42,12 +43,18 @@ export class AppUserLayoutComponent {
   // bg-gray-100 dark:bg-gray-900
   @HostBinding('class') classes = 'h-full w-full flex flex-col  min-h-svh'
   private firestoreService = inject(FirestoreService)
+  private organizationService = inject(OrganizationService)
   size!: SCREEN_SIZE;
   
   footerColor: string = '';
   sizeSub: Subscription = new Subscription(); // Initialize sizeSub
 
   user: Users & { currProviderData: UserInfo | null } | null = null
+  organizations: OrganizationSummary[] = []
+  invitations: OrganizationInvitation[] = []
+  selectedOrgId: string | null = null
+  orgLoading = false
+  inviteActionLoading = false
   cartPackager$: Observable<any>
 
   // Toggle Button To Open and Close Profile Dropdown Menu
@@ -62,6 +69,9 @@ export class AppUserLayoutComponent {
   accountImageLoading: boolean
   logoutSubscription: Subscription
   userSubscription: Subscription
+  orgLoadSubscription: Subscription
+  invitationLoadSubscription: Subscription
+  invitationActionSubscription: Subscription
   private routerEventSubscription: Subscription
   protected compIsLoading = true;
   /* animations */
@@ -114,6 +124,9 @@ export class AppUserLayoutComponent {
 
     // this.user$ = of(null)
     this.cartPackager$ = this.cartService.getCart$
+    this.orgLoadSubscription = new Subscription()
+    this.invitationLoadSubscription = new Subscription()
+    this.invitationActionSubscription = new Subscription()
 
 
   }
@@ -123,6 +136,7 @@ export class AppUserLayoutComponent {
     //Add 'implements OnInit' to the class.
     if (isPlatformBrowser(this.platformId)) {
       this.user = this.route.snapshot.data['user']
+      this.loadOrganizationContext()
       // this.GetUserProfile();
       this.isThemeDark = this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
 
@@ -137,6 +151,69 @@ export class AppUserLayoutComponent {
     this.footerColor = 'userlayout';
     this.compIsLoading = !this.router.navigated
     this.InitCloseSideBarOnSmallDevices()
+  }
+
+  private loadOrganizationContext(): void {
+    if (!this.user?.uid) {
+      this.organizations = []
+      this.invitations = []
+      this.selectedOrgId = null
+      return
+    }
+
+    this.orgLoading = true
+    this.orgLoadSubscription?.unsubscribe()
+    this.orgLoadSubscription = this.organizationService.listMyOrganizations()
+      .pipe(finalize(() => {
+        this.orgLoading = false
+      }))
+      .subscribe({
+        next: (response) => {
+          this.organizations = response.organizations || []
+          this.selectedOrgId = this.organizationService.getActiveOrganization() || this.organizations[0]?.id || null
+        },
+        error: (error) => {
+          console.error('Failed loading organizations in user layout:', error)
+          this.organizations = []
+        },
+      })
+
+    this.invitationLoadSubscription?.unsubscribe()
+    this.invitationLoadSubscription = this.organizationService.listMyInvitations().subscribe({
+      next: (response) => {
+        this.invitations = response.invitations || []
+      },
+      error: (error) => {
+        console.error('Failed loading invitations in user layout:', error)
+        this.invitations = []
+      },
+    })
+  }
+
+  switchOrganization(orgId: string): void {
+    this.selectedOrgId = orgId
+    this.organizationService.setActiveOrganization(orgId)
+  }
+
+  acceptInvitation(invitationId: string): void {
+    if (!invitationId || this.inviteActionLoading) {
+      return
+    }
+
+    this.inviteActionLoading = true
+    this.invitationActionSubscription?.unsubscribe()
+    this.invitationActionSubscription = this.organizationService.acceptInvitation(invitationId)
+      .pipe(finalize(() => {
+        this.inviteActionLoading = false
+      }))
+      .subscribe({
+        next: () => {
+          this.loadOrganizationContext()
+        },
+        error: (error) => {
+          console.error('Failed accepting invitation:', error)
+        },
+      })
   }
 
 
@@ -269,6 +346,9 @@ export class AppUserLayoutComponent {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
     this.logoutSubscription?.unsubscribe()
+    this.orgLoadSubscription?.unsubscribe()
+    this.invitationLoadSubscription?.unsubscribe()
+    this.invitationActionSubscription?.unsubscribe()
     this.sizeSub?.unsubscribe()
     this.routerEventSubscription?.unsubscribe()
   }

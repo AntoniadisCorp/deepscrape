@@ -186,6 +186,7 @@ const getEnv = () => {
     OPENAI_API_URL: getConfigValue("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions"),
     OPENAI_API_KEY: getConfigValue("OPENAI_API_KEY"),
     GROQ_API_KEY: getConfigValue("GROQ_API_KEY"),
+    AUTHZ_STRICT_ORG_MODE: getConfigValue("AUTHZ_STRICT_ORG_MODE", "false"),
 
     // Google Cloud & Stripe
     GCP_PROJECT_ID: getConfigValue("GCP_PROJECT_ID"),

@@ -20,7 +20,7 @@
     "deploy": "npm run build && cd functions && npm run deploy",
     "deploy:indexes": "firebase deploy --only firestore:indexes",
     "test": "ng test",
-    "test:ci": "ng test --no-watch --browsers=ChromeHeadless",
+    "test:ci": "ng test --no-watch --browsers=ChromeHeadlessNoSandbox",
     "test:coverage": "ng test --no-watch --browsers=ChromeHeadless --code-coverage",
     "bun:ssr:deepscrape": "bun --env-file=.env dist/deepscrape/server/server.mjs",
     "node:ssr:deepscrape": "node --env-file=.env dist/deepscrape/server/server.mjs"

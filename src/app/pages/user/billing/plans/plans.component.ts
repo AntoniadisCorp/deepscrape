@@ -1,5 +1,5 @@
 import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -17,7 +17,8 @@ import {
   UserBilling,
 } from 'src/app/core/types';
 import { AuthService, BillingService } from 'src/app/core/services';
-import { firstValueFrom, map, Observable } from 'rxjs';
+import { catchError, combineLatest, firstValueFrom, map, Observable, of, shareReplay, startWith } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WindowToken } from 'src/app/core/services';
 
 @Component({
@@ -35,12 +36,14 @@ import { WindowToken } from 'src/app/core/services';
           animate('220ms ease-in', style({ opacity: 0, transform: 'translateY(-6px) scale(0.98)' })),
         ]),
       ]),
-    ]
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 
 export class PlansComponent {
   private window: Window = inject(WindowToken)
+  private readonly destroyRef = inject(DestroyRef)
   planView: PlanPeriod
   planPeriods: Array<PlanPeriod> = []
 
@@ -59,6 +62,7 @@ export class PlansComponent {
   isBillingRestricted = false
   customCreditsAmount = 250
   readonly loadingState$ = this.billingService.loadingState$
+  readonly pageReady$: Observable<boolean>
 
   currentPrice: PlanPeriod = { value: "monthly", label: "Monthly" }
 
@@ -83,7 +87,7 @@ export class PlansComponent {
     this.plans$ = catalogPlans$.pipe(map((plans) => plans.filter((plan) => plan.id !== 'trial' && plan.id !== 'free')))
     this.billing$ = this.billingService.billing$
     this.currentPlan$ = this.billing$.pipe(map((billing) => billing.plan))
-    this.billing$.subscribe((billing) => {
+    this.billing$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((billing) => {
       this.currentBillingValue = billing
       this.currentPlanValue = billing.plan
 
@@ -93,7 +97,7 @@ export class PlansComponent {
       }
     })
 
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const shouldShowOffer = params.get('offer') === '1'
       if (!shouldShowOffer) {
         this.offerBadgeMessage = null
@@ -108,8 +112,21 @@ export class PlansComponent {
 
     this.creditPacks$ = this.billingService.getCreditPacks$()
     this.customCreditsConfig$ = this.billingService.getCustomCreditsConfig$()
+    this.pageReady$ = combineLatest([
+      this.billing$,
+      this.freePlan$,
+      this.trialPlan$,
+      this.plans$,
+      this.creditPacks$,
+      this.customCreditsConfig$,
+    ]).pipe(
+      map(() => true),
+      startWith(false),
+      catchError(() => of(true)),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    )
 
-    this.authService.user$.subscribe((user) => {
+    this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
       this.isBillingRestricted = this.isRestrictedRole(user?.role)
     })
 

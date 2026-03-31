@@ -80,20 +80,6 @@ service cloud.firestore {
         && request.auth.token.role == roleName;
     }
 
-    function hasTeamsClaim() {
-      return request.auth != null
-        && request.auth.token != null
-        && ('teams' in request.auth.token)
-        && request.auth.token.teams is list;
-    }
-
-    function hasOrganizationClaim(orgId) {
-      return request.auth != null
-        && request.auth.token != null
-        && ('organization' in request.auth.token)
-        && request.auth.token.organization == orgId;
-    }
-
     function isAdmin() {
       return hasRole('admin') || (
         request.auth != null
@@ -107,36 +93,33 @@ service cloud.firestore {
       );
     }
 
-    function isModerator() {
-      return hasRole('moderator');
+    function hasOrgRole(orgId, allowedRoles) {
+      return isAuthenticated()
+        && orgId is string
+        && exists(/databases/$(database)/documents/memberships/$(request.auth.uid + '_' + orgId))
+        && get(/databases/$(database)/documents/memberships/$(request.auth.uid + '_' + orgId)).data.role in allowedRoles;
     }
 
-    function isManager() {
-      return hasRole('manager');
+    match /organizations/{orgId} {
+      allow read: if isAdmin() || hasOrgRole(orgId, ['owner', 'admin', 'member', 'viewer']);
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAdmin() || hasOrgRole(orgId, ['owner', 'admin']);
     }
 
-    function isUser() {
-      return hasRole('user');
+    match /memberships/{membershipId} {
+      allow read: if isAdmin()
+        || (isAuthenticated() && request.auth.uid == resource.data.userId)
+        || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
+
+      allow create: if isAdmin() || hasOrgRole(request.resource.data.orgId, ['owner', 'admin']);
+      allow update: if isAdmin() || hasOrgRole(request.resource.data.orgId, ['owner', 'admin']);
+      allow delete: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
     }
 
-    function isGuest() {
-      return hasRole('guest');
-    }
-
-    function isTeamLeader(teamId) {
-      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]) && hasRole('team_leader');
-    }
-
-    function isTeamMember(teamId) {
-      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]);
-    }
-
-    function isOrganizationAdmin(orgId) {
-      return hasOrganizationClaim(orgId) && hasRole('org_admin');
-    }
-
-    function isOrganizationMember(orgId) {
-      return hasOrganizationClaim(orgId);
+    match /invitations/{inviteId} {
+      allow read: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
+      allow create: if isAdmin() || hasOrgRole(request.resource.data.orgId, ['owner', 'admin']);
+      allow update, delete: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
     }
     
     match /login_metrics/{docId} {
@@ -171,7 +154,11 @@ service cloud.firestore {
     }
 
     match /operation_metrics/{operationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (('uid' in resource.data) && resource.data.uid == request.auth.uid) ||
+        (('userId' in resource.data) && resource.data.userId == request.auth.uid)
+      );
       allow write: if false;
     }
 

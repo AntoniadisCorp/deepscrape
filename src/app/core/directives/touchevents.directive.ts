@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Directive, ElementRef, EventEmitter, HostListener, inject, Input, Output, Renderer2 } from '@angular/core'
 import { ScrollDimensions } from '../types'
 import { Subject } from 'rxjs/internal/Subject'
+import { Subscription } from 'rxjs/internal/Subscription'
 import { debounceTime } from 'rxjs/internal/operators/debounceTime'
 import { windowTime } from 'rxjs'
 import { WindowToken } from '../services'
@@ -24,6 +25,7 @@ export class TouchEventsDirective {
   private sensitivityY: number = 1.5 // Sensitivity for movement
 
   private touchMoveSubject: Subject<any> = new Subject() // RxJS Subject to debounce touch moves
+  private touchMoveSub: Subscription | undefined
 
 
   private touchStartListener: () => void
@@ -42,7 +44,7 @@ export class TouchEventsDirective {
     this.touchEndListener = this.addPassiveTouchEndListener()
 
     // Throttle touchmove events to every 16ms (~60fps)
-    this.touchMoveSubject.pipe(debounceTime(16)).subscribe(() => {
+    this.touchMoveSub = this.touchMoveSubject.pipe(debounceTime(16)).subscribe(() => {
       this.cdRef.detectChanges() // Manually trigger change detection
     })
   }
@@ -204,6 +206,7 @@ export class TouchEventsDirective {
   }
 
   ngOnDestroy(): void {
+    this.touchMoveSub?.unsubscribe()
 
     if (this.touchStartListener)
       this.touchStartListener()

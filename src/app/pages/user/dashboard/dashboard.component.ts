@@ -1,4 +1,4 @@
-import { Component, HostBinding, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, inject } from '@angular/core';
 import { BrowserComponent } from 'src/app/core/components';
 import { AiAPIService, CrawlAPIService, LocalStorage } from 'src/app/core/services';
 
@@ -6,9 +6,10 @@ import { AiAPIService, CrawlAPIService, LocalStorage } from 'src/app/core/servic
     selector: 'app-dashboard',
     imports: [BrowserComponent],
     templateUrl: './dashboard.component.html',
-    styleUrl: './dashboard.component.scss'
-})
-export class DashboardComponent {
+    styleUrl: './dashboard.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+  })
+  export class DashboardComponent {
   @HostBinding('class') classes = 'grow';
   private localStorage: Storage
   constructor(private crawlservice: CrawlAPIService) {
