@@ -87,7 +87,7 @@ export class OrganizationService {
   }
 
   renameOrganization(orgId: string, name: string): Observable<void> {
-    return this.http.patch<void>(
+    return this.http.put<void>(
       `${API_ORGANIZATIONS}/${orgId}`,
       { name },
       { headers: this.getAuthHeaders() },

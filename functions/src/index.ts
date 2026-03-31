@@ -44,6 +44,7 @@ export const updateUsage = stripe.updateUsage
 export const getBillingCatalog = stripe.getBillingCatalog
 export const getMyEntitlements = stripe.getMyEntitlements
 export const startTrial = stripe.startTrial
+export const submitEnterprisePlanRequest = stripe.submitEnterprisePlanRequest
 export const validateStripeCatalog = stripe.validateStripeCatalog
 export const createCheckoutSession = stripe.createCheckoutSession
 export const createBillingPortalSession = stripe.createBillingPortalSession

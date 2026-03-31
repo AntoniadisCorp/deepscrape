@@ -478,6 +478,47 @@ const getDefaultBillingForPlan = (plan: BillingPlanTier = "free"): UserBilling =
   }
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export const submitEnterprisePlanRequest = onCallv2(
+  { secrets: stripeSecrets },
+  async (req) => {
+    const uid = req.auth?.uid
+    if (!uid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const authUser = await adminAuth.getUser(uid)
+    const fallbackEmail = (authUser.email || "").trim().toLowerCase()
+    const providedEmail = typeof req.data?.contactEmail === "string" ? req.data.contactEmail.trim().toLowerCase() : ""
+    const contactEmail = providedEmail || fallbackEmail
+
+    if (!contactEmail || !EMAIL_REGEX.test(contactEmail)) {
+      throw new HttpsError("invalid-argument", "A valid contact email is required")
+    }
+
+    const workspaceName = typeof req.data?.workspaceName === "string" ? req.data.workspaceName.trim().slice(0, 120) : ""
+    const selectedPlan = typeof req.data?.selectedPlan === "string" ? req.data.selectedPlan : null
+    const adminRecipients = env.ADMIN_EMAILS.map((item) => item.toLowerCase())
+
+    await db.collection("admin_email_requests").add({
+      kind: "enterprise_plan_request",
+      uid,
+      contactEmail,
+      accountEmail: fallbackEmail || null,
+      workspaceName: workspaceName || null,
+      selectedPlan: selectedPlan || null,
+      notifyAdmins: adminRecipients,
+      status: "pending",
+      source: "service_onboarding",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    return { success: true }
+  }
+)
+
 const mapPlanIdToTier = (planId: string): BillingPlanTier => {
   if (planId === "starter" || planId === "pro" || planId === "enterprise" || planId === "free" || planId === "trial") {
     return planId

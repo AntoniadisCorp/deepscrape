@@ -6,6 +6,7 @@ import {
   BillingInterval,
   BillingLoadingState,
   BillingPlanTier,
+  EnterprisePlanRequestPayload,
   BillingUsageRequest,
   BillingUsageResponse,
   CreditPackCatalog,
@@ -257,6 +258,13 @@ export class BillingService {
       status: string | null
       sessionId: string
     }>('verifyCheckoutSession', { sessionId })
+  }
+
+  async submitEnterprisePlanRequest(payload: EnterprisePlanRequestPayload): Promise<{ success: boolean }> {
+    return this.firestoreService.callFunction<EnterprisePlanRequestPayload, { success: boolean }>(
+      'submitEnterprisePlanRequest',
+      payload
+    )
   }
 
   async getUsageReport(args: BillingUsageRequest): Promise<BillingUsageResponse> {
