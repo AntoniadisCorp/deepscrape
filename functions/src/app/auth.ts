@@ -7,7 +7,7 @@ import { auth } from "firebase-functions/v1"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { env } from "../config/env"
-// import { redis } from "./cacheConfig"
+import { redis } from "./cacheConfig"
 
 const bootstrapAdminEmails = new Set(
     env.ADMIN_EMAILS
@@ -20,6 +20,29 @@ const isBootstrapAdmin = (email?: string | null): boolean => {
     }
 
     return bootstrapAdminEmails.has(email.toLowerCase())
+}
+
+const SESSION_REVOKED_TTL_SECONDS = 60 * 60 * 24 * 30
+
+const getSessionRevocationKey = (uid: string, loginId: string): string =>
+    `auth:session:revoked:${uid}:${loginId}`
+
+const cacheRevokedSession = async (uid: string, loginId: string, revokedAtIso: string): Promise<void> => {
+    try {
+        await redis.setex(getSessionRevocationKey(uid, loginId), SESSION_REVOKED_TTL_SECONDS, JSON.stringify({revokedAt: revokedAtIso}))
+    } catch (error) {
+        console.warn("Failed to cache revoked session:", error)
+    }
+}
+
+const getCachedRevokedSession = async (uid: string, loginId: string): Promise<{revokedAt?: string} | null> => {
+    try {
+        const cached = await redis.get<{revokedAt?: string}>(getSessionRevocationKey(uid, loginId))
+        return cached || null
+    } catch (error) {
+        console.warn("Failed to read revoked session cache:", error)
+        return null
+    }
 }
 
 
@@ -128,12 +151,11 @@ export const setDefaultAdminRole = auth
 
             if (isBootstrapAdmin(user.email)) {
                 await adminAuth.setCustomUserClaims(user.uid, { role })
-                // Only set role in Firestore if defined
-                const userDoc: Record<string, unknown> = {}
-                if (role !== undefined) {
-                    userDoc.role = role
-                }
-                await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
+                // Set role and mark as onboarded — bootstrap admins skip the onboarding wizard
+                await db.collection("users").doc(user.uid).set({
+                    role,
+                    onboardedAt: FieldValue.serverTimestamp(),
+                }, { merge: true })
             }
         } catch (error) {
             console.error("Error setting default admin role:", error)
@@ -275,6 +297,118 @@ export const linkGuestToUser = onCallv2(async (req) => {
         }
         console.error("Error linking guest to user:", error)
         throw new HttpsError("internal", "Failed to link guest to user")
+    }
+})
+
+export const getMyLoginSessions = onCallv2(async (req) => {
+    const uid = req.auth?.uid
+    if (!uid) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const limitRaw = Number(req.data?.limit ?? 20)
+    const limitCount = Number.isFinite(limitRaw) ?
+        Math.max(1, Math.min(50, Math.floor(limitRaw))) :
+        20
+
+    const snapshot = await db.collection(`login_metrics/${uid}/login_history_Info`)
+        .orderBy("timestamp", "desc")
+        .limit(limitCount)
+        .get()
+
+    const sessions = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() || {}),
+    }))
+
+    return {sessions}
+})
+
+export const revokeMyLoginSession = onCallv2(async (req) => {
+    const uid = req.auth?.uid
+    const loginId = typeof req.data?.loginId === "string" ? req.data.loginId.trim() : ""
+
+    if (!uid) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    if (!loginId) {
+        throw new HttpsError("invalid-argument", "loginId is required")
+    }
+
+    const sessionRef = db.doc(`login_metrics/${uid}/login_history_Info/${loginId}`)
+    const sessionSnap = await sessionRef.get()
+
+    if (!sessionSnap.exists) {
+        throw new HttpsError("not-found", "Session not found")
+    }
+
+    const now = new Date()
+    await sessionRef.set({
+        connected: false,
+        signOutTime: now,
+        revokedAt: now,
+        revokedByUid: uid,
+    }, {merge: true})
+
+    await cacheRevokedSession(uid, loginId, now.toISOString())
+
+    return {
+        success: true,
+        loginId,
+        revokedAt: now.toISOString(),
+    }
+})
+
+export const getMyLoginSessionStatus = onCallv2(async (req) => {
+    const uid = req.auth?.uid
+    const loginId = typeof req.data?.loginId === "string" ? req.data.loginId.trim() : ""
+
+    if (!uid) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    if (!loginId) {
+        throw new HttpsError("invalid-argument", "loginId is required")
+    }
+
+    const cached = await getCachedRevokedSession(uid, loginId)
+    if (cached?.revokedAt) {
+        return {
+            loginId,
+            active: false,
+            revoked: true,
+            revokedAt: cached.revokedAt,
+        }
+    }
+
+    const sessionSnap = await db.doc(`login_metrics/${uid}/login_history_Info/${loginId}`).get()
+    if (!sessionSnap.exists) {
+        return {
+            loginId,
+            active: false,
+            revoked: true,
+            revokedAt: null,
+        }
+    }
+
+    const session = sessionSnap.data() as {
+        connected?: boolean
+        revokedAt?: Date | null
+        signOutTime?: Date | null
+    } | undefined
+    const revokedAt = session?.revokedAt instanceof Date ? session.revokedAt.toISOString() : null
+    const active = session?.connected === true && !session?.revokedAt && !session?.signOutTime
+
+    if (!active) {
+        await cacheRevokedSession(uid, loginId, revokedAt || new Date().toISOString())
+    }
+
+    return {
+        loginId,
+        active,
+        revoked: !active,
+        revokedAt,
     }
 })
 

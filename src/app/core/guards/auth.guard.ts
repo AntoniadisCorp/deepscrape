@@ -19,11 +19,12 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
         return false
       }
 
-      console.log('authGuard - Authenticated:', isAuthenticated, 'User:', user)
-
       // ✅ Single source of truth: Use Firestore emailVerified (updated after email verification)
-      const isPhoneVerified = user?.phoneVerified || false;
-      const isEmailVerified = user?.emailVerified || false;
+      const isEmailVerified = user?.emailVerified === true;
+      // null  → phone never registered (optional, not required)
+      // false → phone was registered at signup but not yet verified (required)
+      // true  → phone verified ✓
+      const phoneVerified = user?.phoneVerified;
 
       // Check if user needs email verification (password provider only)
       if (user?.currProviderData?.providerId === 'password' && !isEmailVerified) {
@@ -31,9 +32,16 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
         return false
       }
 
-      // Check if user needs phone verification
-      if (user?.phoneNumber && !isPhoneVerified) {
+      // Only block when phone was explicitly added at signup (phoneVerified === false)
+      if (phoneVerified === false) {
         router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
+        return false
+      }
+
+      // Redirect to onboarding if the user hasn't completed it yet
+      // Bootstrap admins are auto-onboarded server-side; skip redirect if admin
+      if (user.onboardedAt == null && !authService.isAdmin) {
+        router.navigate(['/service/onboarding'])
         return false
       }
 

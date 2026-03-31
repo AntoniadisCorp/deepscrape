@@ -26,6 +26,39 @@
             <span class="block sm:inline">{{ errorMessage }}</span>
           </div>
         }
+        @if (showMfaChallenge) {
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
+            <h2 class="mb-1 text-sm font-bold text-gray-900 dark:text-gray-100">
+              Complete your second factor
+            </h2>
+            <p class="mb-3 text-xs text-gray-600 dark:text-gray-300">
+              Enter the current 6-digit code from {{ mfaDisplayName }} to finish signing in.
+            </p>
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              name="mfaCode"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="mfaCode"
+              placeholder="123456"
+              class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400" />
+            <div class="mt-3 flex gap-2">
+              <button type="button" (click)="submitMfaCode()" [disabled]="mfaCode.length !== 6 || loading.mfa"
+                class="flex-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white font-bold py-2 px-3 shadow-xl transition-all duration-200 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 cc-focus-ring text-sm">
+                @if (loading.mfa) {
+                  <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                } @else {
+                  Verify code
+                }
+              </button>
+              <button type="button" (click)="cancelMfaChallenge()"
+                class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+            </div>
+          </div>
+        } @else {
         <!-- Social Login Buttons -->
         <div class="flex gap-2 mb-1">
           <button type="button" [disabled]="loading.github" (click)="loginWithGithub()"
@@ -129,6 +162,7 @@
                   }
                 </button>
               </div>
+            }
             </form>
           </section>
           <div hidden #recaptchaContainer id="recaptcha-container"></div>

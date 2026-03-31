@@ -173,15 +173,7 @@ export class PhoneSecurityComponent implements OnInit {
       // Confirm the verification code
       await this.confirmationResult.confirm(verificationCode);
 
-      // Update phone verification status in Firestore
       if (this.currentUser) {
-        await this.firestoreService.updateUserPhoneNumber(
-          this.currentUser.uid,
-          this.phoneForm.get('phoneNumber')?.value,
-          true
-        );
-        
-        // Update backend verification status
         await this.authService.updatePhoneVerificationStatus(this.currentUser.uid, true).toPromise();
         
         // Refresh user data
@@ -218,8 +210,8 @@ export class PhoneSecurityComponent implements OnInit {
     this.loading.remove = true;
 
     try {
-      // Update Firestore to remove phone number
-      await this.firestoreService.updateUserPhoneNumber(this.currentUser.uid, '', false);
+      await this.authService.unlinkProvider('phone');
+      await this.authService.updatePhoneVerificationStatus(this.currentUser.uid).toPromise();
       
       // Refresh user data
       await this.authService.refreshUserData();

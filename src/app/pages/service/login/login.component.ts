@@ -13,7 +13,7 @@ import {
   PLATFORM_ID,
   DOCUMENT
 } from '@angular/core';
-import { FormGroup, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormGroup, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -27,17 +27,20 @@ import {
   AuthCredential,
   ConfirmationResult,
   fetchSignInMethodsForEmail,
+  getMultiFactorResolver,
   getAdditionalUserInfo,
   GithubAuthProvider,
   GoogleAuthProvider,
   isSignInWithEmailLink,
   linkWithCredential,
+  MultiFactorResolver,
   OAuthProvider,
   PhoneAuthProvider,
   RecaptchaVerifier,
   signInWithEmailAndPassword,
   signInWithEmailLink,
   signInWithPopup,
+  TotpMultiFactorGenerator,
   updateCurrentUser,
   User,
   UserCredential,
@@ -78,7 +81,7 @@ type loginCredentials = {
  */
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, MatProgressSpinner, MatIcon, TranslateModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
   // Removed ChangeDetectionStrategy.OnPush as it requires manual change detection for async operations
@@ -118,6 +121,12 @@ export class LoginComponent  {
   public phoneVerificationSent: boolean = false;
   /** Stores a pending credential for linking accounts in case of existing accounts with different providers. */
   protected pendingCredential: AuthCredential | null = null;
+  public showMfaChallenge = false;
+  public mfaCode = '';
+  private mfaResolver: MultiFactorResolver | null = null;
+  private mfaEnrollmentUid = '';
+  private mfaProviderId = 'password';
+  public mfaDisplayName = 'Authenticator app';
 
   // Subscriptions to manage memory leaks
   /** Subject for unsubscribing all subscriptions. */
@@ -188,8 +197,8 @@ export class LoginComponent  {
       identifier: this.formBuilder.control('', {
         validators: [
           Validators.required,
-          // Pattern for email or phone number (phone must start with + and is required)
-          Validators.pattern(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+[1-9]\d{7,14})$/)
+          // email  OR  E.164 phone (+1234567890)  OR  username (3-30 alphanumeric/_/-)
+          Validators.pattern(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+[1-9]\d{7,14}|[a-zA-Z0-9_-]{3,30})$/)
         ]
       }),
       // Password field for email/password login.
@@ -256,6 +265,103 @@ export class LoginComponent  {
     this.trackLoginAttempt(provider, false, undefined, errorMsg, context);
     this.setLoading(provider, false);
     this.loginInProgress = false;
+  }
+
+  private async handleMfaRequired(error: any, providerId: string): Promise<boolean> {
+    if (error?.code !== 'auth/multi-factor-auth-required') {
+      return false;
+    }
+
+    try {
+      const resolver = getMultiFactorResolver(this.auth, error);
+      const totpFactor = resolver.hints.find((hint) => hint.factorId === 'totp');
+
+      if (!totpFactor) {
+        this.errorMessage = 'This account requires an unsupported second factor.';
+        this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
+        return true;
+      }
+
+      this.mfaResolver = resolver;
+      this.mfaEnrollmentUid = totpFactor.uid;
+      this.mfaProviderId = providerId;
+      this.mfaDisplayName = totpFactor.displayName || 'Authenticator app';
+      this.mfaCode = '';
+      this.showMfaChallenge = true;
+      this.errorMessage = '';
+      this.loading.email = false;
+      this.loading.google = false;
+      this.loading.github = false;
+      this.loginInProgress = false;
+      this.cdr.detectChanges();
+      return true;
+    } catch (resolverError) {
+      this.handleError(resolverError, 'login:mfa:init', providerId);
+      return true;
+    }
+  }
+
+  private clearMfaChallenge(): void {
+    this.showMfaChallenge = false;
+    this.mfaResolver = null;
+    this.mfaEnrollmentUid = '';
+    this.mfaProviderId = 'password';
+    this.mfaDisplayName = 'Authenticator app';
+    this.mfaCode = '';
+  }
+
+  public async submitMfaCode(): Promise<void> {
+    if (!this.mfaResolver || !this.mfaEnrollmentUid || this.mfaCode.trim().length !== 6) {
+      return;
+    }
+
+    this.loading.mfa = true;
+    this.errorMessage = '';
+
+    try {
+      const assertion = TotpMultiFactorGenerator.assertionForSignIn(this.mfaEnrollmentUid, this.mfaCode.trim());
+      const userCredential = await this.mfaResolver.resolveSignIn(assertion);
+      await this.finishLogin(userCredential.user, this.mfaProviderId);
+      this.clearMfaChallenge();
+    } catch (error) {
+      this.handleError(error, 'login:mfa:verify', this.mfaProviderId);
+    } finally {
+      this.loading.mfa = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  public cancelMfaChallenge(): void {
+    this.clearMfaChallenge();
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  private async finishLogin(user: User, providerId: string): Promise<void> {
+    if (user.displayName || user.photoURL) {
+      await this.firestoreService.updateUserProfile(user, {
+        displayName: user.displayName,
+        photoURL: user.photoURL || DEFAULT_PROFILE_URL,
+      });
+    }
+
+    const token = await user.getIdToken();
+
+    await Promise.all([
+      this.trackLoginAttempt(providerId, true, token),
+      this.loginMetrics(user.uid, providerId),
+      this.firestoreService.storeUserData(user, providerId, true)
+    ]);
+
+    const isVerified = await this.onLoginUpdate({ user }, providerId);
+    if (!isVerified) {
+      return;
+    }
+
+    this.firestoreService.setAnalyticsUserId(this.analytics, user.uid);
+    this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    await this.router.navigateByUrl(returnUrl);
   }
 
   private shouldFallbackToRedirect(error: any): boolean {
@@ -434,58 +540,36 @@ export class LoginComponent  {
     const identifier = this.loginForm.get('identifier')?.value;
     const password = this.loginForm.get('password')?.value;
 
-    // Determine if the identifier is an email (contains '@').
-    const isEmail = identifier?.includes('@');
-
     try {
-      if (isEmail) {
-        this.currentAuthMethod = 'email'; // Set authentication method to email.
-        this.loading.email = true; // Set loading state for email login.
+      this.currentAuthMethod = 'email';
+      this.loading.email = true;
 
-        // Subscribe to the email sign-in observable from AuthService.
-        this.authService
-          .signInWithEmail(identifier, password)
-          .pipe(takeUntil(this.destroy$)) // No operators needed here, as further handling is in the subscribe block.
-          .subscribe({
-            next: async (response) => {
-              // If user data is received, proceed with post-login actions.
-              if (response.user) {
-                try {
-                  const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-                  // Perform parallel tracking and metric logging.
-                  await Promise.all([
-                    this.trackLoginAttempt('email', true, token),
-                    this.loginMetrics(response.user.uid, 'password'),
-                  ]);
-
-                  // Update user data and check verification status.
-                  const isVerified = await this.onLoginUpdate(response, 'password');
-                  if (!isVerified) return; // If not verified, stop here (redirection handled in onLoginUpdate).
-
-                  this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
-
-                  // Show success snackbar and navigate to the dashboard or return URL.
-                  this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                  const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                  this.router.navigateByUrl(returnUrl);
-                } catch (error) {
-                  // Handle errors during token generation or post-login updates.
-                  this.handleError(error, 'login:email', 'email');
-                  return;
-                }
+      // signInByIdentifier auto-detects email / phone / username
+      this.authService
+        .signInByIdentifier(identifier, password)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response) => {
+            if (response.user) {
+              try {
+                await this.finishLogin(response.user, 'password');
+              } catch (error) {
+                this.handleError(error, 'login:identifier', 'email');
               }
-            },
-            error: async (error) => {
-              this.handleError(error, 'login:email', 'email');
-              this.handleAccountExistsError(error, 'password');
-            },
-            complete: () => {
-              this.loading.email = false; // Always reset loading state on completion.
-              this.loginInProgress = false;
             }
-          });
-      }
+          },
+          error: async (error) => {
+            if (await this.handleMfaRequired(error, 'password')) {
+              return;
+            }
+            this.handleError(error, 'login:identifier', 'email');
+            this.handleAccountExistsError(error, 'password');
+          },
+          complete: () => {
+            this.loading.email = false;
+            this.loginInProgress = false;
+          }
+        });
     } finally {
       this.loginInProgress = false;
     }
@@ -517,29 +601,7 @@ export class LoginComponent  {
             // If user data is received, proceed with post-login actions.
             if (response.user) {
               try {
-                // Update user profile with display name and photo URL if available.
-                if (response.user.displayName || response.user.photoURL) {
-                  await this.firestoreService.updateUserProfile(response.user, {
-                    displayName: response.user.displayName,
-                    photoURL: response.user.photoURL || DEFAULT_PROFILE_URL, // Use default if photoURL is null.
-                  });
-                }
-
-                const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-                // Perform parallel tracking, metric logging, and user data storage.
-                await Promise.all([
-                  this.trackLoginAttempt('google.com', true, token),
-                  this.loginMetrics(response.user.uid, 'google.com'),
-                  this.firestoreService.storeUserData(response.user, 'google.com', true)
-                ]);
-
-                this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
-
-                // Show success snackbar and navigate to the dashboard or return URL.
-                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                this.router.navigateByUrl(returnUrl);
+                await this.finishLogin(response.user, 'google.com');
               } catch (error) {
                 // Handle errors during token generation or post-login updates.
                 this.handleError(error, 'login:google', 'google.com');
@@ -553,6 +615,10 @@ export class LoginComponent  {
             }
           },
           error: async (error) => {
+            if (await this.handleMfaRequired(error, 'google.com')) {
+              return;
+            }
+
             if (this.shouldFallbackToRedirect(error)) {
               try {
                 await this.authService.signInWithRedirectProvider(this.googleProvider);
@@ -605,28 +671,7 @@ export class LoginComponent  {
             // If user data is received, proceed with post-login actions.
             if (response.user) {
               try {
-                // Update user profile with display name and photo URL if available.
-                if (response.user.displayName || response.user.photoURL) {
-                  await this.firestoreService.updateUserProfile(response.user, {
-                    displayName: response.user.displayName,
-                    photoURL: response.user.photoURL ? response.user.photoURL : DEFAULT_PROFILE_URL, // Use default if photoURL is null.
-                  });
-                }
-                const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-                // Perform parallel tracking, metric logging, and user data storage.
-                await Promise.all([
-                  this.trackLoginAttempt('github.com', true, token),
-                  this.loginMetrics(response.user.uid, 'github.com'),
-                  this.firestoreService.storeUserData(response.user, 'github.com', true)
-                ]);
-
-                this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
-
-                // Show success snackbar and navigate to the dashboard or return URL.
-                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                this.router.navigateByUrl(returnUrl);
+                await this.finishLogin(response.user, 'github.com');
               } catch (error) {
                 // Handle errors during token generation or post-login updates.
                 this.handleError(error, 'login:github', 'github.com');
@@ -635,6 +680,10 @@ export class LoginComponent  {
             }
           },
           error: async (error) => {
+            if (await this.handleMfaRequired(error, 'github.com')) {
+              return;
+            }
+
             if (this.shouldFallbackToRedirect(error)) {
               try {
                 await this.authService.signInWithRedirectProvider(this.githubProvider);

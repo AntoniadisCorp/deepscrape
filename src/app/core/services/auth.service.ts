@@ -4,11 +4,13 @@ import {
   Auth, AuthProvider, authState, browserLocalPersistence, connectAuthEmulator, EmailAuthProvider, FacebookAuthProvider,
   getAuth,
   GithubAuthProvider,
-  GoogleAuthProvider, indexedDBLocalPersistence, linkWithPhoneNumber, linkWithPopup, PhoneAuthProvider, reauthenticateWithCredential, RecaptchaVerifier, setPersistence, signInWithCredential,
+  GoogleAuthProvider, indexedDBLocalPersistence, linkWithPhoneNumber, linkWithPopup, multiFactor, MultiFactorInfo, PhoneAuthProvider, reauthenticateWithCredential, RecaptchaVerifier, setPersistence, signInWithCredential,
   signInWithPhoneNumber,
   signInWithPopup,
   signInWithRedirect,
   signOut,
+  TotpMultiFactorGenerator,
+  TotpSecret,
   unlink,
   updatePassword,
   User,
@@ -68,6 +70,12 @@ export class AuthService {
 
   ) {
     this.initAuth()
+
+    this.heartbeatService.sessionRevoked$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.handleRevokedSession()
+      })
   }
 
   private isBrowserRuntime(): boolean {
@@ -95,6 +103,24 @@ export class AuthService {
 
         // Save token
         this.token = await user.getIdToken();
+
+        const loginState = this.getLoginIdFromStorage()
+        if (loginState.loginId) {
+          try {
+            const sessionStatus = await this.fireService.callFunction<
+              { loginId: string },
+              { loginId: string; active: boolean; revoked: boolean }
+            >('getMyLoginSessionStatus', { loginId: loginState.loginId })
+
+            if (sessionStatus?.revoked || sessionStatus?.active === false) {
+              this.handleRevokedSession()
+              return { isAuthenticated: false, user: null }
+            }
+          } catch (sessionStatusError) {
+            console.error('Failed to check login session status:', sessionStatusError)
+          }
+        }
+
         const userData = await this.fireService.getUserData(user.uid) as Users; // Firestore data
 
         if (!userData) throw new Error('No user data found');
@@ -211,10 +237,10 @@ export class AuthService {
   }
 
   // Update email verification status in backend
-  updateEmailVerificationStatus(uid: string, emailVerified: boolean): Observable<{ success: boolean }> {
+  updateEmailVerificationStatus(uid: string, emailVerified?: boolean): Observable<{ success: boolean }> {
     return this.http.post<{ success: boolean }>(
       `${API_AUTH_FIREBASE}/email/verification`,
-      { uid, emailVerified }
+      { uid }
     ).pipe(
       catchError((error) => {
         console.error('Email verification update error:', error);
@@ -288,6 +314,52 @@ export class AuthService {
     );
   }
 
+  /**
+   * Auto-detects identifier type and resolves it to an email before signing in.
+   *
+   * Detection order:
+   *  - Contains `@`            → treat as email directly
+   *  - Starts with `+`         → E.164 phone (resolved via BFF to email)
+   *  - Otherwise               → username (resolved via BFF to email)
+   */
+  signInByIdentifier(identifier: string, password: string) {
+    const isEmail = identifier.includes('@');
+    const isPhone = identifier.startsWith('+');
+
+    if (isEmail) {
+      return this.signInWithEmail(identifier, password);
+    }
+
+    // Resolve phone/username → email via BFF, then sign in
+    const endpoint = isPhone
+      ? `${API_AUTH_FIREBASE}/resolve-identifier`
+      : `${API_AUTH_FIREBASE}/resolve-identifier`;
+
+    const body = isPhone ? { phone: identifier } : { username: identifier };
+
+    return this.http
+      .post<{ email: string }>(endpoint, body)
+      .pipe(
+        switchMap(({ email }) => this.signInWithEmail(email, password)),
+        catchError((error) => {
+          const code = error?.status === 404 ? 'auth/user-not-found' : (error?.code ?? 'auth/unknown');
+          return throwError(() => ({ code, message: error?.error?.message ?? error?.message }));
+        })
+      );
+  }
+
+  /**
+   * Resolve a username or E.164 phone to the registered email.
+   * Used by UI to pre-populate or validate the identifier.
+   */
+  resolveLoginIdentifier(identifier: string): Observable<{ email: string }> {
+    const isPhone = identifier.startsWith('+');
+    const body = isPhone ? { phone: identifier } : { username: identifier };
+    return this.http
+      .post<{ email: string }>(`${API_AUTH_FIREBASE}/resolve-identifier`, body)
+      .pipe(catchError((error) => throwError(() => error.error || error)));
+  }
+
   // Phone sign-in methods
   async signInWithPhone(phoneNumber: string, appVerifier: RecaptchaVerifier) {
     return signInWithPhoneNumber(this.auth, phoneNumber, appVerifier);
@@ -318,14 +390,10 @@ export class AuthService {
 
   // Check if phone number exists in the system
   checkPhoneNumberExists(phoneNumber: string): Observable<{
-    exists: boolean,
-    uid?: string,
-    providers?: string[]
+    exists: boolean
   }> {
     return this.http.post<{
-      exists: boolean,
-      uid?: string,
-      providers?: string[]
+      exists: boolean
     }>(`${API_AUTH_FIREBASE}/provider/phone/check`, { phoneNumber }).pipe(
       catchError((error) => {
         console.error('Phone number existence check error:', error);
@@ -343,7 +411,7 @@ export class AuthService {
 
     return this.http.post<{ success: boolean, message: string }>(
       `${API_AUTH_FIREBASE}/phone/link`,
-      { uid: currentUser.uid, phoneNumber }
+      { phoneNumber }
     ).pipe(
       catchError((error) => {
         console.error('Phone linking error:', error);
@@ -353,10 +421,10 @@ export class AuthService {
   }
 
   // Update phone verification status in backend to set custom claims
-  updatePhoneVerificationStatus(uid: string, phoneVerified: boolean): Observable<{ success: boolean }> {
+  updatePhoneVerificationStatus(uid: string, phoneVerified?: boolean): Observable<{ success: boolean }> {
     return this.http.post<{ success: boolean }>(
       `${API_AUTH_FIREBASE}/phone/update-verification`,
-      { uid, phoneVerified }
+      { uid }
     ).pipe(
       catchError((error) => {
         console.error('Phone verification update error:', error);
@@ -371,10 +439,7 @@ export class AuthService {
       const result = await confirmationResult.confirm(code);
       const currentUser = this.auth.currentUser;
 
-      if (currentUser) {          // Update phone verification status in Firestore
-        await this.fireService.updatePhoneVerificationStatus(currentUser.uid, true);
-
-        // Update backend verification status
+      if (currentUser) {
         this.updatePhoneVerificationStatus(currentUser.uid, true)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
@@ -391,6 +456,57 @@ export class AuthService {
       console.error('Phone verification confirmation error:', error);
       throw error;
     }
+  }
+
+  getEnrolledMultiFactorHints(): readonly MultiFactorInfo[] {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return [];
+    }
+
+    return multiFactor(currentUser).enrolledFactors;
+  }
+
+  async startTotpEnrollment(): Promise<{
+    secret: TotpSecret,
+    secretKey: string,
+    qrCodeUrl: string
+  }> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const multiFactorSession = await multiFactor(currentUser).getSession();
+    const secret = await TotpMultiFactorGenerator.generateSecret(multiFactorSession);
+    const accountLabel = currentUser.email || currentUser.uid;
+
+    return {
+      secret,
+      secretKey: secret.secretKey,
+      qrCodeUrl: secret.generateQrCodeUrl(accountLabel, 'deepscrape')
+    };
+  }
+
+  async completeTotpEnrollment(secret: TotpSecret, verificationCode: string, displayName: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const assertion = TotpMultiFactorGenerator.assertionForEnrollment(secret, verificationCode);
+    await multiFactor(currentUser).enroll(assertion, displayName.trim() || 'Authenticator app');
+    await this.refreshUserData();
+  }
+
+  async unenrollMultiFactor(enrollmentUid: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    await multiFactor(currentUser).unenroll(enrollmentUid);
+    await this.refreshUserData();
   }
 
   async updatePassword(newPassword: string): Promise<UserCredential | null> {
@@ -607,6 +723,9 @@ export class AuthService {
       tap(() => {
         this.trackingLogout('logout', false, this.token)
         this.token = undefined
+        this.currentLoginId = ''
+        this.localStorage.removeItem('loginId')
+        this.cookieService.delete('aid', '/')
       }),
       switchMap(() => from(this.fireService.signOut())),
       catchError(async (error) => {
@@ -646,6 +765,20 @@ export class AuthService {
     loginId = loginId || this.localStorage.getItem('loginId') || '' as string
 
     return { loginId, userId, guestId }
+  }
+
+  private handleRevokedSession(): void {
+    this.currentLoginId = ''
+    this.token = undefined
+    this.userSubject.next(null)
+    this.authStateResolved.next(false)
+
+    this.localStorage.removeItem('loginId')
+    this.cookieService.delete('aid', '/')
+
+    this.fireService.signOut().catch((error) => {
+      console.error('Failed to sign out after session revocation:', error)
+    })
   }
 
   ngOnDestroy() {

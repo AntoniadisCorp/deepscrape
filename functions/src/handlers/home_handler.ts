@@ -6,14 +6,6 @@ import { db } from "../app/config"
 import { Timestamp } from "firebase-admin/firestore"
 import { Users } from "../domain"
 
-export const helloWorld = async (req: Request, res: Response) => {
-    try {
-        res.status(200).json({ message: "Hello from the server!" })
-    } catch (error) {
-        console.error("Error:", error)
-        res.status(500).json({ error: "Failed to connect to the API" })
-    }
-}
 export const statusCheck = async (req: Request, res: Response) => {
     try {
         res.status(200).json({ status: "ok", message: "ok" })
@@ -32,6 +24,7 @@ export const heartbeat = async (req: Request, res: Response) => {
             req.app.locals["user"]
         const userId = parsedData?.userId
         const guestId = parsedData?.guestId || req.cookies["gid"]
+        const loginId = parsedData?.loginId
         const now = new Date()
         const nowMs = now.getTime()
         const windowMs = 5 * 60 * 1000
@@ -40,6 +33,66 @@ export const heartbeat = async (req: Request, res: Response) => {
         let firestoreCollection
         let id
         if (userId) {
+            if (loginId) {
+                const cacheKey = `auth:session:revoked:${userId}:${loginId}`
+                const revokedCacheRaw = await redis.get<unknown>(cacheKey)
+                let revokedCache: {revokedAt?: string} | null = null
+                if (typeof revokedCacheRaw === "string") {
+                    try {
+                        const parsed = JSON.parse(revokedCacheRaw)
+                        revokedCache = parsed as {revokedAt?: string}
+                    } catch {
+                        revokedCache = null
+                    }
+                } else {
+                    revokedCache = revokedCacheRaw as {
+                        revokedAt?: string
+                    } | null
+                }
+
+                if (revokedCache?.revokedAt) {
+                    return res.status(401).json({
+                        success: false,
+                        code: "session_revoked",
+                        message: "Session has been revoked",
+                    })
+                }
+
+                const loginDocPath =
+                    `login_metrics/${userId}/login_history_Info/${loginId}`
+                const loginSnap = await db.doc(loginDocPath).get()
+                if (loginSnap.exists) {
+                    const loginData = loginSnap.data() as {
+                        connected?: boolean
+                        revokedAt?: Timestamp | Date | null
+                        signOutTime?: Timestamp | Date | null
+                    }
+
+                    if (
+                        loginData?.connected === false ||
+                        loginData?.revokedAt ||
+                        loginData?.signOutTime
+                    ) {
+                        const revokedCacheKey =
+                            `auth:session:revoked:${userId}:${loginId}`
+                        const revokedData = JSON.stringify({
+                            revokedAt: new Date().toISOString(),
+                        })
+                        const thirtyDaysInSeconds = 60 * 60 * 24 * 30
+                        await redis.setex(
+                            revokedCacheKey,
+                            thirtyDaysInSeconds,
+                            revokedData,
+                        )
+                        return res.status(401).json({
+                            success: false,
+                            code: "session_revoked",
+                            message: "Session has been revoked",
+                        })
+                    }
+                }
+            }
+
             key = `user:${userId}`
             firestoreCollection = "users"
             id = userId

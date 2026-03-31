@@ -13,15 +13,14 @@ service cloud.firestore {
     // all client requests to your Firestore database will be denied until you Update
     // your rules
     match /{document=**} {
-      allow read: if isAdmin();
-
-      allow create: if isAuthenticated() && (isAdmin() || requestMatchesUID());
-      allow update: if isAuthenticated() && (isAdmin() || (resourceMatchesUID() && requestMatchesUID()));
-      allow delete: if isAuthenticated() && (isAdmin() || resourceMatchesUID());
+      // Fallback rule: only admins can access documents not covered by specific rules below.
+      // All other access is denied by default.
+      allow read, write: if isAdmin();
     }
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
       allow write: if isAuthenticated() && request.auth.uid == userId &&
+                  hasNoSensitiveUserFieldChanges() &&
                   (request.auth.token.email_verified || 
                    request.auth.token.phone_number != null ||
                    (request.resource.data.phoneNumber == request.auth.token.phone_number && request.resource.data.phoneVerified == true));
@@ -65,14 +64,6 @@ service cloud.firestore {
     	return request.auth != null;
     }
     
-    function requestMatchesUID() {
-        return request.auth.uid == request.resource.data.uid;
-    }
-
-    function resourceMatchesUID() {
-        return request.auth.uid == resource.data.uid;
-    }
-
     function hasRole(roleName) {
       return request.auth != null
         && request.auth.token != null
@@ -81,16 +72,32 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return hasRole('admin') || (
-        request.auth != null
-        && request.auth.token != null
-        && ('email' in request.auth.token)
-        && request.auth.token.email in [
-          'prokopis123@gmail.com',
-          'prokopis3@gmail.com',
-          'admin@deepscrape.dev'
-        ]
-      );
+        return hasRole('admin');
+    }
+
+    function hasNoSensitiveUserFieldChanges() {
+      return !request.resource.data.diff(resource.data).changedKeys().hasAny([
+        'uid',
+        'email',
+        'providerId',
+        'providerParent',
+        'providerData',
+        'role',
+        'defaultOrgId',
+        'plan',
+        'stripeId',
+        'subscriptionId',
+        'status',
+        'currentUsage',
+        'balance',
+        'itemId',
+        'onboardedAt',
+        'mfa_enabled',
+        'emailVerified',
+        'phoneVerified',
+        'phoneNumber',
+        'profileStatus'
+      ]);
     }
 
     function hasOrgRole(orgId, allowedRoles) {
@@ -102,8 +109,7 @@ service cloud.firestore {
 
     match /organizations/{orgId} {
       allow read: if isAdmin() || hasOrgRole(orgId, ['owner', 'admin', 'member', 'viewer']);
-      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isAdmin() || hasOrgRole(orgId, ['owner', 'admin']);
+      allow create, update, delete: if false;
     }
 
     match /memberships/{membershipId} {
@@ -111,15 +117,12 @@ service cloud.firestore {
         || (isAuthenticated() && request.auth.uid == resource.data.userId)
         || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
 
-      allow create: if isAdmin() || hasOrgRole(request.resource.data.orgId, ['owner', 'admin']);
-      allow update: if isAdmin() || hasOrgRole(request.resource.data.orgId, ['owner', 'admin']);
-      allow delete: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
+      allow create, update, delete: if false;
     }
 
     match /invitations/{inviteId} {
       allow read: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
-      allow create: if isAdmin() || hasOrgRole(request.resource.data.orgId, ['owner', 'admin']);
-      allow update, delete: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
+      allow create, update, delete: if false;
     }
     
     match /login_metrics/{docId} {

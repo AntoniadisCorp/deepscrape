@@ -4,7 +4,8 @@
   (ngSubmit)="onSubmit()">
   <div class="flex w-full flex-col gap-4">
     <!-- Email Control field -->
-    <h2 class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
       Account email
     </h2>
 
@@ -18,11 +19,12 @@
         [control]="email | formControl"
         [leftIcon]="'alternate_email'"
         [rightIcon]="'lock'"
-      [label]="'Email'"></app-stinput>
+        [label]="'Email'"></app-stinput>
     </div>
 
     <!-- Login Account -->
-    <h2 class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
       Link Login Provider
     </h2>
 
@@ -46,298 +48,701 @@
               <mat-icon
                 aria-hidden="false"
                 [attr.aria-label]="provider"
-                [svgIcon]="provider == 'github' ? 'github' + darkMode() : provider"
-              class="inline-flex flex-shrink-0 text-center text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></mat-icon>
+                [svgIcon]="
+                  provider == 'github' ? 'github' + darkMode() : provider
+                "
+                class="inline-flex flex-shrink-0 text-center text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"></mat-icon>
               <!-- Title of the Connect button -->
               <span class="ml-3 flex-1 whitespace-nowrap dark:text-gray-300">
-                @if(loading.github && provider === 'github' || loading.google &&
-                  provider === 'google') {
+                @if (
+                  (loading.github && provider === 'github') ||
+                  (loading.google && provider === 'google')
+                ) {
                   <mat-progress-spinner
                     class="inline-block !text-gray-500"
                     mode="indeterminate"
-                  diameter="16"></mat-progress-spinner>
-                } @else {Connect with {{ provider | uppercase }}}
+                    diameter="16"></mat-progress-spinner>
+                } @else {
+                  Connect with {{ provider | uppercase }}
+                }
+              </span>
+            </button>
+          }
+        </div>
+      } @else {
+        <h3
+          class="mt-5 font-serif text-base font-semibold text-gray-700 dark:text-gray-300">
+          All provider accounts has been connected.
+        </h3>
+      }
+    </div>
+
+    <!-- Connected accounts -->
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Connected Providers
+    </h2>
+    <div
+      class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
+        Unlink the connection for authorized login providers.
+      </h3>
+      <!-- Disconnect button -->
+      @if (remProviders && remProviders.length > 0) {
+        <div class="mt-5 flex flex-col items-start gap-4">
+          @for (provider of remProviders; track provider) {
+            <div class="flex items-center">
+              <button
+                type="button"
+                mat-icon-button
+                (click)="disconnectProvider(provider)"
+                class="btn-remove inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 font-medium text-red-700 shadow-sm transition hover:bg-red-100 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                <!-- SVG icon -->
+                <mat-icon
+                  aria-hidden="false"
+                  [attr.aria-label]="provider"
+                  [svgIcon]="
+                    provider == 'github' ? 'github' + darkMode() : provider
+                  "
+                  class="inline-flex flex-shrink-0 text-red-500 transition duration-75 dark:text-red-300"></mat-icon>
+                <!-- Title of the Disconnect button -->
+                <span
+                  class="ml-3 flex-1 whitespace-nowrap text-left text-red-700 dark:text-red-300">
+                  @if (
+                    (loading.github && provider === 'github') ||
+                    (loading.google && provider === 'google')
+                  ) {
+                    <mat-progress-spinner
+                      class="inline-block h-4 w-4 !text-gray-500"
+                      mode="indeterminate"
+                      diameter="16"></mat-progress-spinner>
+                  } @else {
+                    Unlink
+                    <!-- {{ provider | uppercase }} -->
+                  }
                 </span>
               </button>
-            }
-          </div>
-        } @else {
-          <h3
-            class="mt-5 font-serif text-base font-semibold text-gray-700 dark:text-gray-300">
-            All provider accounts has been connected.
-          </h3>
-        }
-      </div>
-
-      <!-- Connected accounts -->
-      <h2 class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-        Connected Providers
-      </h2>
-      <div
-        class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
-        <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-          Unlink the connection for authorized login providers.
-        </h3>
-        <!-- Disconnect button -->
-        @if (remProviders && remProviders.length > 0) {
-          <div class="mt-5 flex flex-col items-start gap-4">
-            @for (provider of remProviders; track provider) {
-              <div class="flex items-center">
-                <button
-                  type="button"
-                  mat-icon-button
-                  (click)="disconnectProvider(provider)"
-                  class="btn-remove inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 font-medium text-red-700 shadow-sm transition hover:bg-red-100 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                  <!-- SVG icon -->
-                  <mat-icon
-                    aria-hidden="false"
-                    [attr.aria-label]="provider"
-              [svgIcon]="
-                provider == 'github' ? 'github' + darkMode() : provider
-              "
-                  class="inline-flex flex-shrink-0 text-red-500 transition duration-75 dark:text-red-300"></mat-icon>
-                  <!-- Title of the Disconnect button -->
-                  <span
-                    class="ml-3 flex-1 whitespace-nowrap text-left text-red-700 dark:text-red-300">
-                    @if(loading.github && provider === 'github' || loading.google &&
-                      provider === 'google') {
-
-                      <mat-progress-spinner
-                        class="inline-block h-4 w-4 !text-gray-500"
-                        mode="indeterminate"
-                      diameter="16"></mat-progress-spinner>
-
-                    } @else {Unlink<!-- {{ provider | uppercase }} -->} 
-                    </span>
-                  </button>
-                  @if (user?.providerId === provider + '.com') {
-                    <div
-                      class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-                      Currently logged in
-                    </div>
-                  }
+              @if (user?.providerId === provider + '.com') {
+                <div
+                  class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
+                  Currently logged in
                 </div>
               }
             </div>
-          } @else {
-            <h3
-              class="mt-5 font-serif text-base font-semibold text-gray-700 dark:text-gray-300">
-              No SSO provider account connected yet.
-            </h3>
           }
         </div>
+      } @else {
+        <h3
+          class="mt-5 font-serif text-base font-semibold text-gray-700 dark:text-gray-300">
+          No SSO provider account connected yet.
+        </h3>
+      }
+    </div>
 
-        <!-- Set Password -->
-        <h2
-          class="mt-5 flex items-center justify-start gap-2 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-          Set your password
-          <small>
-            <lucide-angular
-              [img]="icons['circle-check-big']"
+    <!-- Set Password -->
+    <h2
+      class="mt-5 flex items-center justify-start gap-2 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Set your password
+      <small>
+        <lucide-angular
+          [img]="icons['circle-check-big']"
           [ngClass]="
             hasProviderPassword().has
               ? 'text-green-400'
               : 'text-gray-500 dark:text-gray-400'
           "
-            class="max-h-7 max-w-7 fill-none"></lucide-angular>
-          </small>
-          @if (user?.providerId === 'password') {
-            <div
-              class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-              Currently logged in
-            </div>
-          }
-        </h2>
+          class="max-h-7 max-w-7 fill-none"></lucide-angular>
+      </small>
+      @if (user?.providerId === 'password') {
         <div
-          class="flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
-          <h3 class="mb-2 mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-            Please enter your new password. We recommended to use strong password.
-          </h3>
-          <!-- Password Control field -->
-          <app-stinput
-            [control]="password | formControl"
-            [leftIcon]="'vpn_key'"
-            [rightIcon]="'visibility'"
-            [label]="'Password'"
-          [errorLabel]="password?.value? password?.errors?.['passwordStrength']? checkPasswordStrength(password?.value) : '' : undefined"></app-stinput>
+          class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
+          Currently logged in
+        </div>
+      }
+    </h2>
+    <div
+      class="flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="mb-2 mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
+        Please enter your new password. We recommended to use strong password.
+      </h3>
+      <!-- Password Control field -->
+      <app-stinput
+        [control]="password | formControl"
+        [leftIcon]="'vpn_key'"
+        [rightIcon]="'visibility'"
+        [label]="'Password'"
+        [errorLabel]="
+          password?.value
+            ? password?.errors?.['passwordStrength']
+              ? checkPasswordStrength(password?.value)
+              : ''
+            : undefined
+        "></app-stinput>
 
-          <!-- Confirm Password Control field -->
+      <!-- Confirm Password Control field -->
 
-          <div class="mt-4 flex items-center justify-between gap-4 md:flex-nowrap flex-wrap">
-            <button
+      <div
+        class="mt-4 flex items-center justify-between gap-4 md:flex-nowrap flex-wrap">
+        <button
           [disabled]="
             !password?.value ||
             (password?.value && password?.invalid) ||
             password?.pristine
           "
+          appRipple
+          rippleColor="light"
+          type="button"
+          (click)="setPassword()"
+          class="inline-flex max-w-[120px] items-center justify-center rounded-full bg-green-600 px-4 py-3 text-center font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70">
+          <!-- Title of the Disconnect button -->
+          <span class="mx-3 whitespace-nowrap font-roboto text-xs font-normal">
+            @if (loading.password) {
+              <mat-progress-spinner
+                class="w-full !text-gray-500"
+                mode="indeterminate"
+                diameter="16"></mat-progress-spinner>
+            } @else {
+              Set Password
+            }
+          </span>
+        </button>
+        @if (hasProviderPassword().has) {
+          <button
+            [disabled]="
+              loading.email || hasProviderPassword().provider === 'password'
+            "
+            appRipple
+            rippleColor="light"
+            type="button"
+            (click)="disconnectProvider('password')"
+            class="group btn-remove inline-flex max-w-[240px] items-center justify-center rounded-full bg-red-50 px-4 py-2 font-medium text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:bg-red-100 disabled:text-red-400 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25 dark:disabled:bg-red-500/10 dark:disabled:text-red-300/50">
+            <!-- SVG icon -->
+            <mat-icon
+              aria-hidden="false"
+              [attr.aria-label]="'pasword'"
+              svgIcon="person-cancel"
+              class="inline-flex !h-8 !w-8 flex-shrink-0 text-red-500 transition-all duration-75 ease-in dark:text-red-300 group-disabled:text-red-300/50"></mat-icon>
+            <!-- Title of the Disconnect button -->
+            <span
+              class="ml-3 whitespace-nowrap text-left font-normal text-red-700 transition-all duration-75 ease-in dark:text-red-300 group-disabled:text-red-300/50">
+              @if (loading.email) {
+                <mat-spinner
+                  [diameter]="20"
+                  mode="indeterminate"
+                  color="accent"></mat-spinner>
+              } @else {
+                unlink Email/Password
+              }
+            </span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Two-factor authentication -->
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Two-factor Authentication
+    </h2>
+
+    <div
+      class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3
+        class="mt-1 max-w-screen-sm font-body text-sm text-gray-600 dark:text-gray-300">
+        Manage real second factors backed by Firebase Authentication. TOTP with
+        an authenticator app is the recommended method because it avoids SIM-swap
+        risk and does not rely on telecom delivery.
+        <a
+          class="font-medium text-sky-700 underline hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300"
+          href="https://docs.github.com/authentication/securing-your-account-with-two-factor-authentication-2fa/about-two-factor-authentication">
+          Learn more about two-factor authentication
+        </a>
+        .
+      </h3>
+
+      <div
+        class="mt-4 flex h-12 items-center rounded-t-2xl bg-gray-900 px-4 shadow-sm dark:bg-gray6">
+        <h4 class="text-base font-normal text-white dark:text-gray-100">
+          Two-factor methods
+        </h4>
+      </div>
+
+      <div class="rounded-t-none bg-white/70 shadow-sm dark:bg-gray-800/40">
+        <div class="flex items-center justify-between p-4">
+          <div class="flex min-w-0 flex-1 items-start gap-3">
+            <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+              <mat-icon svgIcon="shield-user"></mat-icon>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h5 class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  Authenticator app (TOTP)
+                </h5>
+                @if (totpFactors().length > 0) {
+                  <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                    Enrolled
+                  </span>
+                } @else {
+                  <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    Recommended
+                  </span>
+                }
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Use Google Authenticator, 1Password, Authy, or any compatible TOTP app.
+              </p>
+              @if (!user?.emailVerified) {
+                <p class="text-xs text-amber-700 dark:text-amber-300">
+                  Verify your email before enrolling an authenticator app.
+                </p>
+              }
+            </div>
+          </div>
+
+          @if (totpStep() === 'idle') {
+            <button
+              type="button"
               appRipple
               rippleColor="light"
-              type="button"
-              (click)="setPassword()"
-              class="inline-flex max-w-[120px] items-center justify-center rounded-full bg-green-600 px-4 py-3 text-center font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70">
-              <!-- Title of the Disconnect button -->
-              <span class="mx-3 whitespace-nowrap font-roboto text-xs font-normal">
-                @if(loading.password) {
-                  <mat-progress-spinner
-                    class="w-full !text-gray-500"
-                    mode="indeterminate"
-                  diameter="16"></mat-progress-spinner>
-                } @else {Set Password}
-                </span>
-              </button>
-              @if (hasProviderPassword().has) {
-                <button
-          [disabled]="
-            loading.email || hasProviderPassword().provider === 'password'
-          "
-                  appRipple
-                  rippleColor="light"
-                  type="button"
-                  (click)="disconnectProvider('password')"
-                  class="group btn-remove inline-flex max-w-[240px] items-center justify-center rounded-full bg-red-50 px-4 py-2 font-medium text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:bg-red-100 disabled:text-red-400 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25 dark:disabled:bg-red-500/10 dark:disabled:text-red-300/50">
-                  <!-- SVG icon -->
-                  <mat-icon
-                    aria-hidden="false"
-                    [attr.aria-label]="'pasword'"
-                    svgIcon="person-cancel"
-                  class="inline-flex !h-8 !w-8 flex-shrink-0 text-red-500 transition-all duration-75 ease-in dark:text-red-300 group-disabled:text-red-300/50"></mat-icon>
-                  <!-- Title of the Disconnect button -->
-                  <span
-                    class="ml-3 whitespace-nowrap text-left font-normal text-red-700 transition-all duration-75 ease-in dark:text-red-300 group-disabled:text-red-300/50">
-                    @if(loading.email) {
-                      <mat-spinner
-                        [diameter]="20"
-                        mode="indeterminate"
-                      color="accent"></mat-spinner>
-                    } @else {unlink Email/Password}
-                    </span>
+              (click)="startTotpSetup()"
+              [disabled]="loading.mfa || !user?.emailVerified"
+              class="ml-4 inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+              @if (loading.mfa) {
+                <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+              } @else {
+                Add app
+              }
+            </button>
+          }
+        </div>
+
+        @if (totpFactors().length > 0) {
+          <div class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
+            <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+              Enrolled authenticator apps are challenged automatically at login.
+            </p>
+            <div class="flex flex-col gap-3">
+              @for (factor of totpFactors(); track factor.uid) {
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {{ factor.displayName || 'Authenticator app' }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      Enrolled {{ factor.enrollmentTime || 'recently' }}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    appRipple
+                    (click)="removeTotpFactor(factor.uid)"
+                    [disabled]="loading.mfa"
+                    class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                    Remove
                   </button>
-                }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (totpStep() === 'verify') {
+          <div class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
+            <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+              <div class="space-y-3">
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  Step 1: add this secret to your authenticator app.
+                </p>
+                <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+                  <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Secret key
+                  </p>
+                  <p class="break-all font-mono text-sm text-gray-800 dark:text-gray-100">
+                    {{ totpSecretKey() }}
+                  </p>
+                </div>
+                <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 dark:border-gray-600 dark:bg-gray-900/30">
+                  <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    OTP URI
+                  </p>
+                  <p class="break-all font-mono text-xs text-gray-600 dark:text-gray-300">
+                    {{ totpQrUrl() }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-3 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  Step 2: enter the current 6-digit code to finish enrollment.
+                </p>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  [formControl]="totpCode"
+                  placeholder="123456"
+                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
+                <input
+                  type="text"
+                  [formControl]="totpDisplayName"
+                  placeholder="Authenticator app"
+                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    appRipple
+                    rippleColor="light"
+                    (click)="completeTotpSetup()"
+                    [disabled]="totpCode.invalid || totpDisplayName.invalid || loading.mfa"
+                    class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+                    @if (loading.mfa) {
+                      <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+                    } @else {
+                      Verify and enable
+                    }
+                  </button>
+                  <button
+                    type="button"
+                    (click)="cancelTotpSetup()"
+                    class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Two-factor authentication -->
-            <h2 class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-              Two-factor Authentication
-            </h2>
+            @if (totpError()) {
+              <p class="mt-3 text-xs text-red-600 dark:text-red-400">
+                {{ totpError() }}
+              </p>
+            }
+          </div>
+        }
+      </div>
 
-            <div
-              class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
-              <!-- Set a radio button On/Off MFA-->
-              <app-radiotoggle [control]="mfa | formControl"></app-radiotoggle>
-              <h3
-                class="mt-1 max-w-screen-sm font-body text-sm text-gray-600 dark:text-gray-300">
-                Two-factor authentication adds an additional layer of security to your
-                account by requiring more than just a password to sign in.
-                <a
-                  class="font-medium text-sky-700 underline hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300"
-                  href="https://docs.github.com/authentication/securing-your-account-with-two-factor-authentication-2fa/about-two-factor-authentication">
-                  Learn more about two-factor authentication
-                </a>
-                .
-              </h3>
+      <!-- Invisible reCAPTCHA – always in DOM so ngAfterViewInit can init it -->
+      <div id="recaptcha-security" class="hidden"></div>
 
-              <div
-                class="mt-4 flex h-12 items-center rounded-t-2xl bg-gray-900 px-4 shadow-sm dark:bg-gray6">
-                <h4 class="text-base font-normal text-white dark:text-gray-100">
-                  Two-factor methods
-                </h4>
+      <!-- SMS / Text message row + inline verification panel -->
+      <div class="rounded-b-2xl bg-white/70 shadow-sm dark:bg-gray-800/40">
+        <!-- ── Idle row: icon · info · action button ── -->
+        <div class="flex items-center justify-between p-4">
+          <div class="flex min-w-0 flex-1 items-start gap-3">
+            <svg
+              class="mt-0.5 h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M1.5 4.25c0-.966.784-1.75 1.75-1.75h17.5c.966 0 1.75.784 1.75 1.75v12.5a1.75 1.75 0 0 1-1.75 1.75h-9.69l-3.573 3.573A1.458 1.458 0 0 1 5 21.043V18.5H3.25a1.75 1.75 0 0 1-1.75-1.75ZM3.25 4a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h2.5a.75.75 0 0 1 .75.75v3.19l3.72-3.72a.749.749 0 0 1 .53-.22h10a.25.25 0 0 0 .25-.25V4.25a.25.25 0 0 0-.25-.25Z"></path>
+            </svg>
+            <div class="flex flex-col gap-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h5
+                  class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  SMS / Text message
+                </h5>
+                @if (user?.phoneVerified) {
+                  <span
+                    class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                    Configured
+                  </span>
+                }
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Get one-time codes sent to your phone via SMS to complete
+                authentication requests.
+              </p>
+              @if (user?.phoneNumber && user?.phoneVerified) {
+                <p class="font-mono text-xs text-gray-400 dark:text-gray-500">
+                  {{ user?.phoneNumber }}
+                </p>
+              }
+            </div>
+          </div>
+
+          <!-- Idle-state action button -->
+          @if (phoneStep() === 'idle') {
+            @if (!user?.phoneVerified) {
+              <button
+                type="button"
+                appRipple
+                rippleColor="dark"
+                (click)="openPhoneAdd()"
+                class="ml-4 inline-flex shrink-0 items-center justify-center rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors duration-100 ease-in hover:bg-gray-100 dark:bg-gray-700/60 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">
+                Add
+              </button>
+            } @else {
+              <button
+                type="button"
+                appRipple
+                (click)="removePhoneNumber()"
+                [disabled]="loading.remove"
+                class="ml-4 inline-flex shrink-0 items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                @if (loading.remove) {
+                  <mat-progress-spinner
+                    mode="indeterminate"
+                    [diameter]="14"></mat-progress-spinner>
+                } @else {
+                  Remove
+                }
+              </button>
+            }
+          }
+        </div>
+
+        <!-- ── Step 1: enter phone number ── -->
+        @if (phoneStep() === 'enter-number') {
+          <div
+            class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
+            <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+              Enter your number in international format, e.g.
+              <span class="font-mono text-gray-700 dark:text-gray-300">
+                +12025551234
+              </span>
+              .
+            </p>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <!-- Phone number input -->
+              <div class="relative flex-1">
+                <span
+                  class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-gray-400 dark:text-gray-500">
+                  phone
+                </span>
+                <input
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="+12025551234"
+                  [formControl]="phoneNumber"
+                  class="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
               </div>
 
-              <div
-                class="flex items-center justify-between rounded-b-2xl bg-white/70 p-4 shadow-sm dark:bg-gray-800/40">
-                <div class="flex items-start justify-start">
-                  <svg
-                    class="mt-1 h-6 w-6"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                    d="M1.5 4.25c0-.966.784-1.75 1.75-1.75h17.5c.966 0 1.75.784 1.75 1.75v12.5a1.75 1.75 0 0 1-1.75 1.75h-9.69l-3.573 3.573A1.458 1.458 0 0 1 5 21.043V18.5H3.25a1.75 1.75 0 0 1-1.75-1.75ZM3.25 4a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h2.5a.75.75 0 0 1 .75.75v3.19l3.72-3.72a.749.749 0 0 1 .53-.22h10a.25.25 0 0 0 .25-.25V4.25a.25.25 0 0 0-.25-.25Z"></path>
-                  </svg>
-                  <div class="ml-2 flex w-full flex-col gap-2">
-                    <div class="flex flex-row items-center">
-                      <h5
-                        class="flex-wrap text-sm font-semibold text-gray-800 dark:text-gray-200">
-                        SMS/Text message
-                      </h5>
-
-                      <!-- Configured -->
-                      <!--  <p
-                      class="ml-2 inline-flex items-center justify-center rounded-lg border bg-green-400/[.14] p-1 font-bold text-green-500/40 transition-all delay-100 duration-100 ease-in active:bg-green-400/[.08] active:drop-shadow-[0_1px_1px_rgba(0,5,00,0.25)] dark:border-green-300 dark:text-green-200 dark:active:border-green-300"
-                      >
-                      <span
-                        class="flex-1 whitespace-nowrap text-left font-roboto text-xs font-light"
-                        >Configured</span
-                        >
-                      </p> -->
-                    </div>
-
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      Get one-time codes sent to your phone via SMS to complete
-                      authentication requests.
-                    </p>
-                  </div>
-                </div>
-
+              <div class="flex shrink-0 gap-2">
                 <button
                   type="button"
-                  mat-icon-button
-                  (click)="('disconnectProvider(provider)')"
-                  class="inline-flex items-center justify-center rounded-full bg-white/80 px-4 py-2 font-bold text-gray-600 shadow-sm transition-colors duration-100 ease-in hover:bg-gray-200/70 dark:bg-gray-700/60 dark:text-gray-200 dark:hover:bg-gray-700">
-                  <!-- Title of the Disconnect button -->
-                  <span
-                    class="flex-1 whitespace-nowrap text-left font-roboto text-xs font-light dark:text-gray-300">
-                    add
-                  </span>
+                  appRipple
+                  rippleColor="light"
+                  (click)="sendPhoneCode()"
+                  [disabled]="phoneNumber.invalid || loading.phone"
+                  class="inline-flex items-center justify-center gap-1.5 rounded-full bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+                  @if (loading.phone) {
+                    <mat-progress-spinner
+                      mode="indeterminate"
+                      [diameter]="14"></mat-progress-spinner>
+                  } @else {
+                    Send code
+                  }
+                </button>
+                <button
+                  type="button"
+                  (click)="cancelPhoneVerification()"
+                  class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  Cancel
                 </button>
               </div>
             </div>
 
-            <!-- Danger Zone -->
-            <!-- Deleting Account -->
+            @if (phoneError()) {
+              <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+                {{ phoneError() }}
+              </p>
+            }
           </div>
-        </form>
+        }
 
-        <h2 id="🚨dangerzone" class="mt-10 font-bold typo-body text-gray-900 dark:text-gray-100">🚨 Danger zone</h2>
-        <section
-          class="relative mt-6 flex flex-col overflow-hidden rounded-2xl bg-red-500/10 px-6 py-4 shadow-md dark:bg-red-500/15">
+        <!-- ── Step 2: enter OTP ── -->
+        @if (phoneStep() === 'enter-code') {
           <div
-          class="bg-[#d52c2013] dark:bg-[#d52c2013] absolute inset-0 -z-1 w-full h-full opacity-24"></div>
-          <div class="text-gray-700 dark:text-gray-300">
-            Deleting your account will:
-            <br />
-            <br />
-            <ol>
-              <li>
-                1. Permanently delete your profile, along with your authentication
-                associations.
-              </li>
-              <li>
-                2. Permanently delete all your content, including your tasks, task completions, analytics graphs, scrape data,
-                storage, machines etc.
-              </li>
-              <li>3. Allow your username to become available to anyone.</li>
-            </ol>
-            <br />
-            Important: deleting your account is unrecoverable and cannot be undone. Feel
-            free to contact
-            <a
-              class="text-text-link"
-              href="mailto:support@deepscrape.dev?subject=I have a question about deleting my account"
-              target="_blank"
-              rel="noopener noreferrer">
-              support&#64;deepscrape.dev
-            </a>
-            with any questions.
+            class="border-t border-gray-200/60 px-5 pb-6 pt-4 dark:border-gray-700/60">
+            <p
+              class="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+              Enter the 6-digit code sent to
+              <span
+                class="font-mono font-semibold text-gray-900 dark:text-gray-100">
+                {{ phoneNumber.value }}
+              </span>
+            </p>
+            <p class="mb-5 text-xs text-gray-500 dark:text-gray-400">
+              It will verify automatically once you enter the last digit.
+            </p>
+
+            <div class="mb-5">
+              <app-otp-input
+                [formControl]="otpControl"
+                (completed)="verifyPhoneOtp($event)"></app-otp-input>
+            </div>
+
+            @if (loading.code) {
+              <div
+                class="mb-3 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <mat-progress-spinner
+                  mode="indeterminate"
+                  [diameter]="16"></mat-progress-spinner>
+                <span>Verifying…</span>
+              </div>
+            }
+
+            @if (phoneError()) {
+              <p
+                class="mb-3 text-center text-xs text-red-600 dark:text-red-400">
+                {{ phoneError() }}
+              </p>
+            }
+
+            <div class="flex flex-wrap justify-center gap-x-4 gap-y-1">
+              <button
+                type="button"
+                (click)="sendPhoneCode()"
+                [disabled]="loading.phone || loading.code"
+                class="text-xs font-medium text-green-700 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-green-400">
+                Resend code
+              </button>
+              <span class="select-none text-gray-300 dark:text-gray-600">
+                |
+              </span>
+              <button
+                type="button"
+                (click)="cancelPhoneVerification()"
+                class="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                Cancel
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            title="Delete Account"
-            appRipple
-            rippleColor="light"
-            (click)="('')"
-            class="z-10 mt-6 inline-flex h-9 select-none items-center justify-center self-start rounded-full bg-red-600 px-4 font-sans font-semibold text-white shadow-sm transition duration-200 ease-in-out hover:bg-red-700 dark:bg-red-500 dark:text-white">
-            Delete account
-          </button>
-        </section>
+        }
+      </div>
+      <!-- /phone section -->
+    </div>
+    <!-- /two-factor card -->
+
+    <!-- Active sessions -->
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Active Sessions
+    </h2>
+
+    <div
+      class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
+        Current sign-ins from login metrics. Revoke any session to force sign-out on that device.
+      </h3>
+
+      @if (sessionsLoading()) {
+        <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
+          <span>Loading sessions…</span>
+        </div>
+      } @else {
+        @if (activeSessions().length === 0) {
+          <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            No recorded sessions found.
+          </p>
+        } @else {
+          <div class="mt-3 flex flex-col gap-3">
+            @for (session of activeSessions(); track session.id) {
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {{ session.browser || session.deviceType || 'Unknown device' }}
+                    </p>
+                    @if (isCurrentSession(session)) {
+                      <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
+                        Current session
+                      </span>
+                    }
+                    @if (canRevokeSession(session)) {
+                      <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                        Active
+                      </span>
+                    } @else {
+                      <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                        Ended
+                      </span>
+                    }
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ session.os || 'Unknown OS' }} • {{ session.location || 'Unknown location' }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Last sign-in: {{ formatSessionTimestamp(session) }}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  appRipple
+                  (click)="revokeSession(session)"
+                  [disabled]="!canRevokeSession(session) || revokingSessionId() === session.id"
+                  class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                  @if (revokingSessionId() === session.id) {
+                    <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+                  } @else {
+                    Revoke
+                  }
+                </button>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      @if (sessionsError()) {
+        <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+          {{ sessionsError() }}
+        </p>
+      }
+    </div>
+
+    <!-- Danger Zone -->
+    <!-- Deleting Account -->
+  </div>
+</form>
+
+<h2
+  id="🚨dangerzone"
+  class="mt-10 font-bold typo-body text-gray-900 dark:text-gray-100">
+  🚨 Danger zone
+</h2>
+<section
+  class="relative mt-6 flex flex-col overflow-hidden rounded-2xl bg-red-500/10 px-6 py-4 shadow-md dark:bg-red-500/15">
+  <div
+    class="bg-[#d52c2013] dark:bg-[#d52c2013] absolute inset-0 -z-1 w-full h-full opacity-24"></div>
+  <div class="text-gray-700 dark:text-gray-300">
+    Deleting your account will:
+    <br />
+    <br />
+    <ol>
+      <li>
+        1. Permanently delete your profile, along with your authentication
+        associations.
+      </li>
+      <li>
+        2. Permanently delete all your content, including your tasks, task
+        completions, analytics graphs, scrape data, storage, machines etc.
+      </li>
+      <li>3. Allow your username to become available to anyone.</li>
+    </ol>
+    <br />
+    Important: deleting your account is unrecoverable and cannot be undone. Feel
+    free to contact
+    <a
+      class="text-text-link"
+      href="mailto:support@deepscrape.dev?subject=I have a question about deleting my account"
+      target="_blank"
+      rel="noopener noreferrer">
+      support&#64;deepscrape.dev
+    </a>
+    with any questions.
+  </div>
+  <button
+    type="button"
+    title="Delete Account"
+    appRipple
+    rippleColor="light"
+    (click)="('')"
+    class="z-10 mt-6 inline-flex h-9 select-none items-center justify-center self-start rounded-full bg-red-600 px-4 font-sans font-semibold text-white shadow-sm transition duration-200 ease-in-out hover:bg-red-700 dark:bg-red-500 dark:text-white">
+    Delete account
+  </button>
+</section>

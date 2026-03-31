@@ -86,6 +86,19 @@ export class OrganizationService {
     )
   }
 
+  renameOrganization(orgId: string, name: string): Observable<void> {
+    return this.http.patch<void>(
+      `${API_ORGANIZATIONS}/${orgId}`,
+      { name },
+      { headers: this.getAuthHeaders() },
+    ).pipe(
+      catchError((error) => {
+        console.error('Failed to rename organization:', error)
+        return throwError(() => error)
+      }),
+    )
+  }
+
   createInvitation(orgId: string, email: string, role: 'owner' | 'admin' | 'member' | 'viewer' = 'member'): Observable<{ id: string }> {
     return this.http.post<{ id: string }>(
       `${API_ORGANIZATIONS}/${orgId}/invitations`,

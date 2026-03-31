@@ -1,26 +1,19 @@
-import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { AuthzService } from '../services';
 
-@Injectable({ providedIn: 'root' })
-export class AdminGuard implements CanActivate {
-    constructor(
-        private router: Router,
-        private authzService: AuthzService
+export const adminGuard: CanActivateFn = () => {
+    const router = inject(Router);
+    const authzService = inject(AuthzService);
+    return authzService.hasPlatformAdminAccess$().pipe(
+        tap(isAdmin => {
+            if (!isAdmin) router.navigate(['/']);
+        })
+    );
+};
 
-    ) { }
-
-    canActivate(): Observable<boolean> {
-        return this.authzService.hasPlatformAdminAccess$().pipe(
-            tap(isAdmin => {
-                if (!isAdmin) {
-                    this.router.navigate(['/']);
-                }
-            })
-
-
-        )
-    }
+/** @deprecated Use the functional `adminGuard` instead. */
+export class AdminGuard {
+    canActivate = adminGuard;
 }

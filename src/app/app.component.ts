@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, DestroyRef, inject, PLATFORM_ID, ViewChild } from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, PLATFORM_ID, signal, ViewChild } from '@angular/core'
 import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterOutlet } from '@angular/router'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { HttpClient } from '@angular/common/http'
@@ -8,7 +8,7 @@ import { LoggerService, SnackbarService, SvgIconService, HeartbeatService, Fires
 import { AnimatedBgComponent, LangPickerComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
-import { catchError, filter, forkJoin, map, Observable, of, switchMap, tap, timer } from 'rxjs'
+import { catchError, filter, forkJoin, of, switchMap, take, tap, timer } from 'rxjs'
 import { isPlatformBrowser, isPlatformServer } from '@angular/common'
 import { fadeInOutAnimation } from './animations'
 import { Inject, OnInit, OnDestroy, AfterViewInit } from '@angular/core'
@@ -54,7 +54,7 @@ import { environment } from 'src/environments/environment'
   imports: [RouterOutlet, LoadingBarRouterModule, LoadingBarHttpClientModule, MatProgressSpinner, 
     SnackbarComponent, SizeDetectorComponent, AnimatedBgComponent
   ],
-  // changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ThemeToggleComponent, NgswUpdateService, LangPickerComponent, LoggerService],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -66,8 +66,7 @@ import { environment } from 'src/environments/environment'
 })
 export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   private destroyRef = inject(DestroyRef)
-  private cdr = inject(ChangeDetectorRef)
-  private analytics = inject(Analytics)
+    private analytics = inject(Analytics)
   private heartbeatService = inject(HeartbeatService)
   @ViewChild(SnackbarComponent) snackbar!: SnackbarComponent
   @ViewChild(RouterOutlet) outlet?: RouterOutlet
@@ -77,10 +76,10 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   protected snackbarDuration = 3000
   protected isBrowser = false
 
-  protected isLoading: boolean = false
-  protected showRouteLoader: boolean = false
-  protected route = 'initial'
-  protected isAuthState$: Observable<boolean | null> = of(null)
+    protected isLoading = signal(false)
+    protected showRouteLoader = signal(false)
+    protected route = signal('/')
+    protected authReady = signal(false)
 
   private readonly loaderDelayMs = 120
   private readonly loaderMinVisibleMs = 220
@@ -120,7 +119,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         tap((event) => {
           this.endRouteLoading()
-          this.route = event.urlAfterRedirects
+           this.route.set(event.urlAfterRedirects)
         }),
         switchMap((event) =>
           this.analyticsService.trackEvent('page_view', {
@@ -192,18 +191,12 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.hasViewInitialized = true
     
 
-    // Set the initial values
-    this.isAuthState$ = this.authService.isAuthenticated()
-      .pipe(
-        map((isAuthData) => {
-          const { isAuthenticated } = isAuthData
-          console.log('User is logged in: ', isAuthenticated)
-          return isAuthenticated
-        })
-      )
+      // Resolve Firebase Auth state before rendering the router outlet
+      this.authService.isAuthenticated()
+        .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.authReady.set(true))
 
-    this.snackbarService.setSnackbar(this.snackbar)
-    this.cdr.detectChanges()
+      this.snackbarService.setSnackbar(this.snackbar)
   }
 
   onSnackbarAction() {
@@ -236,7 +229,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       return
     }
 
-    this.isLoading = true
+      this.isLoading.set(true)
 
     if (!this.hasViewInitialized) {
       return
@@ -250,11 +243,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loaderDelaySubscription = timer(this.loaderDelayMs)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-      if (!this.isLoading) {
+        if (!this.isLoading()) {
         return
       }
 
-      this.showRouteLoader = true
+        this.showRouteLoader.set(true)
       this.loaderShownAt = Date.now()
     })
   }
@@ -264,17 +257,17 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       return
     }
 
-    this.isLoading = false
+      this.isLoading.set(false)
 
     if (!this.hasViewInitialized) {
-      this.showRouteLoader = false
+        this.showRouteLoader.set(false)
       return
     }
 
     this.loaderDelaySubscription?.unsubscribe()
     this.loaderDelaySubscription = null
 
-    if (!this.showRouteLoader) {
+      if (!this.showRouteLoader()) {
       return
     }
 
@@ -286,8 +279,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loaderHideSubscription = timer(remaining)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-      if (!this.isLoading) {
-        this.showRouteLoader = false
+        if (!this.isLoading()) {
+          this.showRouteLoader.set(false)
       }
     })
   }

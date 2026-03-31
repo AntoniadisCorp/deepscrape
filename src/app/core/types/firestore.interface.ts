@@ -39,6 +39,9 @@ export type Users = {
 
     // Profile status
     profileStatus?: ProfileStatus
+
+    // Onboarding
+    onboardedAt?: any // Firestore Timestamp | null — null means onboarding not yet completed
 }
 
 export type UserDetails = {
@@ -107,6 +110,8 @@ export type loginHistoryInfo = {
     signOutTime?: Date // Optional field to store sign out time
     sessionKey?: string // Optional field to link to a session
     deviceFingerprintHash?: string
+    revokedAt?: Date | null
+    revokedByUid?: string | null
 }
 
 export type Guest = {

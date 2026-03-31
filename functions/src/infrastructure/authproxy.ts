@@ -14,6 +14,7 @@ import {
     linkPhoneToAccount,
     updatePhoneVerificationStatus,
     checkPhoneNumberExists,
+    resolveIdentifier,
 } from "../handlers"
 
 /* eslint-disable max-len */
@@ -77,6 +78,9 @@ class AuthAPIProxy {
     }
 
     private httpRoutesPosts(): void {
+        // Resolve a username or phone number to the account email
+        this.router.post("/resolve-identifier", resolveIdentifier)
+
         // Check if phone number exists (moved from GET to POST for security)
         this.router.post("/provider/phone/check", checkPhoneNumberExists)
 
@@ -89,7 +93,7 @@ class AuthAPIProxy {
 
         // Phone verification endpoints
         this.router.post("/phone/verify", verifyPhoneNumber)
-        this.router.post("/phone/link", linkPhoneToAccount)
+        this.router.post("/phone/link", this.isJwtAuth, linkPhoneToAccount)
         this.router.post("/phone/update-verification", this.isJwtAuth, this.requireSelfOrAdmin, updatePhoneVerificationStatus)
     }
 }

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginGuard, verifyGuard } from 'src/app/core/guards';
+import { LoginGuard, onboardingGuard, verifyGuard } from 'src/app/core/guards';
 
 export const MainRoutes: Routes = [
 
@@ -44,5 +44,14 @@ export const MainRoutes: Routes = [
             animation: 'action'
         },
         canActivate: [verifyGuard]
-    }
+    },
+    {
+        path: 'onboarding',
+        loadComponent: () => import('../../pages').then(m => m.OnboardingComponent),
+        data: {
+            title: 'onboarding',
+            animation: 'onboarding'
+        },
+        canActivate: [onboardingGuard],
+    },
 ]

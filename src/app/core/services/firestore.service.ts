@@ -12,7 +12,7 @@ import {
 } from '@angular/fire/firestore'
 import { connectFunctionsEmulator, Functions, httpsCallable } from '@angular/fire/functions'
 import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
-import { map, Observable, of, throwError } from 'rxjs'
+import { from, map, Observable, of, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
 import {
@@ -403,6 +403,28 @@ export class FirestoreService {
       console.error('Error storing sign-out data:', error)
       return null
     }
+  }
+
+  getMyLoginSessions(limitCount: number = 20): Observable<loginHistoryInfo[]> {
+    const limit = Math.max(1, Math.min(50, Math.floor(limitCount || 20)))
+
+    return from(
+      this.callFunction<{ limit: number }, { sessions?: loginHistoryInfo[] }>('getMyLoginSessions', { limit })
+    ).pipe(
+      map((res) => Array.isArray(res?.sessions) ? res.sessions : [])
+    )
+  }
+
+  revokeMyLoginSession(loginId: string): Observable<{ success: boolean; loginId: string; revokedAt: string }> {
+    return from(
+      this.callFunction<{ loginId: string }, { success: boolean; loginId: string; revokedAt: string }>('revokeMyLoginSession', { loginId })
+    )
+  }
+
+  getMyLoginSessionStatus(loginId: string): Observable<{ loginId: string; active: boolean; revoked: boolean; revokedAt?: string | null }> {
+    return from(
+      this.callFunction<{ loginId: string }, { loginId: string; active: boolean; revoked: boolean; revokedAt?: string | null }>('getMyLoginSessionStatus', { loginId })
+    )
   }
 
   async linkGuestToUser(uid: string, guestId: string) {

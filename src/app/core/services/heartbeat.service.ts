@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { interval, Subscription, merge, fromEvent, timer, Subject, of } from 'rxjs';
-import { takeUntil, switchMap, filter, startWith, tap, map } from 'rxjs/operators';
+import { interval, Subscription, merge, fromEvent, timer, Subject, throwError } from 'rxjs';
+import { takeUntil, switchMap, filter, startWith, tap, catchError } from 'rxjs/operators';
 import { WindowToken } from './window.service';
 
 @Injectable({ providedIn: 'root' })
@@ -13,6 +13,8 @@ export class HeartbeatService {
     private isPaused = false;
     private readonly inactivityMs = 5 * 60 * 1000; // 5 minutes
     private stop$ = new Subject<void>();
+    private sessionRevokedSubject = new Subject<void>();
+    sessionRevoked$ = this.sessionRevokedSubject.asObservable();
 
     constructor(private http: HttpClient) {
         // Listen for network changes
@@ -55,7 +57,14 @@ export class HeartbeatService {
         this.intervalSub = interval(intervalMs).pipe(
             filter(() => !this.isPaused && navigator.onLine),
             takeUntil(this.stop$),
-            switchMap(() => this.http.post('/event/heartbeat', {}, { headers })),
+            switchMap(() => this.http.post('/event/heartbeat', {}, { headers }).pipe(
+                catchError((error) => {
+                    if (error?.status === 401 && error?.error?.code === 'session_revoked') {
+                        this.sessionRevokedSubject.next();
+                    }
+                    return throwError(() => error);
+                })
+            )),
         ).subscribe({
             next(value) {
                 console.log('Heartbeat successful')

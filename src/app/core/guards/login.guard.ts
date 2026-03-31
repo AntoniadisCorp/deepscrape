@@ -15,16 +15,17 @@ export const LoginGuard: CanActivateFn = (route, state) => {
       if (isAuthenticated && user) {
         // ✅ Single source of truth: Firestore
         const isEmailVerified = user.emailVerified || false
-        const isPhoneVerified = user.phoneVerified || false
         const provider = user.currProviderData?.providerId || ''
 
         console.log('LoginGuard - Authenticated:', isAuthenticated, 'User:', user)
 
-        // Social providers (Google, GitHub) don't need email verification
+          // Social providers are always considered verified
+          // null  = no phone registered → treat as verified (optional phone)
+          // false = phone registered at signup but unverified → redirect to verification
         const isVerified = 
           ['google.com', 'github.com'].includes(provider) || 
           isEmailVerified || 
-          isPhoneVerified
+            user.phoneVerified === true
 
         if (isVerified) {
           // Already verified, go to dashboard
@@ -59,7 +60,14 @@ export const verifyGuard: CanActivateFn = (route, state) => {
       }
 
       // ✅ Single source of truth: Firestore
-      const isVerified = user.emailVerified || user.phoneVerified || false
+        const provider = user.currProviderData?.providerId || '';
+        // Social providers → always verified
+        // phoneVerified === null → no phone registered, not blocking
+        // phoneVerified === false → phone added at signup, must verify
+        const isVerified =
+          ['google.com', 'github.com'].includes(provider) ||
+          user.emailVerified === true ||
+          user.phoneVerified === true;
 
       if (isVerified) {
         const returnUrl = route.queryParams['returnUrl'] || '/dashboard'

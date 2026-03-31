@@ -25,6 +25,9 @@ export const deepscrape = app.deepscrape
 /* Auth - Functions */
 // User Management - Functions
 export const linkGuestToUser = auth.linkGuestToUser
+export const getMyLoginSessions = auth.getMyLoginSessions
+export const revokeMyLoginSession = auth.revokeMyLoginSession
+export const getMyLoginSessionStatus = auth.getMyLoginSessionStatus
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole

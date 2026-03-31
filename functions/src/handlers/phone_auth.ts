@@ -5,10 +5,23 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 import { Request, Response } from "express"
-import { auth } from "../app/config"
+import { auth, db } from "../app/config"
 
 // Phone number validation regex (E.164 format)
 const PHONE_REGEX = /^\+[1-9]\d{1,14}$/
+
+const mergeCustomClaims = async (
+    uid: string,
+    claims: Record<string, unknown>
+) => {
+    const userRecord = await auth.getUser(uid)
+    const existingClaims = userRecord.customClaims || {}
+
+    await auth.setCustomUserClaims(uid, {
+        ...existingClaims,
+        ...claims,
+    })
+}
 
 export const verifyPhoneNumber = async (req: Request, res: Response) => {
     const { phoneNumber } = req.body as { phoneNumber: string }
@@ -54,16 +67,14 @@ export const verifyPhoneNumber = async (req: Request, res: Response) => {
 }
 
 export const linkPhoneToAccount = async (req: Request, res: Response) => {
-    const { uid, phoneNumber } = req.body as {
-        uid: string,
-        phoneNumber: string
-    }
+    const { phoneNumber } = req.body as { phoneNumber: string }
+    const uid = req.user?.uid
 
     try {
         if (!uid || !phoneNumber) {
             return res.status(400).send({
                 error: "Missing required fields",
-                message: "Both uid and phoneNumber are required",
+                message: "Authenticated user and phoneNumber are required",
             })
         }
 
@@ -115,28 +126,33 @@ export const updatePhoneVerificationStatus = async (
     req: Request,
     res: Response
 ) => {
-    const {
-        uid,
-        phoneVerified,
-    } = req.body as {
-        uid: string,
-        phoneVerified: boolean,
-    }
+    const { uid } = req.body as { uid: string }
 
     try {
-        if (!uid || typeof phoneVerified !== "boolean") {
+        if (!uid) {
             return res.status(400).send({
                 error: "Missing required fields",
-                message: "Both uid and phoneVerified are required",
+                message: "uid is required",
             })
         }
 
-        // Set custom claims for phone verification
-        await auth.setCustomUserClaims(uid, { phoneVerified })
+        const userRecord = await auth.getUser(uid)
+        const hasPhoneNumber =
+            typeof userRecord.phoneNumber === "string" &&
+            userRecord.phoneNumber.length > 0
+        const phoneVerified = hasPhoneNumber
+
+        await mergeCustomClaims(uid, { phoneVerified })
+        await db.collection("users").doc(uid).set({
+            phoneNumber: userRecord.phoneNumber || null,
+            phoneVerified,
+            updated_At: new Date(),
+        }, { merge: true })
 
         return res.status(200).send({
             success: true,
-            message: "Phone verification status updated successfully",
+            phoneVerified,
+            message: "Phone verification status synced successfully",
         })
     } catch (error: any) {
         console.error("Error updating phone verification status:", error)
@@ -160,14 +176,9 @@ export const checkPhoneNumberExists = async (req: Request, res: Response) => {
         }
 
         try {
-            const userRecord = await auth.getUserByPhoneNumber(phoneNumber)
+            await auth.getUserByPhoneNumber(phoneNumber)
             return res.status(200).send({
                 exists: true,
-                uid: userRecord.uid,
-                providers: userRecord.providerData.map(
-                    (provider: { providerId: string }) =>
-                        provider.providerId
-                ),
             })
         } catch (error: any) {
             if (error.code === "auth/user-not-found") {

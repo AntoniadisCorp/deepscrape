@@ -139,7 +139,7 @@ export class ActionHandlerComponent implements OnInit {
     }
 
     console.log('Step 3: Updating Firestore...');
-    await this.firestoreService.updateEmailVerificationStatus(currentUser.uid, true);
+    await this.authService.updateEmailVerificationStatus(currentUser.uid).toPromise();
 
     console.log('Step 4: Refreshing user data...');
     await this.authService.refreshUserData();
