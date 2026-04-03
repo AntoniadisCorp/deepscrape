@@ -1,6 +1,6 @@
 import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector, PLATFORM_ID } from '@angular/core'
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database'
-import { ActionCodeSettings, Auth, AuthCredential, authState, connectAuthEmulator, getRedirectResult, linkWithCredential, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, updateProfile, User, UserCredential } from '@angular/fire/auth'
+import { ActionCodeSettings, Auth, AuthCredential, authState, ConfirmationResult, connectAuthEmulator, getRedirectResult, linkWithCredential, linkWithPhoneNumber, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, RecaptchaVerifier, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, updateProfile, User, UserCredential } from '@angular/fire/auth'
 import {
   addDoc,
   collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, docData, DocumentData, DocumentReference,
@@ -12,7 +12,7 @@ import {
 } from '@angular/fire/firestore'
 import { connectFunctionsEmulator, Functions, httpsCallable } from '@angular/fire/functions'
 import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
-import { from, map, Observable, of, throwError } from 'rxjs'
+import { catchError, from, map, Observable, of, switchMap, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
 import {
@@ -28,6 +28,28 @@ import { isPlatformBrowser } from '@angular/common'
   providedIn: 'root'
 })
 export class FirestoreService {
+  private readonly protectedUserFields = new Set<keyof Users>([
+    'uid',
+    'email',
+    'providerId',
+    'providerParent',
+    'providerData',
+    'role',
+    'defaultOrgId',
+    'plan',
+    'stripeId',
+    'subscriptionId',
+    'status',
+    'currentUsage',
+    'balance',
+    'itemId',
+    'mfa_enabled',
+    'emailVerified',
+    'phoneVerified',
+    'phoneNumber',
+    'profileStatus'
+  ])
+
   private analytics = inject(Analytics, { optional: true })
   private platformId = inject(PLATFORM_ID)
   private functions = inject(Functions, { optional: true })
@@ -139,7 +161,13 @@ export class FirestoreService {
 
     try {
       const userRef = this.doc('users', userId)
-      await this.setDoc(userRef, data, { merge })
+      const sanitizedData = this.sanitizeUserWrite(data)
+
+      if (Object.keys(sanitizedData).length === 0) {
+        return true
+      }
+
+      await this.setDoc(userRef, sanitizedData, { merge })
       console.log('User data stored successfully.')
       return true
     } catch (error) {
@@ -228,25 +256,22 @@ export class FirestoreService {
     try {
       const userRef = this.doc('users', user.uid)
       const currUserProvider = user.providerData.find(p => p.providerId === providerId)
-      const email = user.email || currUserProvider?.email || null
       const username = newUsername || currUserProvider?.email?.split('@')[0] || ''
 
-      // const userRefProvider = doc(firestore, `users/${user.uid}`, 'provider')
-      let dbuser: Users = {
-        uid: user.uid,
-        email,
+      const dbuser: Partial<Users> = {
         username,
-        providerParent: user.providerId,
-        providerId, // Use the last providerId from providerData this means the last provider used to sign in
-        providerData: user.providerData,
-        emailVerified,
-        phoneVerified,
         last_login_at: new Date(user.metadata.lastSignInTime || ''),
         created_At: new Date(user.metadata.creationTime || ''),
         updated_At: new Date(),
       }
 
-      await this.setDoc(userRef, dbuser, { merge: true })
+      const sanitizedUserData = this.sanitizeUserWrite(dbuser)
+
+      if (Object.keys(sanitizedUserData).length === 0) {
+        return true
+      }
+
+      await this.setDoc(userRef, sanitizedUserData, { merge: true })
 
       console.log('User data stored successfully.')
       return true
@@ -412,6 +437,33 @@ export class FirestoreService {
       this.callFunction<{ limit: number }, { sessions?: loginHistoryInfo[] }>('getMyLoginSessions', { limit })
     ).pipe(
       map((res) => Array.isArray(res?.sessions) ? res.sessions : [])
+    )
+  }
+
+  getMyLoginSessionsWithFallback(limitCount: number = 20): Observable<loginHistoryInfo[]> {
+    const limit = Math.max(1, Math.min(50, Math.floor(limitCount || 20)))
+
+    return this.getMyLoginSessions(limit).pipe(
+      catchError(() => of([])),
+      switchMap((sessions) => {
+        if (sessions.length > 0) {
+          return of(sessions)
+        }
+
+        return of(this.afAuth.currentUser).pipe(
+          switchMap((user) => {
+            if (!user?.uid) {
+              return of([])
+            }
+
+            return from(this.getLoginHistoryNew(user.uid, undefined, undefined, limit)).pipe(
+              map((rows) => rows as loginHistoryInfo[]),
+              catchError(() => of([])),
+            )
+          }),
+          catchError(() => of([])),
+        )
+      }),
     )
   }
 
@@ -1121,6 +1173,15 @@ export class FirestoreService {
     )
   }
 
+  public async linkWithPhoneNumber(currentUser: User, phoneNumber: string, appVerifier: RecaptchaVerifier): Promise<ConfirmationResult> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<ConfirmationResult> => {
+        return await linkWithPhoneNumber(currentUser, phoneNumber, appVerifier)
+      },
+    )
+  }
+
   public async linkWithCredential(currentUser: User, credential: AuthCredential): Promise<UserCredential> {
     return this.runAsyncInInjectionContext(
       this._injector,
@@ -1319,6 +1380,13 @@ export class FirestoreService {
     for (const date of sortedDates) limitedResult[date] = result[date];
     return limitedResult;
   }
+
+  private sanitizeUserWrite(data: Partial<Users>): Partial<Users> {
+    return Object.fromEntries(
+      Object.entries(data).filter(([key, value]) => !this.protectedUserFields.has(key as keyof Users) && value !== undefined),
+    ) as Partial<Users>
+  }
+
   // ============================================================================
   // ANALYTICS METRICS METHODS (NEW ARCHITECTURE)
   // ============================================================================

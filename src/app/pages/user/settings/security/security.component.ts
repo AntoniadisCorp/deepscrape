@@ -76,6 +76,7 @@ export class SecurityTabComponent {
   readonly totpSecretKey = signal('')
   readonly totpQrUrl = signal('')
   readonly totpFactors = signal<readonly MultiFactorInfo[]>([])
+  readonly phoneMfaFactors = signal<readonly MultiFactorInfo[]>([])
   readonly activeSessions = signal<loginHistoryInfo[]>([])
   readonly sessionsLoading = signal(false)
   readonly sessionsError = signal('')
@@ -140,7 +141,7 @@ export class SecurityTabComponent {
 
   initUser() {
     this.user = this.route.snapshot.data['user']
-    this.hasProviderPassword.set({provider: this.user?.providerId || '', 
+    this.hasProviderPassword.set({provider: this.getCurrentProviderId(), 
       has: this.user?.providerData.some(p => p.providerId === 'password') ?? false})
     this.syncTotpFactors()
     this.resolveCurrentSessionId()
@@ -177,7 +178,7 @@ export class SecurityTabComponent {
     this.sessionsLoading.set(true)
     this.sessionsError.set('')
 
-    this.firestoreService.getMyLoginSessions(25)
+    this.firestoreService.getMyLoginSessionsWithFallback(25)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (sessions) => {
@@ -206,9 +207,31 @@ export class SecurityTabComponent {
     return dateValue ? dateValue.toLocaleString() : 'Unknown time'
   }
 
+  getDisplayBrowser(session: loginHistoryInfo): string {
+    const explicit = (session.browser || '').trim()
+    if (explicit && explicit.toLowerCase() !== 'unknown') {
+      return explicit
+    }
+
+    return this.detectBrowserFromUserAgent(session.userAgent || '')
+  }
+
+  getDisplayOS(session: loginHistoryInfo): string {
+    const explicit = (session.os || '').trim()
+    if (explicit && explicit.toLowerCase() !== 'unknown') {
+      return explicit
+    }
+
+    return this.detectOsFromUserAgent(session.userAgent || '')
+  }
+
   async revokeSession(session: loginHistoryInfo & { id?: string }): Promise<void> {
     const loginId = session?.id || ''
     if (!loginId || this.revokingSessionId()) return
+
+    if (this.isCurrentSession(session) && !this.confirmCurrentSessionRevoke()) {
+      return
+    }
 
     this.revokingSessionId.set(loginId)
     this.sessionsError.set('')
@@ -253,10 +276,68 @@ export class SecurityTabComponent {
     return null
   }
 
+  private detectBrowserFromUserAgent(userAgent: string): string {
+    const ua = (userAgent || '').toLowerCase()
+    if (ua.includes('edg')) return 'Edge'
+    if (ua.includes('opr') || ua.includes('opera')) return 'Opera'
+    if (ua.includes('firefox')) return 'Firefox'
+    if (ua.includes('chrome') && !ua.includes('edg')) return 'Chrome'
+    if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari'
+    return 'Unknown browser'
+  }
+
+  private detectOsFromUserAgent(userAgent: string): string {
+    const ua = (userAgent || '').toLowerCase()
+    if (ua.includes('windows')) return 'Windows'
+    if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS'
+    if (ua.includes('android')) return 'Android'
+    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS'
+    if (ua.includes('linux')) return 'Linux'
+    return 'Unknown OS'
+  }
+
   initProviders() {
-    const providersData = this.user?.providerData.map(p => p.providerId.replace('.com', ''))
-    this.remProviders = providersData?.filter(p => p !== 'password') ?? []
+    const providersData = this.user?.providerData
+      .map((provider) => this.toUiProviderKey(provider.providerId))
+      .filter((provider): provider is string => !!provider)
+
+    // Connected Providers section only supports unlinking SSO providers here.
+    this.remProviders = providersData?.filter((provider) => provider === 'google' || provider === 'github') ?? []
     this.loginProviders = ['google', 'github'].filter(p => !this.remProviders.includes(p))
+  }
+
+  private toFirebaseProviderId(provider: string): string {
+    if (provider === 'password') return 'password'
+    if (provider === 'phone') return 'phone'
+    return `${provider}.com`
+  }
+
+  private toUiProviderKey(providerId: string): string | null {
+    if (!providerId) return null
+    if (providerId === 'password' || providerId === 'phone') return providerId
+    return providerId.endsWith('.com') ? providerId.replace('.com', '') : providerId
+  }
+
+  private getCurrentProviderId(): string {
+    return this.user?.currProviderData?.providerId || this.user?.providerId || ''
+  }
+
+  isCurrentProvider(provider: string): boolean {
+    return this.getCurrentProviderId() === this.toFirebaseProviderId(provider)
+  }
+
+  private async refreshSecurityUser(): Promise<void> {
+    const newUser = await this.authService.refreshUserData()
+    if (newUser) {
+      this.user = newUser
+      this.hasProviderPassword.set({
+        provider: this.getCurrentProviderId(),
+        has: this.user?.providerData.some((provider) => provider.providerId === 'password') ?? false,
+      })
+      this.initProviders()
+      this.syncTotpFactors()
+      this.loadActiveSessions()
+    }
   }
 
 
@@ -304,10 +385,7 @@ export class SecurityTabComponent {
                 })
               }
               await this.firestoreService.storeUserData(response.user, this.user?.providerId || 'google.com', true, this.user?.username)
-              // this.authService.initAuth()
-              // refresh providers data instead of re-init whole auth state
-              this.loginProviders = this.loginProviders.filter(p => p !== 'google')
-              this.remProviders.push('google')
+              await this.refreshSecurityUser()
               this.showSnackbar('Google provider linked Sucessfully', SnackBarType.success, '', 3000)
               this.cdr.detectChanges()
             }
@@ -356,11 +434,7 @@ export class SecurityTabComponent {
                 })
               }
               await this.firestoreService.storeUserData(response.user, this.user?.providerId || 'github.com', true, this.user?.username)
-              // this.authService.initAuth()
-
-              // refresh providers data instead of re-init whole auth state
-              this.loginProviders = this.loginProviders.filter(p => p !== 'github')
-              this.remProviders.push('github')
+              await this.refreshSecurityUser()
               this.showSnackbar('Github provider linked Sucessfully', SnackBarType.success, '', 3000)
               this.cdr.detectChanges()
             }
@@ -384,8 +458,8 @@ export class SecurityTabComponent {
 
   protected disconnectProvider(provider: string) {
     // Check if the provider to be unlinked is the currently logged-in provider
-    const providerId = (provider !== 'password'? provider + '.com' : 'password')
-    if (providerId === this.user?.providerId) {
+    const providerId = this.toFirebaseProviderId(provider)
+    if (this.isCurrentProvider(provider)) {
       this.showSnackbar(
         `Cannot unlink the currently logged-in provider (${provider}).`,
         SnackBarType.error
@@ -404,34 +478,7 @@ export class SecurityTabComponent {
       )
       .subscribe({
         next: async () => {
-
-          // Filter out the current provider from the providerData array
-          const updatedProviderData = this.user?.providerData.filter(
-            (p) => p.providerId !== providerId
-          )
-
-          // update user data in firestore
-          if (this.user?.uid) {
-            await this.firestoreService.setUserData(this.user.uid, { 
-              providerData: updatedProviderData,
-              updated_At: new Date() 
-            }, true)
-          } else {
-            this.showSnackbar('User ID is missing.', SnackBarType.error, '', 5000)
-          }
-
-          if (updatedProviderData && this.user) {
-            this.user = { ...this.user, providerData: updatedProviderData, currProviderData: null }
-            this.hasProviderPassword.set({provider: this.user?.providerId || '', has: this.user?.providerData.some(p => p.providerId === 'password') ?? false})
-          }
-            
-
-          if (provider === 'password')
-            return          
-
-          // Update the UI state after successful unlinking
-          this.remProviders = this.remProviders.filter(p => p !== provider)
-          this.loginProviders.push(provider)
+          await this.refreshSecurityUser()
           this.cdr.detectChanges()
         },
         error: (error) => {
@@ -464,7 +511,6 @@ export class SecurityTabComponent {
       // this.cdr.detectChanges()
       return
     }
-    const userId = this.user?.uid || '' 
     this.loading.password = true
     from(this.authService.updatePassword(newPassword))
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -472,13 +518,7 @@ export class SecurityTabComponent {
         next: async (userCredential) => {
 
           try {
-                if (userCredential)
-                  await this.firestoreService.setUserData(userId, { providerData: userCredential.user.providerData, updated_At: new Date() }, true)
-
-                const newUser= await this.authService.refreshUserData(userId)
-          
-                if (newUser)
-                  this.user = newUser
+                await this.refreshSecurityUser()
           }
           catch (error) {
             console.error('Error updating user data after password change:', error)
@@ -521,7 +561,9 @@ export class SecurityTabComponent {
       this.totpCode.reset('')
       this.totpStep.set('verify')
     } catch (error: any) {
-      this.totpError.set(getErrorMessage(error, this.translate))
+      const message = this.getMfaErrorMessage(error)
+      this.totpError.set(message)
+      this.showSnackbar(message, SnackBarType.warning, '', 6000)
     } finally {
       this.loading.mfa = false
       this.cdr.detectChanges()
@@ -549,7 +591,9 @@ export class SecurityTabComponent {
       this.syncTotpFactors()
       this.showSnackbar('Authenticator app enrolled successfully', SnackBarType.success, '', 3000)
     } catch (error: any) {
-      this.totpError.set(getErrorMessage(error, this.translate))
+      const message = this.getMfaErrorMessage(error)
+      this.totpError.set(message)
+      this.showSnackbar(message, SnackBarType.warning, '', 6000)
     } finally {
       this.loading.mfa = false
       this.cdr.detectChanges()
@@ -578,18 +622,65 @@ export class SecurityTabComponent {
       this.syncTotpFactors()
       this.showSnackbar('Authenticator app removed', SnackBarType.success, '', 3000)
     } catch (error: any) {
-      this.totpError.set(getErrorMessage(error, this.translate))
+      const message = this.getMfaErrorMessage(error)
+      this.totpError.set(message)
+      this.showSnackbar(message, SnackBarType.warning, '', 6000)
     } finally {
       this.loading.mfa = false
       this.cdr.detectChanges()
     }
   }
 
+  private getMfaErrorMessage(error: any): string {
+    const code = String(error?.code || '').toLowerCase()
+    const rawMessage = String(error?.message || '').trim()
+    const normalizedMessage = rawMessage.toLowerCase()
+
+    if (
+      code === 'auth/missing-phone-number' ||
+      code === 'auth/invalid-argument' ||
+      normalizedMessage.includes('no phone number enrolled') ||
+      normalizedMessage.includes('missing phone number') ||
+      normalizedMessage.includes('missing phoneenrollmentinfo') ||
+      normalizedMessage.includes('phoneenrollmentinfo')
+    ) {
+      return 'Add and verify a phone number first, then enable authenticator app MFA.'
+    }
+
+    if (
+      code === 'auth/unsupported-first-factor' ||
+      normalizedMessage.includes('unsupported_first_factor') ||
+      normalizedMessage.includes('mfa is not available for the given first factor')
+    ) {
+      return 'Authenticator app MFA is not available for your current sign-in method. Sign in with email/password, Google, or GitHub and try again.'
+    }
+
+    if (rawMessage && !code.startsWith('auth/')) {
+      return rawMessage
+    }
+
+    return getErrorMessage(error, this.translate)
+  }
+
+  isPhoneVerifiedForDisplay(): boolean {
+    const hasPhoneProvider = this.user?.providerData?.some((provider) => provider.providerId === 'phone') ?? false
+    return this.user?.phoneVerified === true || (hasPhoneProvider && !!this.user?.phoneNumber) || this.phoneMfaFactors().length > 0
+  }
+
+  canEnrollTotp(): boolean {
+    const unsupportedFirstFactors = new Set(['phone', 'anonymous', 'gc.apple.com'])
+    const providers = this.user?.providerData || []
+    if (!providers.length) {
+      return false
+    }
+
+    return providers.some((provider) => !unsupportedFirstFactors.has(provider.providerId))
+  }
+
   private syncTotpFactors(): void {
     const factors = this.authService.getEnrolledMultiFactorHints()
-      .filter((factor) => factor.factorId === 'totp')
-
-    this.totpFactors.set(factors)
+    this.totpFactors.set(factors.filter((factor) => factor.factorId === 'totp'))
+    this.phoneMfaFactors.set(factors.filter((factor) => factor.factorId === 'phone'))
   }
 
 
@@ -669,7 +760,7 @@ export class SecurityTabComponent {
     try {
       const result = await this.authService.completePhoneVerification(this.confirmationResult, code)
       if (result?.user) {
-        const newUser = await this.authService.refreshUserData(result.user.uid)
+        const newUser = await this.authService.refreshUserData()
         if (newUser) this.user = newUser
         this.phoneStep.set('idle')
         this.showSnackbar('Phone number verified and linked!', SnackBarType.success, '', 3000)
@@ -699,8 +790,7 @@ export class SecurityTabComponent {
       if (this.user?.uid) {
         await this.authService.updatePhoneVerificationStatus(this.user.uid).toPromise()
       }
-      const newUser = await this.authService.refreshUserData(this.user?.uid ?? '')
-      if (newUser) this.user = newUser
+      await this.refreshSecurityUser()
       this.showSnackbar('Phone number removed', SnackBarType.success, '', 3000)
     } catch (error: any) {
       this.showSnackbar(getErrorMessage(error, this.translate), SnackBarType.error, '', 5000)
@@ -708,6 +798,14 @@ export class SecurityTabComponent {
       this.loading.remove = false
       this.cdr.detectChanges()
     }
+  }
+
+  private confirmCurrentSessionRevoke(): boolean {
+    if (!isPlatformBrowser(this.platformId)) {
+      return true
+    }
+
+    return window.confirm('You are about to revoke your current session. This will sign you out immediately. Continue?')
   }
 
   ngOnDestroy(): void {

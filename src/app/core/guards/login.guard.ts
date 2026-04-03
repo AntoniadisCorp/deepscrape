@@ -1,81 +1,65 @@
 import { inject } from '@angular/core'
 import { CanActivateFn, Router } from '@angular/router'
-import { AuthService } from '../services'
-import { map, switchMap, take } from 'rxjs/operators'
-import { Auth } from '@angular/fire/auth'
+import { AuthService, SnackbarService } from '../services'
+import { map } from 'rxjs/operators'
+import { SnackBarType } from '../components'
+
+const VERIFICATION_REQUIRED_MESSAGE = 'Your email or phone number is not verified. Please verify to proceed.'
+
 export const LoginGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService)
   const router = inject(Router)
+  const snackbarService = inject(SnackbarService)
 
-  return authService.isAuthenticated()
-  .pipe(
-    map(( authData )=> {
+  return authService.isAuthenticated().pipe(
+    map((authData) => {
       const { isAuthenticated, user } = authData
 
-      if (isAuthenticated && user) {
-        // ✅ Single source of truth: Firestore
-        const isEmailVerified = user.emailVerified || false
-        const provider = user.currProviderData?.providerId || ''
-
-        console.log('LoginGuard - Authenticated:', isAuthenticated, 'User:', user)
-
-          // Social providers are always considered verified
-          // null  = no phone registered → treat as verified (optional phone)
-          // false = phone registered at signup but unverified → redirect to verification
-        const isVerified = 
-          ['google.com', 'github.com'].includes(provider) || 
-          isEmailVerified || 
-            user.phoneVerified === true
-
-        if (isVerified) {
-          // Already verified, go to dashboard
-          const returnUrl = route.queryParams['returnUrl'] || '/dashboard'
-          router.navigateByUrl(returnUrl)
-          return false
-        } else {
-          // Not verified, go to verification page
-          router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
-          return false
-        }
+      if (!isAuthenticated || !user) {
+        return true
       }
 
-      return true // Not authenticated, allow access to login page
+      const provider = user.currProviderData?.providerId || ''
+      const isPasswordProvider = provider === 'password'
+      const emailOk = !isPasswordProvider || user.emailVerified === true
+      const phoneOk = user.phoneVerified !== false
+      const isVerified = emailOk && phoneOk
+
+      if (isVerified) {
+        const returnUrl = route.queryParams['returnUrl'] || '/dashboard'
+        return router.parseUrl(returnUrl)
+      }
+
+      snackbarService.showSnackbar(VERIFICATION_REQUIRED_MESSAGE, SnackBarType.warning, '', 5000)
+      return router.createUrlTree(['/service/verification'], { queryParams: { returnUrl: state.url } })
     })
   )
 }
 
-export const verifyGuard: CanActivateFn = (route, state) => {
+export const verifyGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService)
-  const auth = inject(Auth)
   const router = inject(Router)
 
-  return authService.isAuthenticated()
-  .pipe(
-    map(( authData )=> {
+  return authService.isAuthenticated().pipe(
+    map((authData) => {
       const { isAuthenticated, user } = authData
 
       if (!isAuthenticated || !user) {
-        router.navigate(['/service/login'])
-        return false
+        return router.createUrlTree(['/service/login'])
       }
 
-      // ✅ Single source of truth: Firestore
-        const provider = user.currProviderData?.providerId || '';
-        // Social providers → always verified
-        // phoneVerified === null → no phone registered, not blocking
-        // phoneVerified === false → phone added at signup, must verify
-        const isVerified =
-          ['google.com', 'github.com'].includes(provider) ||
-          user.emailVerified === true ||
-          user.phoneVerified === true;
+      const provider = user.currProviderData?.providerId || ''
+      const isPasswordProvider = provider === 'password'
+      const emailOk = !isPasswordProvider || user.emailVerified === true
+      const phoneOk = user.phoneVerified !== false
+      const isVerified = emailOk && phoneOk
 
       if (isVerified) {
         const returnUrl = route.queryParams['returnUrl'] || '/dashboard'
-        router.navigateByUrl(returnUrl)
-        return false
+        return router.parseUrl(returnUrl)
       }
 
-      return true // Allow access to verification page if not verified
+      return true
     })
   )
 }
