@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { finalize } from 'rxjs'
-import { StinputComponent } from 'src/app/core/components'
+import { DropdownComponent, StinputComponent } from 'src/app/core/components'
 import { IfAuthorizedDirective, RippleDirective } from 'src/app/core/directives'
 import { FormControlPipe } from 'src/app/core/pipes'
 import {
@@ -15,9 +15,14 @@ import {
 } from 'src/app/core/services'
 import { SnackBarType } from 'src/app/core/components'
 
+type DropdownOption = {
+  name: string
+  code: string
+}
+
 @Component({
   selector: 'app-workspace-tab',
-  imports: [ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe],
+  imports: [ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe, DropdownComponent],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +47,20 @@ export class WorkspaceTabComponent {
   isSubmittingInvite = signal(false)
   isAcceptingInvite = signal<string | null>(null)
   isRemovingMember = signal<string | null>(null)
+  readonly workspaceControl = new FormControl<DropdownOption>({ name: 'Select workspace', code: '' }, { nonNullable: true })
+  readonly inviteRoleControl = new FormControl<DropdownOption>({ name: 'Member', code: 'member' }, { nonNullable: true })
+  readonly inviteRoleOptions: DropdownOption[] = [
+    { name: 'Admin', code: 'admin' },
+    { name: 'Member', code: 'member' },
+    { name: 'Viewer', code: 'viewer' },
+  ]
+
+  readonly workspaceOptions = computed(() =>
+    this.organizations().map((org) => ({
+      name: `${org.name || org.slug || org.id} (${org.membership?.role || 'member'})`,
+      code: org.id,
+    })),
+  )
 
   readonly selectedOrganization = computed(() => {
     const currentId = this.selectedOrgId()
@@ -88,6 +107,7 @@ export class WorkspaceTabComponent {
 
           const activeOrgId = this.organizationService.getActiveOrganization() || orgs[0]?.id || null
           this.selectedOrgId.set(activeOrgId)
+          this.syncWorkspaceControl(activeOrgId)
 
           if (activeOrgId) {
             this.loadMembers(activeOrgId)
@@ -99,6 +119,7 @@ export class WorkspaceTabComponent {
           this.organizations.set([])
           this.selectedOrgId.set(null)
           this.members.set([])
+          this.syncWorkspaceControl(null)
           this.showError('Failed to load workspaces')
         },
       })
@@ -124,7 +145,24 @@ export class WorkspaceTabComponent {
 
     this.selectedOrgId.set(orgId)
     this.organizationService.setActiveOrganization(orgId)
+    this.syncWorkspaceControl(orgId)
     this.loadMembers(orgId)
+  }
+
+  onWorkspaceSelected(option: DropdownOption): void {
+    if (!option?.code) {
+      return
+    }
+
+    this.onSelectOrganization(option.code)
+  }
+
+  onInviteRoleSelected(option: DropdownOption): void {
+    if (!option?.code) {
+      return
+    }
+
+    this.inviteForm.controls.role.setValue(option.code as 'admin' | 'member' | 'viewer')
   }
 
   createWorkspace(): void {
@@ -270,6 +308,11 @@ export class WorkspaceTabComponent {
           this.showError('Failed to load members')
         },
       })
+  }
+
+  private syncWorkspaceControl(orgId: string | null): void {
+    const selectedOption = this.workspaceOptions().find((option) => option.code === orgId)
+    this.workspaceControl.setValue(selectedOption || { name: 'Select workspace', code: '' })
   }
 
   private showSuccess(message: string): void {
