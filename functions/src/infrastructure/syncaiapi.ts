@@ -62,6 +62,14 @@ const canInviteOrganizationRole = (
 
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10)
 
+const getAuthErrorCode = (error: unknown): string => {
+    if (typeof error === "object" && error !== null && "code" in error) {
+        return String((error as { code?: unknown }).code || "")
+    }
+
+    return ""
+}
+
 class ReverseAPIProxy {
     public router: Router
 
@@ -86,7 +94,7 @@ class ReverseAPIProxy {
         const token = authHeader.split(" ")[1]
 
         try {
-            const decodedToken = await auth.verifyIdToken(token)
+            const decodedToken = await auth.verifyIdToken(token, true)
             if (decodedToken) {
                 req.user = decodedToken
                 req.app.locals["user"] = token // Add user info to the request
@@ -96,7 +104,14 @@ class ReverseAPIProxy {
             }
         } catch (error) {
             console.error("JWT Verification Error:", error)
-            res.status(401).json({ error: "Unauthorized: Invalid token" })
+
+            const code = getAuthErrorCode(error)
+            if (code === "auth/id-token-revoked") {
+                res.status(401).json({ error: "Unauthorized: Session revoked", code: "session_revoked" })
+                return
+            }
+
+            res.status(401).json({ error: "Unauthorized: Invalid token", code: "invalid_token" })
         }
     }
 
@@ -476,6 +491,41 @@ class ReverseAPIProxy {
         }
     }
 
+    private listOrgInvitations = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        const orgId = req.params.orgId
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+        if (!orgId) {
+            res.status(400).json({ error: "bad_request", code: "bad_request", message: "orgId is required" })
+            return
+        }
+
+        try {
+            const invitesSnap = await db.collection("invitations")
+                .where("orgId", "==", orgId)
+                .where("status", "==", "pending")
+                .limit(100)
+                .get()
+
+            const orgSnap = await db.collection("organizations").doc(orgId).get()
+            const orgName = orgSnap.exists ? (orgSnap.data()?.name || orgId) : orgId
+
+            const invitations = invitesSnap.docs.map((doc) => ({
+                id: doc.id,
+                orgName,
+                ...(doc.data() || {}),
+            }))
+
+            res.status(200).json({ invitations })
+        } catch (error) {
+            console.error("Failed to list org invitations:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
     private listMyInvitations = async (req: Request, res: Response): Promise<void> => {
         const uid = req.user?.uid
         if (!uid) {
@@ -499,10 +549,33 @@ class ReverseAPIProxy {
                 .limit(200)
                 .get()
 
-            const invitations = invitesSnap.docs.map((doc) => ({
-                id: doc.id,
-                ...(doc.data() || {}),
-            }))
+            // Fetch org details for enrichment
+            const orgIds = new Set<string>()
+            invitesSnap.docs.forEach((doc) => {
+                const data = doc.data()
+                if (data?.orgId) {
+                    orgIds.add(data.orgId)
+                }
+            })
+
+            const orgMap: Record<string, string> = {}
+            for (const orgId of orgIds) {
+                try {
+                    const orgSnap = await db.collection("organizations").doc(orgId).get()
+                    orgMap[orgId] = orgSnap.exists ? (orgSnap.data()?.name || orgId) : orgId
+                } catch (e) {
+                    orgMap[orgId] = orgId
+                }
+            }
+
+            const invitations = invitesSnap.docs.map((doc) => {
+                const data = doc.data()
+                return {
+                    id: doc.id,
+                    orgName: orgMap[data?.orgId] || data?.orgId,
+                    ...(data || {}),
+                }
+            })
 
             res.status(200).json({ invitations })
         } catch (error) {
@@ -632,6 +705,7 @@ class ReverseAPIProxy {
         this.router.get("/orgs/:orgId", requirePermission("organization", "read"), this.getOrganization)
         this.router.get("/orgs/:orgId/members", requirePermission("organization", "read"), this.listOrganizationMembers)
         this.router.get("/orgs/invitations/me", requirePermission("organization", "read"), this.listMyInvitations)
+        this.router.get("/orgs/:orgId/invitations", requirePermission("organization", "invite"), this.listOrgInvitations)
 
         /* Jina AI */
         this.router.get("/jina/:url", this.requirePaidAccess, requirePermission("ai", "execute"), jinaAICrawl)

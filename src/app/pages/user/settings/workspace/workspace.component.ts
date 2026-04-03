@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core'
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
+import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { finalize } from 'rxjs'
 import { DropdownComponent, StinputComponent } from 'src/app/core/components'
@@ -22,7 +23,7 @@ type DropdownOption = {
 
 @Component({
   selector: 'app-workspace-tab',
-  imports: [ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe, DropdownComponent],
+  imports: [CommonModule, ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe, DropdownComponent, DatePipe, TitleCasePipe],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,12 +38,15 @@ export class WorkspaceTabComponent {
   private destroyRef = inject(DestroyRef)
 
   organizations = signal<OrganizationSummary[]>([])
-  invitations = signal<OrganizationInvitation[]>([])
+  sentInvitations = signal<OrganizationInvitation[]>([])
+  incomingInvitations = signal<OrganizationInvitation[]>([])
   members = signal<OrganizationMember[]>([])
 
   selectedOrgId = signal<string | null>(null)
   isLoading = signal(false)
   isMembersLoading = signal(false)
+  isSentInvitationsLoading = signal(false)
+  isIncomingInvitationsLoading = signal(false)
   isSubmittingCreate = signal(false)
   isSubmittingInvite = signal(false)
   isAcceptingInvite = signal<string | null>(null)
@@ -111,29 +115,21 @@ export class WorkspaceTabComponent {
 
           if (activeOrgId) {
             this.loadMembers(activeOrgId)
+            this.loadSentInvitations(activeOrgId)
           } else {
             this.members.set([])
+            this.sentInvitations.set([])
           }
+
+          this.loadIncomingInvitations()
         },
         error: () => {
           this.organizations.set([])
           this.selectedOrgId.set(null)
           this.members.set([])
+          this.sentInvitations.set([])
           this.syncWorkspaceControl(null)
           this.showError('Failed to load workspaces')
-        },
-      })
-
-    this.organizationService
-      .listMyInvitations()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.invitations.set(response.invitations || [])
-        },
-        error: () => {
-          this.invitations.set([])
-          this.showError('Failed to load invitations')
         },
       })
   }
@@ -147,6 +143,7 @@ export class WorkspaceTabComponent {
     this.organizationService.setActiveOrganization(orgId)
     this.syncWorkspaceControl(orgId)
     this.loadMembers(orgId)
+    this.loadSentInvitations(orgId)
   }
 
   onWorkspaceSelected(option: DropdownOption): void {
@@ -228,31 +225,6 @@ export class WorkspaceTabComponent {
       })
   }
 
-  acceptInvitation(invitationId: string): void {
-    if (!invitationId || this.isAcceptingInvite()) {
-      return
-    }
-
-    this.isAcceptingInvite.set(invitationId)
-    this.organizationService
-      .acceptInvitation(invitationId)
-      .pipe(
-        finalize(() => {
-          this.isAcceptingInvite.set(null)
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => {
-          this.showSuccess('Invitation accepted')
-          this.refreshWorkspaceData()
-        },
-        error: () => {
-          this.showError('Failed to accept invitation')
-        },
-      })
-  }
-
   removeMember(userId: string): void {
     const orgId = this.selectedOrgId()
     if (!orgId || !userId || this.isRemovingMember()) {
@@ -287,6 +259,88 @@ export class WorkspaceTabComponent {
 
     const role = selected.membership?.role
     return role === 'owner' || role === 'admin'
+  }
+
+  getCreatedAtDate(createdAt: OrganizationInvitation['createdAt'] | null | undefined): Date | null {
+    if (!createdAt) {
+      return null
+    }
+
+    if (createdAt instanceof Date) {
+      return createdAt
+    }
+
+    if (typeof createdAt.toDate === 'function') {
+      return createdAt.toDate()
+    }
+
+    return null
+  }
+
+  private loadSentInvitations(orgId: string): void {
+    this.isSentInvitationsLoading.set(true)
+    this.organizationService
+      .listOrgInvitations(orgId)
+      .pipe(
+        finalize(() => {
+          this.isSentInvitationsLoading.set(false)
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.sentInvitations.set(response.invitations || [])
+        },
+        error: () => {
+          this.sentInvitations.set([])
+        },
+      })
+  }
+
+  private loadIncomingInvitations(): void {
+    this.isIncomingInvitationsLoading.set(true)
+    this.organizationService
+      .listMyInvitations()
+      .pipe(
+        finalize(() => {
+          this.isIncomingInvitationsLoading.set(false)
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.incomingInvitations.set(response.invitations || [])
+        },
+        error: () => {
+          this.incomingInvitations.set([])
+        },
+      })
+  }
+
+  acceptInvitation(invitationId: string): void {
+    if (!invitationId || this.isAcceptingInvite()) {
+      return
+    }
+
+    this.isAcceptingInvite.set(invitationId)
+    this.organizationService
+      .acceptInvitation(invitationId)
+      .pipe(
+        finalize(() => {
+          this.isAcceptingInvite.set(null)
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.showSuccess('Invitation accepted')
+          this.loadIncomingInvitations()
+          this.refreshWorkspaceData()
+        },
+        error: () => {
+          this.showError('Failed to accept invitation')
+        },
+      })
   }
 
   private loadMembers(orgId: string): void {
