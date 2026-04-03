@@ -129,45 +129,62 @@
     </div>
   </ng-container>
 
-  <div class="flex text-lg justify-center mb-8 bg-gray-300/[0.4] dark:bg-gray-800 rounded-full p-1 shadow-md gap-2">
-    <button
-      title="{{ period.value === currentPrice.value ? 'Current Period ' + period.label : period.label }}"
-      *ngFor="let period of planPeriods"
-      class="relative px-6 py-2 rounded-full transition-all duration-300 ease-in-out"
-      [class.bg-gray6]="planView.value === period.value"
-      [class.dark:bg-gray-100]="planView.value === period.value"
-      [class.text-white]="planView.value === period.value || period.value === currentPrice.value"
-      [class.text-gray-600]="planView.value !== period.value && !(period.value === currentPrice.value)"
-      [class.dark:text-gray-100]="planView.value !== period.value"
-      [class.dark:text-gray6]="planView.value === period.value && !(period.value === currentPrice.value)"
-      [class.bg-violet-500]="period.value === currentPrice.value"
-      [class.dark:bg-violet-500]="period.value === currentPrice.value"
-      (click)="switchPlanView(period)">
-      <mat-icon
-        *ngIf="period.value === 'monthly'"
-        fontSet="material-icons-outlined"
-        class="absolute -top-1 left-0 text-xl text-green-300 -rotate-[60deg]"
-      >energy_savings_leaf</mat-icon>
-      {{ period.label }}
-    </button>
+  <!-- Billing Period Selector -->
+  <div class="mb-8 flex justify-center px-4">
+    <div
+      class="inline-grid w-full max-w-xs grid-cols-2 gap-1 rounded-2xl border border-gray-200/60 bg-gray-100/80 p-1.5 shadow-sm dark:border-white/[0.07] dark:bg-gray-800 sm:inline-flex sm:w-auto sm:max-w-none sm:flex-row"
+      role="group"
+      aria-label="Billing period">
+      <button
+        *ngFor="let period of planPeriods"
+        type="button"
+        title="{{ period.value === currentPrice.value ? 'Current billing period: ' + period.label : period.label }}"
+        class="relative inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70 sm:px-4"
+        [ngClass]="{
+          'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white font-semibold': planView.value === period.value && period.value !== currentPrice.value,
+          'bg-violet-500 shadow text-white font-semibold': planView.value === period.value && period.value === currentPrice.value,
+          'text-violet-600 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-900/20': period.value === currentPrice.value && planView.value !== period.value,
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200': planView.value !== period.value && period.value !== currentPrice.value
+        }"
+        (click)="switchPlanView(period)">
+        <mat-icon
+          *ngIf="period.value === 'monthly'"
+          fontSet="material-icons-outlined"
+          class="shrink-0 -rotate-90 text-emerald-400">energy_savings_leaf</mat-icon>
+        <span class="truncate">{{ period.label }}</span>
+        <span
+          *ngIf="period.value === currentPrice.value"
+          class="hidden sm:inline-flex ml-0.5 shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wider"
+          [ngClass]="{
+            'bg-white/25 text-white': planView.value === period.value,
+            'bg-violet-100 text-violet-700 dark:bg-violet-500/25 dark:text-violet-200': planView.value !== period.value
+          }">
+          Active
+        </span>
+      </button>
+    </div>
   </div>
 
-  <div class="flex flex-wrap items-center justify-center gap-2 mb-8" *ngIf="plans$ | async as plans">
+  <!-- Plan Tab Selector -->
+  <div class="mb-8 flex flex-wrap items-center justify-center gap-2 px-4" *ngIf="plans$ | async as plans">
     <button
       *ngFor="let plan of plans"
       type="button"
       [disabled]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
-      [class.opacity-70]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
       [class.cursor-not-allowed]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
       [ngClass]="getPlanTabClass(plan, currentPlan$ | async, billing$ | async)"
       (click)="openPlanDetails(plan.id)">
-      {{ plan.label }}
-      <span *ngIf="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)" class="ml-2 text-xs font-semibold uppercase tracking-wide">
+      <span>{{ plan.label }}</span>
+      <span
+        *ngIf="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
+        class="inline-flex items-center rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wider">
         Current
       </span>
-      <span *ngIf="shouldShowFreeRecommendedBadge(plan, currentPlan$ | async, billing$ | async)" class="btn-remove ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-green-200">
-        <mat-icon fontSet="material-icons-outlined" class="text-sm">energy_savings_leaf</mat-icon>
-        Recommended
+      <span
+        *ngIf="shouldShowFreeRecommendedBadge(plan, currentPlan$ | async, billing$ | async)"
+        class="btn-remove inline-flex items-center gap-1 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+        <mat-icon fontSet="material-icons-outlined" class="!h-3 !w-3">energy_savings_leaf</mat-icon>
+        Yours
       </span>
     </button>
   </div>

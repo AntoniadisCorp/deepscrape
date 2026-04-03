@@ -1,243 +1,850 @@
-<main class="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-to-br from-white via-blue-200 to-indigo-400 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-  <section class="w-full max-w-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-2xl rounded-xl p-6 flex flex-col gap-6 relative z-10 border border-gray-100 dark:border-gray-800 transition-all duration-300">
+<main
+  class="h-full top-24 relative flex items-center justify-center px-2 py-4 bg-gradient-to-br from-white via-blue-200 to-indigo-400 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen">
+  <section
+    class="relative z-10 mx-auto flex min-h-screen w-full items-center justify-center px-2 py-6 sm:px-4 lg:px-6">
+    <div
+      class="grid w-full max-w-5xl gap-6 lg:grid-cols-[0.95fr_1.15fr] lg:gap-7">
+      <aside
+        class="overflow-hidden rounded-2xl border border-gray-100 bg-white/80 p-6 shadow-2xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/75 lg:p-8">
+        <div
+          class="inline-flex items-center gap-3 rounded-full border border-indigo-200/80 bg-indigo-50/90 shadow-[0_20px_40px_rgba(124,58,237,0.10)] dark:border-violet-500/20 dark:from-violet-950/35 dark:via-slate-900 dark:to-indigo-950/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200">
+          <mat-icon fontSet="material-icons-outlined" class="!h-4 !w-4">
+            auto_awesome
+          </mat-icon>
+          First-run setup
+        </div>
 
-    <!-- Header -->
-    <header class="flex flex-col items-center gap-2 text-center">
-      <div class="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center shadow-md" aria-hidden="true">
-        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <h1 class="text-xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">Set up your workspace</h1>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Just a few steps to get you started</p>
-    </header>
+        <div class="mt-6">
+          <h1
+            class="text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-4xl">
+            Build your workspace with a clean starting flow.
+          </h1>
+          <p
+            class="mt-3 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
+            Set your workspace identity, invite collaborators, and choose the
+            right plan without leaving the onboarding lane.
+          </p>
+        </div>
 
-    <!-- Step progress -->
-    <nav class="flex items-center justify-center gap-2" aria-label="Onboarding steps">
-      @for (n of [1, 2, 3]; track n) {
-        <span
-          class="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-200"
-          [class.bg-indigo-500]="step() >= n"
-          [class.text-white]="step() >= n"
-          [class.bg-gray-200]="step() < n"
-          [class.dark:bg-gray-700]="step() < n"
-          [class.text-gray-400]="step() < n"
-          [attr.aria-current]="step() === n ? 'step' : null">
-          @if (step() > n) {
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          } @else {
-            {{ n }}
+        <nav class="mt-8 space-y-3" aria-label="Onboarding steps">
+          @for (item of stepItems; track item.id) {
+            <div
+              class="group relative overflow-hidden rounded-3xl border px-4 py-4 transition-all duration-200 sm:px-5"
+              [class.border-indigo-300]="step() === item.id"
+              [class.bg-gradient-to-r]="step() === item.id"
+              [class.from-indigo-600]="step() === item.id"
+              [class.via-indigo-500]="step() === item.id"
+              [class.to-blue-500]="step() === item.id"
+              [class.text-white]="step() === item.id"
+              [class.shadow-[0_18px_40px_rgba(79,70,229,0.28)] ]="
+                step() === item.id
+              "
+              [class.border-green-300]="step() > item.id"
+              [class.bg-green-50/80]="step() > item.id"
+              [class.text-green-900]="step() > item.id"
+              [class.shadow-[0_10px_24px_rgba(34,197,94,0.14)] ]="
+                step() > item.id
+              "
+              [class.dark:border-green-500/30]="step() > item.id"
+              [class.dark:bg-[rgba(18_25_18/85)]]="step() > item.id"
+              [class.dark:text-green-100]="step() > item.id"
+              [class.border-slate-200]="step() < item.id"
+              [class.bg-white/75]="step() < item.id"
+              [class.text-slate-700]="step() < item.id"
+              [class.dark:border-white/10]="step() < item.id"
+              [class.dark:bg-slate-950/40]="step() < item.id"
+              [class.dark:text-slate-200]="step() < item.id">
+              <div class="flex items-start gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-center shadow-sm"
+                  [class.border-white/30]="step() === item.id"
+                  [class.bg-white/15]="step() === item.id"
+                  [class.text-white]="step() === item.id"
+                  [class.border-green-300]="step() > item.id"
+                  [class.bg-white]="step() > item.id"
+                  [class.text-green-600]="step() > item.id"
+                  [class.dark:border-green-500/30]="step() > item.id"
+                  [class.dark:bg-green-900/40]="step() > item.id"
+                  [class.dark:text-green-200]="step() > item.id"
+                  [class.border-slate-200]="step() < item.id"
+                  [class.bg-slate-50]="step() < item.id"
+                  [class.text-slate-500]="step() < item.id"
+                  [class.dark:border-white/10]="step() < item.id"
+                  [class.dark:bg-slate-900]="step() < item.id"
+                  [class.dark:text-slate-300]="step() < item.id">
+                  @if (step() > item.id) {
+                    <mat-icon
+                      fontSet="material-icons-outlined"
+                      class="!h-6 !w-6">
+                      check_circle
+                    </mat-icon>
+                  } @else {
+                    <mat-icon
+                      fontSet="material-icons-outlined"
+                      class="!h-6 !w-6">
+                      {{ item.icon }}
+                    </mat-icon>
+                  }
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-semibold tracking-wide">
+                      Step {{ item.id }}
+                    </p>
+                    <span
+                      class="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                      [class.bg-white/15]="step() === item.id"
+                      [class.text-white]="step() === item.id"
+                      [class.bg-green-100]="step() > item.id"
+                      [class.text-green-700]="step() > item.id"
+                      [class.dark:bg-green-500/25]="step() > item.id"
+                      [class.dark:text-green-200]="step() > item.id"
+                      [class.bg-slate-100]="step() < item.id"
+                      [class.text-slate-500]="step() < item.id"
+                      [class.dark:bg-slate-800]="step() < item.id"
+                      [class.dark:text-slate-300]="step() < item.id">
+                      @if (step() > item.id) {
+                        done
+                      } @else if (step() === item.id) {
+                        active
+                      } @else {
+                        pending
+                      }
+                    </span>
+                  </div>
+                  <h2 class="mt-2 text-lg font-semibold">{{ item.title }}</h2>
+                  <p
+                    class="mt-1 text-sm"
+                    [class.text-indigo-100]="step() === item.id"
+                    [class.text-green-700]="step() > item.id"
+                    [class.dark:text-green-200]="step() > item.id"
+                    [class.text-slate-500]="step() < item.id"
+                    [class.dark:text-slate-400]="step() < item.id">
+                    {{ item.subtitle }}
+                  </p>
+                </div>
+              </div>
+            </div>
           }
-        </span>
-        @if (n < 3) {
-          <span class="flex-1 h-0.5 max-w-[3rem] rounded transition-all duration-200"
-            [class.bg-indigo-400]="step() > n"
-            [class.bg-gray-200]="step() <= n"
-            [class.dark:bg-gray-700]="step() <= n"></span>
-        }
-      }
-    </nav>
+        </nav>
 
-    <!-- Error banner -->
-    @if (errorMessage()) {
-      <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-600 dark:text-red-100 px-3 py-2 rounded-lg flex items-center gap-2 text-xs font-medium" role="alert">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"/></svg>
-        <span>{{ errorMessage() }}</span>
-      </div>
-    }
-
-    <!-- ── Step 1: Workspace name ── -->
-    @if (step() === 1) {
-      <div class="flex flex-col gap-4" role="group" aria-labelledby="step1-title">
-        <div>
-          <h2 id="step1-title" class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Name your workspace</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">This is how your team will identify your space. You can change it later.</p>
-        </div>
-        <form [formGroup]="workspaceForm" (ngSubmit)="next()" novalidate class="flex flex-col gap-3">
-          <div>
-            <label for="workspaceName" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Workspace name</label>
-            <input
-              id="workspaceName"
-              type="text"
-              formControlName="workspaceName"
-              placeholder="Acme Inc."
-              autocomplete="organization"
-              class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none"
-              [class.border-red-500]="workspaceForm.get('workspaceName')?.invalid && workspaceForm.get('workspaceName')?.touched"
-              [class.dark:border-red-400]="workspaceForm.get('workspaceName')?.invalid && workspaceForm.get('workspaceName')?.touched"
-              />
-            @if (workspaceForm.get('workspaceName')?.invalid && workspaceForm.get('workspaceName')?.touched) {
-              <small class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
-                Workspace name must be between 2 and 64 characters.
-              </small>
-            }
+        <div
+          class="mt-8 rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 shadow-[0_20px_40px_rgba(124,58,237,0.10)] dark:border-violet-500/20 dark:from-violet-950/35 dark:via-slate-900 dark:to-indigo-950/30">
+          <div class="flex items-start gap-3">
+            <div
+              class="flex h-12 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">
+              <mat-icon class="text-green-700 !h-6 !w-6">shield</mat-icon>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                Secure setup path
+              </p>
+              <p
+                class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                Workspace updates stay inside your org context, and billing
+                changes remain server-controlled.
+              </p>
+            </div>
           </div>
-          <button type="submit" [disabled]="workspaceForm.invalid"
-            class="mt-1 w-full py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold shadow transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-indigo-300">
-            Continue
-          </button>
-        </form>
-      </div>
-    }
-
-    <!-- ── Step 2: Invite teammates ── -->
-    @if (step() === 2) {
-      <div class="flex flex-col gap-4" role="group" aria-labelledby="step2-title">
-        <div>
-          <h2 id="step2-title" class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Invite your team</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Add teammates by email. They'll receive an invitation. You can skip this now.</p>
         </div>
-        <form [formGroup]="inviteForm" (ngSubmit)="next()" novalidate class="flex flex-col gap-3">
-          <div class="flex flex-col gap-2">
-            @for (ctrl of inviteEmails.controls; track $index) {
-              <div class="flex gap-2 items-center">
+      </aside>
+
+      <section
+        class="w-full overflow-hidden rounded-2xl border border-gray-100 bg-white/90 p-5 shadow-2xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/90 sm:p-6 lg:p-8">
+        <header
+          class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/80 pb-5 dark:border-white/10">
+          <div>
+            <div
+              class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <mat-icon fontSet="material-icons-outlined" class="!h-4 !w-4">
+                layers
+              </mat-icon>
+              Step {{ step() }} of {{ totalSteps }}
+            </div>
+            <h2
+              class="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">
+              Set up your workspace
+            </h2>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              A focused onboarding flow styled to match the rest of the product.
+            </p>
+          </div>
+
+          <div
+            class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 shadow-sm dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-300">
+            <mat-icon
+              fontSet="material-icons-outlined"
+              class="!h-4 !w-4 text-indigo-500 dark:text-indigo-300">
+              timelapse
+            </mat-icon>
+            Usually takes under a minute
+          </div>
+        </header>
+
+        <!-- Error banner -->
+        @if (errorMessage()) {
+          <div
+            class="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-200"
+            role="alert">
+            <mat-icon
+              fontSet="material-icons-outlined"
+              class="!h-5 !w-5 shrink-0">
+              error
+            </mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <!-- ── Step 1: Workspace name ── -->
+        @if (step() === 1) {
+          <div
+            @stepPanel
+            class="mt-6 flex flex-col gap-5"
+            role="group"
+            aria-labelledby="step1-title">
+            <div
+              class="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 shadow-[0_20px_40px_rgba(124,58,237,0.10)] dark:border-violet-500/20 dark:from-violet-950/35 dark:via-slate-900 dark:to-indigo-950/30">
+              <div class="flex items-start gap-4">
+                <div
+                  class="flex h-12 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25">
+                  <mat-icon fontSet="material-icons-outlined" class="!h-7 !w-7">
+                    domain
+                  </mat-icon>
+                </div>
+                <div>
+                  <h3
+                    id="step1-title"
+                    class="text-xl font-semibold text-slate-900 dark:text-white">
+                    Name your workspace
+                  </h3>
+                  <p
+                    class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    This becomes the label your team sees across invites,
+                    workspace switching, and org settings.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form
+              [formGroup]="workspaceForm"
+              (ngSubmit)="next()"
+              novalidate
+              class="mx-auto w-full max-w-xl rounded-2xl border border-gray-100 bg-white/85 p-5 shadow-xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80 sm:p-6">
+              <div>
+                <label
+                  for="workspaceName"
+                  class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  Workspace name
+                </label>
                 <input
-                  type="email"
-                  [formControl]="$any(ctrl)"
-                  placeholder="colleague@example.com"
-                  autocomplete="off"
-                  class="cc-input flex-1 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none"
-                  [class.border-red-400]="ctrl.invalid && ctrl.dirty"
-                  />
-                @if (inviteEmails.length > 1) {
-                  <button type="button" (click)="removeEmail($index)"
-                    class="text-gray-400 hover:text-red-500 transition-colors" aria-label="Remove email">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  id="workspaceName"
+                  type="text"
+                  formControlName="workspaceName"
+                  placeholder="Acme Inc."
+                  autocomplete="organization"
+                  class="cc-input block w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 shadow-inner-pressed transition-all duration-200 outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:ring-indigo-500/20"
+                  [class.border-red-500]="
+                    workspaceForm.get('workspaceName')?.invalid &&
+                    workspaceForm.get('workspaceName')?.touched
+                  "
+                  [class.dark:border-red-400]="
+                    workspaceForm.get('workspaceName')?.invalid &&
+                    workspaceForm.get('workspaceName')?.touched
+                  " />
+                @if (
+                  workspaceForm.get('workspaceName')?.invalid &&
+                  workspaceForm.get('workspaceName')?.touched
+                ) {
+                  <small
+                    class="mt-2 block text-xs font-medium text-red-600 dark:text-red-300">
+                    Workspace name must be between 2 and 64 characters.
+                  </small>
+                }
+              </div>
+
+              <div
+                class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900/80">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Keep it short, searchable, and recognizable for teammates.
+                </p>
+                <button
+                  type="submit"
+                  [disabled]="workspaceForm.invalid"
+                  class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] transition-all duration-200 hover:bg-indigo-500 hover:shadow-[0_18px_34px_rgba(79,70,229,0.34)] focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
+                  Continue
+                  <mat-icon fontSet="material-icons-outlined" class="!h-5 !w-5">
+                    arrow_forward
+                  </mat-icon>
+                </button>
+              </div>
+            </form>
+          </div>
+        }
+
+        <!-- ── Step 2: Invite teammates ── -->
+        @if (step() === 2) {
+          <div
+            @stepPanel
+            class="mt-6 flex flex-col gap-5"
+            role="group"
+            aria-labelledby="step2-title">
+            <div
+              class="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 shadow-[0_20px_40px_rgba(124,58,237,0.10)] dark:border-violet-500/20 dark:from-violet-950/35 dark:via-slate-900 dark:to-indigo-950/30">
+              <div class="flex items-start gap-4">
+                <div
+                  class="flex h-12 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25">
+                  <mat-icon fontSet="material-icons-outlined" class="!h-7 !w-7">
+                    group_add
+                  </mat-icon>
+                </div>
+                <div>
+                  <h3
+                    id="step2-title"
+                    class="text-xl font-semibold text-slate-900 dark:text-white">
+                    Invite your team
+                  </h3>
+                  <p
+                    class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Send up to five invites now, or skip and add people later
+                    from workspace settings.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form
+              [formGroup]="inviteForm"
+              (ngSubmit)="next()"
+              novalidate
+              class="mx-auto w-full max-w-xl rounded-2xl border border-gray-100 bg-white/85 p-5 shadow-xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80 sm:p-6">
+              <div class="flex flex-col gap-3">
+                @for (ctrl of inviteEmails.controls; track $index) {
+                  <div
+                    class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 shadow-sm dark:border-white/10 dark:bg-slate-900/70">
+                    <div
+                      class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm dark:bg-slate-950 dark:text-slate-300">
+                      <mat-icon
+                        fontSet="material-icons-outlined"
+                        class="!h-5 !w-5">
+                        mail
+                      </mat-icon>
+                    </div>
+                    <input
+                      type="email"
+                      [formControl]="$any(ctrl)"
+                      placeholder="colleague@example.com"
+                      autocomplete="off"
+                      class="cc-input flex-1 bg-transparent px-1 text-sm text-slate-900 placeholder-slate-400 outline-none dark:text-slate-100 dark:placeholder-slate-500"
+                      [class.text-red-600]="ctrl.invalid && ctrl.dirty"
+                      [class.dark:text-red-300]="ctrl.invalid && ctrl.dirty" />
+                    @if (inviteEmails.length > 1) {
+                      <button
+                        type="button"
+                        (click)="removeEmail($index)"
+                        class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                        aria-label="Remove email">
+                        <mat-icon
+                          fontSet="material-icons-outlined"
+                          class="!h-5 !w-5">
+                          close
+                        </mat-icon>
+                      </button>
+                    }
+                  </div>
+                }
+                @if (inviteEmails.length < 5) {
+                  <button
+                    type="button"
+                    (click)="addEmail()"
+                    class="inline-flex w-fit items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition-all duration-200 hover:bg-indigo-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/20 dark:focus:ring-indigo-500">
+                    <mat-icon
+                      fontSet="material-icons-outlined"
+                      class="!h-4 !w-4">
+                      add
+                    </mat-icon>
+                    Add another
                   </button>
                 }
               </div>
-            }
-            @if (inviteEmails.length < 5) {
-              <button type="button" (click)="addEmail()"
-                class="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors w-fit">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
-                Add another
-              </button>
-            }
-          </div>
-          <div class="flex gap-2 mt-1">
-            <button type="button" (click)="skip()"
-              class="flex-1 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-gray-800 transition-all duration-150 focus:ring-2 focus:ring-indigo-200">
-              Skip
-            </button>
-            <button type="submit"
-              class="flex-1 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold shadow transition-all duration-150 focus:ring-2 focus:ring-indigo-300">
-              Continue
-            </button>
-          </div>
-        </form>
-      </div>
-    }
 
-    <!-- ── Step 3: Plan selection ── -->
-    @if (step() === 3) {
-      <div class="flex flex-col gap-4" role="group" aria-labelledby="step3-title">
-        <div>
-          <h2 id="step3-title" class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Choose your plan</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Start for free — upgrade any time from your billing settings.</p>
-        </div>
-        <form [formGroup]="planForm" class="flex flex-col gap-2">
-          @for (plan of selectablePlans(); track plan.id) {
-            <button type="button" (click)="selectPlan(plan.id)"
-              class="flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition-all duration-150 cursor-pointer outline-none focus:ring-2 focus:ring-indigo-300"
-              [class.border-indigo-500]="planForm.get('plan')?.value === plan.id"
-              [class.bg-indigo-50]="planForm.get('plan')?.value === plan.id"
-              [class.dark:bg-indigo-950]="planForm.get('plan')?.value === plan.id"
-              [class.border-slate-200]="planForm.get('plan')?.value !== plan.id"
-              [class.dark:border-gray-700]="planForm.get('plan')?.value !== plan.id"
-              [attr.aria-pressed]="planForm.get('plan')?.value === plan.id">
-              <span class="flex-1">
-                <span class="block text-sm font-bold text-gray-900 dark:text-gray-100">{{ plan.label }}</span>
-                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ plan.description }}</span>
-                <span class="block mt-1 text-[11px] text-gray-400 dark:text-gray-500">Intervals: {{ getPlanIntervals(plan) }}</span>
-              </span>
-              <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400 shrink-0">{{ getPreferredPriceLabel(plan) }}</span>
-              @if (planForm.get('plan')?.value === plan.id) {
-                <svg class="w-4 h-4 text-indigo-500 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              }
-            </button>
-          }
-        </form>
-
-        @if (enterprisePlan(); as enterprise) {
-          <section class="mt-2 rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h3 class="text-sm font-bold text-indigo-900 dark:text-indigo-200">Need {{ enterprise.label }}?</h3>
-                <p class="text-xs text-indigo-700 dark:text-indigo-300 mt-1">{{ enterprise.description }}</p>
-                <p class="text-[11px] text-indigo-600/90 dark:text-indigo-300/90 mt-1">This sends a request to the admin emails queue from onboarding.</p>
-              </div>
-              <span class="text-xs font-semibold text-indigo-700 dark:text-indigo-300 whitespace-nowrap">Custom</span>
-            </div>
-
-            <form [formGroup]="enterpriseRequestForm" class="mt-3 space-y-3">
-              <div class="flex flex-wrap gap-3 text-xs text-gray-700 dark:text-gray-200">
-                <label class="inline-flex items-center gap-2">
-                  <input type="radio" value="current" formControlName="mode" class="accent-indigo-600" />
-                  Use current email ({{ getCurrentEnterpriseEmailLabel() }})
-                </label>
-                <label class="inline-flex items-center gap-2">
-                  <input type="radio" value="custom" formControlName="mode" class="accent-indigo-600" />
-                  Use a different email
-                </label>
-              </div>
-
-              @if (isEnterpriseCustomEmailMode()) {
-                <div>
-                  <label for="enterprise-contact-email" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Contact email
-                  </label>
-                  <input
-                    id="enterprise-contact-email"
-                    type="email"
-                    formControlName="contactEmail"
-                    placeholder="team@company.com"
-                    class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none" />
-                </div>
-              }
-
-              <div class="flex items-center gap-2">
+              <div class="mt-5 flex gap-3">
                 <button
                   type="button"
-                  (click)="submitEnterpriseRequest()"
-                  [disabled]="enterpriseRequestLoading()"
-                  class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 shadow transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed">
-                  @if (enterpriseRequestLoading()) {
-                    <mat-spinner [diameter]="14" class="stroke-white"></mat-spinner>
-                    Sending
-                  } @else {
-                    Send enterprise request
-                  }
+                  (click)="skip()"
+                  class="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-slate-900 dark:focus:ring-indigo-500">
+                  Skip
                 </button>
-
-                @if (enterpriseRequestMessage()) {
-                  <p class="text-xs text-indigo-700 dark:text-indigo-300">{{ enterpriseRequestMessage() }}</p>
-                }
+                <button
+                  type="submit"
+                  class="flex-1 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(79,70,229,0.26)] transition-all duration-200 hover:bg-indigo-500 hover:shadow-[0_18px_34px_rgba(79,70,229,0.34)] focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500">
+                  Continue
+                </button>
               </div>
             </form>
-          </section>
+          </div>
         }
 
-        <div class="flex gap-2 mt-1">
-          <button type="button" (click)="back()"
-            class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium transition-colors">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            Back
-          </button>
-          <div class="flex-1"></div>
-          <button type="button" (click)="complete()" [disabled]="loading()"
-            class="px-6 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold shadow transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-indigo-300 flex items-center gap-2">
-            @if (loading()) {
-              <mat-spinner [diameter]="18" class="stroke-white"></mat-spinner>
-              <span>Finishing up…</span>
-            } @else {
-              <span>Get started</span>
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
-            }
-          </button>
-        </div>
-      </div>
-    }
+        <!-- ── Step 3: Plan selection ── -->
+        @if (step() === 3) {
+          <div
+            @stepPanel
+            class="mt-6 flex flex-col gap-5"
+            role="group"
+            aria-labelledby="step3-title">
+            <div
+              class="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 shadow-[0_20px_40px_rgba(124,58,237,0.10)] dark:border-violet-500/20 dark:from-violet-950/35 dark:via-slate-900 dark:to-indigo-950/30">
+              <div class="flex items-start gap-4">
+                <div
+                  class="flex h-12 w-16 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-500/25">
+                  <mat-icon fontSet="material-icons-outlined" class="!h-7 !w-7">
+                    workspace_premium
+                  </mat-icon>
+                </div>
+                <div>
+                  <h3
+                    id="step3-title"
+                    class="text-xl font-semibold text-slate-900 dark:text-white">
+                    Choose your plan
+                  </h3>
+                  <p
+                    class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Free starts instantly. Paid plans surface billing periods
+                    only when they actually matter.
+                  </p>
+                </div>
+              </div>
+            </div>
 
+            <form
+              [formGroup]="planForm"
+              class="mx-auto grid w-full max-w-2xl gap-3 md:grid-cols-2">
+              @for (plan of selectablePlans(); track plan.id) {
+                <button
+                  type="button"
+                  (click)="selectPlan(plan.id)"
+                  class="group relative overflow-hidden rounded-3xl border px-5 py-5 text-left transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  [class.border-green-500]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id === 'free'
+                  "
+                  [class.bg-green-50]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id === 'free'
+                  "
+                  [class.dark:bg-[rgb(18_25_18_/_85%)]]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id === 'free'
+                  "
+                  [class.shadow-[0_20px_36px_rgba(34,197,94,0.16)] ]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id === 'free'
+                  "
+                  [class.dark:bg-green-950/30]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id === 'free'
+                      ? false
+                      : true
+                  "
+                  [class.focus-visible:ring-green-400]="plan.id === 'free'"
+                  [class.focus-visible:ring-offset-white]="plan.id === 'free'"
+                  [class.dark:focus-visible:ring-offset-slate-900]="
+                    plan.id === 'free'
+                  "
+                  [class.border-violet-500]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id !== 'free'
+                  "
+                  [class.bg-violet-50]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id !== 'free'
+                  "
+                  [class.shadow-[0_20px_36px_rgba(124,58,237,0.16)] ]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id !== 'free'
+                  "
+                  [class.dark:bg-violet-950/30]="
+                    planForm.get('plan')?.value === plan.id &&
+                    plan.id !== 'free'
+                  "
+                  [class.focus-visible:ring-violet-400]="plan.id !== 'free'"
+                  [class.border-slate-200]="
+                    planForm.get('plan')?.value !== plan.id
+                  "
+                  [class.bg-white]="planForm.get('plan')?.value !== plan.id"
+                  [class.shadow-[0_14px_30px_rgba(15,23,42,0.08)] ]="
+                    planForm.get('plan')?.value !== plan.id
+                  "
+                  [class.dark:border-white/10]="
+                    planForm.get('plan')?.value !== plan.id
+                  "
+                  [class.dark:bg-slate-950/40]="
+                    planForm.get('plan')?.value !== plan.id
+                  "
+                  [class.focus-visible:ring-slate-400]="
+                    planForm.get('plan')?.value !== plan.id
+                  "
+                  [attr.aria-pressed]="planForm.get('plan')?.value === plan.id">
+                  <div class="flex items-start gap-4">
+                    <div
+                      class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                      [class.bg-green-100]="plan.id === 'free'"
+                      [class.text-green-700]="plan.id === 'free'"
+                      [class.bg-violet-100]="plan.id !== 'free'"
+                      [class.text-violet-700]="plan.id !== 'free'"
+                      [class.dark:bg-green-500/15]="plan.id === 'free'"
+                      [class.dark:text-green-200]="plan.id === 'free'"
+                      [class.dark:bg-violet-500/15]="plan.id !== 'free'"
+                      [class.dark:text-violet-200]="plan.id !== 'free'">
+                      <mat-icon
+                        fontSet="material-icons-outlined"
+                        class="!h-6 !w-6">
+                        @if (plan.id === 'free') {
+                          eco
+                        } @else if (plan.id === 'starter') {
+                          rocket_launch
+                        } @else {
+                          bolt
+                        }
+                      </mat-icon>
+                    </div>
+
+                    <span class="flex-1">
+                      <span
+                        class="block text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {{ plan.label }}
+                      </span>
+                      <span
+                        class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        {{ plan.description }}
+                      </span>
+                    </span>
+                  </div>
+                  @if (plan.id !== 'free') {
+                    <span
+                      class="mt-4 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                      Billing options: {{ getPlanIntervals(plan) }}
+                    </span>
+                  } @else {
+                    <span
+                      class="mt-4 inline-flex rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-500/15 dark:text-green-200">
+                      No billing period required
+                    </span>
+                  }
+                  <div class="mt-5 flex items-center justify-between">
+                    <span
+                      class="text-base font-semibold"
+                      [class.text-green-700]="plan.id === 'free'"
+                      [class.text-violet-700]="plan.id !== 'free'"
+                      [class.dark:text-green-200]="plan.id === 'free'"
+                      [class.dark:text-violet-200]="plan.id !== 'free'">
+                      {{ getPreferredPriceLabel(plan) }}
+                    </span>
+
+                    <span
+                      class="flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-200"
+                      [class.border-green-500]="
+                        planForm.get('plan')?.value === plan.id &&
+                        plan.id === 'free'
+                      "
+                      [class.bg-green-500]="
+                        planForm.get('plan')?.value === plan.id &&
+                        plan.id === 'free'
+                      "
+                      [class.text-white]="
+                        planForm.get('plan')?.value === plan.id &&
+                        plan.id === 'free'
+                      "
+                      [class.border-violet-500]="
+                        planForm.get('plan')?.value === plan.id &&
+                        plan.id !== 'free'
+                      "
+                      [class.bg-violet-500]="
+                        planForm.get('plan')?.value === plan.id &&
+                        plan.id !== 'free'
+                      "
+                      [class.text-white]="
+                        planForm.get('plan')?.value === plan.id &&
+                        plan.id !== 'free'
+                      "
+                      [class.border-slate-200]="
+                        planForm.get('plan')?.value !== plan.id
+                      "
+                      [class.text-slate-400]="
+                        planForm.get('plan')?.value !== plan.id
+                      "
+                      [class.dark:border-white/10]="
+                        planForm.get('plan')?.value !== plan.id
+                      "
+                      [class.dark:text-slate-300]="
+                        planForm.get('plan')?.value !== plan.id
+                      ">
+                      <mat-icon
+                        fontSet="material-icons-outlined"
+                        class="!h-5 !w-5">
+                        @if (planForm.get('plan')?.value === plan.id) {
+                          check
+                        } @else {
+                          radio_button_unchecked
+                        }
+                      </mat-icon>
+                    </span>
+                  </div>
+                </button>
+              }
+            </form>
+
+            @if (
+              shouldShowBillingPeriod() && getSelectedPlanCatalog();
+              as selectedPlan
+            ) {
+              <section
+                class="mx-auto w-full max-w-2xl rounded-2xl border border-gray-100 bg-white/85 p-5 shadow-xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80">
+                <div class="flex items-start gap-3">
+                  <div
+                    class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">
+                    <mat-icon
+                      fontSet="material-icons-outlined"
+                      class="!h-5 !w-5">
+                      calendar_month
+                    </mat-icon>
+                  </div>
+                  <div>
+                    <h3
+                      class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      Billing period
+                    </h3>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Choose how you want to be billed for
+                      {{ selectedPlan.label }}.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  @for (
+                    interval of getAvailableIntervals(selectedPlan);
+                    track interval
+                  ) {
+                    <button
+                      type="button"
+                      (click)="selectInterval(interval)"
+                      class="rounded-2xl border px-4 py-4 text-left transition-all duration-150"
+                      [class.border-violet-500]="
+                        getSelectedInterval() === interval
+                      "
+                      [class.bg-violet-50]="getSelectedInterval() === interval"
+                      [class.shadow-[0_16px_28px_rgba(124,58,237,0.12)] ]="
+                        getSelectedInterval() === interval
+                      "
+                      [class.dark:bg-violet-950/25]="
+                        getSelectedInterval() === interval
+                      "
+                      [class.border-slate-200]="
+                        getSelectedInterval() !== interval
+                      "
+                      [class.bg-slate-50/70]="
+                        getSelectedInterval() !== interval
+                      "
+                      [class.dark:border-white/10]="
+                        getSelectedInterval() !== interval
+                      "
+                      [class.dark:bg-slate-900/70]="
+                        getSelectedInterval() !== interval
+                      ">
+                      <span class="flex items-center justify-between gap-3">
+                        <span
+                          class="block text-sm font-semibold text-slate-900 dark:text-gray-100">
+                          {{ getIntervalLabel(interval) }}
+                        </span>
+                        <mat-icon
+                          fontSet="material-icons-outlined"
+                          class="!h-5 !w-5"
+                          [class.text-violet-600]="
+                            getSelectedInterval() === interval
+                          "
+                          [class.text-slate-400]="
+                            getSelectedInterval() !== interval
+                          "
+                          [class.dark:text-violet-200]="
+                            getSelectedInterval() === interval
+                          "
+                          [class.dark:text-slate-300]="
+                            getSelectedInterval() !== interval
+                          ">
+                          @if (getSelectedInterval() === interval) {
+                            check_circle
+                          } @else {
+                            schedule
+                          }
+                        </mat-icon>
+                      </span>
+                      <span
+                        class="mt-1 block text-xs text-violet-700 dark:text-violet-300">
+                        {{ getIntervalPriceLabel(selectedPlan, interval) }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </section>
+            }
+
+            @if (isFreePlanSelected()) {
+              <section
+                class="mx-auto w-full max-w-2xl rounded-3xl border border-green-200 bg-green-50/85 p-4 shadow-[0_16px_30px_rgba(34_197_94_/_0.12)] dark:border-green-500/25 dark:bg-[rgb(18_25_18_/_0.85)]">
+                <div class="flex items-start gap-3">
+                  <div
+                    class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-green-600 dark:bg-slate-900 dark:text-green-200">
+                    <mat-icon
+                      fontSet="material-icons-outlined"
+                      class="!h-5 !w-5">
+                      verified
+                    </mat-icon>
+                  </div>
+                  <div>
+                    <p
+                      class="text-sm font-semibold text-green-800 dark:text-green-200">
+                      Free plan selected
+                    </p>
+                    <p
+                      class="mt-1 text-xs leading-5 text-green-700 dark:text-green-300">
+                      No billing period is shown or stored for the free tier.
+                      You can upgrade later from billing settings.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            }
+
+            @if (enterprisePlan(); as enterprise) {
+              <section
+                class="mx-auto w-full max-w-2xl rounded-3xl border border-indigo-200 bg-indigo-50/80 p-5 shadow-[0_20px_38px_rgba(79,70,229,0.14)] dark:border-indigo-500/20 dark:bg-indigo-900/25">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3
+                      class="text-sm font-bold text-indigo-900 dark:text-indigo-200">
+                      Need {{ enterprise.label }}?
+                    </h3>
+                    <p
+                      class="mt-1 text-xs text-indigo-700 dark:text-indigo-300">
+                      {{ enterprise.description }}
+                    </p>
+                    <p
+                      class="mt-1 text-[11px] text-indigo-600/90 dark:text-indigo-300/90">
+                      This sends a request to the admin emails queue from
+                      onboarding.
+                    </p>
+                  </div>
+                  <span
+                    class="whitespace-nowrap rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-indigo-700 shadow-sm dark:bg-indigo-500/15 dark:text-indigo-200">
+                    Custom
+                  </span>
+                </div>
+
+                <form
+                  [formGroup]="enterpriseRequestForm"
+                  class="mt-3 space-y-3">
+                  <div
+                    class="flex flex-wrap gap-3 text-xs text-gray-700 dark:text-indigo-100">
+                    <label class="inline-flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="current"
+                        formControlName="mode"
+                        class="accent-indigo-600" />
+                      Use current email ({{ getCurrentEnterpriseEmailLabel() }})
+                    </label>
+                    <label class="inline-flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="custom"
+                        formControlName="mode"
+                        class="accent-indigo-600" />
+                      Use a different email
+                    </label>
+                  </div>
+
+                  @if (isEnterpriseCustomEmailMode()) {
+                    <div>
+                      <label
+                        for="enterprise-contact-email"
+                        class="block text-xs font-medium text-gray-700 dark:text-indigo-200 mb-1">
+                        Contact email
+                      </label>
+                      <input
+                        id="enterprise-contact-email"
+                        type="email"
+                        formControlName="contactEmail"
+                        placeholder="team@company.com"
+                        class="cc-input block w-full rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 shadow-inner outline-none transition-all duration-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:ring-indigo-500/20" />
+                    </div>
+                  }
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      (click)="submitEnterpriseRequest()"
+                      [disabled]="enterpriseRequestLoading()"
+                      class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-xs font-bold text-white shadow-[0_16px_30px_rgba(79,70,229,0.25)] transition-all duration-200 hover:bg-indigo-500 hover:shadow-[0_18px_34px_rgba(79,70,229,0.32)] focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60">
+                      @if (enterpriseRequestLoading()) {
+                        <mat-spinner
+                          [diameter]="14"
+                          class="stroke-white"></mat-spinner>
+                        Sending
+                      } @else {
+                        Send enterprise request
+                      }
+                    </button>
+
+                    @if (enterpriseRequestMessage()) {
+                      <p class="text-xs text-indigo-700 dark:text-indigo-300">
+                        {{ enterpriseRequestMessage() }}
+                      </p>
+                    }
+                  </div>
+                </form>
+              </section>
+            }
+
+            <div class="mx-auto flex w-full max-w-2xl gap-3 pt-1">
+              <button
+                type="button"
+                (click)="back()"
+                class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-slate-900 dark:focus:ring-indigo-500">
+                <mat-icon fontSet="material-icons-outlined" class="!h-5 !w-5">
+                  arrow_back
+                </mat-icon>
+                Back
+              </button>
+              <div class="flex-1"></div>
+              <button
+                type="button"
+                (click)="complete()"
+                [disabled]="loading()"
+                class="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)] transition-all duration-200 hover:bg-indigo-500 hover:shadow-[0_18px_34px_rgba(79,70,229,0.34)] focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50">
+                @if (loading()) {
+                  <mat-spinner
+                    [diameter]="18"
+                    class="stroke-white"></mat-spinner>
+                  <span>
+                    {{
+                      isFreePlanSelected()
+                        ? 'Finishing up…'
+                        : 'Redirecting to checkout…'
+                    }}
+                  </span>
+                } @else {
+                  <span>{{ getCtaLabel() }}</span>
+                  <mat-icon fontSet="material-icons-outlined" class="!h-5 !w-5">
+                    {{ isFreePlanSelected() ? 'arrow_forward' : 'payment' }}
+                  </mat-icon>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+    </div>
   </section>
 </main>

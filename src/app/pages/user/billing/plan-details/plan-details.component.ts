@@ -2,7 +2,7 @@ import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common'
 import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 import { combineLatest, map, Observable } from 'rxjs'
-import { BillingService } from 'src/app/core/services'
+import { AuthService, BillingService } from 'src/app/core/services'
 import { BillingPlanCatalog, BillingPlanTier, CreditPackCatalog, UserBilling } from 'src/app/core/types'
 
 type PlanDetailVm = {
@@ -27,6 +27,7 @@ export class PlanDetailsComponent {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly billingService: BillingService,
+    private readonly authService: AuthService,
   ) {
     const planId$ = this.route.paramMap.pipe(
       map((params) => (params.get('planId') || '').toLowerCase() as BillingPlanTier)
@@ -56,6 +57,10 @@ export class PlanDetailsComponent {
     { key: 'quarterly', label: 'Quarterly' },
     { key: 'annually', label: 'Annually' },
   ]
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin
+  }
 
   goToPlan(planId: BillingPlanTier): void {
     void this.router.navigate(['/billing/plans', planId])
