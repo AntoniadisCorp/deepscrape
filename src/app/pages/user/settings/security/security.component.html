@@ -77,6 +77,98 @@
       }
     </div>
 
+    <!-- MFA challenge: verify identity to complete provider link -->
+    @if (mfaLinkStep() !== 'idle') {
+      <div
+        class="flex w-full max-w-3xl flex-col gap-3 rounded-2xl border border-amber-200/70 bg-amber-50/80 p-5 shadow-md dark:border-amber-700/40 dark:bg-amber-900/10">
+        <div class="flex items-start gap-3">
+          <mat-icon class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400">shield_lock</mat-icon>
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+              Verify your identity to link {{ mfaLinkProvider() | uppercase }}
+            </h4>
+            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              Your account has two-factor authentication enabled. Confirm your identity to proceed.
+            </p>
+          </div>
+        </div>
+
+        @if (mfaLinkStep() === 'phone-code') {
+          <div class="space-y-3">
+            <p class="text-xs text-gray-600 dark:text-gray-300">
+              A verification code was sent to
+              <span class="font-mono font-semibold text-gray-800 dark:text-gray-100">{{ mfaLinkPhoneHint() }}</span>.
+              Enter it below.
+            </p>
+            <app-otp-input
+              [formControl]="mfaLinkOtp"
+              (completed)="completeMfaLinkPhoneChallenge()"></app-otp-input>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                appRipple
+                rippleColor="light"
+                (click)="completeMfaLinkPhoneChallenge()"
+                [disabled]="mfaLinkOtp.value.length < 6 || isMfaLinkLoading()"
+                class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+                @if (isMfaLinkLoading()) {
+                  <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+                } @else {
+                  Verify &amp; link
+                }
+              </button>
+              <button
+                type="button"
+                (click)="cancelMfaLinkChallenge()"
+                class="inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                Cancel
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (mfaLinkStep() === 'totp-code') {
+          <div class="space-y-3">
+            <p class="text-xs text-gray-600 dark:text-gray-300">
+              Enter the current 6-digit code from your authenticator app.
+            </p>
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="123456"
+              [formControl]="mfaLinkTotpCode"
+              class="w-full max-w-xs rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                appRipple
+                rippleColor="light"
+                (click)="completeMfaLinkTotpChallenge()"
+                [disabled]="mfaLinkTotpCode.invalid || isMfaLinkLoading()"
+                class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+                @if (isMfaLinkLoading()) {
+                  <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+                } @else {
+                  Verify &amp; link
+                }
+              </button>
+              <button
+                type="button"
+                (click)="cancelMfaLinkChallenge()"
+                class="inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                Cancel
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (mfaLinkError()) {
+          <p class="text-xs text-red-600 dark:text-red-400">{{ mfaLinkError() }}</p>
+        }
+      </div>
+    }
+
     <!-- Connected accounts -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
@@ -239,6 +331,140 @@
       </div>
     </div>
 
+    <!-- Account phone number (sign-in provider) -->
+    <h2
+      class="mt-5 flex items-center justify-start gap-2 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Account phone number
+      @if (isCurrentProvider('phone')) {
+        <div
+          class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
+          Currently logged in
+        </div>
+      }
+    </h2>
+
+    <div
+      class="flex w-full max-w-3xl flex-col gap-3 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <p class="text-sm text-gray-600 dark:text-gray-300">
+        This is your account phone (phone sign-in provider). It is different from SMS MFA factors below.
+      </p>
+
+      @if (user?.phoneNumber) {
+        <div class="rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Current account phone</p>
+          <p class="mt-1 font-mono text-sm text-gray-800 dark:text-gray-100">{{ user?.phoneNumber }}</p>
+          <p class="mt-1 text-xs" [ngClass]="isPhoneVerifiedForDisplay() ? 'text-green-600 dark:text-green-400' : 'text-amber-700 dark:text-amber-300'">
+            {{ isPhoneVerifiedForDisplay() ? 'Verified' : 'Not verified yet' }}
+          </p>
+        </div>
+      } @else {
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          No account phone is linked yet.
+        </p>
+      }
+
+      @if (accountPhoneStep() === 'idle') {
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            appRipple
+            rippleColor="light"
+            (click)="openAccountPhoneEdit()"
+            class="inline-flex items-center justify-center rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500">
+            {{ user?.phoneNumber ? 'Change phone' : 'Add phone' }}
+          </button>
+
+          @if (user?.phoneNumber) {
+            <button
+              type="button"
+              appRipple
+              (click)="unlinkAccountPhone()"
+              [disabled]="loading.remove || isCurrentProvider('phone')"
+              class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+              @if (loading.remove) {
+                <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+              } @else {
+                Unlink account phone
+              }
+            </button>
+          }
+        </div>
+      }
+
+      @if (accountPhoneStep() === 'enter-number') {
+        <div class="space-y-3 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Enter phone in international format. This will be your default account phone for phone sign-in.
+          </p>
+          <input
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="+12025551234"
+            [formControl]="accountPhoneNumber"
+            class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              appRipple
+              rippleColor="light"
+              (click)="sendAccountPhoneCode()"
+              [disabled]="accountPhoneNumber.invalid || loading.phone"
+              class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+              @if (loading.phone) {
+                <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+              } @else {
+                Send verification code
+              }
+            </button>
+            <button
+              type="button"
+              (click)="cancelAccountPhoneEdit()"
+              class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              Cancel
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (accountPhoneStep() === 'enter-code') {
+        <div class="space-y-3 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+          <p class="text-sm text-gray-700 dark:text-gray-200">
+            Enter the 6-digit verification code for
+            <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ accountPhoneNumber.value }}</span>
+          </p>
+          <app-otp-input
+            [formControl]="accountPhoneCode"
+            (completed)="verifyAccountPhoneCode()"></app-otp-input>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              appRipple
+              rippleColor="light"
+              (click)="verifyAccountPhoneCode()"
+              [disabled]="accountPhoneCode.invalid || loading.code"
+              class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+              @if (loading.code) {
+                <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+              } @else {
+                Verify account phone
+              }
+            </button>
+            <button
+              type="button"
+              (click)="cancelAccountPhoneEdit()"
+              class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              Cancel
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (accountPhoneError()) {
+        <p class="text-xs text-red-600 dark:text-red-400">{{ accountPhoneError() }}</p>
+      }
+    </div>
+
     <!-- Two-factor authentication -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
@@ -259,6 +485,37 @@
         </a>
         .
       </h3>
+
+      <div class="rounded-2xl border border-gray-200/70 bg-white/80 px-4 py-4 shadow-sm dark:border-gray-700/60 dark:bg-gray-900/30">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+              MFA status
+            </h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ hasAnyMfaFactors() ? 'Enabled: at least one second factor is enrolled.' : 'Disabled: no second factors are enrolled yet.' }}
+            </p>
+          </div>
+
+          <div class="min-w-[15rem]">
+            <app-radiotoggle
+              [control]="mfaStatusControl"
+              [title]="'Enable MFA/Disable MFA'"
+              [identity]="'mfa-status-toggle'"></app-radiotoggle>
+          </div>
+        </div>
+      </div>
+
+      @if (confirmationDialog()) {
+        <app-dialog
+          class="fixed inset-0 z-50"
+          [title]="getConfirmationTitle()"
+          [subtitle]="getConfirmationSubtitle()"
+          [confirmLabel]="getConfirmationConfirmLabel()"
+          [cancelLabel]="'Cancel'"
+          (onClose)="closeConfirmationDialog()"
+          (onConfirm)="confirmDialogAction()"></app-dialog>
+      }
 
       <div
         class="mt-4 flex h-12 items-center rounded-t-2xl bg-gray-900 px-4 shadow-sm dark:bg-gray6">
@@ -298,6 +555,10 @@
               } @else if (!canEnrollTotp()) {
                 <p class="text-xs text-amber-700 dark:text-amber-300">
                   Authenticator app MFA is not available for phone-only sign-in. Link email/password, Google, or GitHub first.
+                </p>
+              } @else if (phoneMfaFactors().length === 0) {
+                <p class="text-xs text-amber-700 dark:text-amber-300">
+                  In the emulator, you may need to enroll SMS / Text message before enabling an authenticator app.
                 </p>
               }
             </div>
@@ -446,20 +707,15 @@
                   class="text-sm font-semibold text-gray-800 dark:text-gray-200">
                   SMS / Text message
                 </h5>
-                @if (user?.phoneNumber && isPhoneVerifiedForDisplay()) {
+                @if (phoneMfaFactors().length > 0) {
                   <span
                     class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
                     Enrolled
                   </span>
-                } @else if (user?.phoneNumber && !isPhoneVerifiedForDisplay()) {
+                } @else {
                   <span
                     class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                    Pending
-                  </span>
-                } @else if (phoneMfaFactors().length > 0) {
-                  <span
-                    class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                    Enrolled
+                    Available
                   </span>
                 }
               </div>
@@ -467,14 +723,18 @@
                 Get one-time codes sent to your phone via SMS to complete
                 authentication requests.
               </p>
-              @if (phoneMfaFactors().length > 0 && !user?.phoneNumber) {
+              @if (phoneMfaFactors().length > 0) {
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Phone second factor is enrolled in Firebase Authentication.
+                  {{ phoneMfaFactors().length }} phone factor{{ phoneMfaFactors().length > 1 ? 's are' : ' is' }} enrolled in Firebase Authentication.
                 </p>
               }
-              @if (user?.phoneNumber) {
+              @if (getExistingPhoneMfaNumber()) {
                 <p class="font-mono text-xs text-gray-400 dark:text-gray-500">
-                  {{ user?.phoneNumber }}
+                  {{ getExistingPhoneMfaNumber() }}
+                </p>
+              } @else if (user?.phoneNumber) {
+                <p class="font-mono text-xs text-gray-400 dark:text-gray-500">
+                  Suggested: {{ user?.phoneNumber }}
                 </p>
               }
             </div>
@@ -482,33 +742,71 @@
 
           <!-- Idle-state action button -->
           @if (phoneStep() === 'idle') {
-            @if (!isPhoneVerifiedForDisplay()) {
+            @if (phoneMfaFactors().length === 0) {
               <button
                 type="button"
                 appRipple
                 rippleColor="dark"
                 (click)="openPhoneAdd()"
                 class="ml-4 inline-flex shrink-0 items-center justify-center rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors duration-100 ease-in hover:bg-gray-100 dark:bg-gray-700/60 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">
-                {{ user?.phoneNumber ? 'Verify' : 'Add' }}
+                Add SMS MFA
               </button>
             } @else {
-              <button
-                type="button"
-                appRipple
-                (click)="removePhoneNumber()"
-                [disabled]="loading.remove"
-                class="ml-4 inline-flex shrink-0 items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                @if (loading.remove) {
-                  <mat-progress-spinner
-                    mode="indeterminate"
-                    [diameter]="14"></mat-progress-spinner>
-                } @else {
-                  Remove
-                }
-              </button>
+              <div class="ml-4 flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  appRipple
+                  rippleColor="dark"
+                  (click)="openPhoneAdd()"
+                  class="inline-flex items-center justify-center rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors duration-100 ease-in hover:bg-gray-100 dark:bg-gray-700/60 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">
+                  Add another phone
+                </button>
+                <button
+                  type="button"
+                  appRipple
+                  (click)="removePhoneNumber()"
+                  [disabled]="loading.remove"
+                  class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                  @if (loading.remove) {
+                    <mat-progress-spinner
+                      mode="indeterminate"
+                      [diameter]="14"></mat-progress-spinner>
+                  } @else {
+                    Remove all
+                  }
+                </button>
+              </div>
             }
           }
         </div>
+
+        @if (phoneMfaFactors().length > 0) {
+          <div class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
+            <div class="flex flex-col gap-2">
+              @for (factor of phoneMfaFactors(); track factor.uid; let i = $index) {
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {{ factor.displayName || 'SMS / Text message' }}
+                      @if (i === 0) {
+                        <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">Primary</span>
+                      }
+                    </p>
+                    <p class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ $any(factor).phoneNumber || 'Hidden phone' }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    appRipple
+                    (click)="removePhoneMfaFactor(factor.uid)"
+                    [disabled]="loading.remove"
+                    class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                    Remove
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <!-- ── Step 1: enter phone number ── -->
         @if (phoneStep() === 'enter-number') {
@@ -521,6 +819,12 @@
               </span>
               .
             </p>
+
+            @if (user?.phoneNumber) {
+              <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                Your account phone is prefilled as a convenience, but SMS MFA enrollment is separate from linking a phone number for sign-in.
+              </p>
+            }
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
               <!-- Phone number input -->
@@ -551,7 +855,7 @@
                       mode="indeterminate"
                       [diameter]="14"></mat-progress-spinner>
                   } @else {
-                    Send code
+                      Enroll phone
                   }
                 </button>
                 <button
@@ -584,7 +888,7 @@
               </span>
             </p>
             <p class="mb-5 text-xs text-gray-500 dark:text-gray-400">
-              It will verify automatically once you enter the last digit.
+              Enter the 6-digit code sent to your phone to finish SMS MFA enrollment.
             </p>
 
             <div class="mb-5">

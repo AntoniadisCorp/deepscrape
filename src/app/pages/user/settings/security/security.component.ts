@@ -1,14 +1,15 @@
 import { isPlatformBrowser, JsonPipe, NgClass, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, DOCUMENT, inject, PLATFORM_ID, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Auth, ConfirmationResult, GithubAuthProvider, GoogleAuthProvider, MultiFactorInfo, RecaptchaVerifier, TotpSecret, updateProfile, UserCredential, UserInfo } from '@angular/fire/auth';
+import { Auth, ConfirmationResult, GithubAuthProvider, GoogleAuthProvider, MultiFactorInfo, MultiFactorResolver, RecaptchaVerifier, TotpSecret, updateProfile, UserCredential, UserInfo } from '@angular/fire/auth';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { from } from 'rxjs/internal/observable/from';
-import { SnackBarType, StinputComponent } from 'src/app/core/components';
+import { firstValueFrom } from 'rxjs';
+import { DialogComponent, RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
 import { createPasswordStrengthValidator, RippleDirective } from 'src/app/core/directives';
 import { checkPasswordStrength, getErrorLabel, getErrorMessage } from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
@@ -20,7 +21,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-security-tab',
-  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass, OtpInputComponent],
+  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass, OtpInputComponent, RadioToggleComponent, DialogComponent],
   templateUrl: './security.component.html',
   styleUrl: './security.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,12 +62,18 @@ export class SecurityTabComponent {
   // ── Phone 2FA inline verification ──────────────────────────────────────────
   phoneStep = signal<'idle' | 'enter-number' | 'enter-code'>('idle')
   phoneError = signal('')
+  accountPhoneStep = signal<'idle' | 'enter-number' | 'enter-code'>('idle')
+  accountPhoneError = signal('')
   readonly phoneNumber = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\+[1-9]\d{7,14}$/)] })
   readonly otpControl = new FormControl('', { nonNullable: true })
+  readonly accountPhoneNumber = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\+[1-9]\d{7,14}$/)] })
+  readonly accountPhoneCode = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] })
+  readonly mfaStatusControl = new FormControl(false, { nonNullable: true })
   readonly totpCode = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] })
   readonly totpDisplayName = new FormControl('Authenticator app', { nonNullable: true, validators: [Validators.required, Validators.maxLength(40)] })
   private recaptchaVerifier!: RecaptchaVerifier
-  private confirmationResult!: ConfirmationResult
+  private phoneMfaVerificationId = ''
+  private accountPhoneConfirmationResult: ConfirmationResult | null = null
   private pendingTotpSecret: TotpSecret | null = null
   private readonly platformId = inject(PLATFORM_ID)
   private readonly document = inject(DOCUMENT)
@@ -82,6 +89,20 @@ export class SecurityTabComponent {
   readonly sessionsError = signal('')
   readonly revokingSessionId = signal('')
   readonly currentSessionId = signal('')
+  readonly confirmationDialog = signal<'disable-mfa' | 'revoke-current-session' | null>(null)
+  readonly pendingSessionToRevoke = signal<(loginHistoryInfo & { id?: string }) | null>(null)
+
+  // ── MFA challenge state for provider linking (when user has MFA enabled) ──
+  readonly mfaLinkResolver = signal<MultiFactorResolver | null>(null)
+  readonly mfaLinkProvider = signal<'google' | 'github' | ''>('')
+  readonly mfaLinkStep = signal<'idle' | 'phone-code' | 'totp-code'>('idle')
+  readonly mfaLinkVerificationId = signal('')
+  readonly mfaLinkPhoneHint = signal('')
+  readonly mfaLinkPhoneFactorIndex = signal(0) // Track which phone factor we're trying
+  readonly mfaLinkPhoneFactorAttempts = signal<{factorUid: string, phoneNumber: string, error: string}[]>([]) // Track failed attempts
+  readonly mfaLinkOtp = new FormControl('', { nonNullable: true })
+  readonly mfaLinkTotpCode = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] })
+  readonly mfaLinkError = signal('')
 
 
   public get email() {
@@ -137,6 +158,12 @@ export class SecurityTabComponent {
     })
 
     this.email?.disable()
+
+    this.mfaStatusControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        void this.onMfaStatusSelected(value)
+      })
   }
 
   initUser() {
@@ -229,39 +256,12 @@ export class SecurityTabComponent {
     const loginId = session?.id || ''
     if (!loginId || this.revokingSessionId()) return
 
-    if (this.isCurrentSession(session) && !this.confirmCurrentSessionRevoke()) {
+    if (this.isCurrentSession(session)) {
+      this.openCurrentSessionRevokeDialog(session)
       return
     }
 
-    this.revokingSessionId.set(loginId)
-    this.sessionsError.set('')
-    this.cdr.detectChanges()
-
-    this.firestoreService.revokeMyLoginSession(loginId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.showSnackbar('Session revoked successfully', SnackBarType.success, '', 3000)
-          if (loginId === this.currentSessionId()) {
-            this.authService.logout().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-              complete: () => {
-                this.revokingSessionId.set('')
-                this.cdr.detectChanges()
-              }
-            })
-            return
-          }
-
-          this.revokingSessionId.set('')
-          this.loadActiveSessions()
-          this.cdr.detectChanges()
-        },
-        error: (error) => {
-          this.revokingSessionId.set('')
-          this.sessionsError.set(getErrorMessage(error, this.translate))
-          this.cdr.detectChanges()
-        }
-      })
+    this.runSessionRevoke(session)
   }
 
   private asDate(input: any): Date | null {
@@ -336,12 +336,218 @@ export class SecurityTabComponent {
       })
       this.initProviders()
       this.syncTotpFactors()
+      this.syncMfaStatusControl()
       this.loadActiveSessions()
     }
   }
 
+  hasAnyMfaFactors(): boolean {
+    return this.totpFactors().length > 0 || this.phoneMfaFactors().length > 0
+  }
+
+  private syncMfaStatusControl(): void {
+    this.mfaStatusControl.setValue(this.hasAnyMfaFactors(), { emitEvent: false })
+  }
+
+  private canEnrollPhoneMfa(): boolean {
+    return this.canEnrollTotp()
+  }
+
+  getExistingPhoneMfaNumber(): string {
+    const phoneFactor = this.phoneMfaFactors()[0] as MultiFactorInfo & { phoneNumber?: string }
+    return String(phoneFactor?.phoneNumber || '').trim()
+  }
+
+  private getPhoneNumberCandidate(): string {
+    return this.getExistingPhoneMfaNumber() || String(this.user?.phoneNumber || '').trim()
+  }
+
+  private async onMfaStatusSelected(enabled: boolean): Promise<void> {
+    if (enabled) {
+      if (this.hasAnyMfaFactors()) {
+        this.syncMfaStatusControl()
+        return
+      }
+
+      if (!this.canEnrollPhoneMfa()) {
+        this.syncMfaStatusControl()
+        this.showSnackbar('Multi-factor authentication is not available for the current sign-in method. Sign in with email/password, Google, or GitHub and try again.', SnackBarType.warning, '', 6000)
+        return
+      }
+
+      if (this.user?.emailVerified) {
+        // Prefer SMS if user already has a verified phone (linked phone provider or phoneVerified flag)
+        if (this.isPhoneVerifiedForDisplay()) {
+          this.openPhoneAdd()
+          return
+        }
+        await this.startTotpSetup()
+        return
+      }
+
+      this.openPhoneAdd()
+      this.showSnackbar('Add an SMS second factor first, or verify your email to enable authenticator app MFA.', SnackBarType.info, '', 6000)
+      return
+    }
+
+    if (!this.hasAnyMfaFactors()) {
+      this.syncMfaStatusControl()
+      return
+    }
+
+    this.confirmationDialog.set('disable-mfa')
+    this.cdr.detectChanges()
+    return
+
+  }
+
+  closeConfirmationDialog(): void {
+    const dialogType = this.confirmationDialog()
+    this.confirmationDialog.set(null)
+    this.pendingSessionToRevoke.set(null)
+
+    if (dialogType === 'disable-mfa') {
+      this.syncMfaStatusControl()
+    }
+
+    this.cdr.detectChanges()
+  }
+
+  async confirmDialogAction(): Promise<void> {
+    const dialogType = this.confirmationDialog()
+    this.confirmationDialog.set(null)
+
+    if (dialogType === 'disable-mfa') {
+      await this.disableMfaFactors()
+      return
+    }
+
+    if (dialogType === 'revoke-current-session') {
+      const session = this.pendingSessionToRevoke()
+      this.pendingSessionToRevoke.set(null)
+      if (session) {
+        this.runSessionRevoke(session)
+      }
+      return
+    }
+
+    this.pendingSessionToRevoke.set(null)
+    this.cdr.detectChanges()
+  }
+
+  getConfirmationTitle(): string {
+    if (this.confirmationDialog() === 'disable-mfa') {
+      return 'Disable multi-factor authentication?'
+    }
+
+    if (this.confirmationDialog() === 'revoke-current-session') {
+      return 'Revoke current session?'
+    }
+
+    return 'Confirm action'
+  }
+
+  getConfirmationSubtitle(): string {
+    if (this.confirmationDialog() === 'disable-mfa') {
+      return 'This will remove <strong class="text-white">all enrolled second factors</strong> from your account.'
+    }
+
+    if (this.confirmationDialog() === 'revoke-current-session') {
+      return 'You are about to revoke your <strong class="text-white">current session</strong>. You will be signed out immediately.'
+    }
+
+    return ''
+  }
+
+  getConfirmationConfirmLabel(): string {
+    if (this.confirmationDialog() === 'disable-mfa') {
+      return 'Disable MFA'
+    }
+
+    if (this.confirmationDialog() === 'revoke-current-session') {
+      return 'Revoke session'
+    }
+
+    return 'Confirm'
+  }
+
+  private openCurrentSessionRevokeDialog(session: loginHistoryInfo & { id?: string }): void {
+    this.pendingSessionToRevoke.set(session)
+    this.confirmationDialog.set('revoke-current-session')
+    this.cdr.detectChanges()
+  }
+
+  private async disableMfaFactors(): Promise<void> {
+
+    this.loading.mfa = true
+    this.totpError.set('')
+    this.phoneError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      const factorsToRemove = [...this.totpFactors(), ...this.phoneMfaFactors()]
+      for (const factor of factorsToRemove) {
+        await this.authService.unenrollMultiFactor(factor.uid)
+      }
+
+      this.pendingTotpSecret = null
+      this.totpStep.set('idle')
+      this.phoneStep.set('idle')
+      this.phoneMfaVerificationId = ''
+      await this.refreshSecurityUser()
+      this.showSnackbar('Two-factor authentication disabled', SnackBarType.success, '', 3000)
+    } catch (error: any) {
+      const message = this.getMfaErrorMessage(error)
+      this.showSnackbar(message, SnackBarType.error, '', 6000)
+      this.syncMfaStatusControl()
+    } finally {
+      this.loading.mfa = false
+      this.cdr.detectChanges()
+    }
+  }
+
+  private runSessionRevoke(session: loginHistoryInfo & { id?: string }): void {
+    const loginId = session?.id || ''
+    if (!loginId || this.revokingSessionId()) return
+
+    this.revokingSessionId.set(loginId)
+    this.sessionsError.set('')
+    this.cdr.detectChanges()
+
+    this.firestoreService.revokeMyLoginSession(loginId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.showSnackbar('Session revoked successfully', SnackBarType.success, '', 3000)
+          if (loginId === this.currentSessionId()) {
+            this.authService.logout().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              complete: () => {
+                this.revokingSessionId.set('')
+                this.cdr.detectChanges()
+              }
+            })
+            return
+          }
+
+          this.revokingSessionId.set('')
+          this.loadActiveSessions()
+          this.cdr.detectChanges()
+        },
+        error: (error) => {
+          this.revokingSessionId.set('')
+          this.sessionsError.set(getErrorMessage(error, this.translate))
+          this.cdr.detectChanges()
+        }
+      })
+  }
+
 
   linkLoginProvider(provider: string) {
+    if (this.isProviderMutationInProgress()) {
+      this.showSnackbar('Another provider operation is in progress. Please wait.', SnackBarType.info, '', 3000)
+      return
+    }
+
     console.log('linkLoginProvider', provider)
 
     switch (provider) {
@@ -357,8 +563,13 @@ export class SecurityTabComponent {
 
   }
 
+  private isProviderMutationInProgress(): boolean {
+    return this.loading.google || this.loading.github || this.loading.remove || this.isMfaLinkLoading()
+  }
+
   private linkWithGoogle() {
     this.loading.google = true;
+    const expectedUid = this.user?.uid || ''
     const provider = new GoogleAuthProvider()
     provider.addScope("email")
     provider.addScope("profile")
@@ -373,6 +584,10 @@ export class SecurityTabComponent {
           next: async (response) => {
 
             if (response && response.user) {
+              if (expectedUid && response.user.uid !== expectedUid) {
+                this.showSnackbar('Linking was blocked because Google authenticated a different account. Sign in with the same email as your current account and try again.', SnackBarType.error, '', 7000)
+                return
+              }
               // this.pendingCredential = GoogleAuthProvider.credentialFromResult(response.result);
               // If there's a pending credential from a previous social login attempt, link it now
               // const userCredential =  await this.handlePendingCredentialLinking(response.user)
@@ -393,6 +608,10 @@ export class SecurityTabComponent {
           error: (error) => {
             // this.extractFirebaseError(error)
             // this.handleAccountExistsError(error, 'google.com')
+            if (error?.code === 'auth/multi-factor-auth-required') {
+              void this.handleMfaLinkChallenge(error, 'google')
+              return
+            }
             const errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
             this.loading.google = false
@@ -408,6 +627,7 @@ export class SecurityTabComponent {
 
   private linkWithGitHub() {
     this.loading.github = true;
+    const expectedUid = this.user?.uid || ''
 
     const provider = new GithubAuthProvider();
     provider.addScope('user:email')
@@ -422,6 +642,10 @@ export class SecurityTabComponent {
           next: async (response) => {
 
             if (response && response.user) {
+              if (expectedUid && response.user.uid !== expectedUid) {
+                this.showSnackbar('Linking was blocked because GitHub authenticated a different account. Sign in with the same email as your current account and try again.', SnackBarType.error, '', 7000)
+                return
+              }
               // this.pendingCredential = GithubAuthProvider.credentialFromResult(response.result);
               // If there's a pending credential from a previous social login attempt, link it now
               // const userCredential =  await this.handlePendingCredentialLinking(response.user)
@@ -442,6 +666,10 @@ export class SecurityTabComponent {
           error: (error) => {
             // this.extractFirebaseError(error)
             // this.handleAccountExistsError(error, 'github.com')
+            if (error?.code === 'auth/multi-factor-auth-required') {
+              void this.handleMfaLinkChallenge(error, 'github')
+              return
+            }
             const errorMessage = getErrorMessage(error, this.translate)
             this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
             this.loading.github = false
@@ -457,6 +685,11 @@ export class SecurityTabComponent {
   }
 
   protected disconnectProvider(provider: string) {
+    if (this.isProviderMutationInProgress()) {
+      this.showSnackbar('Another provider operation is in progress. Please wait.', SnackBarType.info, '', 3000)
+      return
+    }
+
     // Check if the provider to be unlinked is the currently logged-in provider
     const providerId = this.toFirebaseProviderId(provider)
     if (this.isCurrentProvider(provider)) {
@@ -488,7 +721,8 @@ export class SecurityTabComponent {
             this.loading.email = !(provider === 'password')
 
           // Handle errors and show an error message
-          const errorMessage = getErrorMessage(error, this.translate);
+          const explicitMessage = typeof error?.message === 'string' ? error.message.trim() : ''
+          const errorMessage = explicitMessage || getErrorMessage(error, this.translate);
           this.showSnackbar(errorMessage, SnackBarType.error, '', 5000);
           this.cdr.detectChanges()
         },
@@ -644,7 +878,7 @@ export class SecurityTabComponent {
       normalizedMessage.includes('missing phoneenrollmentinfo') ||
       normalizedMessage.includes('phoneenrollmentinfo')
     ) {
-      return 'Add and verify a phone number first, then enable authenticator app MFA.'
+      return 'Add SMS / Text message as a real second factor first, then enable authenticator app MFA.'
     }
 
     if (
@@ -681,6 +915,7 @@ export class SecurityTabComponent {
     const factors = this.authService.getEnrolledMultiFactorHints()
     this.totpFactors.set(factors.filter((factor) => factor.factorId === 'totp'))
     this.phoneMfaFactors.set(factors.filter((factor) => factor.factorId === 'phone'))
+    this.syncMfaStatusControl()
   }
 
 
@@ -726,9 +961,115 @@ export class SecurityTabComponent {
   openPhoneAdd(): void {
     this.phoneStep.set('enter-number')
     this.phoneError.set('')
-    this.phoneNumber.reset('')
+    this.phoneNumber.reset(this.getPhoneNumberCandidate())
     this.otpControl.reset('')
+    this.phoneMfaVerificationId = ''
     this.cdr.detectChanges()
+  }
+
+  openAccountPhoneEdit(): void {
+    this.accountPhoneStep.set('enter-number')
+    this.accountPhoneError.set('')
+    this.accountPhoneNumber.reset(String(this.user?.phoneNumber || '').trim())
+    this.accountPhoneCode.reset('')
+    this.accountPhoneConfirmationResult = null
+    this.cdr.detectChanges()
+  }
+
+  async sendAccountPhoneCode(): Promise<void> {
+    if (this.accountPhoneNumber.invalid || this.loading.phone) return
+
+    const existingAccountPhone = String(this.user?.phoneNumber || '').trim()
+    const nextPhone = String(this.accountPhoneNumber.value || '').trim()
+    if (existingAccountPhone && existingAccountPhone !== nextPhone) {
+      this.accountPhoneError.set('Unlink your current account phone first, then add the new one.')
+      this.cdr.detectChanges()
+      return
+    }
+
+    this.loading.phone = true
+    this.accountPhoneError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      this.accountPhoneConfirmationResult = await this.authService.linkPhoneNumber(this.accountPhoneNumber.value, this.recaptchaVerifier)
+      this.accountPhoneStep.set('enter-code')
+      this.accountPhoneCode.reset('')
+      this.showSnackbar('Verification code sent to your account phone', SnackBarType.info, '', 3000)
+    } catch (error: any) {
+      this.accountPhoneError.set(getErrorMessage(error, this.translate))
+      try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
+      this.initRecaptcha()
+    } finally {
+      this.loading.phone = false
+      this.cdr.detectChanges()
+    }
+  }
+
+  async verifyAccountPhoneCode(): Promise<void> {
+    if (this.accountPhoneCode.invalid || !this.accountPhoneConfirmationResult || this.loading.code) return
+    this.loading.code = true
+    this.accountPhoneError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      const result = await this.authService.completePhoneVerification(
+        this.accountPhoneConfirmationResult,
+        this.accountPhoneCode.value
+      )
+
+      const linkedPhone = String(result.user.phoneNumber || this.accountPhoneNumber.value || '').trim()
+      if (result.user?.uid && linkedPhone) {
+        await this.firestoreService.updateUserPhoneNumber(result.user.uid, linkedPhone, true)
+      }
+
+      await this.refreshSecurityUser()
+      this.accountPhoneStep.set('idle')
+      this.accountPhoneConfirmationResult = null
+      this.accountPhoneCode.reset('')
+      this.showSnackbar('Account phone verified successfully', SnackBarType.success, '', 3000)
+    } catch (error: any) {
+      this.accountPhoneError.set(getErrorMessage(error, this.translate))
+      this.accountPhoneCode.reset('')
+    } finally {
+      this.loading.code = false
+      this.cdr.detectChanges()
+    }
+  }
+
+  cancelAccountPhoneEdit(): void {
+    this.accountPhoneStep.set('idle')
+    this.accountPhoneError.set('')
+    this.accountPhoneNumber.reset('')
+    this.accountPhoneCode.reset('')
+    this.accountPhoneConfirmationResult = null
+    this.cdr.detectChanges()
+  }
+
+  async unlinkAccountPhone(): Promise<void> {
+    if (!this.user?.uid) return
+    if (this.isCurrentProvider('phone')) {
+      this.showSnackbar('Cannot unlink phone while it is your currently active sign-in provider.', SnackBarType.error, '', 5000)
+      return
+    }
+
+    this.loading.remove = true
+    this.accountPhoneError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      await this.authService.unlinkProvider('phone')
+      await this.firestoreService.updateUserPhoneNumber(this.user.uid, '', false)
+      await firstValueFrom(this.authService.updatePhoneVerificationStatus(this.user.uid, false))
+      await this.refreshSecurityUser()
+      this.showSnackbar('Account phone unlinked successfully', SnackBarType.success, '', 3000)
+    } catch (error: any) {
+      this.accountPhoneError.set(getErrorMessage(error, this.translate))
+      this.showSnackbar(this.accountPhoneError(), SnackBarType.error, '', 5000)
+    } finally {
+      this.loading.remove = false
+      this.cdr.detectChanges()
+    }
   }
 
   async sendPhoneCode(): Promise<void> {
@@ -737,13 +1078,14 @@ export class SecurityTabComponent {
     this.phoneError.set('')
     this.cdr.detectChanges()
     try {
-      this.confirmationResult = await this.authService.linkPhoneNumber(
+      this.phoneMfaVerificationId = await this.authService.startPhoneMfaEnrollment(
         this.phoneNumber.value, this.recaptchaVerifier
       )
       this.phoneStep.set('enter-code')
       this.otpControl.reset('')
+      this.showSnackbar('Verification code sent to your phone', SnackBarType.info, '', 3000)
     } catch (error: any) {
-      this.phoneError.set(getErrorMessage(error, this.translate))
+      this.phoneError.set(this.getMfaErrorMessage(error))
       try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
       this.initRecaptcha()
     } finally {
@@ -753,20 +1095,18 @@ export class SecurityTabComponent {
   }
 
   async verifyPhoneOtp(code: string): Promise<void> {
-    if (!code || code.length < 6 || !this.confirmationResult || this.loading.code) return
+    if (!code || code.length < 6 || !this.phoneMfaVerificationId || this.loading.code) return
     this.loading.code = true
     this.phoneError.set('')
     this.cdr.detectChanges()
     try {
-      const result = await this.authService.completePhoneVerification(this.confirmationResult, code)
-      if (result?.user) {
-        const newUser = await this.authService.refreshUserData()
-        if (newUser) this.user = newUser
-        this.phoneStep.set('idle')
-        this.showSnackbar('Phone number verified and linked!', SnackBarType.success, '', 3000)
-      }
+      await this.authService.completePhoneMfaEnrollment(this.phoneMfaVerificationId, code)
+      await this.refreshSecurityUser()
+      this.phoneStep.set('idle')
+      this.phoneMfaVerificationId = ''
+      this.showSnackbar('SMS second factor enrolled successfully!', SnackBarType.success, '', 3000)
     } catch (error: any) {
-      this.phoneError.set(getErrorMessage(error, this.translate))
+      this.phoneError.set(this.getMfaErrorMessage(error))
       this.otpControl.reset('')
     } finally {
       this.loading.code = false
@@ -779,6 +1119,7 @@ export class SecurityTabComponent {
     this.phoneError.set('')
     this.phoneNumber.reset('')
     this.otpControl.reset('')
+    this.phoneMfaVerificationId = ''
     this.cdr.detectChanges()
   }
 
@@ -786,26 +1127,219 @@ export class SecurityTabComponent {
     this.loading.remove = true
     this.cdr.detectChanges()
     try {
-      await this.authService.unlinkProvider('phone')
-      if (this.user?.uid) {
-        await this.authService.updatePhoneVerificationStatus(this.user.uid).toPromise()
+      for (const factor of this.phoneMfaFactors()) {
+        await this.authService.unenrollMultiFactor(factor.uid)
       }
       await this.refreshSecurityUser()
-      this.showSnackbar('Phone number removed', SnackBarType.success, '', 3000)
+      this.showSnackbar('SMS second factor removed', SnackBarType.success, '', 3000)
     } catch (error: any) {
-      this.showSnackbar(getErrorMessage(error, this.translate), SnackBarType.error, '', 5000)
+      this.showSnackbar(this.getMfaErrorMessage(error), SnackBarType.error, '', 5000)
     } finally {
       this.loading.remove = false
       this.cdr.detectChanges()
     }
   }
 
-  private confirmCurrentSessionRevoke(): boolean {
-    if (!isPlatformBrowser(this.platformId)) {
-      return true
+  async removePhoneMfaFactor(factorUid: string): Promise<void> {
+    if (this.loading.remove) return
+    this.loading.remove = true
+    this.phoneError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      await this.authService.unenrollMultiFactor(factorUid)
+      await this.refreshSecurityUser()
+      this.showSnackbar('SMS second factor removed', SnackBarType.success, '', 3000)
+    } catch (error: any) {
+      this.phoneError.set(this.getMfaErrorMessage(error))
+      this.showSnackbar(this.phoneError(), SnackBarType.error, '', 5000)
+    } finally {
+      this.loading.remove = false
+      this.cdr.detectChanges()
+    }
+  }
+
+  // ── MFA challenge for provider linking ────────────────────────────────────
+
+  private async handleMfaLinkChallenge(error: any, provider: 'google' | 'github'): Promise<void> {
+    const resolver = this.authService.getMfaResolverFromError(error)
+    if (!resolver) {
+      const errorMessage = getErrorMessage(error, this.translate)
+      this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
+      this.loading[provider] = false
+      this.cdr.detectChanges()
+      return
     }
 
-    return window.confirm('You are about to revoke your current session. This will sign you out immediately. Continue?')
+    this.mfaLinkResolver.set(resolver)
+    this.mfaLinkProvider.set(provider)
+    this.mfaLinkError.set('')
+    this.mfaLinkPhoneFactorIndex.set(0) // Reset phone factor index
+    this.mfaLinkPhoneFactorAttempts.set([]) // Clear attempts
+    this.mfaLinkOtp.reset('')
+    this.mfaLinkTotpCode.reset('')
+
+    const phoneFactors = resolver.hints.filter(h => h.factorId === 'phone')
+    const totpFactor = resolver.hints.find(h => h.factorId === 'totp')
+
+    if (phoneFactors.length > 0) {
+      this.loading[provider] = true
+      this.cdr.detectChanges()
+      await this.tryMfaPhoneLinkWithFallback(resolver, phoneFactors, provider)
+    } else if (totpFactor) {
+      this.mfaLinkStep.set('totp-code')
+      this.loading[provider] = false
+    } else {
+      const errorMessage = getErrorMessage(error, this.translate)
+      this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
+      this.loading[provider] = false
+    }
+
+    this.cdr.detectChanges()
+  }
+
+  private async tryMfaPhoneLinkWithFallback(resolver: MultiFactorResolver, phoneFactors: any[], provider: 'google' | 'github'): Promise<void> {
+    const attempts: {factorUid: string, phoneNumber: string, error: string}[] = []
+
+    for (let i = 0; i < phoneFactors.length; i++) {
+      const phoneFactor = phoneFactors[i]
+      const phoneInfo = phoneFactor as MultiFactorInfo & { phoneNumber?: string }
+      const phoneNumber = phoneInfo.phoneNumber || phoneFactor.displayName || 'your phone'
+      const priority = i === 0 ? 'primary' : i === 1 ? 'secondary' : 'tertiary'
+
+      try {
+        this.mfaLinkPhoneFactorIndex.set(i)
+        this.mfaLinkPhoneHint.set(`${phoneNumber} (${priority})`)
+        this.cdr.detectChanges()
+
+        const verificationId = await this.authService.startPhoneMfaChallenge(
+          resolver, phoneFactor.uid, this.recaptchaVerifier
+        )
+        this.mfaLinkVerificationId.set(verificationId)
+        this.mfaLinkStep.set('phone-code')
+        this.loading[provider] = false
+        this.cdr.detectChanges()
+        return // Success, exit the loop
+      } catch (err: any) {
+        const errorMsg = this.getMfaErrorMessage(err)
+        attempts.push({
+          factorUid: phoneFactor.uid,
+          phoneNumber: phoneNumber,
+          error: errorMsg
+        })
+
+        // If this isn't the last attempt, try the next phone
+        if (i < phoneFactors.length - 1) {
+          try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
+          this.initRecaptcha()
+          continue // Try next phone
+        }
+      }
+    }
+
+    // All phone factors failed
+    this.mfaLinkPhoneFactorAttempts.set(attempts)
+    const attemptsDisplay = attempts.map((a, idx) => `${idx + 1}. ${a.phoneNumber}: ${a.error}`).join('\n')
+    this.mfaLinkError.set(`Failed to send verification code to all enrolled phones:\n${attemptsDisplay}`)
+    this.mfaLinkStep.set('idle')
+    this.mfaLinkResolver.set(null)
+    try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
+    this.initRecaptcha()
+    this.loading[provider] = false
+    this.cdr.detectChanges()
+  }
+
+  async completeMfaLinkPhoneChallenge(): Promise<void> {
+    const code = this.mfaLinkOtp.value
+    const resolver = this.mfaLinkResolver()
+    const verificationId = this.mfaLinkVerificationId()
+    const provider = this.mfaLinkProvider()
+    if (!code || code.length < 6 || !verificationId || !resolver || !provider) return
+
+    this.loading[provider] = true
+    this.mfaLinkError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      const userCredential = await this.authService.completeMfaPhoneChallenge(resolver, verificationId, code)
+      await this.finishMfaLinkCompletion(userCredential, provider)
+    } catch (err: any) {
+      this.mfaLinkError.set(this.getMfaErrorMessage(err))
+      this.mfaLinkOtp.reset('')
+    } finally {
+      this.loading[provider] = false
+      this.cdr.detectChanges()
+    }
+  }
+
+  async completeMfaLinkTotpChallenge(): Promise<void> {
+    const code = this.mfaLinkTotpCode.value
+    const resolver = this.mfaLinkResolver()
+    const provider = this.mfaLinkProvider()
+    if (!code || this.mfaLinkTotpCode.invalid || !resolver || !provider) return
+
+    this.loading[provider] = true
+    this.mfaLinkError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      const totpHint = resolver.hints.find(h => h.factorId === 'totp')
+      if (!totpHint) throw new Error('No TOTP factor enrolled')
+      const userCredential = await this.authService.completeMfaTotpChallenge(resolver, totpHint.uid, code)
+      await this.finishMfaLinkCompletion(userCredential, provider)
+    } catch (err: any) {
+      this.mfaLinkError.set(this.getMfaErrorMessage(err))
+      this.mfaLinkTotpCode.reset('')
+    } finally {
+      this.loading[provider] = false
+      this.cdr.detectChanges()
+    }
+  }
+
+  private async finishMfaLinkCompletion(userCredential: UserCredential, provider: 'google' | 'github'): Promise<void> {
+    if (userCredential?.user) {
+      const expectedUid = this.user?.uid || ''
+      if (expectedUid && userCredential.user.uid !== expectedUid) {
+        throw new Error('Linking was blocked because MFA challenge resolved to a different user account. Please sign in with the original account and retry.')
+      }
+      if (userCredential.user.displayName || userCredential.user.photoURL) {
+        await updateProfile(userCredential.user, {
+          displayName: userCredential.user.displayName,
+          photoURL: userCredential.user.photoURL || DEFAULT_PROFILE_URL,
+        })
+      }
+      await this.firestoreService.storeUserData(
+        userCredential.user,
+        this.user?.providerId || `${provider}.com`,
+        true,
+        this.user?.username
+      )
+    }
+    await this.refreshSecurityUser()
+    const label = provider.charAt(0).toUpperCase() + provider.slice(1)
+    this.cancelMfaLinkChallenge()
+    this.showSnackbar(`${label} provider linked successfully`, SnackBarType.success, '', 3000)
+  }
+
+  cancelMfaLinkChallenge(): void {
+    const provider = this.mfaLinkProvider()
+    if (provider) this.loading[provider] = false
+    this.mfaLinkResolver.set(null)
+    this.mfaLinkProvider.set('')
+    this.mfaLinkStep.set('idle')
+    this.mfaLinkVerificationId.set('')
+    this.mfaLinkPhoneHint.set('')
+    this.mfaLinkPhoneFactorIndex.set(0)
+    this.mfaLinkPhoneFactorAttempts.set([])
+    this.mfaLinkOtp.reset('')
+    this.mfaLinkTotpCode.reset('')
+    this.mfaLinkError.set('')
+    this.cdr.detectChanges()
+  }
+
+  isMfaLinkLoading(): boolean {
+    const provider = this.mfaLinkProvider()
+    return provider ? this.loading[provider] : false
   }
 
   ngOnDestroy(): void {
