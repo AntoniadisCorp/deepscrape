@@ -66,3 +66,4 @@ functions/src/serviceAccount.json
 
 # Temporary test output files
 tmp-test-output*.txt
+functions/serviceAccount.json
