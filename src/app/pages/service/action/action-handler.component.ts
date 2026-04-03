@@ -135,7 +135,9 @@ export class ActionHandlerComponent implements OnInit {
     console.log('Step 2: Syncing Firestore...');
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
-      throw new Error('No user found after verification');
+      // Action links can be opened while logged out. Auth state will update on next sign-in.
+      console.log('No authenticated user during verification link handling; skipping profile sync.');
+      return;
     }
 
     console.log('Step 3: Updating Firestore...');
@@ -159,7 +161,7 @@ export class ActionHandlerComponent implements OnInit {
   /** Resolve the redirect URL after email verification */
   private resolveRedirectUrl(): string {
     if (!this.continueUrl) {
-      return '/dashboard';
+      return '/service/onboarding';
     }
 
     try {
@@ -173,7 +175,7 @@ export class ActionHandlerComponent implements OnInit {
     } catch {
       console.warn('Invalid continueUrl, using dashboard');
     }
-    return '/dashboard';
+    return '/service/onboarding';
   }
 
   /** Handle email verification errors */

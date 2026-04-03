@@ -36,6 +36,7 @@ import {
   MultiFactorResolver,
   OAuthProvider,
   PhoneAuthProvider,
+  PhoneMultiFactorGenerator,
   RecaptchaVerifier,
   signInWithEmailAndPassword,
   signInWithEmailLink,
@@ -56,7 +57,7 @@ import { HttpClient } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service'; // Import CookieService
 
 import { I18nService } from 'src/app/core/i18n';
-import { cleanAndParseJSON, getBrowser, getDeviceFingerprintHash, getErrorMessage } from 'src/app/core/functions';
+import { cleanAndParseJSON, getBrowser, getDeviceFingerprintHash, getErrorMessage, resolveSafeReturnUrl } from 'src/app/core/functions';
 import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
@@ -125,6 +126,9 @@ export class LoginComponent  {
   public mfaCode = '';
   private mfaResolver: MultiFactorResolver | null = null;
   private mfaEnrollmentUid = '';
+  private mfaVerificationId = '';
+  public mfaFactorType: 'totp' | 'phone' = 'totp';
+  public mfaPhoneDisplay = '';
   private mfaProviderId = 'password';
   public mfaDisplayName = 'Authenticator app';
 
@@ -259,7 +263,7 @@ export class LoginComponent  {
    * @param {string} provider - Provider causing the error.
    */
   private handleError(error: any, context: string, provider: string) {
-    const errorMsg = getErrorMessage(error, this.translate);
+    const errorMsg = this.getFriendlyAuthErrorMessage(error);
     this.errorMessage = errorMsg;
     this.showSnackbar(errorMsg, SnackBarType.error, '', 5000);
     this.trackLoginAttempt(provider, false, undefined, errorMsg, context);
@@ -273,19 +277,39 @@ export class LoginComponent  {
     }
 
     try {
-      const resolver = getMultiFactorResolver(this.auth, error);
-      const totpFactor = resolver.hints.find((hint) => hint.factorId === 'totp');
+      const resolver = this.firestoreService.getMultiFactorResolver(error);
+      const hints = resolver.hints || [];
+      const phoneFactor = hints.find((hint: any) =>
+        hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
+      );
+      const totpFactor = hints.find((hint: any) =>
+        hint?.factorId === TotpMultiFactorGenerator.FACTOR_ID || (hint?.factorId === 'totp')
+      );
 
-      if (!totpFactor) {
-        this.errorMessage = 'This account requires an unsupported second factor.';
+      if (!phoneFactor && !totpFactor) {
+        const factorList = hints.map((h: any) => h?.factorId || 'unknown').join(', ') || 'none';
+        this.errorMessage = `This account requires a second factor, but none of the enrolled factors are currently supported by this client. Enrolled factors: ${factorList}.`;
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
         return true;
       }
 
       this.mfaResolver = resolver;
-      this.mfaEnrollmentUid = totpFactor.uid;
       this.mfaProviderId = providerId;
-      this.mfaDisplayName = totpFactor.displayName || 'Authenticator app';
+      this.mfaCode = '';
+
+      if (phoneFactor) {
+        this.mfaFactorType = 'phone';
+        this.mfaEnrollmentUid = '';
+        this.mfaDisplayName = phoneFactor.displayName || 'Phone number';
+        this.mfaPhoneDisplay = (phoneFactor as any)?.phoneNumber || 'your phone';
+        await this.sendMfaSmsCode();
+      } else {
+        this.mfaFactorType = 'totp';
+        this.mfaEnrollmentUid = totpFactor!.uid;
+        this.mfaDisplayName = totpFactor!.displayName || 'Authenticator app';
+        this.mfaPhoneDisplay = '';
+      }
+
       this.mfaCode = '';
       this.showMfaChallenge = true;
       this.errorMessage = '';
@@ -305,13 +329,51 @@ export class LoginComponent  {
     this.showMfaChallenge = false;
     this.mfaResolver = null;
     this.mfaEnrollmentUid = '';
+    this.mfaVerificationId = '';
+    this.mfaFactorType = 'totp';
+    this.mfaPhoneDisplay = '';
     this.mfaProviderId = 'password';
     this.mfaDisplayName = 'Authenticator app';
     this.mfaCode = '';
   }
 
+  public async resendMfaSmsCode(): Promise<void> {
+    if (!this.showMfaChallenge || this.mfaFactorType !== 'phone') {
+      return;
+    }
+    await this.sendMfaSmsCode();
+  }
+
+  private async sendMfaSmsCode(): Promise<void> {
+    if (!this.mfaResolver) {
+      throw new Error('MFA resolver is not ready. Please try again.')
+    }
+
+    const phoneHint = this.mfaResolver.hints.find((hint: any) =>
+      hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
+    )
+    if (!phoneHint) {
+      throw new Error('Phone second factor is not available for this account.')
+    }
+
+    if (!this.recaptchaVerifier) {
+      this.initializeRecaptcha()
+    }
+
+    const verificationId = await this.firestoreService.verifyPhoneNumberForMfa(
+      {
+        multiFactorHint: phoneHint,
+        session: this.mfaResolver.session,
+      },
+      this.recaptchaVerifier
+    )
+
+    this.mfaVerificationId = verificationId
+    this.showSnackbar('Verification code sent to your phone', SnackBarType.info, '', 3000)
+  }
+
   public async submitMfaCode(): Promise<void> {
-    if (!this.mfaResolver || !this.mfaEnrollmentUid || this.mfaCode.trim().length !== 6) {
+    if (!this.mfaResolver || this.mfaCode.trim().length !== 6) {
       return;
     }
 
@@ -319,8 +381,21 @@ export class LoginComponent  {
     this.errorMessage = '';
 
     try {
-      const assertion = TotpMultiFactorGenerator.assertionForSignIn(this.mfaEnrollmentUid, this.mfaCode.trim());
-      const userCredential = await this.mfaResolver.resolveSignIn(assertion);
+      let assertion: any;
+      if (this.mfaFactorType === 'phone') {
+        if (!this.mfaVerificationId) {
+          throw new Error('Verification code was not sent. Please resend and try again.');
+        }
+        const credential = PhoneAuthProvider.credential(this.mfaVerificationId, this.mfaCode.trim());
+        assertion = PhoneMultiFactorGenerator.assertion(credential);
+      } else {
+        if (!this.mfaEnrollmentUid) {
+          throw new Error('Authenticator challenge is not initialized. Please try again.');
+        }
+        assertion = TotpMultiFactorGenerator.assertionForSignIn(this.mfaEnrollmentUid, this.mfaCode.trim());
+      }
+
+      const userCredential = await this.firestoreService.resolveMultiFactorSignIn(this.mfaResolver, assertion);
       await this.finishLogin(userCredential.user, this.mfaProviderId);
       this.clearMfaChallenge();
     } catch (error) {
@@ -360,7 +435,7 @@ export class LoginComponent  {
 
     this.firestoreService.setAnalyticsUserId(this.analytics, user.uid);
     this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-    const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    const returnUrl = this.getReturnUrl();
     await this.router.navigateByUrl(returnUrl);
   }
 
@@ -393,7 +468,7 @@ export class LoginComponent  {
       ]);
 
       this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      const returnUrl = this.getReturnUrl();
       await this.router.navigateByUrl(returnUrl);
     } catch (error) {
       this.handleError(error, 'login:redirect-result', 'oauth');
@@ -851,7 +926,7 @@ export class LoginComponent  {
           }
 
           this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFIED_SUCCESS'), SnackBarType.success);
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+          const returnUrl = this.getReturnUrl();
           this.router.navigateByUrl(returnUrl);
         } else {
           await this.trackLoginAttempt('phone', false);
@@ -923,15 +998,19 @@ export class LoginComponent  {
       );
     }
 
-    // Redirect to verification page if neither email nor phone is verified.
-    if (!response.user.emailVerified || userData.phoneVerified === false) {
+    const isPasswordProvider = providerId === 'password'
+    const emailOk = !isPasswordProvider || response.user.emailVerified === true
+    const phoneOk = userData.phoneVerified !== false
+
+    // Redirect to verification page when required verification is pending.
+    if (!emailOk || !phoneOk) {
       this.showSnackbar(
-        this.translate.instant('AUTH_ERRORS.EMAIL_OR_PHONE_NOT_VERIFIED'),
+        'Your email or phone number is not verified. Please verify to proceed.',
         SnackBarType.warning,
         '',
         5000
       );
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      const returnUrl = this.getReturnUrl();
       this.router.navigate(['/service/verification'], { queryParams: { returnUrl } });
       return false; // Indicate that verification is pending.
     }
@@ -971,6 +1050,7 @@ export class LoginComponent  {
     const connection = (this.navigator as any)?.connection?.effectiveType || null; // e.g. "wifi", "4g"
     const ipAddress = '0.0.0.0'; // Placeholder, ideally obtained from a backend service
     const browser = await getBrowser(this.navigator) || 'Unknown';
+    const os = this.detectOsFromUserAgent(this.navigator?.userAgent || '');
     const userAgent = this.navigator.userAgent || 'Unknown';
     const location = 'Unknown'; // Placeholder, ideally obtained from a geolocation service
     const deviceType = this.navigator?.platform || 'Unknown';
@@ -979,6 +1059,7 @@ export class LoginComponent  {
     const metrics: Partial<loginHistoryInfo> = {
       ipAddress,
       browser,
+      os,
       userAgent,
       location,
       deviceType,
@@ -1008,5 +1089,39 @@ export class LoginComponent  {
     this.destroy$.next();
     this.destroy$.complete();
     this.recaptchaVerifier?.clear();
+  }
+
+  private detectOsFromUserAgent(userAgent: string): string {
+    const ua = (userAgent || '').toLowerCase()
+    if (ua.includes('windows')) return 'Windows'
+    if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS'
+    if (ua.includes('android')) return 'Android'
+    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS'
+    if (ua.includes('linux')) return 'Linux'
+    return 'Unknown'
+  }
+
+  private getFriendlyAuthErrorMessage(error: any): string {
+    const explicitMessage = typeof error?.message === 'string' ? error.message.trim() : ''
+    const normalizedMessage = explicitMessage.toLowerCase()
+    const code = String(error?.code || '').toLowerCase()
+
+    if (
+      code === 'auth/invalid-argument' ||
+      normalizedMessage.includes('missing phoneenrollmentinfo') ||
+      normalizedMessage.includes('phoneenrollmentinfo')
+    ) {
+      return 'SMS MFA must be enrolled before this authenticator app step can continue.'
+    }
+
+    if (explicitMessage && !code.startsWith('auth/')) {
+      return explicitMessage
+    }
+
+    return getErrorMessage(error, this.translate)
+  }
+
+  private getReturnUrl(): string {
+    return resolveSafeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))
   }
 }

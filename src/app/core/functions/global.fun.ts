@@ -153,6 +153,64 @@ export function extractDomain(url: string): string | null {
     return domain && domain[2] ? domain[2] : null;
 }
 
+export function resolveSafeReturnUrl(rawReturnUrl: unknown, fallback: string = '/dashboard'): string {
+    if (typeof rawReturnUrl !== 'string') {
+        return fallback;
+    }
+
+    let candidate = rawReturnUrl.trim();
+    if (!candidate) {
+        return fallback;
+    }
+
+    // Decode up to two times to support encoded query param forwarding across auth pages.
+    for (let i = 0; i < 2; i++) {
+        try {
+            const decoded = decodeURIComponent(candidate);
+            if (decoded === candidate) {
+                break;
+            }
+            candidate = decoded;
+        } catch {
+            break;
+        }
+    }
+
+    // Convert same-origin absolute URLs to path-only URLs.
+    if (/^https?:\/\//i.test(candidate)) {
+        try {
+            const parsed = new URL(candidate);
+            if (typeof window !== 'undefined' && parsed.origin !== window.location.origin) {
+                return fallback;
+            }
+            candidate = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } catch {
+            return fallback;
+        }
+    }
+
+    if (!candidate.startsWith('/') || candidate.startsWith('//')) {
+        return fallback;
+    }
+
+    const pathOnly = candidate.split('?')[0].split('#')[0];
+    if (pathOnly === '/service/login' || pathOnly === '/service/verification') {
+        try {
+            const parsed = new URL(candidate, 'http://local');
+            const nestedReturnUrl = parsed.searchParams.get('returnUrl');
+            if (nestedReturnUrl && nestedReturnUrl !== candidate) {
+                return resolveSafeReturnUrl(nestedReturnUrl, fallback);
+            }
+        } catch {
+            return fallback;
+        }
+
+        return fallback;
+    }
+
+    return candidate;
+}
+
 /**
  * Soft Encryption Algorithm: Transforms the string using shifts and Base64 encoding.
  * @param input - The string to "soft encrypt."

@@ -1,6 +1,6 @@
 import { Injectable, inject, NgZone, EnvironmentInjector, runInInjectionContext, Injector, PLATFORM_ID } from '@angular/core'
 // import { AngularFireDatabase, AngularFireList } from '@angular/fire/compat/database'
-import { ActionCodeSettings, Auth, AuthCredential, authState, ConfirmationResult, connectAuthEmulator, getRedirectResult, linkWithCredential, linkWithPhoneNumber, linkWithPopup, PopupRedirectResolver, reauthenticateWithCredential, RecaptchaVerifier, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, updatePassword, updateProfile, User, UserCredential } from '@angular/fire/auth'
+import { ActionCodeSettings, Auth, AuthCredential, authState, ConfirmationResult, connectAuthEmulator, getMultiFactorResolver, getRedirectResult, linkWithCredential, linkWithPhoneNumber, linkWithPopup, multiFactor, MultiFactorError, MultiFactorResolver, MultiFactorSession, PhoneAuthProvider, PopupRedirectResolver, reauthenticateWithCredential, RecaptchaVerifier, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, TotpMultiFactorGenerator, TotpSecret, updatePassword, updateProfile, User, UserCredential } from '@angular/fire/auth'
 import {
   addDoc,
   collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, docData, DocumentData, DocumentReference,
@@ -1215,6 +1215,70 @@ export class FirestoreService {
       this._injector,
       async (): Promise<void> => {
         await this.afAuth.signOut()
+      },
+    )
+  }
+
+  public getMultiFactorResolver(error: MultiFactorError): MultiFactorResolver {
+    return runInInjectionContext(
+      this._injector,
+      (): MultiFactorResolver => getMultiFactorResolver(this.afAuth, error),
+    )
+  }
+
+  public async verifyPhoneNumberForMfa(
+    options: Parameters<PhoneAuthProvider['verifyPhoneNumber']>[0],
+    appVerifier: RecaptchaVerifier,
+  ): Promise<string> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<string> => {
+        return await new PhoneAuthProvider(this.afAuth).verifyPhoneNumber(options, appVerifier)
+      },
+    )
+  }
+
+  public async resolveMultiFactorSignIn(resolver: MultiFactorResolver, assertion: Parameters<MultiFactorResolver['resolveSignIn']>[0]): Promise<UserCredential> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<UserCredential> => {
+        return await resolver.resolveSignIn(assertion)
+      },
+    )
+  }
+
+  public async getMultiFactorSession(currentUser: User): Promise<MultiFactorSession> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<MultiFactorSession> => {
+        return await multiFactor(currentUser).getSession()
+      },
+    )
+  }
+
+  public async generateTotpSecret(multiFactorSession: MultiFactorSession): Promise<TotpSecret> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<TotpSecret> => {
+        return await TotpMultiFactorGenerator.generateSecret(multiFactorSession)
+      },
+    )
+  }
+
+  public async enrollMultiFactor(currentUser: User, assertion: Parameters<ReturnType<typeof multiFactor>['enroll']>[0], displayName?: string): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await multiFactor(currentUser).enroll(assertion, displayName)
+      },
+    )
+  }
+
+  public async unenrollMultiFactor(currentUser: User, factorUid: string): Promise<void> {
+    return this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<void> => {
+        await multiFactor(currentUser).unenroll(factorUid)
       },
     )
   }

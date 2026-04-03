@@ -27,12 +27,16 @@
           </div>
         }
         @if (showMfaChallenge) {
-          <div class="rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-900/40">
             <h2 class="mb-1 text-sm font-bold text-gray-900 dark:text-gray-100">
               Complete your second factor
             </h2>
             <p class="mb-3 text-xs text-gray-600 dark:text-gray-300">
-              Enter the current 6-digit code from {{ mfaDisplayName }} to finish signing in.
+              @if (mfaFactorType === 'phone') {
+                Enter the 6-digit SMS code sent to {{ mfaPhoneDisplay }} to finish signing in.
+              } @else {
+                Enter the current 6-digit code from {{ mfaDisplayName }} to finish signing in.
+              }
             </p>
             <input
               type="text"
@@ -52,6 +56,12 @@
                   Verify code
                 }
               </button>
+              @if (mfaFactorType === 'phone') {
+                <button type="button" (click)="resendMfaSmsCode()" [disabled]="loading.mfa"
+                  class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100 disabled:opacity-60 dark:border-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50">
+                  Resend
+                </button>
+              }
               <button type="button" (click)="cancelMfaChallenge()"
                 class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
                 Cancel

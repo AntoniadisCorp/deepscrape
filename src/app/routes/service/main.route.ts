@@ -42,8 +42,7 @@ export const MainRoutes: Routes = [
         data: {
             title: 'action',
             animation: 'action'
-        },
-        canActivate: [verifyGuard]
+        }
     },
     {
         path: 'onboarding',

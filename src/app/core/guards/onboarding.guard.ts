@@ -1,8 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { resolveSafeReturnUrl } from '../functions';
 import { AuthService } from '../services';
 import { map, take } from 'rxjs/operators';
-import { Observable } from 'rxjs';
 
 /**
  * Guards the /service/onboarding route.
@@ -10,21 +10,21 @@ import { Observable } from 'rxjs';
  * - Redirects to /dashboard if the user has already completed onboarding, or is a bootstrap admin.
  * - Allows through if authenticated and onboardedAt is null/undefined.
  */
-export const onboardingGuard: CanActivateFn = (): Observable<boolean> => {
+export const onboardingGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
   return authService.isAuthenticated().pipe(
     take(1),
     map(({ isAuthenticated, user }) => {
+      const safeReturnUrl = resolveSafeReturnUrl(route.queryParams['returnUrl'] || state.url)
+
       if (!isAuthenticated || !user) {
-        router.navigate(['/service/login']);
-        return false;
+        return router.createUrlTree(['/service/login'], { queryParams: { returnUrl: safeReturnUrl } });
       }
       // Bootstrap admins are auto-onboarded server-side; never show them the wizard
       if (authService.isAdmin || user.onboardedAt != null) {
-        router.navigate(['/dashboard']);
-        return false;
+        return router.parseUrl(safeReturnUrl);
       }
       return true;
     }),

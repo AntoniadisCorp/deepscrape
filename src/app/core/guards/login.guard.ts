@@ -1,6 +1,7 @@
 import { inject } from '@angular/core'
 import { CanActivateFn, Router } from '@angular/router'
 import { AuthService, SnackbarService } from '../services'
+import { resolveSafeReturnUrl } from '../functions'
 import { map } from 'rxjs/operators'
 import { SnackBarType } from '../components'
 
@@ -24,14 +25,14 @@ export const LoginGuard: CanActivateFn = (route, state) => {
       const emailOk = !isPasswordProvider || user.emailVerified === true
       const phoneOk = user.phoneVerified !== false
       const isVerified = emailOk && phoneOk
+      const safeReturnUrl = resolveSafeReturnUrl(route.queryParams['returnUrl'])
 
       if (isVerified) {
-        const returnUrl = route.queryParams['returnUrl'] || '/dashboard'
-        return router.parseUrl(returnUrl)
+        return router.parseUrl(safeReturnUrl)
       }
 
       snackbarService.showSnackbar(VERIFICATION_REQUIRED_MESSAGE, SnackBarType.warning, '', 5000)
-      return router.createUrlTree(['/service/verification'], { queryParams: { returnUrl: state.url } })
+      return router.createUrlTree(['/service/verification'], { queryParams: { returnUrl: safeReturnUrl } })
     })
   )
 }
@@ -53,10 +54,10 @@ export const verifyGuard: CanActivateFn = (route) => {
       const emailOk = !isPasswordProvider || user.emailVerified === true
       const phoneOk = user.phoneVerified !== false
       const isVerified = emailOk && phoneOk
+      const safeReturnUrl = resolveSafeReturnUrl(route.queryParams['returnUrl'])
 
       if (isVerified) {
-        const returnUrl = route.queryParams['returnUrl'] || '/dashboard'
-        return router.parseUrl(returnUrl)
+        return router.parseUrl(safeReturnUrl)
       }
 
       return true

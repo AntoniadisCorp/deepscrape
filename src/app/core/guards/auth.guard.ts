@@ -28,7 +28,7 @@ export const authGuard: CanActivateFn = (route, state) => {
       }
 
       if (user.onboardedAt == null && !authService.isAdmin) {
-        return router.createUrlTree(['/service/onboarding'])
+        return router.createUrlTree(['/service/onboarding'], { queryParams: { returnUrl: state.url } })
       }
 
       return true
