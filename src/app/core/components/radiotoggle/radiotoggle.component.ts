@@ -3,6 +3,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-radiotoggle',
+  standalone: true,
     imports: [ReactiveFormsModule],
     templateUrl: './radiotoggle.component.html',
     styleUrl: './radiotoggle.component.scss'
