@@ -82,6 +82,33 @@ export class AuthService {
     return isPlatformBrowser(this.platformId);
   }
 
+  private getAuthProviderData(user: User, userData: Users): UserInfo[] {
+    return user.providerData.length > 0 ? user.providerData : (userData.providerData || [])
+  }
+
+  private getCurrentProviderId(user: User, userData: Users, providerData: UserInfo[]): string {
+    return userData.providerId || providerData[0]?.providerId || user.providerData[0]?.providerId || ''
+  }
+
+  private buildCombinedUserData(user: User, userData: Users, emailVerifiedFromClaims: boolean | null, phoneVerifiedFromClaims: boolean | null) {
+    const providerData = this.getAuthProviderData(user, userData)
+    const currentProviderId = this.getCurrentProviderId(user, userData, providerData)
+    const currProviderData = providerData.find((provider: UserInfo) => provider.providerId === currentProviderId) || providerData[0] || null
+
+    return {
+      ...userData,
+      uid: user.uid,
+      email: user.email,
+      emailVerified: user.emailVerified || emailVerifiedFromClaims || false,
+      phoneNumber: user.phoneNumber || userData.phoneNumber || null,
+      phoneVerified: phoneVerifiedFromClaims || userData.phoneVerified || null,
+      providerParent: user.providerId || userData.providerParent || 'firebase',
+      providerId: currentProviderId,
+      providerData,
+      currProviderData,
+    }
+  }
+
   isAuthenticated(): Observable<{ isAuthenticated: boolean, user: Users & { currProviderData: UserInfo | null } | null }> {
     return this.fireService.authState().pipe(
       map(user => ({ isAuthenticated: !!user, user })),
@@ -131,20 +158,12 @@ export class AuthService {
         const phoneVerifiedFromClaims = getTokenResult.claims?.['phoneVerified'] === true; // Ensure it's explicitly true
         const emailVerifiedFromClaims = getTokenResult.claims?.['email_verified'] === true; // Capture custom claim
         this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
-        // Determine current login provider user info
-        const currProviderLogin = userData.providerId || null;
-        const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null;
-
-        // Combine data: Prioritize Firebase Auth user.emailVerified and custom claims for phoneVerified
-        const combinedUserData: Users & { currProviderData: UserInfo | null } = {
-          ...userData, // Start with Firestore data
-          uid: user.uid, // Ensure UID is from Firebase Auth
-          email: user.email, // Use Firebase Auth's email
-          emailVerified: user.emailVerified || emailVerifiedFromClaims, // Use Firebase Auth's emailVerified
-          phoneNumber: user.phoneNumber || userData.phoneNumber || null, // Use Firebase Auth's phoneNumber if available, else Firestore's, default to null
-          phoneVerified: phoneVerifiedFromClaims || userData.phoneVerified || null, // Prioritize custom claim for phoneVerified, else Firestore's, default to null
-          currProviderData // Add current provider data
-        };
+        const combinedUserData: Users & { currProviderData: UserInfo | null } = this.buildCombinedUserData(
+          user,
+          userData,
+          emailVerifiedFromClaims,
+          phoneVerifiedFromClaims,
+        )
 
         this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
         console.log('User is admin:', this.isAdmin, getTokenResult.claims)
@@ -210,20 +229,18 @@ export class AuthService {
         throw new Error('User data not found in Firestore');
       }
 
-      // Determine current login provider user info
-      const currProviderLogin = userData.providerId || null;
-      const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null;
+      const authUser = this.auth.currentUser
 
-      // Combine data: Prioritize Firebase Auth user.emailVerified and custom claims for phoneVerified
-      const combinedUserData: Users & { currProviderData: UserInfo | null } = {
-        ...userData, // Start with Firestore data
-        uid: this.auth.currentUser?.uid || userData.uid, // Ensure UID is from Firebase Auth
-        email: this.auth.currentUser?.email || userData.email, // Use Firebase Auth's email
-        emailVerified: this.auth.currentUser?.emailVerified || emailVerifiedFromClaims || userData.emailVerified, // Use Firebase Auth's emailVerified
-        phoneNumber: this.auth.currentUser?.phoneNumber || userData.phoneNumber || null, // Use Firebase Auth's phoneNumber if available, else Firestore's, default to null
-        phoneVerified: phoneVerifiedFromClaims || userData.phoneVerified || null, // Prioritize custom claim for phoneVerified, else Firestore's, default to null
-        currProviderData // Add current provider data
-      };
+      if (!authUser) {
+        throw new Error('No authenticated user found while refreshing user data')
+      }
+
+      const combinedUserData: Users & { currProviderData: UserInfo | null } = this.buildCombinedUserData(
+        authUser,
+        userData,
+        emailVerifiedFromClaims,
+        phoneVerifiedFromClaims,
+      )
 
       // Update the user subject with fresh data
       this.userSubject.next(combinedUserData);
@@ -478,7 +495,16 @@ export class AuthService {
     }
 
     const multiFactorSession = await multiFactor(currentUser).getSession();
-    const secret = await TotpMultiFactorGenerator.generateSecret(multiFactorSession);
+    let secret: TotpSecret;
+    try {
+      secret = await TotpMultiFactorGenerator.generateSecret(multiFactorSession);
+    } catch (error: any) {
+      const rawMessage = String(error?.message || '').toUpperCase();
+      if (rawMessage.includes('TOTP BASED MFA NOT ENABLED') || rawMessage.includes('OPERATION_NOT_ALLOWED')) {
+        throw new Error('TOTP MFA is not enabled for this Firebase project. Enable TOTP in Firebase Auth > Multi-factor authentication.')
+      }
+      throw error
+    }
     const accountLabel = currentUser.email || currentUser.uid;
 
     return {
@@ -509,6 +535,27 @@ export class AuthService {
     await this.refreshUserData();
   }
 
+  /**
+   * Enable TOTP MFA for the entire Firebase project.
+   * Only administrators can invoke this function.
+   * This must be done before users can enroll authenticator apps.
+   */
+  async enableTotpMfaForProject(): Promise<{ success: boolean; message: string; config: any }> {
+    try {
+      const result = await this.fireService.callFunction<
+        Record<string, never>,
+        { success: boolean; message: string; config: any }
+      >('enableTotpMfa', );
+      return result;
+    } catch (error: any) {
+      const message = error?.message || 'Failed to enable TOTP MFA';
+      if (message.includes('permission-denied') || message.includes('admin')) {
+        throw new Error('Only administrators can enable TOTP MFA');
+      }
+      throw new Error(message);
+    }
+  }
+
   async updatePassword(newPassword: string): Promise<UserCredential | null> {
     const currentUser = this.auth.currentUser;
 
@@ -535,6 +582,30 @@ export class AuthService {
       console.error('Error updating password:', error);
       throw new Error('Failed to update password. Please ensure your current password is correct.');
     }
+  }
+
+  async reauthenticateWithPassword(currentPassword: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const isPasswordLinked = currentUser.providerData.some(
+      (provider) => provider.providerId === EmailAuthProvider.PROVIDER_ID
+    );
+
+    if (!isPasswordLinked) {
+      throw new Error('Password reauthentication is not available for this sign-in method.');
+    }
+
+    if (!currentUser.email) {
+      throw new Error('Current user does not have an email for password reauthentication.');
+    }
+
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+    this.token = await currentUser.getIdToken(true);
   }
 
   // Verify and sign in with phone credential

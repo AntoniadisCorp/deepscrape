@@ -4,6 +4,13 @@ import { ApiKey, ApiKeyType } from '../types/apikey.interface';
 import { SessionStorage } from './storage.service';
 import { FirestoreService } from './firestore.service';
 import { toDate } from '../functions';
+
+type ApiKeySecurityErrorCode = 'RECENT_AUTH_REQUIRED' | 'MFA_REQUIRED' | 'MFA_ENROLL_REQUIRED'
+
+type ApiKeySecurityError = {
+    code: ApiKeySecurityErrorCode
+    message: string
+}
 @Injectable({
     providedIn: 'root'
 })
@@ -115,7 +122,9 @@ export class ApiKeyService {
 
                     if (error) {
                         console.error('Error creating API key:', error, apiKey, message);
-                        throw new Error(message, error);
+                        const securityError = new Error(error?.message || message || 'Failed to retrieve API key') as Error & { code?: string }
+                        securityError.code = String(error?.code || '').toUpperCase()
+                        throw securityError
                     }
 
                     // Update the API keys in the BehaviorSubject
@@ -156,11 +165,23 @@ export class ApiKeyService {
     }
 
     deleteApiKey(keyToDelete: ApiKey) {
-        const currentKeys = this.apiKeysSubject.value || []
-        const updatedKeys = currentKeys.filter(key => key.id !== keyToDelete.id);
+        return from(this.firestoreService.callFunction<{ apiKeyId: string }, any>(
+            'deleteMyApiKey',
+            { apiKeyId: keyToDelete.id }
+        )).pipe(
+            tap((data: any) => {
+                const { error, message } = data as any
 
-        this.apiKeysSubject.next(updatedKeys);
-        this.saveApiKeys(updatedKeys);
+                if (error) {
+                    throw new Error(message || 'Failed to delete API key')
+                }
+
+                const currentKeys = this.apiKeysSubject.value || []
+                const updatedKeys = currentKeys.filter((key) => key.id !== keyToDelete.id)
+                this.apiKeysSubject.next(updatedKeys)
+                this.saveApiKeys(updatedKeys)
+            })
+        )
     }
 
     setKeyVisible(key: ApiKey) {
@@ -181,6 +202,31 @@ export class ApiKeyService {
             return this.getKeyDoVisible(key, index).pipe(
                 catchError((error: any) => {
                     console.error('Error retrieving API keys:', error);
+
+                    if (this.isRecentAuthRequiredError(error)) {
+                        const securityError: ApiKeySecurityError = {
+                            code: 'RECENT_AUTH_REQUIRED',
+                            message: 'Recent authentication is required before revealing API keys.',
+                        }
+                        return throwError(() => securityError)
+                    }
+
+                    if (this.isMfaRequiredError(error)) {
+                        const securityError: ApiKeySecurityError = {
+                            code: 'MFA_REQUIRED',
+                            message: 'Multi-factor authentication step-up is required before revealing API keys.',
+                        }
+                        return throwError(() => securityError)
+                    }
+
+                    if (this.isMfaEnrollmentRequiredError(error)) {
+                        const securityError: ApiKeySecurityError = {
+                            code: 'MFA_ENROLL_REQUIRED',
+                            message: 'You must enroll MFA before revealing API keys.',
+                        }
+                        return throwError(() => securityError)
+                    }
+
                     // the key remains same as before
 
                     if (index !== -1) {
@@ -265,6 +311,26 @@ export class ApiKeyService {
     }
     private saveApiKeys(keys: ApiKey[]) {
         this.SessionStorage.setItem('apiKeys', JSON.stringify(keys));
+    }
+
+    private isRecentAuthRequiredError(error: any): boolean {
+        const code = String(error?.code || '').toLowerCase()
+        const message = String(error?.message || '').toLowerCase()
+
+        return message.includes('recent authentication required')
+    }
+
+    private isMfaRequiredError(error: any): boolean {
+        const code = String(error?.code || '').toLowerCase()
+        const message = String(error?.message || '').toLowerCase()
+
+        return code.includes('permission-denied') ||
+            message.includes('mfa step-up required')
+    }
+
+    private isMfaEnrollmentRequiredError(error: any): boolean {
+        const message = String(error?.message || '').toLowerCase()
+        return message.includes('mfa enrollment is required')
     }
 
     ngOnDestroy(): void {

@@ -2,11 +2,11 @@
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
 import { FieldPath, FieldValue } from "firebase-admin/firestore"
-import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
-import { auth } from "firebase-functions/v1"
+import { db, dbName, getSecretFromManager, purgeSecretAndAllRevisions, saveToSecretManager, auth as adminAuth } from "./config"
+import { auth, runWith } from "firebase-functions/v1"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
-import { env } from "../config/env"
+import { env, functionsEnvJson } from "../config/env"
 import { redis } from "./cacheConfig"
 
 const bootstrapAdminEmails = new Set(
@@ -23,6 +23,7 @@ const isBootstrapAdmin = (email?: string | null): boolean => {
 }
 
 const SESSION_REVOKED_TTL_SECONDS = 60 * 60 * 24 * 30
+const MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS = 60 * 5
 
 const getSessionRevocationKey = (uid: string, loginId: string): string =>
     `auth:session:revoked:${uid}:${loginId}`
@@ -143,7 +144,8 @@ export const trackGuest = auth
     })
 
 
-export const setDefaultAdminRole = auth
+export const setDefaultAdminRole = runWith({ memory: "512MB", timeoutSeconds: 60 })
+    .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
@@ -231,6 +233,69 @@ export const createDefaultOrganization = auth
             throw new HttpsError("internal", "Error creating default organization", error)
         }
     })
+
+/**
+ * Enable TOTP (Time-based One-Time Password) Multi-Factor Authentication for the Firebase project.
+ * This is a project-level configuration required before users can enroll in authenticator apps.
+ * Admin SDK operation using Identity Platform API.
+ * @see https://firebase.google.com/docs/auth/admin/manage-sessions#enable_mfa_for_a_user
+ */
+export const enableTotpMfa = onCallv2(async (req) => {
+    try {
+        const authenticatedUid = req.auth?.uid
+        if (!authenticatedUid) {
+            throw new HttpsError("unauthenticated", "User must be authenticated")
+        }
+
+        const tokenRole = typeof req.auth?.token?.["role"] === "string" ? req.auth.token["role"] as string : ""
+        const hasAdminClaim = tokenRole.toLowerCase() === "admin"
+
+        // Allow either role-claim admins or bootstrap admins.
+        let userEmail: string | null = null
+        if (!hasAdminClaim) {
+            userEmail = (await adminAuth.getUser(authenticatedUid)).email || null
+        }
+
+        if (!hasAdminClaim && (!userEmail || !isBootstrapAdmin(userEmail))) {
+            throw new HttpsError("permission-denied", "Only administrators can enable TOTP MFA for the project")
+        }
+
+        // Get the project config manager
+        const configManager = adminAuth.projectConfigManager()
+
+        // Update project config to enable TOTP
+        const updatedConfig = await configManager.updateProjectConfig({
+            multiFactorConfig: {
+                state: "ENABLED" as const,
+                providerConfigs: [
+                    {
+                        state: "ENABLED" as const,
+                        totpProviderConfig: {
+                            adjacentIntervals: 5, // Accept codes from ±5 time windows for clock drift tolerance
+                        },
+                    },
+                ],
+            },
+        })
+
+        console.log("✅ TOTP MFA enabled successfully for project:", updatedConfig.multiFactorConfig)
+
+        return {
+            success: true,
+            message: "TOTP MFA has been enabled for your Firebase project.",
+            config: {
+                state: "ENABLED",
+                adjacentIntervals: 5,
+            },
+        }
+    } catch (error: unknown) {
+        console.error("Error enabling TOTP MFA:", error)
+        if (error instanceof HttpsError) {
+            throw error
+        }
+        throw new HttpsError("internal", "Failed to enable TOTP MFA for the project", error)
+    }
+})
 
 export const linkGuestToUser = onCallv2(async (req) => {
     try {
@@ -324,7 +389,7 @@ export const getMyLoginSessions = onCallv2(async (req) => {
     return {sessions}
 })
 
-export const revokeMyLoginSession = onCallv2(async (req) => {
+export const revokeMyLoginSession = onCallv2({secrets: [functionsEnvJson]}, async (req) => {
     const uid = req.auth?.uid
     const loginId = typeof req.data?.loginId === "string" ? req.data.loginId.trim() : ""
 
@@ -360,7 +425,7 @@ export const revokeMyLoginSession = onCallv2(async (req) => {
     }
 })
 
-export const getMyLoginSessionStatus = onCallv2(async (req) => {
+export const getMyLoginSessionStatus = onCallv2({secrets: [functionsEnvJson]}, async (req) => {
     const uid = req.auth?.uid
     const loginId = typeof req.data?.loginId === "string" ? req.data.loginId.trim() : ""
 
@@ -485,6 +550,84 @@ export const retrieveMyApiKeysPaging = onCallv2(
         }
     })
 
+export const deleteMyApiKey = onCallv2(async (req) => {
+    const apiKeyIdRaw = req.data?.apiKeyId
+    const apiKeyId = typeof apiKeyIdRaw === "string" ? apiKeyIdRaw.trim() : ""
+
+    if (!apiKeyId) {
+        throw new HttpsError("invalid-argument", "apiKeyId is required")
+    }
+
+    const userId = req?.auth?.uid
+    if (!userId) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const apiKeyRef = db.doc(`users/${userId}/apikeys/${apiKeyId}`)
+    const apiKeySnap = await apiKeyRef.get()
+
+    if (!apiKeySnap.exists) {
+        throw new HttpsError("not-found", "API key not found")
+    }
+
+    const apiKeyData = apiKeySnap.data() as {
+        name?: string
+        type?: string
+        permissions?: string[]
+        secretPath?: string
+        created_At?: Date
+        created_By?: string
+    } | undefined
+
+    const secretPath = typeof apiKeyData?.secretPath === "string" ? apiKeyData.secretPath : ""
+
+    let secretDeleted = false
+    let versionsDestroyed = 0
+    let secretPurgeError: string | null = null
+
+    if (secretPath) {
+        try {
+            const purgeResult = await purgeSecretAndAllRevisions(secretPath)
+            secretDeleted = purgeResult.secretDeleted
+            versionsDestroyed = purgeResult.versionsDestroyed
+        } catch (error) {
+            console.error("Error purging Secret Manager API key secret:", error)
+            secretPurgeError = error instanceof Error ? error.message : String(error)
+        }
+    }
+
+    const deletedAt = FieldValue.serverTimestamp()
+    const auditRef = db.collection(`users/${userId}/apikey_audit`).doc()
+
+    const batch = db.batch()
+    batch.set(auditRef, {
+        action: "deleted",
+        apiKeyId,
+        apiKeyName: apiKeyData?.name || null,
+        apiKeyType: apiKeyData?.type || null,
+        permissions: apiKeyData?.permissions || [],
+        secretPath: secretPath || null,
+        secretDeleted,
+        versionsDestroyed,
+        secretPurgeError,
+        created_At: apiKeyData?.created_At || null,
+        created_By: apiKeyData?.created_By || null,
+        deleted_At: deletedAt,
+        deleted_By: userId,
+    })
+    batch.delete(apiKeyRef)
+    await batch.commit()
+
+    return {
+        error: null,
+        apiKeyId,
+        auditId: auditRef.id,
+        secretDeleted,
+        versionsDestroyed,
+        message: "API key deleted successfully",
+    }
+})
+
 
 /**
     before retrieve secret add this policy
@@ -504,6 +647,35 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
         const userId = req?.auth?.uid
         if (!userId) {
             throw new Error("User must be authenticated")
+        }
+
+        const authTime = typeof req.auth?.token?.auth_time === "number" ? req.auth.token.auth_time : 0
+        const nowInSeconds = Math.floor(Date.now() / 1000)
+        const authAgeInSeconds = authTime > 0 ? nowInSeconds - authTime : Number.MAX_SAFE_INTEGER
+        const secondFactorSignIn = (req.auth?.token as { firebase?: { sign_in_second_factor?: string } })?.firebase?.sign_in_second_factor || null
+        const userRecord = await adminAuth.getUser(userId)
+        const enrolledFactors = userRecord.multiFactor?.enrolledFactors || []
+        const hasEnrolledMfa = enrolledFactors.length > 0
+
+        if (!hasEnrolledMfa) {
+            throw new HttpsError(
+                "failed-precondition",
+                "MFA enrollment is required before revealing API keys"
+            )
+        }
+
+        if (!secondFactorSignIn) {
+            throw new HttpsError(
+                "permission-denied",
+                "MFA step-up required before revealing API keys"
+            )
+        }
+
+        if (authAgeInSeconds > MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS) {
+            throw new HttpsError(
+                "failed-precondition",
+                "Recent authentication required before revealing API keys"
+            )
         }
 
         const apiKeysRef = db.doc(`users/${userId}/apikeys/${apiKey.id}`)
@@ -526,11 +698,40 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
             key: secretValue,
         }
 
+        await db.collection(`users/${userId}/apikey_audit`).add({
+            action: "revealed",
+            apiKeyId: apiKey.id,
+            apiKeyName: (keyData as { name?: string })?.name || null,
+            revealed_At: FieldValue.serverTimestamp(),
+            revealed_By: userId,
+            authAgeInSeconds,
+            secondFactorSignIn,
+            hasEnrolledMfa,
+        })
+
         return { error: null, apiKey: keyDataWithSecret, message: "API key retrieved successfully" }
     } catch (error) {
         console.error("Error retrieving API key:", error)
-        // throw new Error("Failed to create API key by id " + apiKeyId)
-        return { error, apiKeyId: null, message: "Failed to retrieve API secret" }
+
+        if (error instanceof HttpsError) {
+            return {
+                error: {
+                    code: error.code,
+                    message: error.message,
+                },
+                apiKeyId: null,
+                message: error.message,
+            }
+        }
+
+        return {
+            error: {
+                code: "internal",
+                message: "Failed to retrieve API secret",
+            },
+            apiKeyId: null,
+            message: "Failed to retrieve API secret",
+        }
     }
 })
 

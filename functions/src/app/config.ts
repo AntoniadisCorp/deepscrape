@@ -205,3 +205,44 @@ export async function getSecretFromManager(secretPath: string) {
     return version.payload?.data?.toString()
 }
 
+export type SecretPurgeResult = {
+    secretPath: string
+    versionsDestroyed: number
+    secretDeleted: boolean
+}
+
+export async function purgeSecretAndAllRevisions(secretPath: string):
+    Promise<SecretPurgeResult> {
+    const [versions] = await secretManager.listSecretVersions({
+        parent: secretPath,
+    })
+
+    let versionsDestroyed = 0
+
+    for (const version of versions) {
+        const versionName = version.name
+        const state = version.state
+
+        if (!versionName) {
+            continue
+        }
+
+        if (state !== "DESTROYED") {
+            await secretManager.destroySecretVersion({
+                name: versionName,
+            })
+            versionsDestroyed += 1
+        }
+    }
+
+    await secretManager.deleteSecret({
+        name: secretPath,
+    })
+
+    return {
+        secretPath,
+        versionsDestroyed,
+        secretDeleted: true,
+    }
+}
+

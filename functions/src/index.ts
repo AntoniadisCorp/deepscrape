@@ -28,6 +28,7 @@ export const linkGuestToUser = auth.linkGuestToUser
 export const getMyLoginSessions = auth.getMyLoginSessions
 export const revokeMyLoginSession = auth.revokeMyLoginSession
 export const getMyLoginSessionStatus = auth.getMyLoginSessionStatus
+export const enableTotpMfa = auth.enableTotpMfa
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole
@@ -60,6 +61,7 @@ export const expireTrialsToFree = stripe.expireTrialsToFree
 export const createMyApiKey = auth.createMyApiKey
 export const retrieveMyApiKeysPaging = auth.retrieveMyApiKeysPaging
 export const getApiKeyDoVisible = auth.getApiKeyDoVisible
+export const deleteMyApiKey = auth.deleteMyApiKey
 
 
 // CRAWL OPERATIONS - Function TRIGGERS
