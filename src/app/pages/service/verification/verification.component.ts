@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectionStrategy, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
 import { applyActionCode, Auth, sendEmailVerification, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService, FirestoreService, SnackbarService } from 'src/app/core/services';
+import { WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
 import { delay, finalize, Subscription, timer } from 'rxjs';
@@ -44,16 +45,21 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   public confirmationResult!: ConfirmationResult;
   public verificationMethod: 'email' | 'phone' | null = null;
   public phoneVerificationForm!: FormGroup;
+  private pendingVerificationId: string | null = null;
+  private pendingPhoneNumber: string | null = null;
+  private sessionMetricsEnsured = false;
 
   private readonly platformId = inject(PLATFORM_ID);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
+  private readonly window = inject(WindowToken);
   private readonly snackbarService = inject(SnackbarService);
   private readonly authService = inject(AuthService);
   private readonly firestoreService = inject(FirestoreService);
   private readonly fb = inject(FormBuilder);
   private readonly document = inject(DOCUMENT);
   private readonly translate = inject(TranslateService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor() {
     this.phoneVerificationForm = this.fb.group({
@@ -64,6 +70,12 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit(): void {
     this.user = this.auth.currentUser
+    const navState = (this.router.getCurrentNavigation()?.extras?.state || this.window.history.state || {}) as {
+      verificationId?: string;
+      phoneNumber?: string;
+    }
+    this.pendingVerificationId = typeof navState.verificationId === 'string' ? navState.verificationId : null
+    this.pendingPhoneNumber = typeof navState.phoneNumber === 'string' ? navState.phoneNumber : null
     this.checkVerificationStatus()
   }
 
@@ -76,7 +88,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private initializeRecaptcha(): void {
     // Ensure the recaptcha-verification element is available before initializing
-    
+
     console.log(this.document.getElementById('recaptcha-verification'))
     if (this.document.getElementById('recaptcha-verification')) {
       this.recaptchaVerifier = new RecaptchaVerifier(this.auth, 'recaptcha-verification', {
@@ -86,7 +98,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
           if (this.verificationMethod === 'phone' && this.phoneVerificationForm.get('phoneNumber')?.valid) {
             this.sendPhoneVerificationCode();
           }
-        },        'expired-callback': () => {
+        }, 'expired-callback': () => {
           const message = this.translate.instant('VERIFICATION.RECAPTCHA_EXPIRED');
           this.showSnackbar(message, SnackBarType.warning);
         }
@@ -103,31 +115,41 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
     this.loading.email = true;
+    try {
+      const userData = await this.firestoreService.getUserData(this.user.uid);
 
-    const userData = await this.firestoreService.getUserData(this.user.uid);
+      const provider = userData?.providerId ?? '';
+      const isSocial = ['google.com', 'github.com', 'facebook.com'].includes(provider);
+      // Social providers have email implicitly verified; password accounts must verify email
+      const emailOk = isSocial || this.user.emailVerified === true;
+      // null  = no phone was registered at signup (optional) → allowed through
+      // false = phone was registered at signup but NOT yet verified → must verify
+      // true  = phone verified
+      const phoneOk = userData?.phoneVerified !== false;
 
-    const provider = userData?.providerId ?? '';
-    const isSocial = ['google.com', 'github.com', 'facebook.com'].includes(provider);
-    // Social providers have email implicitly verified; password accounts must verify email
-    const emailOk = isSocial || this.user.emailVerified === true;
-    // null  = no phone was registered at signup (optional) → allowed through
-    // false = phone was registered at signup but NOT yet verified → must verify
-    // true  = phone verified
-    const phoneOk = userData?.phoneVerified !== false;
+      if (emailOk) {
+        await this.ensureCurrentSessionMetrics();
+      }
 
-    this.loading.email = false;
+      this.loading.email = false;
 
-    if (emailOk && phoneOk) {
-      this.router.navigate(['/dashboard']);
-      return;
+      if (emailOk && phoneOk) {
+        this.router.navigate(['/dashboard']);
+        return;
+      }
+      if (!emailOk) {
+        this.verificationMethod = 'email';
+        return;
+      }
+      // emailOk && !phoneOk: phone was registered but never verified
+      this.verificationMethod = 'phone';
+      this.phoneVerificationForm.get('phoneNumber')?.setValue(this.user.phoneNumber ?? this.pendingPhoneNumber ?? '');
+    } catch (error: any) {
+      console.error('Error checking verification status:', error);
+      this.loading.email = false;
+    } finally {
+      this.cdr.markForCheck();
     }
-    if (!emailOk) {
-      this.verificationMethod = 'email';
-      return;
-    }
-    // emailOk && !phoneOk: phone was registered but never verified
-    this.verificationMethod = 'phone';
-    this.phoneVerificationForm.get('phoneNumber')?.setValue(this.user.phoneNumber ?? '');
   }
 
   async sendPhoneVerificationCode() {
@@ -162,20 +184,26 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       if (!verificationCode) {
         throw new Error('Verification code is required.');
       }
-      if (!this.confirmationResult) {
+      const verificationId = this.confirmationResult?.verificationId || this.pendingVerificationId;
+      if (!verificationId) {
         throw new Error(this.translate.instant('VERIFICATION.NO_CODE_INITIATED'));
       }
 
-      const credential = PhoneAuthProvider.credential(this.confirmationResult.verificationId, verificationCode);
+      const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
 
       let userCredential;
       if (this.user) {
         userCredential = await linkWithCredential(this.user, credential);
       } else {
-        userCredential = await this.authService.verifyPhoneCode(this.confirmationResult.verificationId, verificationCode);
+        userCredential = await this.authService.verifyPhoneCode(verificationId, verificationCode);
       }
       if (userCredential.user) {
-        await this.firestoreService.storeUserData(userCredential.user, 'phone', true, null, true);
+        await this.authService.updatePhoneVerificationStatus(userCredential.user.uid, true).toPromise();
+        await this.authService.refreshUserData(userCredential.user.uid);
+
+        await this.ensureCurrentSessionMetrics('phone', true);
+
+        this.pendingVerificationId = null;
         const message = this.translate.instant('VERIFICATION.PHONE_VERIFIED_SUCCESS');
         this.showSnackbar(message, SnackBarType.success);
         this.router.navigate(['/dashboard']);
@@ -203,7 +231,8 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   async resendVerificationEmail() {
-    this.loading.email = true;    try {
+    this.loading.email = true;
+    try {
       if (this.auth.currentUser) {
         await sendEmailVerification(this.auth.currentUser);
         const message = this.translate.instant('VERIFICATION.EMAIL_SENT_SUCCESS');
@@ -217,6 +246,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.email = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -254,6 +284,46 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.timerSubscriber?.unsubscribe();
     this.user = null;
     this.recaptchaVerifier?.clear()
+  }
+
+  private detectOsFromUserAgent(userAgent: string): string {
+    const ua = (userAgent || '').toLowerCase();
+    if (ua.includes('windows')) return 'Windows';
+    if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS';
+    if (ua.includes('android')) return 'Android';
+    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS';
+    if (ua.includes('linux')) return 'Linux';
+    return 'Unknown';
+  }
+
+  private async ensureCurrentSessionMetrics(providerIdOverride?: string, force = false): Promise<void> {
+    if (this.sessionMetricsEnsured && !force) {
+      return;
+    }
+
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return;
+    }
+
+    const navigatorRef = this.window.navigator;
+    const providerId = providerIdOverride || currentUser.providerData?.[0]?.providerId || 'password';
+
+    try {
+      await this.authService.recordLoginMetrics(currentUser.uid, {
+        ipAddress: '0.0.0.0',
+        browser: 'Unknown',
+        userAgent: navigatorRef?.userAgent || 'Unknown',
+        os: this.detectOsFromUserAgent(navigatorRef?.userAgent || ''),
+        location: 'Unknown',
+        deviceType: navigatorRef?.platform || 'Unknown',
+        connection: (navigatorRef as any)?.connection?.effectiveType || 'unknown',
+        providerId,
+      } as any);
+      this.sessionMetricsEnsured = true;
+    } catch (error) {
+      console.warn('Failed to record session metrics in verification flow:', error);
+    }
   }
 }
 
