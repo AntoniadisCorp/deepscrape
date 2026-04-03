@@ -683,24 +683,46 @@ export class AuthService {
     return resolver.resolveSignIn(assertion)
   }
 
+  private mapTotpProjectConfigError(error: any): never {
+    const message = String(error?.message || '').toLowerCase()
+
+    if (message.includes('permission-denied') || message.includes('administrator')) {
+      throw new Error('Only administrators can update TOTP MFA project configuration.')
+    }
+
+    if (message.includes('service account') || message.includes('permission')) {
+      throw new Error('The backend runtime is missing IAM permissions to update Firebase Auth project configuration.')
+    }
+
+    throw new Error(error?.message || 'Failed to update TOTP MFA project configuration')
+  }
+
   /**
    * Enable TOTP MFA for the entire Firebase project.
    * Only administrators can invoke this function.
    * This must be done before users can enroll authenticator apps.
    */
-  async enableTotpMfaForProject(): Promise<{ success: boolean; message: string; config: any }> {
+  async enableTotpMfaForProject(): Promise<{ success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }> {
     try {
       const result = await this.fireService.callFunction<
-        Record<string, never>,
-        { success: boolean; message: string; config: any }
-      >('enableTotpMfa', );
+        { dryRun?: boolean },
+        { success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }
+      >('enableTotpMfa', { dryRun: false });
       return result;
     } catch (error: any) {
-      const message = error?.message || 'Failed to enable TOTP MFA';
-      if (message.includes('permission-denied') || message.includes('admin')) {
-        throw new Error('Only administrators can enable TOTP MFA');
-      }
-      throw new Error(message);
+      this.mapTotpProjectConfigError(error)
+    }
+  }
+
+  async getTotpMfaProjectStatus(): Promise<{ success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }> {
+    try {
+      const result = await this.fireService.callFunction<
+        { dryRun?: boolean },
+        { success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }
+      >('enableTotpMfa', { dryRun: true })
+      return result
+    } catch (error: any) {
+      this.mapTotpProjectConfigError(error)
     }
   }
 

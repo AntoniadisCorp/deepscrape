@@ -889,6 +889,13 @@ export class SecurityTabComponent {
       return 'Authenticator app MFA is not available for your current sign-in method. Sign in with email/password, Google, or GitHub and try again.'
     }
 
+    if (
+      normalizedMessage.includes('operation_not_allowed') &&
+      normalizedMessage.includes('totp based mfa not enabled')
+    ) {
+      return 'Authenticator app MFA is not enabled for this project yet. Ask an administrator to enable TOTP MFA in Admin > Project Configuration, then retry enrollment.'
+    }
+
     if (rawMessage && !code.startsWith('auth/')) {
       return rawMessage
     }

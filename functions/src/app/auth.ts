@@ -241,10 +241,20 @@ export const createDefaultOrganization = auth
  * @see https://firebase.google.com/docs/auth/admin/manage-sessions#enable_mfa_for_a_user
  */
 export const enableTotpMfa = onCallv2(async (req) => {
+    const DEFAULT_ADJACENT_INTERVALS = 5
     try {
         const authenticatedUid = req.auth?.uid
         if (!authenticatedUid) {
             throw new HttpsError("unauthenticated", "User must be authenticated")
+        }
+
+        const dryRun = req.data?.dryRun === true
+        const adjacentIntervalsRaw = req.data?.adjacentIntervals
+        const adjacentIntervals = Number.isInteger(adjacentIntervalsRaw)?
+            Number(adjacentIntervalsRaw) : DEFAULT_ADJACENT_INTERVALS
+
+        if (adjacentIntervals < 0 || adjacentIntervals > 10) {
+            throw new HttpsError("invalid-argument", "adjacentIntervals must be an integer between 0 and 10")
         }
 
         const tokenRole = typeof req.auth?.token?.["role"] === "string" ? req.auth.token["role"] as string : ""
@@ -260,10 +270,39 @@ export const enableTotpMfa = onCallv2(async (req) => {
             throw new HttpsError("permission-denied", "Only administrators can enable TOTP MFA for the project")
         }
 
-        // Get the project config manager
         const configManager = adminAuth.projectConfigManager()
+        const currentConfig = await configManager.getProjectConfig()
+        const mfaConfig = currentConfig.multiFactorConfig
+        const totpProviderConfig = mfaConfig?.providerConfigs?.find((providerConfig) => !!providerConfig.totpProviderConfig)
+        const isAlreadyEnabled = mfaConfig?.state === "ENABLED" && totpProviderConfig?.state === "ENABLED"
+        const currentAdjacentIntervals = typeof totpProviderConfig?.totpProviderConfig?.adjacentIntervals === "number"?
+         totpProviderConfig.totpProviderConfig.adjacentIntervals : DEFAULT_ADJACENT_INTERVALS
 
-        // Update project config to enable TOTP
+        if (dryRun) {
+            return {
+                success: true,
+                status: isAlreadyEnabled ? "enabled" : "disabled",
+                message: isAlreadyEnabled? "TOTP MFA is already enabled for this Firebase project.":
+                 "TOTP MFA is currently disabled for this Firebase project.",
+                config: {
+                    state: isAlreadyEnabled ? "ENABLED" : "DISABLED",
+                    adjacentIntervals: currentAdjacentIntervals,
+                },
+            }
+        }
+
+        if (isAlreadyEnabled) {
+            return {
+                success: true,
+                status: "already-enabled",
+                message: "TOTP MFA is already enabled for this Firebase project.",
+                config: {
+                    state: "ENABLED",
+                    adjacentIntervals: currentAdjacentIntervals,
+                },
+            }
+        }
+
         const updatedConfig = await configManager.updateProjectConfig({
             multiFactorConfig: {
                 state: "ENABLED" as const,
@@ -271,21 +310,29 @@ export const enableTotpMfa = onCallv2(async (req) => {
                     {
                         state: "ENABLED" as const,
                         totpProviderConfig: {
-                            adjacentIntervals: 5, // Accept codes from ±5 time windows for clock drift tolerance
+                            adjacentIntervals,
                         },
                     },
                 ],
             },
         })
 
-        console.log("✅ TOTP MFA enabled successfully for project:", updatedConfig.multiFactorConfig)
+        console.log("✅ TOTP MFA enabled successfully for project", {
+            actorUid: authenticatedUid,
+            actorEmail: userEmail,
+            hasAdminClaim,
+            previousState: mfaConfig?.state || "DISABLED",
+            previousAdjacentIntervals: currentAdjacentIntervals,
+            nextAdjacentIntervals: adjacentIntervals,
+        })
 
         return {
             success: true,
+            status: "enabled",
             message: "TOTP MFA has been enabled for your Firebase project.",
             config: {
                 state: "ENABLED",
-                adjacentIntervals: 5,
+                adjacentIntervals: updatedConfig.multiFactorConfig?.providerConfigs?.[0]?.totpProviderConfig?.adjacentIntervals ?? adjacentIntervals,
             },
         }
     } catch (error: unknown) {
@@ -293,6 +340,17 @@ export const enableTotpMfa = onCallv2(async (req) => {
         if (error instanceof HttpsError) {
             throw error
         }
+
+        const message = String((error as { message?: string })?.message || "")
+        const lowerMessage = message.toLowerCase()
+        if (
+            lowerMessage.includes("permission") ||
+            lowerMessage.includes("insufficient") ||
+            lowerMessage.includes("iam")
+        ) {
+            throw new HttpsError("permission-denied", "Runtime service account lacks permission to update Firebase Auth project config.")
+        }
+
         throw new HttpsError("internal", "Failed to enable TOTP MFA for the project", error)
     }
 })

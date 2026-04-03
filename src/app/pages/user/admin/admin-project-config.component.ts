@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -35,7 +35,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
               mat-raised-button
               color="primary"
               (click)="enableTotp()"
-              [disabled]="isLoading || totpEnabled"
+              [disabled]="isLoading || isStatusLoading || totpEnabled"
               class="!rounded-lg"
             >
               <mat-spinner *ngIf="isLoading" diameter="20" class="mr-2"></mat-spinner>
@@ -50,28 +50,56 @@ import { AuthService } from 'src/app/core/services/auth.service';
           <div *ngIf="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded text-red-700">
             ❌ {{ errorMessage }}
           </div>
+          <div *ngIf="isStatusLoading" class="p-3 bg-gray-50 border border-gray-200 rounded text-gray-700 mb-4">
+            Checking current project MFA status...
+          </div>
         </mat-card-content>
       </mat-card>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminProjectConfigComponent {
+export class AdminProjectConfigComponent implements OnInit {
   private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   isLoading = false;
+  isStatusLoading = false;
   totpEnabled = false;
   successMessage = '';
   errorMessage = '';
+
+  async ngOnInit(): Promise<void> {
+    await this.loadTotpStatus()
+  }
+
+  async loadTotpStatus(): Promise<void> {
+    this.isStatusLoading = true
+    this.errorMessage = ''
+    this.successMessage = ''
+    this.cdr.detectChanges()
+
+    try {
+      const status = await this.authService.getTotpMfaProjectStatus()
+      this.totpEnabled = status.status === 'enabled' || status.status === 'already-enabled'
+      this.successMessage = status.message
+    } catch (error: any) {
+      this.errorMessage = error?.message || 'Failed to load TOTP MFA project status'
+    } finally {
+      this.isStatusLoading = false
+      this.cdr.detectChanges()
+    }
+  }
 
   async enableTotp(): Promise<void> {
     this.isLoading = true;
     this.successMessage = '';
     this.errorMessage = '';
+    this.cdr.detectChanges()
 
     try {
       const result = await this.authService.enableTotpMfaForProject();
-      this.totpEnabled = result.success;
+      this.totpEnabled = result.status === 'enabled' || result.status === 'already-enabled';
       this.successMessage = result.message || 'TOTP MFA has been enabled successfully!';
       console.log('TOTP MFA enabled:', result);
     } catch (error: any) {
@@ -79,6 +107,7 @@ export class AdminProjectConfigComponent {
       console.error('TOTP enablement error:', error);
     } finally {
       this.isLoading = false;
+      this.cdr.detectChanges()
     }
   }
 }
