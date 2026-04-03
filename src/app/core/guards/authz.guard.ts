@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, combineLatest, of } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { map } from 'rxjs/internal/operators/map';
 import { AuthzService } from '../services';
 
@@ -21,10 +22,14 @@ export const authzGuard: CanActivateFn = (route): Observable<boolean> => {
     return of(true);
   }
 
-  return authzService
-    .can$(authzData.resource, authzData.action as never)
+  return combineLatest([
+    authzService.can$(authzData.resource, authzData.action as never),
+    authzService.membershipsReady$,
+  ])
     .pipe(
-      map((allowed) => {
+      filter(([, ready]) => ready),
+      take(1),
+      map(([allowed]) => {
         if (!allowed) {
           router.navigate(['/']);
           return false;
