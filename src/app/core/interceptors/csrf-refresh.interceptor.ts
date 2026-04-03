@@ -15,6 +15,75 @@ import { catchError, switchMap } from 'rxjs/operators';
 
 const CSRF_RETRIED = new HttpContextToken<boolean>(() => false);
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+let latestCsrfToken: string | null = null;
+
+function readCookieValue(cookieName: string, win: Window): string | null {
+  const cookieSource = typeof win.document?.cookie === 'string' ? win.document.cookie : '';
+  if (!cookieSource) {
+    return null;
+  }
+
+  const prefix = `${cookieName}=`;
+  const match = cookieSource
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(prefix));
+
+  if (!match) {
+    return null;
+  }
+
+  return decodeURIComponent(match.slice(prefix.length));
+}
+
+function withCsrfHeader(req: HttpRequest<unknown>, win: Window, tokenOverride?: string | null): HttpRequest<unknown> {
+  if (req.headers.has('csrf-token')) {
+    return req;
+  }
+
+  const csrfToken = tokenOverride || readCookieValue('_csrf', win) || latestCsrfToken;
+  if (!csrfToken) {
+    return req;
+  }
+
+  latestCsrfToken = csrfToken;
+
+  return req.clone({
+    setHeaders: {
+      'csrf-token': csrfToken,
+    },
+  });
+}
+
+function hasCsrfHeader(req: HttpRequest<unknown>): boolean {
+  return req.headers.has('csrf-token') || req.headers.has('x-csrf-token');
+}
+
+function fetchAndAttachCsrfToken(
+  rawHttp: HttpClient,
+  req: HttpRequest<unknown>,
+  win: Window,
+  contextOverride?: HttpContextToken<boolean>,
+): Observable<HttpRequest<unknown>> {
+  return rawHttp.get<{ csrfToken?: string }>('/csrf-token', { withCredentials: true }).pipe(
+    switchMap((response) => {
+      const freshToken = typeof response?.csrfToken === 'string' ? response.csrfToken : null;
+      if (freshToken) {
+        latestCsrfToken = freshToken;
+      }
+
+      const tokenizedRequest = withCsrfHeader(req, win, freshToken);
+      const requestWithContext = contextOverride
+        ? tokenizedRequest.clone({ context: req.context.set(contextOverride, true) })
+        : tokenizedRequest;
+
+      return new Observable<HttpRequest<unknown>>((observer) => {
+        observer.next(requestWithContext);
+        observer.complete();
+      });
+    }),
+  );
+}
 
 function isApiRequest(req: HttpRequest<unknown>, win: Window): boolean {
   try {
@@ -48,30 +117,38 @@ export const csrfRefreshInterceptor: HttpInterceptorFn = (
   const rawHttp = new HttpClient(backend);
   const win = inject(WindowToken);
 
-  const shouldHandle =
-    isApiRequest(req, win) &&
-    MUTATING_METHODS.has(req.method.toUpperCase()) &&
-    !req.context.get(CSRF_RETRIED);
+  const isMutatingApiRequest = isApiRequest(req, win) && MUTATING_METHODS.has(req.method.toUpperCase());
+  const isRetried = req.context.get(CSRF_RETRIED);
 
-  if (!shouldHandle) {
+  if (!isMutatingApiRequest) {
     return next(req);
   }
 
-  return next(req).pipe(
+  const requestWithToken = withCsrfHeader(req, win);
+
+  const executeRequest = (requestToSend: HttpRequest<unknown>): Observable<HttpEvent<unknown>> => next(requestToSend).pipe(
     catchError((error: unknown) => {
       if (!isCsrfFailure(error)) {
         return throwError(() => error);
       }
 
-      return rawHttp.get('/csrf-token', { withCredentials: true }).pipe(
-        switchMap(() => {
-          const retriedRequest = req.clone({
-            context: req.context.set(CSRF_RETRIED, true),
-          });
-          return next(retriedRequest);
-        }),
+      if (isRetried) {
+        return throwError(() => error);
+      }
+
+      return fetchAndAttachCsrfToken(rawHttp, req, win, CSRF_RETRIED).pipe(
+        switchMap((retriedRequest) => next(retriedRequest)),
         catchError((refreshError: unknown) => throwError(() => refreshError)),
       );
     }),
+  );
+
+  if (hasCsrfHeader(requestWithToken) || isRetried) {
+    return executeRequest(requestWithToken);
+  }
+
+  return fetchAndAttachCsrfToken(rawHttp, req, win).pipe(
+    switchMap((requestWithFreshToken) => executeRequest(requestWithFreshToken)),
+    catchError((refreshError: unknown) => throwError(() => refreshError)),
   );
 };

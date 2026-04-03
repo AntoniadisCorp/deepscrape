@@ -157,14 +157,18 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.theme.setDefaultTheme()
 
     const isBrowser = isPlatformBrowser(this.platformId)
-    // Make a request to the status endpoint to trigger guestTracker
-    if (isBrowser && environment.production) {
+    if (isBrowser) {
       this.http.get('/csrf-token', { withCredentials: true })
         .pipe(
           takeUntilDestroyed(this.destroyRef),
           catchError(() => of(null)),
         )
         .subscribe()
+
+    }
+
+    // Make a request to the status endpoint to trigger guestTracker
+    if (isBrowser && environment.production) {
 
       // HeartbeatService will be started only for authenticated users
       // Send custom analytics event to backend

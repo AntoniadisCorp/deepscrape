@@ -165,7 +165,27 @@ function serveapp() {
       return next(error)
     }
 
+    const csrfDebug = {
+      method: req.method,
+      path: req.path,
+      host: req.headers.host || "",
+      origin: req.headers.origin || "",
+      referer: req.headers.referer || "",
+      hasCsrfHeader: !!(req.headers["csrf-token"] || req.headers["x-csrf-token"]),
+      hasCsrfCookie: typeof req.cookies?._csrf === "string" && req.cookies._csrf.length > 0,
+      hasCsrfSecretCookie: typeof req.cookies?._csrf_secret === "string" && req.cookies._csrf_secret.length > 0,
+      hasSignedCsrfSecretCookie: typeof (req as Request & { signedCookies?: Record<string, unknown> }).signedCookies?._csrf_secret === "string",
+    }
+
+    if (env.IS_EMULATOR) {
+      console.warn("CSRF validation failed", csrfDebug)
+    }
+
     if (req.path.startsWith("/api")) {
+      if (env.IS_EMULATOR) {
+        return res.status(403).json({ error: "Invalid CSRF token", debug: csrfDebug })
+      }
+
       return res.status(403).json({ error: "Invalid CSRF token" })
     }
 
