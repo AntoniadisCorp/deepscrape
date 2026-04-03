@@ -1577,6 +1577,7 @@ export const getBillingUsage = onCallv2(
 
     const userSnap = await db.doc(`users/${userId}`).get()
     const user = userSnap.data() as Users | undefined
+    assertBillingAllowed(user, getTokenRole(req))
     const stripeCustomerId = user?.stripeId || null
 
     const emptyResponse = {

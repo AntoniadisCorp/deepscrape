@@ -36,6 +36,7 @@ export type Users = {
     role?: string
     defaultOrgId?: string
     plan?: 'free' | 'trial' | 'starter' | 'pro' | 'enterprise'
+    planInterval?: 'payAsYouGo' | 'monthly' | 'quarterly' | 'annually'
 
     // Profile status
     profileStatus?: ProfileStatus
