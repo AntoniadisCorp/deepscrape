@@ -234,8 +234,6 @@ function serveapp() {
 
   // Public API status route (no authentication)
   server.get("/status",
-    express.urlencoded({ limit: "3mb", extended: false }),
-    express.json({ limit: "3mb" }),
     upstashFunctionLimiter, statusCheck) // aiProxy.router now contains the /status route
 
   // Cloud Functions runtime already parses request bodies.
@@ -245,8 +243,6 @@ function serveapp() {
 
   // Register the API routes (with authentication)
   server.use("/api",
-    express.urlencoded({ limit: "3mb", extended: false }),
-    express.json({ limit: "3mb" }),
     env.IS_PRODUCTION ? upstashFunctionLimiter : (req: Request, res: Response, next: NextFunction) => next(),
     aiProxy.isJwtAuth,
     aiProxy.router
@@ -255,8 +251,6 @@ function serveapp() {
   // server.use("/upload", uploadProxy.router)
   // OAuth routes (e.g. Google Sign-In) - no JWT auth, but still rate limited
   server.use("/oauth",
-    express.urlencoded({ limit: "3mb", extended: false }),
-    express.json({ limit: "3mb" }),
     upstashFunctionLimiter,
     oauthProxy.router
   )
@@ -345,4 +339,11 @@ function setupGracefulShutdown(geoDBManager: IP2LocationManager) {
     return handler(req, res)
 }; */
 // Export the Firebase HTTPS function for SSR
-export const deepscrape = onRequest({ minInstances: 1, secrets: [functionsEnvJson, serviceAccountKeyParam] }, serveapp())
+export const deepscrape = onRequest(
+  {
+    minInstances: 1,
+    memory: "512MiB",
+    secrets: [functionsEnvJson, serviceAccountKeyParam],
+  },
+  serveapp()
+)
