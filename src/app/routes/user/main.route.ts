@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { AdminGuard } from 'src/app/core/guards';
+import { adminGuard } from 'src/app/core/guards';
 import { UserResolver } from 'src/app/core/services';
 import { paywallGuard } from 'src/app/core/guards';
 import { authzGuard } from 'src/app/core/guards';
@@ -74,6 +74,6 @@ export const MainRoutes: Routes = [
         data: { title: 'Admin', animation: 'admin' },
         loadComponent: () => import('../../pages').then(m => m.AdminWorkspaceComponent),
         loadChildren: () => import('./admin.route').then(m => m.AdminRoutes),
-        canActivate: [AdminGuard],
+        canActivate: [adminGuard],
     },
 ]
