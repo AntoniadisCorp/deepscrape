@@ -177,7 +177,7 @@ export const verifyLogin = async (req: Request, res: Response) => {
     }
 
     try {
-        const decodedToken = await auth.verifyIdToken(idToken)
+        const decodedToken = await auth.verifyIdToken(idToken, true)
         let { email, uid: newUid } = decodedToken
 
         if (!email) {
@@ -231,6 +231,16 @@ export const verifyLogin = async (req: Request, res: Response) => {
             .send({ mergeRequired: true, existingUid: existingUserRecord.uid })
         }
     } catch (error: unknown) {
+        if (getErrorCode(error) === "auth/id-token-revoked") {
+            return res.status(401)
+            .send({ error: "Unauthorized", code: "session_revoked", message: "Session revoked. Please sign in again." })
+        }
+
+        if (getErrorCode(error) === "auth/argument-error" || getErrorCode(error) === "auth/invalid-id-token") {
+            return res.status(401)
+            .send({ error: "Unauthorized", code: "invalid_token", message: "Invalid authentication token." })
+        }
+
         console.error("Error in verifyLogin, Merge provider error:", error)
         return res.status(500)
         .send({ error: "Internal Server Error", message: getErrorMessage(error) })

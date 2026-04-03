@@ -30,7 +30,7 @@ import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import { myIcons } from './shared'
 import { provideI18n } from './core/i18n'; // Import provideI18n
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { csrfRefreshInterceptor, orgContextInterceptor, paymentRequiredInterceptor } from './core/interceptors';
+import { csrfRefreshInterceptor, orgContextInterceptor, paymentRequiredInterceptor, sessionRevocationInterceptor } from './core/interceptors';
 import { PLATFORM_ID } from '@angular/core';
 
 setLogLevel(
@@ -70,7 +70,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideHttpClient(
       withInterceptorsFromDi(),
-      withInterceptors([csrfRefreshInterceptor, orgContextInterceptor, paymentRequiredInterceptor]),
+      withInterceptors([csrfRefreshInterceptor, orgContextInterceptor, sessionRevocationInterceptor, paymentRequiredInterceptor]),
       withXsrfConfiguration({ cookieName: '_csrf', headerName: 'csrf-token' }),
       withFetch(),      
       /* withInterceptors([

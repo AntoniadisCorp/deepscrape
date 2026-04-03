@@ -17,6 +17,14 @@ import {
     resolveIdentifier,
 } from "../handlers"
 
+const getAuthErrorCode = (error: unknown): string => {
+    if (typeof error === "object" && error !== null && "code" in error) {
+        return String((error as { code?: unknown }).code || "")
+    }
+
+    return ""
+}
+
 /* eslint-disable max-len */
 class AuthAPIProxy {
     public router: Router
@@ -40,12 +48,18 @@ class AuthAPIProxy {
         const token = authHeader.split(" ")[1]
 
         try {
-            const decodedToken = await auth.verifyIdToken(token)
+            const decodedToken = await auth.verifyIdToken(token, true)
             req.user = decodedToken
             next()
         } catch (error) {
             console.error("JWT Verification Error:", error)
-            res.status(401).json({ error: "Unauthorized: Invalid token" })
+            const code = getAuthErrorCode(error)
+            if (code === "auth/id-token-revoked") {
+                res.status(401).json({ error: "Unauthorized: Session revoked", code: "session_revoked" })
+                return
+            }
+
+            res.status(401).json({ error: "Unauthorized: Invalid token", code: "invalid_token" })
         }
     }
 
