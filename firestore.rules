@@ -19,11 +19,10 @@ service cloud.firestore {
     }
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isAuthenticated() && request.auth.uid == userId &&
-                  hasNoSensitiveUserFieldChanges() &&
-                  (request.auth.token.email_verified || 
-                   request.auth.token.phone_number != null ||
-                   (request.resource.data.phoneNumber == request.auth.token.phone_number && request.resource.data.phoneVerified == true));
+        allow create: if isAuthenticated() && request.auth.uid == userId &&
+              hasNoSensitiveUserFieldChanges(true);
+        allow update: if isAuthenticated() && request.auth.uid == userId &&
+              hasNoSensitiveUserFieldChanges(false);
 
       match /billing/{billingId} {
         allow read: if isAuthenticated() && request.auth.uid == userId;
@@ -75,29 +74,22 @@ service cloud.firestore {
         return hasRole('admin');
     }
 
-    function hasNoSensitiveUserFieldChanges() {
-      return !request.resource.data.diff(resource.data).changedKeys().hasAny([
-        'uid',
-        'email',
-        'providerId',
-        'providerParent',
-        'providerData',
-        'role',
-        'defaultOrgId',
-        'plan',
-        'stripeId',
-        'subscriptionId',
-        'status',
-        'currentUsage',
-        'balance',
-        'itemId',
-        'onboardedAt',
-        'mfa_enabled',
-        'emailVerified',
-        'phoneVerified',
-        'phoneNumber',
-        'profileStatus'
-      ]);
+    function hasNoSensitiveUserFieldChanges(isCreate) {
+      // During CREATE: allow phoneNumber/phoneVerified to be set during signup,
+      // but block other sensitive fields.
+      // During UPDATE: block all sensitive field changes (phone updates must go through backend).
+      let alwaysSensitiveFields = [
+        'uid', 'email', 'providerId', 'providerParent', 'providerData',
+        'role', 'defaultOrgId', 'plan', 'stripeId', 'subscriptionId',
+        'status', 'currentUsage', 'balance', 'itemId', 'mfa_enabled',
+        'emailVerified', 'profileStatus'
+      ];
+      let createAllowedFields = ['phoneNumber', 'phoneVerified'];
+      let updateSensitiveFields = alwaysSensitiveFields.concat(createAllowedFields);
+      
+      return isCreate
+        ? !request.resource.data.keys().hasAny(alwaysSensitiveFields)
+        : !request.resource.data.diff(resource.data).changedKeys().hasAny(updateSensitiveFields);
     }
 
     function hasOrgRole(orgId, allowedRoles) {

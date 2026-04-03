@@ -260,6 +260,7 @@ export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
                             if (phoneNumber) {
                                 confirmationResult = await linkWithPhoneNumber(userCredential.user, phoneNumber, this.recaptchaVerifier)
                                 phoneLinked = true;
+                                await this.firestoreService.updateUserPhoneNumber(userCredential.user.uid, phoneNumber, false)
                             }
                             await this.firestoreService.storeUserData(userCredential.user, "password", false, null, phoneNumber ? false : null)
                             // Redirect logic: only go to phone verification if phone was entered and linked
@@ -268,6 +269,7 @@ export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
                                 navigationState.verificationId = confirmationResult.verificationId;
                                 navigationState.phoneNumber = phoneNumber;
                             }
+                            this.loading.email = false;
                             this.router.navigate(['/service/verification'], { state: navigationState });
                         }
                     } catch (error: any) {
@@ -293,7 +295,9 @@ export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
         duration: number = 3000) {
 
         this.snackbarService.showSnackbar(message, type, action, duration)
-    } ngOnDestroy(): void {
+    }
+
+    ngOnDestroy(): void {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.emailCheckSubs?.unsubscribe()

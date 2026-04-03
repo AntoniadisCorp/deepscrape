@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
 import { applyActionCode, Auth, sendEmailVerification, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService, FirestoreService, SnackbarService } from 'src/app/core/services';
@@ -13,6 +13,7 @@ import { Loading } from 'src/app/core/types';
 import { getErrorMessage } from 'src/app/core/functions';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OtpInputComponent } from 'src/app/shared';
+import { resolveSafeReturnUrl } from 'src/app/core/functions';
 
 @Component({
   selector: 'app-verification',
@@ -52,6 +53,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly window = inject(WindowToken);
   private readonly snackbarService = inject(SnackbarService);
   private readonly authService = inject(AuthService);
@@ -111,7 +113,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private async checkVerificationStatus(): Promise<void> {
     if (!this.user) {
-      this.router.navigate(['/service/login']);
+      this.router.navigate(['/service/login'], { queryParams: { returnUrl: this.getReturnUrl() } });
       return;
     }
     this.loading.email = true;
@@ -134,7 +136,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.loading.email = false;
 
       if (emailOk && phoneOk) {
-        this.router.navigate(['/dashboard']);
+        this.router.navigateByUrl(this.getReturnUrl());
         return;
       }
       if (!emailOk) {
@@ -143,7 +145,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
       // emailOk && !phoneOk: phone was registered but never verified
       this.verificationMethod = 'phone';
-      this.phoneVerificationForm.get('phoneNumber')?.setValue(this.user.phoneNumber ?? this.pendingPhoneNumber ?? '');
+      this.phoneVerificationForm.get('phoneNumber')?.setValue(this.user.phoneNumber ?? userData?.phoneNumber ?? this.pendingPhoneNumber ?? '');
     } catch (error: any) {
       console.error('Error checking verification status:', error);
       this.loading.email = false;
@@ -206,7 +208,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
         this.pendingVerificationId = null;
         const message = this.translate.instant('VERIFICATION.PHONE_VERIFIED_SUCCESS');
         this.showSnackbar(message, SnackBarType.success);
-        this.router.navigate(['/dashboard']);
+        this.router.navigateByUrl(this.getReturnUrl());
       } else {
         const message = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_PHONE_VERIFICATION');
         this.showSnackbar(message, SnackBarType.error, '', 5000);
@@ -238,7 +240,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
         const message = this.translate.instant('VERIFICATION.EMAIL_SENT_SUCCESS');
         this.showSnackbar(message, SnackBarType.info, '', 5000);
       } else {
-        this.router.navigate(['/service/login']);
+        this.router.navigate(['/service/login'], { queryParams: { returnUrl: this.getReturnUrl() } });
       }
     } catch (error) {
       console.error('Error sending verification email:', error);
@@ -324,6 +326,10 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     } catch (error) {
       console.warn('Failed to record session metrics in verification flow:', error);
     }
+  }
+
+  private getReturnUrl(): string {
+    return resolveSafeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))
   }
 }
 
