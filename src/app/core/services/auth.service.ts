@@ -150,6 +150,15 @@ export class AuthService {
     }
   }
 
+  private hasAdminRoleClaim(claims: Record<string, unknown> | undefined): boolean {
+    if (!claims) {
+      return false
+    }
+
+    const role = claims['role']
+    return typeof role === 'string' && role.trim().toLowerCase() === 'admin'
+  }
+
   isAuthenticated(): Observable<{ isAuthenticated: boolean, user: Users & { currProviderData: UserInfo | null } | null }> {
     return this.fireService.authState().pipe(
       map(user => ({ isAuthenticated: !!user, user })),
@@ -193,13 +202,12 @@ export class AuthService {
 
         if (!userData) throw new Error('No user data found');
 
-        const getTokenResult = await user.getIdTokenResult() // Get token result for custom claims
+        const getTokenResult = await user.getIdTokenResult(true) // Force-refresh token so newly set claims are available on first login
 
         // Extract custom claims for phoneVerified
         const phoneVerifiedFromClaims = getTokenResult.claims?.['phoneVerified'] === true; // Ensure it's explicitly true
         const emailVerifiedFromClaims = getTokenResult.claims?.['email_verified'] === true; // Capture custom claim
         const signInProvider = String((getTokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
-        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
         const combinedUserData: Users & { currProviderData: UserInfo | null } = this.buildCombinedUserData(
           user,
           userData,
@@ -208,7 +216,7 @@ export class AuthService {
           signInProvider,
         )
 
-        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
+        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined)
         console.log('User is admin:', this.isAdmin, getTokenResult.claims)
 
         // Save user data to the subject
@@ -259,11 +267,11 @@ export class AuthService {
       let signInProvider: string | null = null
       if (!userId && this.auth.currentUser) {
         await this.auth.currentUser.reload()
-        const getTokenResult = await this.auth.currentUser.getIdTokenResult()
+        const getTokenResult = await this.auth.currentUser.getIdTokenResult(true)
         phoneVerifiedFromClaims = getTokenResult.claims?.['phoneVerified'] === true; // Capture custom claim
         emailVerifiedFromClaims = getTokenResult.claims?.['email_verified'] === true; // Capture custom claim
         signInProvider = String((getTokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
-        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
+        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined)
         console.log('User is admin after refresh:', this.isAdmin, getTokenResult.claims)
       }
 

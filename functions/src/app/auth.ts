@@ -144,7 +144,7 @@ export const trackGuest = auth
     })
 
 
-export const setDefaultAdminRole = runWith({ memory: "512MB", timeoutSeconds: 60 })
+export const setDefaultAdminRole = runWith({ memory: "256MB", timeoutSeconds: 60 })
     .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {

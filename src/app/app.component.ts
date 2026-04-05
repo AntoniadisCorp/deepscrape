@@ -167,8 +167,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     }
 
-    // Make a request to the status endpoint to trigger guestTracker
-    if (isBrowser && environment.production) {
+    // Make a request to the status endpoint to trigger guestTracker.
+    // This needs to run in emulator mode too, otherwise first-login metrics miss guest enrichment.
+    if (isBrowser && (environment.production || environment.emulators)) {
 
       // HeartbeatService will be started only for authenticated users
       // Send custom analytics event to backend
