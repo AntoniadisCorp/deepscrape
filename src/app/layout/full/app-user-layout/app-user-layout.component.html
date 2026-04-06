@@ -44,14 +44,14 @@
         </h1>
       </a>
     </div>
-    <div class="flex items-center gap-4">
+    <div class="flex min-w-0 flex-1 items-center justify-end gap-4">
       <!-- Crawler Packager in Cart -->
       @if (cartPackager$ | async) {
         <app-cart-pack-notify></app-cart-pack-notify>
         <app-dropdown-cart class="fixed"></app-dropdown-cart>
       }
 
-      <div class="flex items-center justify-end gap-2 w-full">
+      <div class="flex min-w-0 flex-1 items-center justify-end gap-2">
         <!-- Lang Mode Switch -->
         <app-lang-picker></app-lang-picker>
         <!-- Theme Mode Switch -->
@@ -62,7 +62,7 @@
           }"></app-theme-toggle>
       </div>
       @if (user) {
-        <div class="relative">
+        <div class="relative shrink-0">
           <!-- Profile Image Menu Button -->
           <button
             type="button"
@@ -260,7 +260,7 @@
         }
         </div>
       } @else {
-        <div class="relative">
+        <div class="relative shrink-0">
           <!-- <a
             [routerLink]="loginPath"
             alt="signin"
@@ -379,14 +379,17 @@
   -->
 <div
   [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
-  class="w-full mt-20 px-4 flex-grow pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2">
+  class="relative mt-20 h-full w-full min-w-0 flex-grow gap-2 overflow-x-clip rounded-lg px-4 py-2 pt-0 lg:max-h-full lg:px-20 3xl:px-32">
   <app-sidebar
+    class="shrink-0"
     [barClosed]="closeAsideBar"
     [resizeScreen]="viewSmallDevices"
     (backDropPressed)="onCloseAsideBar($event)"></app-sidebar>
-  <router-outlet
-    [@routeAnimation]="currentRouteAnimation"
-    #outlet="outlet"></router-outlet>
+  <div class="min-w-0 flex-1 overflow-x-clip">
+    <router-outlet
+      [@routeAnimation]="currentRouteAnimation"
+      #outlet="outlet"></router-outlet>
+  </div>
 </div>
 @if (!compIsLoading) {
   <app-footer [color]="footerColor"></app-footer>
