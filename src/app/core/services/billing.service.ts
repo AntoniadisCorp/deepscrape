@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core'
-import { BehaviorSubject, catchError, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
+import { BehaviorSubject, catchError, combineLatest, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
 import {
   BillingAccessMode,
   BillingCatalogPayload,
@@ -12,12 +12,14 @@ import {
   CreditPackCatalog,
   UserBilling,
 } from '../types'
+import { AuthService } from './auth.service'
 import { FirestoreService } from './firestore.service'
 
 @Injectable({
   providedIn: 'root'
 })
 export class BillingService {
+  private readonly authService = inject(AuthService)
   private readonly firestoreService = inject(FirestoreService)
   private readonly loadingStateSubject = new BehaviorSubject<BillingLoadingState>({
     checkout: false,
@@ -87,8 +89,15 @@ export class BillingService {
     shareReplay({ bufferSize: 1, refCount: true })
   )
 
+  readonly isPlatformAdmin$: Observable<boolean> = this.authService.user$.pipe(
+    map(() => this.authService.isAdmin),
+    shareReplay({ bufferSize: 1, refCount: true })
+  )
+
   hasFeature$(featureKey: string): Observable<boolean> {
-    return this.billing$.pipe(map((billing) => Boolean(billing.features?.[featureKey])))
+    return combineLatest([this.billing$, this.isPlatformAdmin$]).pipe(
+      map(([billing, isPlatformAdmin]) => isPlatformAdmin || Boolean(billing.features?.[featureKey]))
+    )
   }
 
   getAccessMode$(): Observable<BillingAccessMode> {
@@ -131,7 +140,9 @@ export class BillingService {
   }
 
   canAccessPaidFeatures$(): Observable<boolean> {
-    return this.getAccessMode$().pipe(map((mode) => mode !== 'free'))
+    return combineLatest([this.getAccessMode$(), this.isPlatformAdmin$]).pipe(
+      map(([mode, isPlatformAdmin]) => isPlatformAdmin || mode !== 'free')
+    )
   }
 
   async openCheckoutForPlan(args: {

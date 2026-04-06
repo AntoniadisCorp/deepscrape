@@ -8,6 +8,7 @@ import { SyncAIapis } from 'api'
 import { upstashApiLimiter, upstashGeneralLimiter } from 'api/handlers'
 import { fileURLToPath } from 'node:url'
 import { env } from './src/config/env'
+import cookieParser from 'cookie-parser'
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -37,6 +38,41 @@ function serveapp(): express.Application {
 
   server.use(express.urlencoded({ limit: '3mb', extended: false }))
   server.use(express.json({ limit: '3mb' })) // Parse JSON bodies
+  
+  // PHASE 1.4: Cookie parser middleware for HttpOnly session cookies
+  server.use(cookieParser())
+
+  // PHASE 1.4: HttpOnly cookie session middleware - sets secure session cookie after successful auth
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    const originalJson = res.json.bind(res)
+    
+    res.json = function(data: any) {
+      // After successful login/heartbeat, set HttpOnly session cookie
+      if (data && (req.path.includes('login') || req.path.includes('heartbeat')) && data.sessionId) {
+        const isDevelopment = env.PRODUCTION !== 'true'
+        res.cookie('sid', data.sessionId, {
+          httpOnly: true,
+          secure: !isDevelopment,
+          sameSite: 'strict',
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
+          path: '/'
+        })
+        console.log('✅ Session cookie set via HttpOnly')
+      }
+      return originalJson(data)
+    }
+    next()
+  })
+  
+  // PHASE 1.4: Middleware to clear session cookie on logout
+  server.post('/logout', (req: Request, res: Response, next: NextFunction) => {
+    res.clearCookie('sid', {
+      httpOnly: true,
+      path: '/'
+    })
+    console.log('✅ Session cookie cleared on logout')
+    next()
+  })
 
   // Apply advanced Upstash rate limiter to all requests (except /api which has its own limiter)
   server.use(upstashGeneralLimiter)

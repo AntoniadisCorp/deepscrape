@@ -54,15 +54,13 @@ import { Firestore } from '@angular/fire/firestore';
 import { Analytics } from '@angular/fire/analytics';
 import { HttpClient } from '@angular/common/http';
 
-import { CookieService } from 'ngx-cookie-service'; // Import CookieService
-
 import { I18nService } from 'src/app/core/i18n';
-import { cleanAndParseJSON, getBrowser, getDeviceFingerprintHash, getErrorMessage, resolveSafeReturnUrl } from 'src/app/core/functions';
-import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
+import { getBrowser, getErrorMessage, resolveSafeReturnUrl } from 'src/app/core/functions';
+import { AnalyticsService, AuthService, FirestoreService, GuestTrackingService, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { NAVIGATOR } from 'src/app/core/providers';
-import { loginHistoryInfo, Guest, Loading } from 'src/app/core/types';
+import { Loading } from 'src/app/core/types';
 /**
  * @description Represents the credentials obtained after a login attempt,
  * including information about whether a merge is required, the user object,
@@ -95,14 +93,13 @@ export class LoginComponent  {
   private analytics = inject(Analytics, { optional: true });
   /** Custom analytics service for application-specific event tracking. */
   private analyticsService = inject(AnalyticsService);
-  /** Local storage service for storing key-value pairs. */
-  private localStorage = inject(LocalStorage);
   /** Platform identifier for SSR detection */
   private platformId = inject<Object>(PLATFORM_ID);
   /** A service for handling component destruction, used with `takeUntilDestroyed`. */
   private DestroyRef = inject(DestroyRef)
 
   private themePicker = inject(ThemeService)
+  private guestTrackingService = inject(GuestTrackingService)
   protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
 
   // Component properties
@@ -112,6 +109,12 @@ export class LoginComponent  {
   protected loginForm: FormGroup;
   /** Stores any error messages to be displayed to the user. */
   protected errorMessage: string = '';
+  protected lastLoginHint: {
+    providerId: string;
+    providerLabel: string;
+    maskedIdentifier: string;
+    updatedAt: string;
+  } | null = null;
   /** Instance of Firebase RecaptchaVerifier for phone authentication. */
   public recaptchaVerifier!: RecaptchaVerifier;
   /** Stores the confirmation result after sending a phone verification code. */
@@ -164,7 +167,6 @@ export class LoginComponent  {
    * @param {Document} document - Injected `Document` object for DOM manipulation.
    * @param {ChangeDetectorRef} cdr - Service for triggering change detection.
    * @param {SnackbarService} snackbarService - Service for displaying snackbar messages.
-   * @param {CookieService} cookieService - Service for managing cookies.
    */
   constructor(
     private formBuilder: FormBuilder,
@@ -180,7 +182,6 @@ export class LoginComponent  {
     @Inject(DOCUMENT) private document: Document,
     private cdr: ChangeDetectorRef,
     private snackbarService: SnackbarService,
-    private cookieService: CookieService,
   ) {
     // Initialize loading states for various authentication methods.
     this.loading = {
@@ -424,9 +425,12 @@ export class LoginComponent  {
 
     await Promise.all([
       this.trackLoginAttempt(providerId, true, token),
-      this.loginMetrics(user.uid, providerId),
       this.firestoreService.storeUserData(user, providerId, true)
     ]);
+
+    this.rememberLastLogin(providerId);
+
+    this.queuePostLoginTracking(user.uid, providerId);
 
     const isVerified = await this.onLoginUpdate({ user }, providerId);
     if (!isVerified) {
@@ -463,9 +467,12 @@ export class LoginComponent  {
       this.firestoreService.setAnalyticsUserId(this.analytics, result.user.uid);
 
       await Promise.all([
-        this.loginMetrics(result.user.uid, providerId),
         this.firestoreService.storeUserData(result.user, providerId, true)
       ]);
+
+      this.rememberLastLogin(providerId);
+
+      this.queuePostLoginTracking(result.user.uid, providerId);
 
       this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
       const returnUrl = this.getReturnUrl();
@@ -491,6 +498,12 @@ export class LoginComponent  {
         });
       this.analyticsEventQueue = [];
     }, 500); // 500ms debounce
+  }
+
+  private queuePostLoginTracking(userId: string, providerId: string): void {
+    void this.guestTrackingService.ensurePostLoginSession({ userId, providerId }).catch((error) => {
+      console.warn('Post-login session tracking failed:', error);
+    });
   }
 
   /**
@@ -551,6 +564,28 @@ export class LoginComponent  {
     this.githubProvider.setCustomParameters({ prompt: 'select_account' })
 
     void this.handleRedirectSignInResult();
+    this.lastLoginHint = this.guestTrackingService.getLastLoginHint();
+  }
+
+  protected isLastUsedProvider(providerId: string): boolean {
+    return this.lastLoginHint?.providerId === providerId;
+  }
+
+  protected getLastUsedPasswordLabel(): string {
+    if (!this.isLastUsedProvider('password')) {
+      return '';
+    }
+
+    return this.lastLoginHint?.maskedIdentifier || this.lastLoginHint?.providerLabel || '';
+  }
+
+  private rememberLastLogin(providerId: string): void {
+    const identifier = providerId === 'password'
+      ? String(this.loginForm.get('identifier')?.value || '')
+      : '';
+
+    this.guestTrackingService.rememberLastLogin(providerId, identifier);
+    this.lastLoginHint = this.guestTrackingService.getLastLoginHint();
   }
 
   /**
@@ -1019,69 +1054,6 @@ export class LoginComponent  {
   }
 
   /**
-   * @description Records login metrics, links guest sessions to authenticated users,
-   * and updates cookies.
-   * @param {string} userId - The Firebase UID of the authenticated user.
-   * @param {string} providerId - The ID of the authentication provider (e.g., 'google.com', 'password').
-   * @returns {Promise<void>} A promise that resolves when metrics are recorded and cookies updated.
-   */
-  public async loginMetrics(userId: string, providerId: string): Promise<void> {
-    let guestId = this.cookieService.get('gid'); // Get guest_id from cookies
-    let aid = this.cookieService.get('aid'); // Get authenticated user cookie
-    let guestfp = this.cookieService.get('guest_fp'); // Get guest fingerprint from cookies
-
-    let guestInfo: Guest | null = null;
-    // Get device fingerprint from localStorage or generate
-    const fingerprintData = guestfp
-
-    if (guestId) {
-      const { err, guestInfo: GuestData } = await this.authService.linkGuestToUser(userId, guestId);
-
-      guestInfo = GuestData;
-      if (err) {
-        console.warn('Guest link skipped due to recoverable error:', err);
-      }
-
-      this.cookieService.delete('gid'); // Clear the guest_id cookie
-      this.cookieService.set('aid', JSON.stringify({ userId, guestId }), 90, "/", "", true, "Lax"); // Set authenticated user cookie for 1 year
-    }
-
-    // Record login metrics
-    const connection = (this.navigator as any)?.connection?.effectiveType || null; // e.g. "wifi", "4g"
-    const ipAddress = '0.0.0.0'; // Placeholder, ideally obtained from a backend service
-    const browser = await getBrowser(this.navigator) || 'Unknown';
-    const os = this.detectOsFromUserAgent(this.navigator?.userAgent || '');
-    const userAgent = this.navigator.userAgent || 'Unknown';
-    const location = 'Unknown'; // Placeholder, ideally obtained from a geolocation service
-    const deviceType = this.navigator?.platform || 'Unknown';
-    const deviceFingerprintHash = await getDeviceFingerprintHash(fingerprintData, this.window);
-
-    const metrics: Partial<loginHistoryInfo> = {
-      ipAddress,
-      browser,
-      os,
-      userAgent,
-      location,
-      deviceType,
-      connection,
-      providerId,
-      deviceFingerprintHash,
-    };
-
-    const currlogin = await this.authService.recordLoginMetrics(userId, metrics, guestInfo || undefined);
-
-    if (currlogin?.success && currlogin?.loginId) {
-      // Store loginId in localStorage for future reference (e.g., logout)
-      this.localStorage.setItem('loginId', currlogin.loginId);
-      
-      // Store loginId in aid cookie (create if doesn't exist, or update if exists)
-      const aidData = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string };
-      const newAidData = { ...aidData, userId, loginId: currlogin.loginId, guestId: guestInfo?.id || aidData.guestId || '' };
-      this.cookieService.set('aid', JSON.stringify(newAidData), 90, '/', "", true, "Lax");
-    }
-  }
-
-  /**
    * @description Lifecycle hook that is called when the component is destroyed.
    * Unsubscribes from all active subscriptions to prevent memory leaks and clears reCAPTCHA.
    */
@@ -1089,16 +1061,6 @@ export class LoginComponent  {
     this.destroy$.next();
     this.destroy$.complete();
     this.recaptchaVerifier?.clear();
-  }
-
-  private detectOsFromUserAgent(userAgent: string): string {
-    const ua = (userAgent || '').toLowerCase()
-    if (ua.includes('windows')) return 'Windows'
-    if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS'
-    if (ua.includes('android')) return 'Android'
-    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS'
-    if (ua.includes('linux')) return 'Linux'
-    return 'Unknown'
   }
 
   private getFriendlyAuthErrorMessage(error: any): string {

@@ -127,6 +127,12 @@ service cloud.firestore {
         allow create, update: if isAuthenticated() && request.auth.uid == docId;
         allow delete: if false;
       }
+
+      match /login_history_events/{eventId} {
+        allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
+        allow create: if isAuthenticated() && request.auth.uid == docId;
+        allow update, delete: if false;
+      }
     }
 
     match /migration_runs/{runId} {
@@ -146,6 +152,22 @@ service cloud.firestore {
       allow create: if false;
       allow update: if isAdmin();
       allow delete: if false;
+    }
+
+    match /loginSessions/{sessionId} {
+      // Enterprise session management - controlled via Cloud Functions only
+      // Clients cannot directly write; all mutations go through callable functions
+      allow read: if isAdmin();
+      allow create, update, delete: if false; // Cloud Functions handle all mutations
+    }
+
+    match /users/{userId} {
+      match /sessions/{sessionId} {
+        // User subcollection for easy querying of own sessions
+        // Synced via Cloud Functions, read-only for clients
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow create, update, delete: if false; // Cloud Functions only
+      }
     }
 
     match /operation_metrics/{operationId} {

@@ -1,0 +1,78 @@
+<div class="activity-visualization">
+  <div class="activity-header">
+    <h3>Activity Timeline</h3>
+    <span class="total-activity">{{ getTotalActivity() }} interactions</span>
+  </div>
+
+  <!-- Sparkline chart (simplified bar chart) -->
+  <div class="sparkline-container">
+    <div
+      *ngFor="let activity of activityData(); let i = index"
+      class="sparkline-bar"
+      [style.height.%]="getBarHeight(activity)"
+      [matTooltip]="getActivityTooltip(activity, i)"
+      [attr.data-hour]="i"
+    ></div>
+  </div>
+
+  <!-- Activity legend -->
+  <div class="activity-legend">
+    <div class="legend-item">
+      <span class="legend-dot low"></span>
+      <span>Low</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot medium"></span>
+      <span>Medium</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot high"></span>
+      <span>High</span>
+    </div>
+  </div>
+
+  <!-- Daily activity breakdown -->
+  <div class="activity-tables">
+    <div class="daily-summary">
+      <h4>Daily Activity</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Duration</th>
+            <th>Requests</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let day of getDailySummary()">
+            <td>{{ day.date | date:'MMM d' }}</td>
+            <td>{{ formatDuration(day.duration) }}</td>
+            <td>{{ day.requestCount }}</td>
+            <td>
+              <span [class]="'status ' + day.status">
+                {{ day.status | titlecase }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Activity metrics -->
+  <div class="activity-metrics">
+    <div class="metric">
+      <span class="label">Avg Session Duration</span>
+      <span class="value">{{ getAverageSessionDuration() }}</span>
+    </div>
+    <div class="metric">
+      <span class="label">Peak Activity Hour</span>
+      <span class="value">{{ getPeakActivityHour() }}</span>
+    </div>
+    <div class="metric">
+      <span class="label">Total Active Time</span>
+      <span class="value">{{ getTotalActiveTime() }}</span>
+    </div>
+  </div>
+</div>

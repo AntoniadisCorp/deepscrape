@@ -36,11 +36,10 @@ import { throwError } from 'rxjs/internal/observable/throwError';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
 import { firstValueFrom, of, pipe, timestamp } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CookieService } from 'ngx-cookie-service';
-import { LocalStorage } from './storage.service';
 import { Analytics } from '@angular/fire/analytics';
 import { HeartbeatService } from './heartbeat.service';
 import { AnalyticsService } from './analytics.service';
+import { GuestTrackingService } from './guest-tracking.service';
 
 @Injectable({
   providedIn: 'root'
@@ -51,9 +50,8 @@ export class AuthService {
   private destroyRef = inject(DestroyRef)
   private analytics = inject(Analytics)
    private platformId = inject<Object>(PLATFORM_ID);
-  private cookieService = inject(CookieService)
-  private localStorage = inject(LocalStorage)
   private heartbeatService = inject(HeartbeatService)
+  private guestTrackingService = inject(GuestTrackingService)
   token: string | undefined = ''
   isAdmin: boolean = false
   private currentLoginId: string = ''
@@ -169,6 +167,7 @@ export class AuthService {
           this.authStateResolved.next(false);
           this.userSubject.next(null);
           this.token = undefined;
+          this.isAdmin = false;
           this.heartbeatService.stop(); // Stop heartbeat if not authenticated
           return { isAuthenticated: false, user: null }; // Ensure consistent return type
         }
@@ -181,7 +180,7 @@ export class AuthService {
         // Save token
         this.token = await user.getIdToken();
 
-        const loginState = this.getLoginIdFromStorage()
+        const loginState = this.guestTrackingService.getSessionContext()
         if (loginState.loginId) {
           try {
             const sessionStatus = await this.fireService.callFunction<
@@ -234,6 +233,7 @@ export class AuthService {
         this.authStateResolved.next(false)
         this.userSubject.next(null);
         this.token = undefined;
+        this.isAdmin = false;
         return of({ isAuthenticated: false, user: null })
       })
     )
@@ -972,12 +972,12 @@ export class AuthService {
     return await this.fireService.linkGuestToUser(uid, guestId)
   }
 
-  async recordLoginMetrics(userId: string, metrics: Partial<loginHistoryInfo>, guestInfo?: Guest) {
+  async recordLoginMetrics(userId: string, metrics: Partial<loginHistoryInfo>, guestInfo?: Guest, sessionId?: string) {
     if (!metrics.providerId) {
       throw new Error("providerId is required for loginHistoryInfo");
     }
     // Cast metrics to loginHistoryInfo after ensuring required fields are present
-    const result = await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo)
+    const result = await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo, sessionId)
     // Store loginId in memory for use during logout
     if (result?.loginId) {
       this.currentLoginId = result.loginId
@@ -987,10 +987,10 @@ export class AuthService {
 
   logout() {
     const tokenTemp = this.token
-    let { userId, loginId } = this.getLoginIdFromStorage()
-    userId = userId || this.userSubject.value?.uid || ''
+    let { userId, loginId } = this.guestTrackingService.getSessionContext()
+    userId = String(userId || this.userSubject.value?.uid || '')
     // Use in-memory loginId first, fallback to storage
-    loginId = this.currentLoginId || loginId
+    loginId = String(this.currentLoginId || loginId || '')
 
     // Immediately clear user state to prevent race conditions with Firestore listeners
     this.userSubject.next(null);
@@ -1002,9 +1002,9 @@ export class AuthService {
       tap(() => {
         this.trackingLogout('logout', false, this.token)
         this.token = undefined
+        this.isAdmin = false
         this.currentLoginId = ''
-        this.localStorage.removeItem('loginId')
-        this.cookieService.delete('aid', '/')
+        this.guestTrackingService.clear()
       }),
       switchMap(() => from(this.fireService.signOut())),
       catchError(async (error) => {
@@ -1024,7 +1024,7 @@ export class AuthService {
           method: 'logout',
           withError,
           timestamp: new Date().toISOString()
-        }, token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
+        }, token, this.userSubject.value?.uid, this.guestTrackingService.getSessionContext().guestId || undefined)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe();
       }
@@ -1033,27 +1033,14 @@ export class AuthService {
     }
   }
 
-  private getLoginIdFromStorage() {
-    // Try to get loginId from cookie first, then fallback to localStorage
-    const aid = this.cookieService.get('aid')
-
-    // parse loginId from aid cookie if exists
-    let { loginId, userId, guestId } = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string }
-
-    // Fallback to localStorage if not found in cookie
-    loginId = loginId || this.localStorage.getItem('loginId') || '' as string
-
-    return { loginId, userId, guestId }
-  }
-
   private handleRevokedSession(): void {
     this.currentLoginId = ''
     this.token = undefined
+    this.isAdmin = false
     this.userSubject.next(null)
     this.authStateResolved.next(false)
 
-    this.localStorage.removeItem('loginId')
-    this.cookieService.delete('aid', '/')
+    this.guestTrackingService.clear()
 
     this.fireService.signOut().catch((error) => {
       console.error('Failed to sign out after session revocation:', error)

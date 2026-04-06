@@ -3,7 +3,7 @@ import { applyActionCode, Auth, sendEmailVerification, User, RecaptchaVerifier, 
 import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
-import { AuthService, FirestoreService, SnackbarService } from 'src/app/core/services';
+import { AuthService, FirestoreService, GuestTrackingService, SnackbarService } from 'src/app/core/services';
 import { WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
@@ -48,8 +48,6 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   public phoneVerificationForm!: FormGroup;
   private pendingVerificationId: string | null = null;
   private pendingPhoneNumber: string | null = null;
-  private sessionMetricsEnsured = false;
-
   private readonly platformId = inject(PLATFORM_ID);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
@@ -58,6 +56,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly snackbarService = inject(SnackbarService);
   private readonly authService = inject(AuthService);
   private readonly firestoreService = inject(FirestoreService);
+  private readonly guestTrackingService = inject(GuestTrackingService);
   private readonly fb = inject(FormBuilder);
   private readonly document = inject(DOCUMENT);
   private readonly translate = inject(TranslateService);
@@ -288,41 +287,20 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.recaptchaVerifier?.clear()
   }
 
-  private detectOsFromUserAgent(userAgent: string): string {
-    const ua = (userAgent || '').toLowerCase();
-    if (ua.includes('windows')) return 'Windows';
-    if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS';
-    if (ua.includes('android')) return 'Android';
-    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS';
-    if (ua.includes('linux')) return 'Linux';
-    return 'Unknown';
-  }
-
   private async ensureCurrentSessionMetrics(providerIdOverride?: string, force = false): Promise<void> {
-    if (this.sessionMetricsEnsured && !force) {
-      return;
-    }
-
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
       return;
     }
 
-    const navigatorRef = this.window.navigator;
     const providerId = providerIdOverride || currentUser.providerData?.[0]?.providerId || 'password';
 
     try {
-      await this.authService.recordLoginMetrics(currentUser.uid, {
-        ipAddress: '0.0.0.0',
-        browser: 'Unknown',
-        userAgent: navigatorRef?.userAgent || 'Unknown',
-        os: this.detectOsFromUserAgent(navigatorRef?.userAgent || ''),
-        location: 'Unknown',
-        deviceType: navigatorRef?.platform || 'Unknown',
-        connection: (navigatorRef as any)?.connection?.effectiveType || 'unknown',
+      await this.guestTrackingService.ensurePostLoginSession({
+        force,
         providerId,
-      } as any);
-      this.sessionMetricsEnsured = true;
+        userId: currentUser.uid,
+      });
     } catch (error) {
       console.warn('Failed to record session metrics in verification flow:', error);
     }

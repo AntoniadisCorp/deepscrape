@@ -5,13 +5,13 @@ import {
   addDoc,
   collection, CollectionReference, connectFirestoreEmulator, deleteDoc, doc, docData, DocumentData, DocumentReference,
   FieldValue,
-  Firestore, getDoc, getDocs, getFirestore, increment, limit, query, Query,
+  Firestore, getDoc, getDocs, getFirestore, increment, limit, orderBy, query, Query,
   QueryConstraint, QuerySnapshot, serverTimestamp, setDoc, SetOptions,
   Timestamp, writeBatch, WriteBatch,
   where
 } from '@angular/fire/firestore'
 import { connectFunctionsEmulator, Functions, httpsCallable } from '@angular/fire/functions'
-import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
+import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryEvent, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
 import { catchError, from, map, Observable, of, switchMap, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
@@ -281,7 +281,7 @@ export class FirestoreService {
     }
   }
 
-  async setUserLoginMetrics(userId: string, metrics: loginHistoryInfo, guestInfo?: Guest) {
+  async setUserLoginMetrics(userId: string, metrics: loginHistoryInfo, guestInfo?: Guest, sessionIdOverride?: string) {
     // deviceFingerprintHash
     const { ipAddress, userAgent, location, deviceType, connection, providerId, browser, deviceFingerprintHash } = metrics
 
@@ -312,17 +312,18 @@ export class FirestoreService {
       }
 
       if (!guestInfo) {
-        console.warn('Guest info not provided. Continuing metrics without guest enrichment.')
+        console.log('Guest info not provided. Continuing metrics without guest enrichment.')
       }
 
       // Prepare login history entry
-      const ip = guestInfo?.ip.raw || ipAddress;
+      const ip = guestInfo?.ip?.raw || ipAddress;
       const currentLocation = guestInfo?.location || location || 'Unknown'
       const currentBrowser = browser || guestInfo?.browser || 'Unknown'
       const currentOS = guestInfo?.os || 'Unknown'
       const currDeviceType = deviceType || guestInfo?.device || 'Unknown'
       const currUserAgent = userAgent || guestInfo?.userAgent || 'Unknown'
       const sessionKey = createSessionKey(ip, currDeviceType, providerId, currentBrowser, currentOS, currentLocation)
+      const canonicalSessionId = String(sessionIdOverride || sessionKey).trim() || sessionKey
 
       const loginHistoryEntry: loginHistoryInfo = {
         uid: userId,
@@ -345,42 +346,26 @@ export class FirestoreService {
 
 
 
-      // Add entry to subcollection
-      const loginHistoryRef = this.collection(this.firestore, `login_metrics/${userId}/login_history_Info`)
-      let newlogin: DocumentReference<unknown, DocumentData>
-      // create a query that checks if there's already a login history entry for the same ipAddress, deviceType and location, browser, os
-      // then only add a new entry if there's no existing entry
-      // Query using only sessionKey
-      const query = this.query(loginHistoryRef,
-        this.where('sessionKey', '==', sessionKey),
-        this.limit(1)
-      )
-      let err2, querySnapshot = await this.getDocs(query)
-      if (err2) {
-        console.warn("Failed to query login history:", err2)
-        return null
-      } else if (!querySnapshot.empty) {
-        console.log("Login history entry already exists for this IP, device, location, browser, and OS. Skipping new entry.")
-        newlogin = querySnapshot.docs[0].ref // return the existing document reference
-        // // Update metrics document
-        // const signOutMetrics = {
-        //   connected: false,
-        //   lastSignInTime: new Date(),
-        // }
-      } else {
-        // TODO: restrict new login history entries if already exists for the same location and device within the last X minutes/hours
-        // This is to prevent spamming the login history with multiple entries for the same login session 
-        const newLoginRef = this.newDocRef(loginHistoryRef) // Create a new document reference with a generated ID
-        newlogin = newLoginRef
-      }
+      // Keep a deterministic "current session" record to avoid list/query permissions.
+      const loginHistoryRef = this.doc(`login_metrics/${userId}/login_history_Info`, canonicalSessionId)
+      const newlogin = loginHistoryRef
+      batch.set(newlogin, loginHistoryEntry, { merge: true })
 
-      batch.set(newlogin, loginHistoryEntry)
+      // Also append immutable login events for full audit/history granularity.
+      const loginHistoryEventsRef = this.collection(this.firestore, `login_metrics/${userId}/login_history_events`)
+      const loginEventRef = this.newDocRef(loginHistoryEventsRef)
+      batch.set(loginEventRef, {
+        ...loginHistoryEntry,
+        eventType: 'login',
+        eventSessionId: canonicalSessionId,
+        createdAt: currentTime,
+      })
 
       // Update metrics document
       const newLoginMetrics = {
         lastGuestId: guestInfo?.id || '',
         id: userId,
-        lastLoginId: newlogin.id,
+        lastLoginId: canonicalSessionId,
         lastSignInTime: currentTime,
         loginCount: this.increment(1),
       }
@@ -390,7 +375,7 @@ export class FirestoreService {
 
       await batch.commit() // Commit the batch write
 
-      return { success: true, message: `Login metrics recorded for user ${userId}.`, loginId: newlogin.id }
+      return { success: true, message: `Login metrics recorded for user ${userId}.`, loginId: canonicalSessionId }
 
     }
     catch (error) {
@@ -412,17 +397,10 @@ export class FirestoreService {
     }
 
     try {
-      const loginHistoryRef = this.doc(`login_metrics/${userId}/login_history_Info`, loginId)
-
-      // Update metrics document
-      const signOutMetrics = {
-        connected: false,
-        signOutTime: new Date(),
-      }
-      // Update existing document
-      await this.setDoc(loginHistoryRef as any, signOutMetrics, { merge: true })
-
-      return { success: true, message: `Sign-out metrics recorded for user ${userId}.` }
+      return await this.callFunction<
+        { loginId: string },
+        { success: boolean; loginId: string; signedOutAt: string }
+      >('signOutLoginSession', { loginId })
     }
     catch (error) {
       console.error('Error storing sign-out data:', error)
@@ -456,14 +434,35 @@ export class FirestoreService {
               return of([])
             }
 
+            // PHASE 2.3: Implement merge+deduplicate for backwards compat
             return from(this.getLoginHistoryNew(user.uid, undefined, undefined, limit)).pipe(
-              map((rows) => rows as loginHistoryInfo[]),
+              map((legacySessions) => {
+                // Mark these as legacy for debugging
+                return (legacySessions as loginHistoryInfo[]).slice(0, limit)
+              }),
               catchError(() => of([])),
             )
           }),
           catchError(() => of([])),
         )
       }),
+    )
+  }
+
+  getMyLoginHistoryEvents(limitCount: number = 20): Observable<loginHistoryEvent[]> {
+    const limitValue = Math.max(1, Math.min(50, Math.floor(limitCount || 20)))
+
+    return of(this.afAuth.currentUser).pipe(
+      switchMap((user) => {
+        if (!user?.uid) {
+          return of([])
+        }
+
+        return from(this.getLoginHistoryEventsNew(user.uid, limitValue)).pipe(
+          catchError(() => of([])),
+        )
+      }),
+      catchError(() => of([])),
     )
   }
 
@@ -1073,6 +1072,13 @@ export class FirestoreService {
     )
   }
 
+  public orderBy(fieldPath: string, directionStr: 'asc' | 'desc' = 'asc'): QueryConstraint {
+    return runInInjectionContext(
+      this._injector,
+      (): QueryConstraint => orderBy(fieldPath, directionStr),
+    )
+  }
+
   public getDocs(q: Query<DocumentData>): Promise<QuerySnapshot<DocumentData, DocumentData>> {
     return this.runAsyncInInjectionContext(
       this._injector,
@@ -1569,6 +1575,30 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error getting login history:', error);
       return [];
+    }
+  }
+
+  async getLoginHistoryEventsNew(
+    userId: string,
+    limitCount: number = 50,
+  ): Promise<loginHistoryEvent[]> {
+    try {
+      const eventsCollection = this.collection(
+        this.firestore,
+        `login_metrics/${userId}/login_history_events`
+      )
+
+      const q = this.query(
+        eventsCollection,
+        this.orderBy('createdAt', 'desc'),
+        this.limit(limitCount),
+      )
+
+      const snapshot = await this.getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as loginHistoryEvent)
+    } catch (error) {
+      console.error('Error getting login history events:', error)
+      return []
     }
   }
 

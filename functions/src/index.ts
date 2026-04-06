@@ -9,6 +9,7 @@ import * as app from "./server"
 import * as auth from "./app/auth"
 import * as stripe from "./app/stripe"
 import * as analyticsRealtime from "./gfunctions/analytics-realtime"
+import * as sessions from "./gfunctions/sessions"
 // import path, { join } from "node:path"
 // import { fileURLToPath } from "node:url"
 
@@ -90,3 +91,18 @@ export const backfillDashboardSummary = analyticsRealtime.backfillDashboardSumma
 export const computeDailyTrends = analyticsRealtime.computeDailyTrends
 export const computeRangeMetrics = analyticsRealtime.computeRangeMetrics
 export const cleanupOldMetrics = analyticsRealtime.cleanupOldAnalytics
+
+// SESSION MANAGEMENT - Functions (Callable)
+export const createLoginSession = sessions.createLoginSession
+export const signOutLoginSession = sessions.signOutLoginSession
+export const recordLogoutMetrics = sessions.recordLogoutMetrics
+export const validateSessionCookie = sessions.validateSessionCookie
+export const cleanupExpiredSessions = sessions.cleanupExpiredSessions
+export const onLoginHistoryCreated = sessions.onLoginHistoryCreated
+
+// PHASE 4.2: DEVICE VERIFICATION - Functions
+export const sendDeviceVerificationCode = sessions.sendDeviceVerificationCode
+export const verifyAndTrustDevice = sessions.verifyAndTrustDevice
+export const isDeviceTrusted = sessions.isDeviceTrusted
+export const getTrustedDevices = sessions.getTrustedDevices
+export const removeTrustedDevice = sessions.removeTrustedDevice

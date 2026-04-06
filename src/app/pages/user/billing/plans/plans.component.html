@@ -24,7 +24,14 @@
   <div *ngIf="isBillingRestricted" class="mb-5 rounded-2xl border border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-4 py-3 text-red-800 dark:text-red-100 shadow-md">
     <div class="flex items-center gap-2">
       <mat-icon fontSet="material-icons-outlined" class="text-red-600 dark:text-red-300">block</mat-icon>
-      <span class="font-medium">Billing is disabled for administrator, manager, and editor accounts.</span>
+      <span class="font-medium">Billing is disabled for manager and editor accounts.</span>
+    </div>
+  </div>
+
+  <div *ngIf="platformAdminBypassActive" class="mb-5 rounded-2xl border border-sky-500/35 bg-sky-500/10 dark:bg-sky-400/10 px-4 py-3 text-sky-800 dark:text-sky-100 shadow-md">
+    <div class="flex items-center gap-2">
+      <mat-icon fontSet="material-icons-outlined" class="text-sky-600 dark:text-sky-300">shield</mat-icon>
+      <span class="font-medium">Platform admin bypass is active. Billing status is shown for reference, but paywall checks are bypassed.</span>
     </div>
   </div>
 

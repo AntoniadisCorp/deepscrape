@@ -14,10 +14,18 @@ import { createPasswordStrengthValidator, RippleDirective } from 'src/app/core/d
 import { checkPasswordStrength, getErrorLabel, getErrorMessage } from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
 import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services';
-import { Loading, loginHistoryInfo, Users } from 'src/app/core/types';
+import { Loading, loginHistoryEvent, loginHistoryInfo, Users, SessionDisplayInfo } from 'src/app/core/types';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { myIcons, OtpInputComponent, themeStorageKey } from 'src/app/shared';
 import { TranslateService } from '@ngx-translate/core';
+
+type SecurityTimelineEvent = loginHistoryEvent & {
+  occurredAt: Date | null
+  sessionId: string
+  locationLabel: string
+  browserLabel: string
+  osLabel: string
+}
 
 @Component({
   selector: 'app-security-tab',
@@ -84,13 +92,17 @@ export class SecurityTabComponent {
   readonly totpQrUrl = signal('')
   readonly totpFactors = signal<readonly MultiFactorInfo[]>([])
   readonly phoneMfaFactors = signal<readonly MultiFactorInfo[]>([])
-  readonly activeSessions = signal<loginHistoryInfo[]>([])
+  // PHASE 2.2: Updated type to SessionDisplayInfo for enterprise sessions
+  readonly activeSessions = signal<SessionDisplayInfo[]>([])
   readonly sessionsLoading = signal(false)
   readonly sessionsError = signal('')
+  readonly activityTimeline = signal<SecurityTimelineEvent[]>([])
+  readonly activityLoading = signal(false)
+  readonly activityError = signal('')
   readonly revokingSessionId = signal('')
   readonly currentSessionId = signal('')
   readonly confirmationDialog = signal<'disable-mfa' | 'revoke-current-session' | null>(null)
-  readonly pendingSessionToRevoke = signal<(loginHistoryInfo & { id?: string }) | null>(null)
+  readonly pendingSessionToRevoke = signal<(SessionDisplayInfo & { id?: string }) | null>(null)
 
   // ── MFA challenge state for provider linking (when user has MFA enabled) ──
   readonly mfaLinkResolver = signal<MultiFactorResolver | null>(null)
@@ -173,6 +185,7 @@ export class SecurityTabComponent {
     this.syncTotpFactors()
     this.resolveCurrentSessionId()
     this.loadActiveSessions()
+    this.loadActivityTimeline()
   }
 
   private resolveCurrentSessionId(): void {
@@ -209,7 +222,48 @@ export class SecurityTabComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (sessions) => {
-          this.activeSessions.set(sessions || [])
+          // PHASE 2.2: Transform sessions to SessionDisplayInfo format
+          const displaySessions: SessionDisplayInfo[] = (sessions || []).map((s: any) => {
+            const createdDate = this.resolveSessionDate(s, [
+              'createdAt',
+              'timestamp',
+              'lastSignInTime',
+              'signInTime',
+              'created_At',
+              'updated_At',
+            ])
+            const lastActivityDate = this.resolveSessionDate(s, [
+              'lastActivityAt',
+              'updated_At',
+              'timestamp',
+              'lastSignInTime',
+            ])
+            const expiresDate = this.resolveSessionDate(s, ['expiresAt'])
+            const location = this.resolveSessionLocation(s)
+            const sessionId = this.resolveSessionId(s)
+            return {
+              sessionId,
+              userId: s.userId || this.user?.uid || '',
+              deviceId: s.deviceId || '',
+              createdAt: createdDate || new Date(),
+              lastActivityAt: lastActivityDate || createdDate || new Date(),
+              expiresAt: expiresDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              revokedAt: s.revokedAt || null,
+              active: s.active !== false && !s.revokedAt,
+              ipAddress: s.ipAddress || '',
+              userAgent: s.userAgent || '',
+              browser: s.browser || '',
+              os: s.os || '',
+              location,
+              providerId: s.providerId || 'firebase',
+              isCurrent: this.isCurrentSession({ ...s, sessionId } as SessionDisplayInfo & { id?: string }),
+              isRevoked: !!((s as any).revokedAt),
+              isSignedOut: !!((s as any).signOutTime),
+              deviceFingerprintMatch: false, // TODO: implement device fingerprint check
+              humanReadableTime: createdDate ? createdDate.toLocaleString() : 'Unknown time'
+            } as SessionDisplayInfo
+          })
+          this.activeSessions.set(displaySessions)
           this.sessionsLoading.set(false)
           this.cdr.detectChanges()
         },
@@ -221,20 +275,79 @@ export class SecurityTabComponent {
       })
   }
 
-  isCurrentSession(session: loginHistoryInfo & { id?: string }): boolean {
-    return !!session?.id && session.id === this.currentSessionId()
+  loadActivityTimeline(): void {
+    if (!this.user?.uid) {
+      this.activityTimeline.set([])
+      return
+    }
+
+    this.activityLoading.set(true)
+    this.activityError.set('')
+
+    this.firestoreService.getMyLoginHistoryEvents(20)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (events) => {
+          const timeline = (events || []).map((event) => {
+            const occurredAt = this.resolveSessionDate(event, [
+              'createdAt',
+              'timestamp',
+              'signOutTime',
+              'revokedAt',
+            ])
+            const browserLabel = this.getEventBrowser(event)
+            const osLabel = this.getEventOS(event)
+
+            return {
+              ...event,
+              occurredAt,
+              sessionId: this.resolveEventSessionId(event),
+              locationLabel: this.resolveSessionLocation(event),
+              browserLabel,
+              osLabel,
+            }
+          })
+
+          this.activityTimeline.set(timeline)
+          this.activityLoading.set(false)
+          this.cdr.detectChanges()
+        },
+        error: (error) => {
+          this.activityLoading.set(false)
+          this.activityError.set(getErrorMessage(error, this.translate))
+          this.cdr.detectChanges()
+        }
+      })
   }
 
-  canRevokeSession(session: loginHistoryInfo): boolean {
-    return session.connected === true && !session.revokedAt && !session.signOutTime
+  isCurrentSession(session: SessionDisplayInfo & { id?: string }): boolean {
+    const sessionId = this.resolveSessionId(session)
+    return !!sessionId && sessionId === this.currentSessionId()
   }
 
-  formatSessionTimestamp(session: loginHistoryInfo): string {
-    const dateValue = this.asDate((session as any)?.timestamp)
+  canRevokeSession(session: SessionDisplayInfo): boolean {
+    const connected = (session as any)?.connected ?? session.active
+    const revokedAt = (session as any)?.revokedAt ?? session.revokedAt
+    const signOutTime = (session as any)?.signOutTime ?? null
+    return connected === true && !revokedAt && !signOutTime
+  }
+
+  formatSessionTimestamp(session: SessionDisplayInfo): string {
+    // Use pre-formatted humanReadableTime from SessionDisplayInfo
+    if (session.humanReadableTime && session.humanReadableTime !== 'Unknown time') {
+      return session.humanReadableTime
+    }
+    const dateValue = this.resolveSessionDate(session as any, [
+      'timestamp',
+      'createdAt',
+      'lastSignInTime',
+      'signInTime',
+      'created_At',
+    ])
     return dateValue ? dateValue.toLocaleString() : 'Unknown time'
   }
 
-  getDisplayBrowser(session: loginHistoryInfo): string {
+  getDisplayBrowser(session: SessionDisplayInfo): string {
     const explicit = (session.browser || '').trim()
     if (explicit && explicit.toLowerCase() !== 'unknown') {
       return explicit
@@ -243,7 +356,7 @@ export class SecurityTabComponent {
     return this.detectBrowserFromUserAgent(session.userAgent || '')
   }
 
-  getDisplayOS(session: loginHistoryInfo): string {
+  getDisplayOS(session: SessionDisplayInfo): string {
     const explicit = (session.os || '').trim()
     if (explicit && explicit.toLowerCase() !== 'unknown') {
       return explicit
@@ -252,8 +365,8 @@ export class SecurityTabComponent {
     return this.detectOsFromUserAgent(session.userAgent || '')
   }
 
-  async revokeSession(session: loginHistoryInfo & { id?: string }): Promise<void> {
-    const loginId = session?.id || ''
+  async revokeSession(session: SessionDisplayInfo & { id?: string }): Promise<void> {
+    const loginId = this.resolveSessionId(session)
     if (!loginId || this.revokingSessionId()) return
 
     if (this.isCurrentSession(session)) {
@@ -276,6 +389,50 @@ export class SecurityTabComponent {
     return null
   }
 
+  private resolveSessionId(session: any): string {
+    return (
+      session?.sessionId ||
+      session?.loginId ||
+      session?.id ||
+      ''
+    )
+  }
+
+  private resolveEventSessionId(event: loginHistoryEvent): string {
+    return String(
+      event.eventSessionId ||
+      event.sessionKey ||
+      event.id ||
+      ''
+    )
+  }
+
+  private resolveSessionDate(session: any, keys: string[]): Date | null {
+    for (const key of keys) {
+      const parsed = this.asDate(session?.[key])
+      if (parsed) {
+        return parsed
+      }
+    }
+    return null
+  }
+
+  private resolveSessionLocation(session: any): string {
+    const direct = String(session?.location || '').trim()
+    if (direct && direct.toLowerCase() !== 'unknown') {
+      return direct
+    }
+
+    const guestLocation = String(session?.guestInfo?.location || '').trim()
+    if (guestLocation && guestLocation.toLowerCase() !== 'unknown') {
+      return guestLocation
+    }
+
+    const country = String(session?.country || '').trim()
+    const region = String(session?.region || '').trim()
+    return [region, country].filter(Boolean).join(', ')
+  }
+
   private detectBrowserFromUserAgent(userAgent: string): string {
     const ua = (userAgent || '').toLowerCase()
     if (ua.includes('edg')) return 'Edge'
@@ -294,6 +451,49 @@ export class SecurityTabComponent {
     if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS'
     if (ua.includes('linux')) return 'Linux'
     return 'Unknown OS'
+  }
+
+  getActivityEventLabel(event: SecurityTimelineEvent): string {
+    if (event.eventType === 'logout') return 'Signed out'
+    if (event.eventType === 'revoke') return 'Session revoked'
+    return 'Signed in'
+  }
+
+  getActivityEventTone(event: SecurityTimelineEvent): string {
+    if (event.eventType === 'logout') return 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+    if (event.eventType === 'revoke') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+    return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+  }
+
+  formatActivityTimestamp(event: SecurityTimelineEvent): string {
+    return event.occurredAt ? event.occurredAt.toLocaleString() : 'Unknown time'
+  }
+
+  getActivitySummary(event: SecurityTimelineEvent): string {
+    const location = event.locationLabel || 'Unknown location'
+    return `${event.browserLabel} • ${event.osLabel} • ${location}`
+  }
+
+  isCurrentActivityEvent(event: SecurityTimelineEvent): boolean {
+    return !!event.sessionId && event.sessionId === this.currentSessionId()
+  }
+
+  private getEventBrowser(event: loginHistoryEvent): string {
+    const explicit = String(event.browser || '').trim()
+    if (explicit && explicit.toLowerCase() !== 'unknown') {
+      return explicit
+    }
+
+    return this.detectBrowserFromUserAgent(event.userAgent || '')
+  }
+
+  private getEventOS(event: loginHistoryEvent): string {
+    const explicit = String(event.os || '').trim()
+    if (explicit && explicit.toLowerCase() !== 'unknown') {
+      return explicit
+    }
+
+    return this.detectOsFromUserAgent(event.userAgent || '')
   }
 
   initProviders() {
@@ -338,6 +538,7 @@ export class SecurityTabComponent {
       this.syncTotpFactors()
       this.syncMfaStatusControl()
       this.loadActiveSessions()
+      this.loadActivityTimeline()
     }
   }
 
@@ -471,7 +672,7 @@ export class SecurityTabComponent {
     return 'Confirm'
   }
 
-  private openCurrentSessionRevokeDialog(session: loginHistoryInfo & { id?: string }): void {
+  private openCurrentSessionRevokeDialog(session: SessionDisplayInfo & { id?: string }): void {
     this.pendingSessionToRevoke.set(session)
     this.confirmationDialog.set('revoke-current-session')
     this.cdr.detectChanges()
@@ -506,8 +707,9 @@ export class SecurityTabComponent {
     }
   }
 
-  private runSessionRevoke(session: loginHistoryInfo & { id?: string }): void {
-    const loginId = session?.id || ''
+  // PHASE 2.2: Updated runSessionRevoke to work with SessionDisplayInfo
+  private runSessionRevoke(session: SessionDisplayInfo & { id?: string }): void {
+    const loginId = this.resolveSessionId(session)
     if (!loginId || this.revokingSessionId()) return
 
     this.revokingSessionId.set(loginId)
@@ -531,6 +733,7 @@ export class SecurityTabComponent {
 
           this.revokingSessionId.set('')
           this.loadActiveSessions()
+          this.loadActivityTimeline()
           this.cdr.detectChanges()
         },
         error: (error) => {

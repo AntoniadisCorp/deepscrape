@@ -60,6 +60,7 @@ export class PlansComponent {
   currentBillingValue: UserBilling | null = null
   offerBadgeMessage: string | null = null
   isBillingRestricted = false
+  platformAdminBypassActive = false
   customCreditsAmount = 250
   readonly loadingState$ = this.billingService.loadingState$
   readonly pageReady$: Observable<boolean>
@@ -73,7 +74,7 @@ export class PlansComponent {
     annually: { value: "annually", label: "Annually" },
   }
 
-  private readonly restrictedRoleKeywords = ['admin', 'manager', 'editor']
+  private readonly restrictedRoleKeywords = ['manager', 'editor']
 
   constructor(
     private readonly billingService: BillingService,
@@ -127,7 +128,8 @@ export class PlansComponent {
     )
 
     this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
-      this.isBillingRestricted = this.isRestrictedRole(user?.role)
+      this.platformAdminBypassActive = this.authService.isAdmin
+      this.isBillingRestricted = !this.platformAdminBypassActive && this.isRestrictedRole(user?.role)
     })
 
     this.planPeriods = [

@@ -77,6 +77,11 @@
             @if (!loading.github) {
               <mat-icon aria-label="github" svgIcon="github" class="w-5 h-5 text-gray-700 dark:text-gray-200 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
               <span>{{ 'LOGIN.GITHUB_BUTTON' | translate }}</span>
+              @if (isLastUsedProvider('github.com')) {
+                <span class="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:bg-slate-100 dark:text-slate-900">
+                  Last used
+                </span>
+              }
             } @else {
               <span class="flex h-6 w-16 items-center justify-center">
                 <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
@@ -89,6 +94,11 @@
             @if (!loading.google) {
               <mat-icon aria-label="google" svgIcon="google" class="w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
               <span>{{ 'LOGIN.GOOGLE_BUTTON' | translate }}</span>
+              @if (isLastUsedProvider('google.com')) {
+                <span class="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                  Last used
+                </span>
+              }
             } @else {
               <span class="flex h-6 w-16 items-center justify-center">
                 <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
@@ -103,7 +113,14 @@
         </div>
         <!-- Identifier -->
         <div>
-          <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
+          <div class="mb-0.5 flex items-center justify-between gap-2">
+            <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
+            @if (isLastUsedProvider('password')) {
+              <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                Last used: {{ getLastUsedPasswordLabel() }}
+              </span>
+            }
+          </div>
           <input id="identifier" autocomplete="off" formControlName="identifier" required type="text" placeholder="{{ 'LOGIN.IDENTIFIER_PLACEHOLDER' | translate }}"
             class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
             [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('identifier')?.valid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)}"

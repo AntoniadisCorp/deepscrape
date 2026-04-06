@@ -16,6 +16,7 @@ describe('SecurityTabComponent', () => {
 
     fixture = TestBed.createComponent(SecurityTabComponent);
     component = fixture.componentInstance;
+    spyOn(component as any, 'initRecaptcha').and.stub();
     fixture.detectChanges();
   });
 

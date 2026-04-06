@@ -232,8 +232,7 @@ const TRIAL_DEFAULT_CREDIT_CAP_EUR = toPositiveInteger(env.BILLING_TRIAL_DEFAULT
 const CUSTOM_CREDITS_MIN = toPositiveInteger(env.BILLING_CUSTOM_CREDITS_MIN, 50)
 const CUSTOM_CREDITS_MAX = toPositiveInteger(env.BILLING_CUSTOM_CREDITS_MAX, 5000)
 const CUSTOM_CREDIT_UNIT_AMOUNT_EUR = toPositiveInteger(env.BILLING_CUSTOM_CREDIT_UNIT_AMOUNT_EUR, 19)
-const BILLING_RESTRICTED_ROLE_KEYWORDS = ["admin", "manager", "editor"]
-const bootstrapAdminEmails = new Set(env.ADMIN_EMAILS.map((item) => item.toLowerCase()))
+const BILLING_RESTRICTED_ROLE_KEYWORDS = ["manager", "editor"]
 
 const customCreditsCatalog: CustomCreditsCatalog = {
   enabled: true,
@@ -257,6 +256,10 @@ const normalizeRole = (role: string | null | undefined): string => {
   return (role || "").trim().toLowerCase()
 }
 
+const isPlatformAdminRole = (role: string | null | undefined): boolean => {
+  return normalizeRole(role) === "admin"
+}
+
 const isBillingRestrictedRole = (role: string | null | undefined): boolean => {
   const normalized = normalizeRole(role)
   if (!normalized) {
@@ -266,25 +269,16 @@ const isBillingRestrictedRole = (role: string | null | undefined): boolean => {
   return BILLING_RESTRICTED_ROLE_KEYWORDS.some((keyword) => normalized === keyword || normalized.includes(keyword))
 }
 
-const isBillingRestrictedEmail = (email: string | null | undefined): boolean => {
-  if (!email) {
+const isBillingRestrictedUser = (user: Users | undefined, tokenRole?: string | null): boolean => {
+  if (isPlatformAdminRole(tokenRole) || isPlatformAdminRole(user?.role)) {
     return false
   }
 
-  return bootstrapAdminEmails.has(email.toLowerCase())
-}
-
-const isBillingRestrictedUser = (user: Users | undefined, tokenRole?: string | null): boolean => {
   if (isBillingRestrictedRole(tokenRole)) {
     return true
   }
 
-  if (isBillingRestrictedRole(user?.role)) {
-    return true
-  }
-
-  const userEmail = user?.email || user?.providerData?.[0]?.email || null
-  return isBillingRestrictedEmail(userEmail)
+  return isBillingRestrictedRole(user?.role)
 }
 
 const getTokenRole = (req: { auth?: { token?: unknown } }): string | null => {
@@ -295,7 +289,7 @@ const getTokenRole = (req: { auth?: { token?: unknown } }): string | null => {
 
 const assertBillingAllowed = (user: Users | undefined, tokenRole?: string | null): void => {
   if (isBillingRestrictedUser(user, tokenRole)) {
-    throw new HttpsError("permission-denied", "Billing is disabled for administrator, manager, and editor accounts")
+    throw new HttpsError("permission-denied", "Billing is disabled for manager and editor accounts")
   }
 }
 

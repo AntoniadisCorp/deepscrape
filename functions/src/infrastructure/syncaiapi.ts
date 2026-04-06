@@ -70,6 +70,11 @@ const getAuthErrorCode = (error: unknown): string => {
     return ""
 }
 
+const isPlatformAdminRequest = (req: Request): boolean => {
+    const role = typeof req.user?.role === "string" ? req.user.role.trim().toLowerCase() : ""
+    return role === "admin"
+}
+
 class ReverseAPIProxy {
     public router: Router
 
@@ -119,6 +124,12 @@ class ReverseAPIProxy {
         const uid = req.user?.uid
         if (!uid) {
             res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        if (isPlatformAdminRequest(req)) {
+            res.setHeader("x-billing-bypass", "platform_admin")
+            next()
             return
         }
 

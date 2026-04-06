@@ -59,3 +59,52 @@ export interface DockerImageInfo {
     digest?: string;
     fullName: string;
 }
+
+/**
+ * Enterprise login session - tracks authenticated user sessions per device
+ * @since 2026-04-06 Enterprise SaaS architecture
+ */
+export interface LoginSession {
+    sessionId: string;
+    userId: string;
+    deviceId: string;
+    createdAt: Date | string;
+    lastActivityAt: Date | string;
+    expiresAt: Date | string;
+    revokedAt: Date | string | null;
+    active: boolean;
+    ipAddress: string;
+    userAgent: string;
+    browser: string;
+    os: string;
+    location: string;
+    providerId: string;
+}
+
+/**
+ * Device session info for security dashboard
+ */
+export interface DeviceSessionInfo {
+    loginId: string;
+    deviceId: string;
+    browser: string;
+    os: string;
+    location: string;
+    ipAddress: string;
+    createdAt: string;
+    lastActivityAt: string;
+    active: boolean;
+    isCurrent: boolean;
+}
+
+/**
+ * PHASE 2.2: Session display info - extends LoginSession with UI-specific fields
+ * Used in security dashboard to show session status and current device badge
+ */
+export interface SessionDisplayInfo extends LoginSession {
+    isCurrent: boolean;
+    isRevoked: boolean;
+    isSignedOut: boolean;
+    deviceFingerprintMatch: boolean;
+    humanReadableTime: string;
+}

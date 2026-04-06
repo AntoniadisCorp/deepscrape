@@ -126,6 +126,7 @@ const mockAuthService = {
   userSubject: { value: null, next: () => {} },
   user$: of(null),
   isAuthenticated: () => of({ isAuthenticated: false, user: null }),
+  getEnrolledMultiFactorHints: () => [],
   signOut: () => Promise.resolve(),
 };
 

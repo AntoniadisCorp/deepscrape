@@ -115,6 +115,29 @@ export type loginHistoryInfo = {
     revokedByUid?: string | null
 }
 
+export type loginHistoryEvent = {
+    id?: string
+    uid?: string
+    eventType: 'login' | 'logout' | 'revoke' | string
+    eventSessionId?: string
+    providerId?: string
+    timestamp?: Date | string
+    createdAt?: Date | string
+    signOutTime?: Date | string
+    revokedAt?: Date | string | null
+    connected?: boolean
+    os?: string
+    ipAddress?: string
+    browser?: string
+    userAgent?: string
+    location?: string
+    deviceType?: string
+    guestId?: string
+    sessionKey?: string
+    deviceFingerprintHash?: string
+    revokedByUid?: string | null
+}
+
 export type Guest = {
   id: string
   uid: string

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http'
 import { LoadingBarRouterModule } from '@ngx-loading-bar/router'
 import { Subscription } from 'rxjs/internal/Subscription'
 import { LoggerService, SnackbarService, SvgIconService, HeartbeatService, FirestoreService, AnalyticsService, AuthService } from './core/services'
+import { SessionTimeoutService, DeviceVerificationService } from './core/services'
 import { AnimatedBgComponent, LangPickerComponent, ThemeToggleComponent } from './shared'
 import { SizeDetectorComponent, SnackbarComponent, SnackBarType } from './core/components'
 import { LoadingBarHttpClientModule } from '@ngx-loading-bar/http-client'
@@ -98,10 +99,16 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     private authService: AuthService,
     private ngswUpdate: NgswUpdateService,
     private analyticsService: AnalyticsService,
-    private fireService: FirestoreService // Inject FirestoreService
+    private fireService: FirestoreService, // Inject FirestoreService
+    sessionTimeoutService: SessionTimeoutService, // Auto-initialized via constructor
+    deviceVerificationService: DeviceVerificationService // Auto-initialized via constructor
     // Inject ActivatedRoute to access route data
     // private activatedRoute: ActivatedRoute,
   ) {
+    // Suppress unused service warnings - services auto-initialize via their constructors
+    void sessionTimeoutService
+    void deviceVerificationService
+    
     this.isBrowser = isPlatformBrowser(this.platformId)
 
     //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
