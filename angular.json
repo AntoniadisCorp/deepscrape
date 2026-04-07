@@ -204,5 +204,9 @@
     "@schematics/angular:resolver": {
       "typeSeparator": "."
     }
+  },
+  "cli": {
+    "analytics": false,
+    "packageManager": "bun"
   }
 }
