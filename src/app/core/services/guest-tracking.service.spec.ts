@@ -19,6 +19,7 @@ describe('GuestTrackingService', () => {
     set: jasmine.Spy;
   };
   let firestoreServiceMock: {
+    callFunction: jasmine.Spy;
     linkGuestToUser: jasmine.Spy;
     setUserLoginMetrics: jasmine.Spy;
   };
@@ -46,6 +47,11 @@ describe('GuestTrackingService', () => {
     };
 
     firestoreServiceMock = {
+      callFunction: jasmine.createSpy('callFunction').and.resolveTo({
+        success: true,
+        sessionId: 'session-123',
+        expiresAt: new Date().toISOString(),
+      }),
       linkGuestToUser: jasmine.createSpy('linkGuestToUser').and.resolveTo({
         err: null,
         guestInfo: { id: 'guest-linked-id' },
@@ -100,6 +106,7 @@ describe('GuestTrackingService', () => {
   it('records post-login session state and persists aid/loginId', async () => {
     await service.ensurePostLoginSession({ userId: 'user-1', providerId: 'password' });
 
+    expect(firestoreServiceMock.callFunction).toHaveBeenCalledTimes(1);
     expect(firestoreServiceMock.linkGuestToUser).toHaveBeenCalledOnceWith('user-1', 'guest-cookie-id');
     expect(firestoreServiceMock.setUserLoginMetrics).toHaveBeenCalledTimes(1);
     expect(localStorageMock.getItem('loginId')).toBe('login-123');

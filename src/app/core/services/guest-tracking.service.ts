@@ -35,6 +35,21 @@ type PostLoginOptions = {
   userId: string;
 };
 
+type PostLoginSessionResult = {
+  loginId: string;
+  userId: string;
+};
+
+type ResolvedSessionMetrics = {
+  ip: string;
+  location: string;
+  region: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string;
+};
+
 /**
  * Centralises guest-session state that was previously scattered across AuthService.
  *
@@ -162,33 +177,53 @@ export class GuestTrackingService {
     }
   }
 
-  async ensurePostLoginSession(options: PostLoginOptions): Promise<void> {
+  async ensurePostLoginSession(options: PostLoginOptions): Promise<PostLoginSessionResult | null> {
     const { userId, providerId, force = false } = options;
 
     if (!isPlatformBrowser(this.platformId) || !userId || !providerId) {
-      return;
+      return null;
     }
 
     const state = this.refreshTrackingState();
     if (!force && state.userId === userId && state.loginId) {
       this.initializedUsers.add(userId);
-      return;
+      return {
+        loginId: state.loginId,
+        userId,
+      };
     }
 
     if (!force && this.initializedUsers.has(userId)) {
-      return;
+      const refreshedState = this.refreshTrackingState();
+      return refreshedState.loginId
+        ? { loginId: refreshedState.loginId, userId }
+        : null;
     }
 
     const existingPromise = this.sessionInitPromises.get(userId);
     if (!force && existingPromise) {
-      return existingPromise;
+      await existingPromise;
+      const refreshedState = this.refreshTrackingState();
+      return refreshedState.loginId
+        ? { loginId: refreshedState.loginId, userId }
+        : null;
     }
 
     const sessionPromise = this.recordPostLoginSession(userId, providerId)
       .finally(() => this.sessionInitPromises.delete(userId));
 
     this.sessionInitPromises.set(userId, sessionPromise);
-    return sessionPromise;
+    await sessionPromise;
+
+    const refreshedState = this.refreshTrackingState();
+    if (!refreshedState.loginId) {
+      throw new Error('[GuestTrackingService] Post-login session init completed without loginId.');
+    }
+
+    return {
+      loginId: refreshedState.loginId,
+      userId,
+    };
   }
 
   private async recordPostLoginSession(userId: string, providerId: string): Promise<void> {
@@ -239,7 +274,7 @@ export class GuestTrackingService {
           deviceId: string;
           metrics: any;
         },
-        { success: boolean; sessionId: string; expiresAt: string }
+        { success: boolean; sessionId: string; expiresAt: string; resolvedMetrics?: ResolvedSessionMetrics }
       >('createLoginSession', {
         userId,
         deviceId,
@@ -255,9 +290,16 @@ export class GuestTrackingService {
 
       if (sessionResult?.success && sessionResult?.sessionId) {
         console.log('[GuestTrackingService] Created enterprise session:', sessionResult.sessionId);
+        const resolvedMetrics = sessionResult.resolvedMetrics;
+        const metricsForProjection: loginHistoryInfo = {
+          ...(metrics as loginHistoryInfo),
+          ipAddress: resolvedMetrics?.ip || (metrics.ipAddress as string) || '0.0.0.0',
+          location: resolvedMetrics?.location || (metrics.location as string) || 'Unknown',
+        };
+
         const currentLogin = await this.firestoreService.setUserLoginMetrics(
           userId,
-          metrics as loginHistoryInfo,
+          metricsForProjection,
           guestInfo || undefined,
           sessionResult.sessionId,
         );
@@ -269,8 +311,11 @@ export class GuestTrackingService {
             userId,
           });
           this.initializedUsers.add(userId);
+          return;
         }
       }
+
+      throw new Error('[GuestTrackingService] Session created but login metrics did not return loginId.');
     } catch (err) {
       console.warn('[GuestTrackingService] Enterprise session creation failed, using legacy metrics:', err);
       // Fallback to legacy metrics write
@@ -283,7 +328,10 @@ export class GuestTrackingService {
           userId,
         });
         this.initializedUsers.add(userId);
+        return;
       }
+
+      throw new Error('[GuestTrackingService] Legacy post-login metrics failed to produce loginId.');
     }
   }
 

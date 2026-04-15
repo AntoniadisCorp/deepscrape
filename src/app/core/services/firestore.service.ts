@@ -282,29 +282,46 @@ export class FirestoreService {
   }
 
   async setUserLoginMetrics(userId: string, metrics: loginHistoryInfo, guestInfo?: Guest, sessionIdOverride?: string) {
-    // deviceFingerprintHash
-    const { ipAddress, userAgent, location, deviceType, connection, providerId, browser, deviceFingerprintHash } = metrics
+    // Legacy compatibility projection only; enterprise session authority is Cloud Functions.
+    return this.upsertLegacyLoginMetricsProjection(userId, metrics, guestInfo, sessionIdOverride)
+  }
 
-    if (!userId || !ipAddress || !userAgent) {
+  private async upsertLegacyLoginMetricsProjection(
+    userId: string,
+    metrics: loginHistoryInfo,
+    guestInfo?: Guest,
+    sessionIdOverride?: string,
+  ) {
+    const {
+      ipAddress,
+      userAgent,
+      location,
+      deviceType,
+      connection,
+      providerId,
+      browser,
+      deviceFingerprintHash,
+    } = metrics
+
+    const normalizedUserId = String(userId || '').trim()
+    const normalizedIpAddress = String(ipAddress || '').trim()
+    const normalizedUserAgent = String(userAgent || '').trim()
+    const normalizedProviderId = String(providerId || '').trim() || 'unknown'
+
+    if (!normalizedUserId || !normalizedIpAddress || !normalizedUserAgent) {
       throw new Error('UID, IP Address, and User Agent are required.')
     }
 
     try {
       const batch = this.writeBatch()
-      const loginMetricsRef = this.doc('login_metrics', userId)
-      let err, loginMetricsSnap = await this.getDoc(loginMetricsRef)
-
-      if (err) {
-        console.warn("Failed to get user's login metrics:", err)
-      }
-
+      const loginMetricsRef = this.doc('login_metrics', normalizedUserId)
+      const loginMetricsSnap = await this.getDoc(loginMetricsRef)
       const currentTime = serverTimestamp()
 
       if (!loginMetricsSnap['exists']()) {
-        // Create new document
         batch.set(loginMetricsRef, {
           guestId: guestInfo?.id || '',
-          id: userId,
+          id: normalizedUserId,
           creationTime: currentTime,
           lastSignInTime: currentTime,
           loginCount: 0,
@@ -315,68 +332,59 @@ export class FirestoreService {
         console.log('Guest info not provided. Continuing metrics without guest enrichment.')
       }
 
-      // Prepare login history entry
-      const ip = guestInfo?.ip?.raw || ipAddress;
+      const ip = guestInfo?.ip?.raw || normalizedIpAddress
       const currentLocation = guestInfo?.location || location || 'Unknown'
       const currentBrowser = browser || guestInfo?.browser || 'Unknown'
       const currentOS = guestInfo?.os || 'Unknown'
       const currDeviceType = deviceType || guestInfo?.device || 'Unknown'
-      const currUserAgent = userAgent || guestInfo?.userAgent || 'Unknown'
-      const sessionKey = createSessionKey(ip, currDeviceType, providerId, currentBrowser, currentOS, currentLocation)
+      const currUserAgent = normalizedUserAgent || guestInfo?.userAgent || 'Unknown'
+      const sessionKey = createSessionKey(ip, currDeviceType, normalizedProviderId, currentBrowser, currentOS, currentLocation)
       const canonicalSessionId = String(sessionIdOverride || sessionKey).trim() || sessionKey
 
       const loginHistoryEntry: loginHistoryInfo = {
-        uid: userId,
-        providerId, // The provider used to sign in
+        uid: normalizedUserId,
+        providerId: normalizedProviderId,
         connection,
         connected: true,
         timestamp: new Date(),
         ipAddress: ip,
-        // we give priority to the passed userAgent param from the client(browser) over the guestInfo userAgent
         os: currentOS,
         browser: currentBrowser,
         userAgent: currUserAgent,
         location: currentLocation,
         deviceType: currDeviceType,
         sessionKey,
-        // Only include guestInfo if it's defined and not undefined
         ...(guestInfo ? { guestId: guestInfo.id } : {}),
-        deviceFingerprintHash
+        deviceFingerprintHash,
       }
 
+      const loginHistoryRef = this.doc(`login_metrics/${normalizedUserId}/login_history_Info`, canonicalSessionId)
+      batch.set(loginHistoryRef, loginHistoryEntry, { merge: true })
 
-
-      // Keep a deterministic "current session" record to avoid list/query permissions.
-      const loginHistoryRef = this.doc(`login_metrics/${userId}/login_history_Info`, canonicalSessionId)
-      const newlogin = loginHistoryRef
-      batch.set(newlogin, loginHistoryEntry, { merge: true })
-
-      // Also append immutable login events for full audit/history granularity.
-      const loginHistoryEventsRef = this.collection(this.firestore, `login_metrics/${userId}/login_history_events`)
-      const loginEventRef = this.newDocRef(loginHistoryEventsRef)
+      const loginEventRef = this.doc(`login_metrics/${normalizedUserId}/login_history_events`, `login-${canonicalSessionId}`)
       batch.set(loginEventRef, {
         ...loginHistoryEntry,
         eventType: 'login',
         eventSessionId: canonicalSessionId,
         createdAt: currentTime,
-      })
+      }, { merge: true })
 
-      // Update metrics document
       const newLoginMetrics = {
         lastGuestId: guestInfo?.id || '',
-        id: userId,
+        id: normalizedUserId,
         lastLoginId: canonicalSessionId,
         lastSignInTime: currentTime,
         loginCount: this.increment(1),
       }
 
-      // Update existing document
       batch.set(loginMetricsRef, newLoginMetrics, { merge: true })
+      await batch.commit()
 
-      await batch.commit() // Commit the batch write
-
-      return { success: true, message: `Login metrics recorded for user ${userId}.`, loginId: canonicalSessionId }
-
+      return {
+        success: true,
+        message: `Login metrics recorded for user ${normalizedUserId}.`,
+        loginId: canonicalSessionId,
+      }
     }
     catch (error) {
       console.error('Error storing user data:', error)
@@ -475,6 +483,60 @@ export class FirestoreService {
   getMyLoginSessionStatus(loginId: string): Observable<{ loginId: string; active: boolean; revoked: boolean; revokedAt?: string | null }> {
     return from(
       this.callFunction<{ loginId: string }, { loginId: string; active: boolean; revoked: boolean; revokedAt?: string | null }>('getMyLoginSessionStatus', { loginId })
+    )
+  }
+
+  getUserLoginSessionsByAdmin(targetUserId: string, limit: number = 50, activeOnly: boolean = false): Observable<{
+    success: boolean;
+    targetUserId: string;
+    sessions: loginHistoryInfo[];
+    total: number;
+  }> {
+    const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 50)))
+
+    return from(
+      this.callFunction<
+        { targetUserId: string; limit: number; activeOnly: boolean },
+        { success: boolean; targetUserId: string; sessions: loginHistoryInfo[]; total: number }
+      >('getUserLoginSessionsByAdmin', {
+        targetUserId,
+        limit: safeLimit,
+        activeOnly,
+      })
+    )
+  }
+
+  revokeUserLoginSessionByAdmin(loginId: string, reason?: string): Observable<{
+    success: boolean;
+    loginId: string;
+    targetUserId: string;
+    revokedAt: string;
+  }> {
+    return from(
+      this.callFunction<
+        { loginId: string; reason?: string },
+        { success: boolean; loginId: string; targetUserId: string; revokedAt: string }
+      >('revokeUserLoginSessionByAdmin', { loginId, reason })
+    )
+  }
+
+  revokeAllUserSessionsByAdmin(targetUserId: string, reason?: string, limit: number = 100): Observable<{
+    success: boolean;
+    targetUserId: string;
+    revokedCount: number;
+    sessionIds: string[];
+  }> {
+    const safeLimit = Math.max(1, Math.min(200, Math.floor(limit || 100)))
+
+    return from(
+      this.callFunction<
+        { targetUserId: string; reason?: string; limit: number },
+        { success: boolean; targetUserId: string; revokedCount: number; sessionIds: string[] }
+      >('revokeAllUserSessionsByAdmin', {
+        targetUserId,
+        reason,
+        limit: safeLimit,
+      })
     )
   }
 
