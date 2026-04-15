@@ -233,6 +233,15 @@ const CUSTOM_CREDITS_MIN = toPositiveInteger(env.BILLING_CUSTOM_CREDITS_MIN, 50)
 const CUSTOM_CREDITS_MAX = toPositiveInteger(env.BILLING_CUSTOM_CREDITS_MAX, 5000)
 const CUSTOM_CREDIT_UNIT_AMOUNT_EUR = toPositiveInteger(env.BILLING_CUSTOM_CREDIT_UNIT_AMOUNT_EUR, 19)
 const BILLING_RESTRICTED_ROLE_KEYWORDS = ["manager", "editor"]
+const billingAllowedOrigins = env.IS_PRODUCTION ?
+  ["https://deepscrape.dev", "https://deepscrape.web.app"] :
+  [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "http://127.0.0.1:8081",
+  ]
 
 const customCreditsCatalog: CustomCreditsCatalog = {
   enabled: true,
@@ -287,6 +296,25 @@ const getTokenRole = (req: { auth?: { token?: unknown } }): string | null => {
   return typeof role === "string" ? role : null
 }
 
+const assertAllowedReturnUrl = (url: string, fieldName: string): void => {
+  let parsed: URL
+
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new HttpsError("invalid-argument", `${fieldName} must be a valid absolute URL`)
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new HttpsError("invalid-argument", `${fieldName} must use http or https`)
+  }
+
+  const origin = parsed.origin
+  if (!billingAllowedOrigins.includes(origin)) {
+    throw new HttpsError("permission-denied", `${fieldName} origin is not allowed`)
+  }
+}
+
 const assertBillingAllowed = (user: Users | undefined, tokenRole?: string | null): void => {
   if (isBillingRestrictedUser(user, tokenRole)) {
     throw new HttpsError("permission-denied", "Billing is disabled for manager and editor accounts")
@@ -324,6 +352,46 @@ const buildFreePlanFromExpiredTrial = (billing: UserBilling | undefined): Partia
 }
 
 const createAlertId = (type: string, windowId: string) => `${type}_${windowId}`
+
+const toSafeErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return "unknown_error"
+}
+
+const recordBillingIncident = async (args: {
+  type: string
+  severity: "info" | "warning" | "error"
+  eventId?: string | null
+  eventType?: string | null
+  uid?: string | null
+  message: string
+  metadata?: Record<string, unknown>
+}): Promise<void> => {
+  await db.collection("billing_incidents").add({
+    type: args.type,
+    severity: args.severity,
+    eventId: args.eventId || null,
+    eventType: args.eventType || null,
+    uid: args.uid || null,
+    message: args.message,
+    metadata: args.metadata || {},
+    createdAt: FieldValue.serverTimestamp(),
+  })
+}
+
+const timestampToIso = (value: unknown): string | null => {
+  if (value && typeof value === "object" && "toDate" in (value as Record<string, unknown>)) {
+    const toDate = (value as { toDate: () => Date }).toDate
+    if (typeof toDate === "function") {
+      return toDate.call(value).toISOString()
+    }
+  }
+
+  return null
+}
 
 const emitUsageAlert = async (args: {
   uid: string
@@ -475,7 +543,7 @@ const getDefaultBillingForPlan = (plan: BillingPlanTier = "free"): UserBilling =
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const submitEnterprisePlanRequest = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const uid = req.auth?.uid
     if (!uid) {
@@ -869,7 +937,7 @@ export const newStripeCustomer = onDocumentCreated(
 
 
 export const createPaymentIntent = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -952,7 +1020,7 @@ export const createPaymentIntent = onCallv2(
 )
 
 export const createSetupIntent = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1031,7 +1099,7 @@ export const createSetupIntent = onCallv2(
 
 
 export const startSubscription = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1129,7 +1197,7 @@ export const startSubscription = onCallv2(
 )
 
 export const getBillingCatalog = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async () => {
     return {
       plans: billingPlanCatalog,
@@ -1142,7 +1210,7 @@ export const getBillingCatalog = onCallv2(
 )
 
 export const validateStripeCatalog = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1324,7 +1392,7 @@ export const validateStripeCatalog = onCallv2(
 )
 
 export const getMyEntitlements = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1491,7 +1559,7 @@ export const getMyEntitlements = onCallv2(
 )
 
 export const startTrial = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1551,7 +1619,7 @@ export const startTrial = onCallv2(
 )
 
 export const getBillingUsage = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1809,7 +1877,7 @@ export const getBillingUsage = onCallv2(
 )
 
 export const createCheckoutSession = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1839,6 +1907,14 @@ export const createCheckoutSession = onCallv2(
     if (!planId || !successUrl || !cancelUrl) {
       throw new HttpsError("invalid-argument", "Missing required checkout arguments")
     }
+
+    const normalizedCheckoutRequestId = String(checkoutRequestId || "").trim()
+    if (!normalizedCheckoutRequestId) {
+      throw new HttpsError("invalid-argument", "checkoutRequestId is required for idempotent checkout")
+    }
+
+    assertAllowedReturnUrl(successUrl, "successUrl")
+    assertAllowedReturnUrl(cancelUrl, "cancelUrl")
 
     if (!isBillingInterval(interval)) {
       throw new HttpsError("invalid-argument", "Invalid billing interval")
@@ -1962,7 +2038,7 @@ export const createCheckoutSession = onCallv2(
       client_reference_id: userId,
       allow_promotion_codes: true,
     }, {
-      idempotencyKey: `checkout_${userId}_${planId}_${interval}_${isCustomCredits ? normalizedCustomCredits : Math.max(1, quantity)}_${checkoutRequestId || Date.now()}`,
+      idempotencyKey: `checkout_${userId}_${planId}_${interval}_${isCustomCredits ? normalizedCustomCredits : Math.max(1, quantity)}_${normalizedCheckoutRequestId}`,
     })
 
     return {
@@ -1973,7 +2049,7 @@ export const createCheckoutSession = onCallv2(
 )
 
 export const createBillingPortalSession = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1986,6 +2062,7 @@ export const createBillingPortalSession = onCallv2(
     if (!returnUrl) {
       throw new HttpsError("invalid-argument", "Missing returnUrl")
     }
+    assertAllowedReturnUrl(returnUrl, "returnUrl")
 
     const userSnap = await db.doc(`users/${userId}`).get()
     const user = userSnap.data() as Users | undefined
@@ -2004,7 +2081,7 @@ export const createBillingPortalSession = onCallv2(
 )
 
 export const resumeSubscriptionCancellation = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2076,7 +2153,7 @@ export const resumeSubscriptionCancellation = onCallv2(
 )
 
 export const verifyCheckoutSession = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2119,6 +2196,365 @@ export const verifyCheckoutSession = onCallv2(
   }
 )
 
+const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<void> => {
+  switch (event.type) {
+  case "checkout.session.completed": {
+    const session = event.data.object as Stripe.Checkout.Session
+    const uid = session.metadata?.uid || session.client_reference_id
+    if (!uid) {
+      break
+    }
+
+    const protectedUserSnap = await db.doc(`users/${uid}`).get()
+    const protectedUser = protectedUserSnap.data() as Users | undefined
+    if (isBillingRestrictedUser(protectedUser)) {
+      await db.doc(`users/${uid}/billing/current`).set({
+        ...getDefaultBillingForPlan("free"),
+        plan: "free",
+        status: "inactive",
+        subscriptionId: null,
+        planInterval: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+      await db.doc(`users/${uid}`).set({
+        plan: "free",
+        status: "inactive",
+        subscriptionId: null,
+        stripeId: FieldValue.delete(),
+        updated_At: new Date(),
+      }, { merge: true })
+      break
+    }
+
+    const checkoutType = session.metadata?.checkoutType
+    const selectedPlanId = session.metadata?.planId || "free"
+    const selectedInterval = (session.metadata?.interval as BillingInterval) || "monthly"
+    const billingRef = db.doc(`users/${uid}/billing/current`)
+    const userRef = db.doc(`users/${uid}`)
+
+    if (checkoutType === "credits" || checkoutType === "custom_credits") {
+      const pack = creditPackCatalog.find((item) => item.id === selectedPlanId)
+      const incrementBy = checkoutType === "custom_credits" ? Math.floor(Number(session.metadata?.customCredits || 0)) : (pack?.credits || 0)
+      await addCreditsLedgerEntry({
+        uid,
+        delta: incrementBy,
+        source: checkoutType === "custom_credits" ? "custom_credits_checkout" : "stripe_checkout",
+        bucket: "purchased",
+        reason: checkoutType === "custom_credits" ? "custom_credits" : "credit_pack",
+        sessionId: session.id,
+      })
+    } else {
+      const selectedPlan = mapPlanIdToTier(selectedPlanId)
+      let trialMeta: Partial<UserBilling> = {}
+      let effectivePlan: BillingPlanTier = selectedPlan
+      let subscriptionMeta: Partial<UserBilling> = {}
+      let effectiveStatus = "active"
+      let effectiveSubscriptionId: string | null = typeof session.subscription === "string" ? session.subscription : null
+
+      if (typeof session.subscription === "string") {
+        const subscription = await stripe.subscriptions.retrieve(session.subscription)
+        effectiveStatus = subscription.status
+        effectiveSubscriptionId = subscription.id
+        subscriptionMeta = getSubscriptionCycleFields(subscription)
+
+        if (subscription.status === "trialing") {
+          effectivePlan = "trial"
+          trialMeta = {
+            trialPlanTarget: selectedPlan,
+            trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
+            trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            trialUsedAt: new Date().toISOString(),
+            trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
+          }
+        }
+      }
+
+      await billingRef.set({
+        ...getDefaultBillingForPlan(effectivePlan),
+        status: effectiveStatus,
+        subscriptionId: effectiveSubscriptionId,
+        planInterval: selectedInterval,
+        ...subscriptionMeta,
+        ...trialMeta,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await userRef.set({
+        plan: effectivePlan,
+        status: effectiveStatus,
+        subscriptionId: effectiveSubscriptionId,
+        updated_At: new Date(),
+      }, { merge: true })
+
+      if (checkoutType === "plan_payg") {
+        const includedCredits = getIncludedCreditsForPlanInterval(selectedPlan, "payAsYouGo")
+        await addCreditsLedgerEntry({
+          uid,
+          delta: includedCredits,
+          source: "plan_payg_checkout",
+          bucket: "included",
+          reason: "plan_payg",
+          sessionId: session.id,
+          plan: selectedPlan,
+          interval: "payAsYouGo",
+        })
+      }
+    }
+    break
+  }
+  case "invoice.payment_failed": {
+    const invoice = event.data.object as Stripe.Invoice
+    const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
+    if (!uid) {
+      break
+    }
+
+    const graceUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString()
+    await db.doc(`users/${uid}/billing/current`).set({
+      status: "past_due",
+      graceUntil,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    await recordBillingIncident({
+      type: "invoice.payment_failed",
+      severity: "warning",
+      eventId: event.id,
+      eventType: event.type,
+      uid,
+      message: `Invoice payment failed. Grace period active until ${graceUntil}`,
+      metadata: {
+        invoiceId: invoice.id,
+        amountDue: invoice.amount_due,
+        currency: invoice.currency,
+        customer: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null,
+        graceUntil,
+      },
+    })
+    break
+  }
+  case "invoice.paid": {
+    const invoice = event.data.object as Stripe.Invoice
+    const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
+    if (!uid) {
+      break
+    }
+
+    const billingRef = db.doc(`users/${uid}/billing/current`)
+    const billingSnap = await billingRef.get()
+    const billing = billingSnap.data() as UserBilling | undefined
+
+    let plan: BillingPlanTier | undefined
+    let planInterval: BillingInterval | undefined
+    let features: Record<string, boolean> | undefined
+    let trialFields: Partial<UserBilling> = {}
+    const recurringPriceId = getInvoiceRecurringPriceId(invoice)
+    const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
+
+    if (recurringMatch) {
+      plan = recurringMatch.plan
+      planInterval = recurringMatch.interval
+      features = getFeaturesFromPlan(plan)
+    }
+
+    if (billing?.plan === "trial" && billing.trialPlanTarget) {
+      plan = billing.trialPlanTarget
+      planInterval =
+        billing.planInterval === "monthly" || billing.planInterval === "quarterly" || billing.planInterval === "annually" ?
+          billing.planInterval :
+          planInterval
+      features = getFeaturesFromPlan(plan)
+      trialFields = {
+        trialPlanTarget: null,
+        trialStartedAt: null,
+        trialEndsAt: null,
+      }
+    }
+
+    const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : billing?.subscriptionId || null
+    const shouldGrantIncludedCredits = Boolean(
+      subscriptionId &&
+      plan &&
+      planInterval &&
+      invoice.amount_paid > 0 &&
+      recurringCreditGrantReasons.has(invoice.billing_reason || ""),
+    )
+
+    await billingRef.set({
+      status: "active",
+      ...(plan ? { plan } : {}),
+      ...(planInterval ? { planInterval } : {}),
+      ...(features ? { features } : {}),
+      ...trialFields,
+      graceUntil: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    if (shouldGrantIncludedCredits && plan && planInterval) {
+      await addCreditsLedgerEntry({
+        uid,
+        delta: getIncludedCreditsForPlanInterval(plan, planInterval),
+        source: "subscription_cycle",
+        bucket: "included",
+        reason: invoice.billing_reason || "subscription_cycle",
+        invoiceId: invoice.id,
+        subscriptionId,
+        plan,
+        interval: planInterval,
+      })
+    }
+
+    if (plan) {
+      await db.doc(`users/${uid}`).set({
+        plan,
+        status: "active",
+        updated_At: new Date(),
+      }, { merge: true })
+    }
+    break
+  }
+  case "payment_intent.succeeded": {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent
+    const uid = paymentIntent.metadata?.uid || await resolveUidByStripeCustomer(paymentIntent.customer)
+    if (!uid) {
+      break
+    }
+
+    const protectedUserSnap = await db.doc(`users/${uid}`).get()
+    const protectedUser = protectedUserSnap.data() as Users | undefined
+    if (isBillingRestrictedUser(protectedUser)) {
+      break
+    }
+
+    const checkoutType = paymentIntent.metadata?.checkoutType
+    const selectedPlanId = paymentIntent.metadata?.planId
+
+    const inferredPlan = selectedPlanId ? mapPlanIdToTier(selectedPlanId) : inferPayAsYouGoPlanFromPayment({
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+    })
+
+    if (checkoutType === "credits") {
+      break
+    }
+
+    if (!inferredPlan || inferredPlan === "free" || inferredPlan === "trial") {
+      break
+    }
+
+    await db.doc(`users/${uid}/billing/current`).set({
+      ...getDefaultBillingForPlan(inferredPlan),
+      plan: inferredPlan,
+      planInterval: "payAsYouGo",
+      status: "active",
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    if (!checkoutType) {
+      await addCreditsLedgerEntry({
+        uid,
+        delta: getIncludedCreditsForPlanInterval(inferredPlan, "payAsYouGo"),
+        source: "plan_payg_payment_intent",
+        bucket: "included",
+        reason: "plan_payg",
+        paymentIntentId: paymentIntent.id,
+        plan: inferredPlan,
+        interval: "payAsYouGo",
+      })
+    }
+
+    await db.doc(`users/${uid}`).set({
+      plan: inferredPlan,
+      status: "active",
+      updated_At: new Date(),
+    }, { merge: true })
+    break
+  }
+  case "customer.subscription.created":
+  case "customer.subscription.updated": {
+    const subscription = event.data.object as Stripe.Subscription
+    const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
+    if (!uid) {
+      break
+    }
+
+    const protectedUserSnap = await db.doc(`users/${uid}`).get()
+    const protectedUser = protectedUserSnap.data() as Users | undefined
+    if (isBillingRestrictedUser(protectedUser)) {
+      break
+    }
+
+    const recurringPriceId = subscription.items.data[0]?.price?.id
+    const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
+    if (!recurringMatch) {
+      break
+    }
+
+    const effectivePlan: BillingPlanTier = subscription.status === "trialing" ? "trial" : recurringMatch.plan
+
+    await db.doc(`users/${uid}/billing/current`).set({
+      plan: effectivePlan,
+      planInterval: recurringMatch.interval,
+      status: subscription.status,
+      subscriptionId: subscription.id,
+      features: getFeaturesFromPlan(effectivePlan),
+      ...getSubscriptionCycleFields(subscription),
+      ...(subscription.status === "trialing" ? {
+        trialPlanTarget: recurringMatch.plan,
+        trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
+        trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+        trialUsedAt: new Date().toISOString(),
+        trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
+      } : {
+        trialPlanTarget: null,
+        trialStartedAt: null,
+        trialEndsAt: null,
+      }),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    await db.doc(`users/${uid}`).set({
+      plan: effectivePlan,
+      status: subscription.status,
+      subscriptionId: subscription.id,
+      updated_At: new Date(),
+    }, { merge: true })
+    break
+  }
+  case "customer.subscription.deleted": {
+    const subscription = event.data.object as Stripe.Subscription
+    const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
+    if (!uid) {
+      break
+    }
+
+    await db.doc(`users/${uid}/billing/current`).set({
+      ...getDefaultBillingForPlan("free"),
+      status: "inactive",
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    await db.doc(`users/${uid}`).set({
+      plan: "free",
+      status: "inactive",
+      subscriptionId: null,
+      updated_At: new Date(),
+    }, { merge: true })
+    break
+  }
+  default:
+    break
+  }
+}
+
 export const stripeWebhook = onRequest({ secrets: stripeSecrets }, async (req, res) => {
     const stripeSecret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(stripeSecret)
@@ -2149,364 +2585,60 @@ export const stripeWebhook = onRequest({ secrets: stripeSecrets }, async (req, r
     try {
       await eventRef.create({
         type: event.type,
+        processed: false,
+        failed: false,
+        retryCount: 0,
         processingStartedAt: FieldValue.serverTimestamp(),
       })
     } catch {
-      res.status(200).send("Already processed")
-      return
+      const existingEvent = await eventRef.get()
+      const existingData = existingEvent.data() as { processed?: boolean } | undefined
+      if (existingData?.processed === true) {
+        res.status(200).send("Already processed")
+        return
+      }
+
+      await eventRef.set({
+        failed: false,
+        lastRetryAt: FieldValue.serverTimestamp(),
+        retryCount: FieldValue.increment(1),
+        processingStartedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
     }
 
     try {
-      switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session
-        const uid = session.metadata?.uid || session.client_reference_id
-        if (!uid) {
-          break
-        }
-
-        const protectedUserSnap = await db.doc(`users/${uid}`).get()
-        const protectedUser = protectedUserSnap.data() as Users | undefined
-        if (isBillingRestrictedUser(protectedUser)) {
-          await db.doc(`users/${uid}/billing/current`).set({
-            ...getDefaultBillingForPlan("free"),
-            plan: "free",
-            status: "inactive",
-            subscriptionId: null,
-            planInterval: null,
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
-          await db.doc(`users/${uid}`).set({
-            plan: "free",
-            status: "inactive",
-            subscriptionId: null,
-            stripeId: FieldValue.delete(),
-            updated_At: new Date(),
-          }, { merge: true })
-          break
-        }
-
-        const checkoutType = session.metadata?.checkoutType
-        const selectedPlanId = session.metadata?.planId || "free"
-        const selectedInterval = (session.metadata?.interval as BillingInterval) || "monthly"
-        const billingRef = db.doc(`users/${uid}/billing/current`)
-        const userRef = db.doc(`users/${uid}`)
-
-        if (checkoutType === "credits" || checkoutType === "custom_credits") {
-          const pack = creditPackCatalog.find((item) => item.id === selectedPlanId)
-          const incrementBy = checkoutType === "custom_credits" ? Math.floor(Number(session.metadata?.customCredits || 0)) : (pack?.credits || 0)
-          await addCreditsLedgerEntry({
-            uid,
-            delta: incrementBy,
-            source: checkoutType === "custom_credits" ? "custom_credits_checkout" : "stripe_checkout",
-            bucket: "purchased",
-            reason: checkoutType === "custom_credits" ? "custom_credits" : "credit_pack",
-            sessionId: session.id,
-          })
-        } else {
-          const selectedPlan = mapPlanIdToTier(selectedPlanId)
-          let trialMeta: Partial<UserBilling> = {}
-          let effectivePlan: BillingPlanTier = selectedPlan
-          let subscriptionMeta: Partial<UserBilling> = {}
-          let effectiveStatus = "active"
-          let effectiveSubscriptionId: string | null = typeof session.subscription === "string" ? session.subscription : null
-
-          if (typeof session.subscription === "string") {
-            const subscription = await stripe.subscriptions.retrieve(session.subscription)
-            effectiveStatus = subscription.status
-            effectiveSubscriptionId = subscription.id
-            subscriptionMeta = getSubscriptionCycleFields(subscription)
-
-            if (subscription.status === "trialing") {
-              effectivePlan = "trial"
-              trialMeta = {
-                trialPlanTarget: selectedPlan,
-                trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
-                trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-                trialUsedAt: new Date().toISOString(),
-                trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
-              }
-            }
-          }
-
-          await billingRef.set({
-            ...getDefaultBillingForPlan(effectivePlan),
-            status: effectiveStatus,
-            subscriptionId: effectiveSubscriptionId,
-            planInterval: selectedInterval,
-            ...subscriptionMeta,
-            ...trialMeta,
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
-
-          await userRef.set({
-            plan: effectivePlan,
-            status: effectiveStatus,
-            subscriptionId: effectiveSubscriptionId,
-            updated_At: new Date(),
-          }, { merge: true })
-
-          if (checkoutType === "plan_payg") {
-            const includedCredits = getIncludedCreditsForPlanInterval(selectedPlan, "payAsYouGo")
-            await addCreditsLedgerEntry({
-              uid,
-              delta: includedCredits,
-              source: "plan_payg_checkout",
-              bucket: "included",
-              reason: "plan_payg",
-              sessionId: session.id,
-              plan: selectedPlan,
-              interval: "payAsYouGo",
-            })
-          }
-        }
-        break
-      }
-      case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice
-        const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
-        if (!uid) {
-          break
-        }
-
-        const graceUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString()
-        await db.doc(`users/${uid}/billing/current`).set({
-          status: "past_due",
-          graceUntil,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-        break
-      }
-      case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice
-        const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
-        if (!uid) {
-          break
-        }
-
-        const billingRef = db.doc(`users/${uid}/billing/current`)
-        const billingSnap = await billingRef.get()
-        const billing = billingSnap.data() as UserBilling | undefined
-
-        let plan: BillingPlanTier | undefined
-        let planInterval: BillingInterval | undefined
-        let features: Record<string, boolean> | undefined
-        let trialFields: Partial<UserBilling> = {}
-        const recurringPriceId = getInvoiceRecurringPriceId(invoice)
-        const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
-
-        if (recurringMatch) {
-          plan = recurringMatch.plan
-          planInterval = recurringMatch.interval
-          features = getFeaturesFromPlan(plan)
-        }
-
-        if (billing?.plan === "trial" && billing.trialPlanTarget) {
-          plan = billing.trialPlanTarget
-          planInterval =
-            billing.planInterval === "monthly" || billing.planInterval === "quarterly" || billing.planInterval === "annually" ?
-              billing.planInterval :
-              planInterval
-          features = getFeaturesFromPlan(plan)
-          trialFields = {
-            trialPlanTarget: null,
-            trialStartedAt: null,
-            trialEndsAt: null,
-          }
-        }
-
-        const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : billing?.subscriptionId || null
-        const shouldGrantIncludedCredits = Boolean(
-          subscriptionId &&
-          plan &&
-          planInterval &&
-          invoice.amount_paid > 0 &&
-          recurringCreditGrantReasons.has(invoice.billing_reason || ""),
-        )
-
-        await billingRef.set({
-          status: "active",
-          ...(plan ? { plan } : {}),
-          ...(planInterval ? { planInterval } : {}),
-          ...(features ? { features } : {}),
-          ...trialFields,
-          graceUntil: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        if (shouldGrantIncludedCredits && plan && planInterval) {
-          await addCreditsLedgerEntry({
-            uid,
-            delta: getIncludedCreditsForPlanInterval(plan, planInterval),
-            source: "subscription_cycle",
-            bucket: "included",
-            reason: invoice.billing_reason || "subscription_cycle",
-            invoiceId: invoice.id,
-            subscriptionId,
-            plan,
-            interval: planInterval,
-          })
-        }
-
-        if (plan) {
-          await db.doc(`users/${uid}`).set({
-            plan,
-            status: "active",
-            updated_At: new Date(),
-          }, { merge: true })
-        }
-        break
-      }
-      case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent
-        const uid = paymentIntent.metadata?.uid || await resolveUidByStripeCustomer(paymentIntent.customer)
-        if (!uid) {
-          break
-        }
-
-        const protectedUserSnap = await db.doc(`users/${uid}`).get()
-        const protectedUser = protectedUserSnap.data() as Users | undefined
-        if (isBillingRestrictedUser(protectedUser)) {
-          break
-        }
-
-        const checkoutType = paymentIntent.metadata?.checkoutType
-        const selectedPlanId = paymentIntent.metadata?.planId
-
-        const inferredPlan = selectedPlanId ? mapPlanIdToTier(selectedPlanId) : inferPayAsYouGoPlanFromPayment({
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-        })
-
-        if (checkoutType === "credits") {
-          break
-        }
-
-        if (!inferredPlan || inferredPlan === "free" || inferredPlan === "trial") {
-          break
-        }
-
-        await db.doc(`users/${uid}/billing/current`).set({
-          ...getDefaultBillingForPlan(inferredPlan),
-          plan: inferredPlan,
-          planInterval: "payAsYouGo",
-          status: "active",
-          cancelAtPeriodEnd: false,
-          cancelAt: null,
-          currentPeriodStart: null,
-          currentPeriodEnd: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        if (!checkoutType) {
-          await addCreditsLedgerEntry({
-            uid,
-            delta: getIncludedCreditsForPlanInterval(inferredPlan, "payAsYouGo"),
-            source: "plan_payg_payment_intent",
-            bucket: "included",
-            reason: "plan_payg",
-            paymentIntentId: paymentIntent.id,
-            plan: inferredPlan,
-            interval: "payAsYouGo",
-          })
-        }
-
-        await db.doc(`users/${uid}`).set({
-          plan: inferredPlan,
-          status: "active",
-          updated_At: new Date(),
-        }, { merge: true })
-        break
-      }
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription
-        const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
-        if (!uid) {
-          break
-        }
-
-        const protectedUserSnap = await db.doc(`users/${uid}`).get()
-        const protectedUser = protectedUserSnap.data() as Users | undefined
-        if (isBillingRestrictedUser(protectedUser)) {
-          break
-        }
-
-        const recurringPriceId = subscription.items.data[0]?.price?.id
-        const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
-        if (!recurringMatch) {
-          break
-        }
-
-        const effectivePlan: BillingPlanTier = subscription.status === "trialing" ? "trial" : recurringMatch.plan
-
-        await db.doc(`users/${uid}/billing/current`).set({
-          plan: effectivePlan,
-          planInterval: recurringMatch.interval,
-          status: subscription.status,
-          subscriptionId: subscription.id,
-          features: getFeaturesFromPlan(effectivePlan),
-          ...getSubscriptionCycleFields(subscription),
-          ...(subscription.status === "trialing" ? {
-            trialPlanTarget: recurringMatch.plan,
-            trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
-            trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-            trialUsedAt: new Date().toISOString(),
-            trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
-          } : {
-            trialPlanTarget: null,
-            trialStartedAt: null,
-            trialEndsAt: null,
-          }),
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        await db.doc(`users/${uid}`).set({
-          plan: effectivePlan,
-          status: subscription.status,
-          subscriptionId: subscription.id,
-          updated_At: new Date(),
-        }, { merge: true })
-        break
-      }
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription
-        const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
-        if (!uid) {
-          break
-        }
-
-        await db.doc(`users/${uid}/billing/current`).set({
-          ...getDefaultBillingForPlan("free"),
-          status: "inactive",
-          cancelAtPeriodEnd: false,
-          cancelAt: null,
-          currentPeriodStart: null,
-          currentPeriodEnd: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        await db.doc(`users/${uid}`).set({
-          plan: "free",
-          status: "inactive",
-          subscriptionId: null,
-          updated_At: new Date(),
-        }, { merge: true })
-        break
-      }
-      default:
-        break
-      }
+      await processStripeEvent(stripe, event)
 
       await eventRef.set({
         type: event.type,
         processed: true,
+        failed: false,
+        lastError: null,
         processedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
 
       res.status(200).send("ok")
     } catch (error) {
       console.error("stripeWebhook processing failed", error)
+      const errorMessage = toSafeErrorMessage(error)
+      await eventRef.set({
+        processed: false,
+        failed: true,
+        lastError: errorMessage,
+        failedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await recordBillingIncident({
+        type: "stripe.webhook.processing_failed",
+        severity: "error",
+        eventId: event.id,
+        eventType: event.type,
+        message: errorMessage,
+        metadata: {
+          livemode: event.livemode,
+          pendingWebhooks: event.pending_webhooks,
+        },
+      })
       res.status(500).send("Webhook processing error")
     }
   })
@@ -2611,16 +2743,15 @@ export const updateUsage = onDocumentCreated(
   })
 
 export const grantPromotionalCredits = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: true },
   async (req) => {
     const actorUid = req.auth?.uid
     if (!actorUid) {
       throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
-    const actorSnap = await db.doc(`users/${actorUid}`).get()
-    const actor = actorSnap.data() as Users | undefined
-    if (actor?.role !== "admin") {
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
       throw new HttpsError("permission-denied", "Only admins can grant promotional credits")
     }
 
@@ -2630,20 +2761,284 @@ export const grantPromotionalCredits = onCallv2(
       reason?: string
     }
 
-    if (!targetUserId || !Number.isFinite(credits) || credits <= 0) {
+    const normalizedTargetUserId = String(targetUserId || "").trim()
+    const normalizedReason = String(reason || "").trim() || "promotional_credit"
+
+    if (!normalizedTargetUserId || !Number.isFinite(credits) || credits <= 0) {
       throw new HttpsError("invalid-argument", "targetUserId and positive credits are required")
     }
 
+    const normalizedCredits = Math.floor(credits)
+
     await addCreditsLedgerEntry({
-      uid: targetUserId,
-      delta: Math.floor(credits),
+      uid: normalizedTargetUserId,
+      delta: normalizedCredits,
       source: "promotional_credit",
       bucket: "purchased",
       grantedBy: actorUid,
-      reason,
+      reason: normalizedReason,
     })
 
-    return { ok: true, targetUserId, grantedCredits: Math.floor(credits) }
+    await db.collection("audit_logs").add({
+      action: "admin_grant_promotional_credits",
+      admin_uid: actorUid,
+      target_userId: normalizedTargetUserId,
+      credits: normalizedCredits,
+      reason: normalizedReason,
+      timestamp: FieldValue.serverTimestamp(),
+    })
+
+    return { ok: true, targetUserId: normalizedTargetUserId, grantedCredits: normalizedCredits }
+  },
+)
+
+export const getAdminBillingObservability = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: true },
+  async (req) => {
+    const actorUid = req.auth?.uid
+    if (!actorUid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
+      throw new HttpsError("permission-denied", "Only admins can access billing observability")
+    }
+
+    const {
+      incidentLimit: rawIncidentLimit = 20,
+      failedEventLimit: rawFailedEventLimit = 20,
+      pendingEventLimit: rawPendingEventLimit = 20,
+      pastDueLimit: rawPastDueLimit = 30,
+      includeAcknowledged = false,
+    } = (req.data || {}) as {
+      incidentLimit?: number
+      failedEventLimit?: number
+      pendingEventLimit?: number
+      pastDueLimit?: number
+      includeAcknowledged?: boolean
+    }
+
+    const incidentLimit = Math.max(1, Math.min(100, Math.floor(Number(rawIncidentLimit) || 20)))
+    const failedEventLimit = Math.max(1, Math.min(100, Math.floor(Number(rawFailedEventLimit) || 20)))
+    const pendingEventLimit = Math.max(1, Math.min(100, Math.floor(Number(rawPendingEventLimit) || 20)))
+    const pastDueLimit = Math.max(1, Math.min(200, Math.floor(Number(rawPastDueLimit) || 30)))
+
+    const incidentsQuery = includeAcknowledged ?
+      db.collection("billing_incidents").orderBy("createdAt", "desc") :
+      db.collection("billing_incidents").where("acknowledged", "==", false).orderBy("createdAt", "desc")
+
+    const [incidentsSnap, failedEventsSnap, pendingEventsRawSnap, pastDueSnap] = await Promise.all([
+      incidentsQuery
+        .limit(incidentLimit)
+        .get(),
+      db.collection("stripe_events")
+        .where("failed", "==", true)
+        .orderBy("failedAt", "desc")
+        .limit(failedEventLimit)
+        .get(),
+      db.collection("stripe_events")
+        .where("processed", "==", false)
+        .orderBy("processingStartedAt", "desc")
+        .limit(Math.max(pendingEventLimit * 3, pendingEventLimit))
+        .get(),
+      db.collectionGroup("billing")
+        .where("status", "==", "past_due")
+        .limit(pastDueLimit)
+        .get(),
+    ])
+
+    const incidents = incidentsSnap.docs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: timestampToIso(data.createdAt),
+        acknowledgedAt: timestampToIso(data.acknowledgedAt),
+      }
+    })
+
+    const failedEvents = failedEventsSnap.docs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      return {
+        id: doc.id,
+        type: data.type || null,
+        retryCount: Number(data.retryCount || 0),
+        lastError: data.lastError || null,
+        failedAt: timestampToIso(data.failedAt),
+        lastRetryAt: timestampToIso(data.lastRetryAt),
+      }
+    })
+
+    const pendingEvents = pendingEventsRawSnap.docs
+      .filter((doc) => {
+        const data = doc.data() as { failed?: boolean }
+        return data.failed !== true
+      })
+      .slice(0, pendingEventLimit)
+      .map((doc) => {
+        const data = doc.data() as Record<string, unknown>
+        return {
+          id: doc.id,
+          type: data.type || null,
+          retryCount: Number(data.retryCount || 0),
+          processingStartedAt: timestampToIso(data.processingStartedAt),
+          lastRetryAt: timestampToIso(data.lastRetryAt),
+        }
+      })
+
+    const pastDueAccounts = pastDueSnap.docs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      const pathSegments = doc.ref.path.split("/")
+      const uid = pathSegments.length >= 2 ? pathSegments[1] : null
+
+      return {
+        uid,
+        path: doc.ref.path,
+        graceUntil: typeof data.graceUntil === "string" ? data.graceUntil : null,
+        updatedAt: timestampToIso(data.updatedAt),
+        subscriptionId: data.subscriptionId || null,
+        plan: data.plan || null,
+        status: data.status || null,
+      }
+    })
+
+    return {
+      generatedAt: new Date().toISOString(),
+      incidents,
+      failedEvents,
+      pendingEvents,
+      pastDueAccounts,
+    }
+  },
+)
+
+export const acknowledgeBillingIncident = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: true },
+  async (req) => {
+    const actorUid = req.auth?.uid
+    if (!actorUid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
+      throw new HttpsError("permission-denied", "Only admins can acknowledge incidents")
+    }
+
+    const incidentId = String((req.data as { incidentId?: string })?.incidentId || "").trim()
+    if (!incidentId) {
+      throw new HttpsError("invalid-argument", "incidentId is required")
+    }
+
+    const incidentRef = db.doc(`billing_incidents/${incidentId}`)
+    const incidentSnap = await incidentRef.get()
+    if (!incidentSnap.exists) {
+      throw new HttpsError("not-found", "Incident not found")
+    }
+
+    await incidentRef.set({
+      acknowledged: true,
+      acknowledgedBy: actorUid,
+      acknowledgedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    return { ok: true, incidentId }
+  },
+)
+
+export const requestStripeEventRetry = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: true },
+  async (req) => {
+    const actorUid = req.auth?.uid
+    if (!actorUid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
+      throw new HttpsError("permission-denied", "Only admins can request event retries")
+    }
+
+    const eventId = String((req.data as { eventId?: string })?.eventId || "").trim()
+    if (!eventId) {
+      throw new HttpsError("invalid-argument", "eventId is required")
+    }
+
+    const eventRef = db.doc(`stripe_events/${eventId}`)
+    const eventSnap = await eventRef.get()
+    if (!eventSnap.exists) {
+      throw new HttpsError("not-found", "Event not found")
+    }
+
+    const eventData = eventSnap.data() as { processed?: boolean; failed?: boolean } | undefined
+    if (eventData?.processed === true && eventData?.failed !== true) {
+      throw new HttpsError("failed-precondition", "Event already processed successfully")
+    }
+
+    const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
+    const stripe = getStripe(secret)
+
+    await eventRef.set({
+      processed: false,
+      failed: false,
+      retryRequestedBy: actorUid,
+      retryRequestedAt: FieldValue.serverTimestamp(),
+      manualRetryRequests: FieldValue.increment(1),
+      processingStartedAt: FieldValue.serverTimestamp(),
+      lastError: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    try {
+      const event = await stripe.events.retrieve(eventId)
+      await processStripeEvent(stripe, event)
+
+      await eventRef.set({
+        processed: true,
+        failed: false,
+        processedAt: FieldValue.serverTimestamp(),
+        replayedBy: actorUid,
+        replayedAt: FieldValue.serverTimestamp(),
+        lastError: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await recordBillingIncident({
+        type: "stripe.event.retry_replayed",
+        severity: "info",
+        eventId,
+        eventType: event.type,
+        message: `Manual replay succeeded for Stripe event ${eventId}`,
+        metadata: {
+          actorUid,
+        },
+      })
+
+      return { ok: true, eventId }
+    } catch (error) {
+      const errorMessage = toSafeErrorMessage(error)
+      await eventRef.set({
+        processed: false,
+        failed: true,
+        failedAt: FieldValue.serverTimestamp(),
+        lastError: errorMessage,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await recordBillingIncident({
+        type: "stripe.event.retry_failed",
+        severity: "error",
+        eventId,
+        message: `Manual replay failed for Stripe event ${eventId}: ${errorMessage}`,
+        metadata: {
+          actorUid,
+        },
+      })
+
+      throw new HttpsError("internal", `Replay failed: ${errorMessage}`)
+    }
   },
 )
 
