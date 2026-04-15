@@ -92,9 +92,8 @@
                 class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
                 role="none">
                 @if (userLoading) {
-                  <div>
-                    <div
-                      class="relative h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-400"></div>
+                  <div class="py-0.5">
+                    <div class="loading-line-mid"></div>
                   </div>
                 }
                 <div>
@@ -114,9 +113,8 @@
                 class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
                 role="none">
                 @if (userLoading) {
-                  <div>
-                    <div
-                      class="relative h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-400"></div>
+                  <div class="py-0.5">
+                    <div class="loading-line-mid"></div>
                   </div>
                 }
                 <div>
@@ -132,8 +130,9 @@
                 Workspace
               </p>
               @if (orgLoading) {
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  Loading workspaces...
+                <div class="space-y-2" aria-hidden="true">
+                  <div class="loading-key h-9"></div>
+                  <div class="loading-key h-9 w-11/12"></div>
                 </div>
               } @else if (organizations.length) {
                 <app-dropdown

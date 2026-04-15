@@ -183,6 +183,45 @@ html {
     // .prose :where(h1, h2, h3, h4, h5, h6, th):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     //     @apply no-underline;
     // }
+
+    .loading-surface {
+        @apply relative overflow-hidden rounded-xl border border-gray-300/60 bg-gray-200/80 dark:border-gray-600/40 dark:bg-gray-700/40;
+    }
+
+    .loading-surface::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background-image: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.55) 48%, transparent 70%);
+        animation: loading-sweep 1.35s ease-in-out infinite;
+    }
+
+    .loading-key {
+        @apply loading-surface h-10 rounded-lg;
+    }
+
+    .loading-chip {
+        @apply loading-surface h-6 rounded-full;
+    }
+
+    .loading-line-short {
+        @apply loading-surface h-3 w-1/3;
+    }
+
+    .loading-line-mid {
+        @apply loading-surface h-3 w-2/3;
+    }
+
+    .loading-line-long {
+        @apply loading-surface h-3 w-full;
+    }
+}
+
+@keyframes loading-sweep {
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 input:-webkit-autofill,

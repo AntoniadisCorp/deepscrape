@@ -349,7 +349,7 @@
               <div
                 >
                 <div
-                class="relative h-6 w-6 px-[.7rem] py-1 animate-pulse rounded-full bg-gray4 dark:bg-slate-700"></div>
+                class="loading-chip w-8"></div>
               </div>
             }
           </h2>
@@ -369,7 +369,8 @@
       <!-- active:scale-95 transform-gpu transition-transform duration-100 ease-in -->
       @if (operations$ | async; as operations) {
         <div
-          class="flex flex-wrap justify-center bg-transparent gap-8">
+          class="flex flex-wrap justify-center bg-transparent gap-8"
+          [@listStagger]="operations.length">
           @for (operation of operations; track operation; let i = $index) {
             <div
               class="w-full cursor-pointer"
@@ -657,10 +658,20 @@
       <!-- Loading state -->
       @if (!(operations$ | async) && (operations$ | async) !== null) {
         <div
-          class="w-full grid grid-row-1 md:grid-row-2 lg:grid-row-3 gap-4">
+          class="w-full grid grid-row-1 md:grid-row-2 lg:grid-row-3 gap-4"
+          [@listStagger]="'operations-loading'"
+          aria-hidden="true">
           @for (item of [1, 2, 3, 4, 5]; track item) {
             <div
-            class="relative h-36 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray4 dark:bg-slate-700"></div>
+            class="rounded-xl border border-gray-300/60 bg-gray-200/80 p-4 dark:border-gray-600/40 dark:bg-gray-700/35">
+              <div class="loading-line-mid"></div>
+              <div class="mt-3 loading-line-long"></div>
+              <div class="mt-2 loading-line-short"></div>
+              <div class="mt-5 flex items-center justify-between gap-3">
+                <div class="loading-chip w-28"></div>
+                <div class="loading-key h-8 w-36"></div>
+              </div>
+            </div>
           }
         </div>
       }

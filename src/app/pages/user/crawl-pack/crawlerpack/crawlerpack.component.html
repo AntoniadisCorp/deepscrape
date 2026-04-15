@@ -222,7 +222,8 @@
   </h2>
   @if ((crawlPackages$ | async)?.length) {
     <div
-      class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+      [@listStagger]="(crawlPackages$ | async)?.length">
       <!-- List of previous crawl packages will be displayed here -->
       @for(pack of crawlPackages$ | async; track pack.id) {
         <div class="p-4">
@@ -249,10 +250,17 @@
   <!-- Loading state -->
   @if (!(crawlPackages$ | async) && (crawlPackages$ | async) !== null) {
     <div
-      class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40">
+      class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+      [@listStagger]="'crawler-pack-loading'"
+      aria-hidden="true">
       @for (item of [1, 2, 3, 4, 5]; track item) {
         <div
-        class="relative h-40 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray3 dark:bg-gray4/60"></div>
+        class="rounded-xl border border-gray-300/60 bg-gray-200/80 p-4 dark:border-gray-600/40 dark:bg-gray-700/35">
+          <div class="loading-line-mid"></div>
+          <div class="mt-3 loading-line-long"></div>
+          <div class="mt-2 loading-line-short"></div>
+          <div class="mt-5 loading-key h-8"></div>
+        </div>
       }
     </div>
   }

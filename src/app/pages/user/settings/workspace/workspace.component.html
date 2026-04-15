@@ -8,9 +8,11 @@
     </p>
 
     @if (isLoading()) {
-      <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-        Loading workspaces...
-      </p>
+      <div class="mt-4 space-y-3" [@listStagger]="'workspaces-loading'" aria-hidden="true">
+        <div class="loading-key"></div>
+        <div class="loading-key w-11/12"></div>
+        <div class="loading-key w-10/12"></div>
+      </div>
     } @else if (organizations().length) {
       <div class="mt-3">
         <app-dropdown
@@ -136,15 +138,21 @@
           Select a workspace to view sent invitations.
         </p>
       } @else if (isSentInvitationsLoading()) {
-        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          Loading invitations...
-        </p>
+        <div class="mt-4 space-y-3" [@listStagger]="'sent-loading'" aria-hidden="true">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="rounded-lg border border-blue-100/70 bg-blue-50/30 p-3 dark:border-blue-900/30 dark:bg-blue-900/10">
+              <div class="loading-line-mid"></div>
+              <div class="mt-2 loading-line-long"></div>
+              <div class="mt-2 loading-chip w-24"></div>
+            </div>
+          }
+        </div>
       } @else if (!sentInvitations().length) {
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
           No pending invitations sent.
         </p>
       } @else {
-        <div class="mt-4 space-y-3" role="list">
+        <div class="mt-4 space-y-3" role="list" [@listStagger]="sentInvitations().length">
           @for (invite of sentInvitations(); track invite.id) {
             <div
               class="rounded-lg border border-blue-100 bg-blue-50/30 p-3 dark:border-blue-900/30 dark:bg-blue-900/10"
@@ -194,15 +202,21 @@
       </p>
 
       @if (isIncomingInvitationsLoading()) {
-        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          Loading invitations...
-        </p>
+        <div class="mt-4 space-y-3" [@listStagger]="'incoming-loading'" aria-hidden="true">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="rounded-lg border border-green-100/70 bg-green-50/30 p-3 dark:border-green-900/30 dark:bg-green-900/10">
+              <div class="loading-line-mid"></div>
+              <div class="mt-2 loading-line-long"></div>
+              <div class="mt-2 loading-key h-8 w-36"></div>
+            </div>
+          }
+        </div>
       } @else if (!incomingInvitations().length) {
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
           No incoming invitations.
         </p>
       } @else {
-        <div class="mt-4 space-y-3" role="list">
+        <div class="mt-4 space-y-3" role="list" [@listStagger]="incomingInvitations().length">
           @for (invite of incomingInvitations(); track invite.id) {
             <div
               class="rounded-lg border border-green-100 bg-green-50/30 p-3 dark:border-green-900/30 dark:bg-green-900/10"
@@ -263,15 +277,20 @@
           Select a workspace to view members.
         </p>
       } @else if (isMembersLoading()) {
-        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-          Loading members...
-        </p>
+        <div class="mt-3 space-y-2" [@listStagger]="'members-loading'" aria-hidden="true">
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="rounded-xl bg-white/70 p-3 shadow-sm dark:bg-gray-800/40">
+              <div class="loading-line-mid"></div>
+              <div class="mt-2 loading-line-short"></div>
+            </div>
+          }
+        </div>
       } @else if (!members().length) {
         <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
           No members found for this workspace.
         </p>
       } @else {
-        <div class="mt-3 space-y-2" role="list">
+        <div class="mt-3 space-y-2" role="list" [@listStagger]="members().length">
           @for (member of members(); track member.id) {
             <div
               class="flex items-center justify-between rounded-xl bg-white/70 p-3 shadow-sm dark:bg-gray-800/40"

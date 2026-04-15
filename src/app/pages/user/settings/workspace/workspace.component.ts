@@ -6,6 +6,7 @@ import { finalize } from 'rxjs'
 import { DropdownComponent, StinputComponent } from 'src/app/core/components'
 import { IfAuthorizedDirective, RippleDirective } from 'src/app/core/directives'
 import { FormControlPipe } from 'src/app/core/pipes'
+import { listStaggerAnimation } from 'src/app/animations'
 import {
   AuthzService,
   OrganizationInvitation,
@@ -26,6 +27,7 @@ type DropdownOption = {
   imports: [CommonModule, ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe, DropdownComponent, DatePipe, TitleCasePipe],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
+  animations: [listStaggerAnimation],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block py-5',
