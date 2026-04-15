@@ -201,7 +201,6 @@
       "fields": [
         { "fieldPath": "lastActivityAt", "order": "DESCENDING" }
       ]
-    }
     },
     {
       "collectionGroup": "trusted_devices",
@@ -226,6 +225,30 @@
       "fields": [
         { "fieldPath": "admin_uid", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "billing_incidents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "acknowledged", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stripe_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "failed", "order": "ASCENDING" },
+        { "fieldPath": "failedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "stripe_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "processed", "order": "ASCENDING" },
+        { "fieldPath": "processingStartedAt", "order": "DESCENDING" }
       ]
     }
   ],

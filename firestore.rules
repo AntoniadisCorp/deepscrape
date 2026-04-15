@@ -15,7 +15,8 @@ service cloud.firestore {
     match /{document=**} {
       // Fallback rule: only admins can access documents not covered by specific rules below.
       // All other access is denied by default.
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if false;
     }
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
@@ -154,6 +155,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /device_verifications/{verificationId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /loginSessions/{sessionId} {
       // Enterprise session management - controlled via Cloud Functions only
       // Clients cannot directly write; all mutations go through callable functions
@@ -167,6 +178,11 @@ service cloud.firestore {
         // Synced via Cloud Functions, read-only for clients
         allow read: if isAuthenticated() && request.auth.uid == userId;
         allow create, update, delete: if false; // Cloud Functions only
+      }
+
+      match /trusted_devices/{deviceId} {
+        allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+        allow create, update, delete: if false;
       }
     }
 
