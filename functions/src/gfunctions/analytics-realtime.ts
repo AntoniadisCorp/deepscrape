@@ -796,3 +796,75 @@ export const cleanupOldAnalytics = onSchedule("0 2 * * *", async () => {
     console.error("❌ Error during cleanup:", error)
   }
 })
+
+// ============================================================================
+// REAL-TIME PRESENCE — Active users in 1 min / 5 min / 30 min windows
+// ============================================================================
+
+/**
+ * ⏱️ Runs every minute.
+ * Counts authenticated users whose `presence/{userId}.lastSeen` falls within
+ * the last 1 / 5 / 30 minutes and writes the totals to metrics_summary/dashboard.
+ *
+ * Client-side heartbeat: call `validateSessionCookie` every 60 s to keep the
+ * presence document fresh. Guests call `recordGuestPresence` instead.
+ */
+export const computeActiveUsersNow = onSchedule(
+  {
+    schedule: "* * * * *", // every minute
+    timeZone: "UTC",
+    region: "us-central1",
+  },
+  async () => {
+    try {
+      const now = Date.now()
+      const cutoff1m = Timestamp.fromMillis(now - 60 * 1000)
+      const cutoff5m = Timestamp.fromMillis(now - 5 * 60 * 1000)
+      const cutoff30m = Timestamp.fromMillis(now - 30 * 60 * 1000)
+
+      // Count authenticated users active in each window (presence collection)
+      const [snap1m, snap5m, snap30m] = await Promise.all([
+        db.collection("presence").where("lastSeen", ">=", cutoff1m).count().get(),
+        db.collection("presence").where("lastSeen", ">=", cutoff5m).count().get(),
+        db.collection("presence").where("lastSeen", ">=", cutoff30m).count().get(),
+      ])
+
+      const activeUsersPerMinute = snap1m.data().count
+      const activeUsersLast5m = snap5m.data().count
+      const activeUsersLast30m = snap30m.data().count
+
+      // Count guests active in each window (guests collection uses lastSeen too)
+      const [gSnap1m, gSnap5m, gSnap30m] = await Promise.all([
+        db.collection("guests").where("lastSeen", ">=", cutoff1m).count().get(),
+        db.collection("guests").where("lastSeen", ">=", cutoff5m).count().get(),
+        db.collection("guests").where("lastSeen", ">=", cutoff30m).count().get(),
+      ])
+
+      const activeGuestsPerMinute = gSnap1m.data().count
+      const activeGuestsLast5m = gSnap5m.data().count
+      const activeGuestsLast30m = gSnap30m.data().count
+
+      await db.doc("metrics_summary/dashboard").set({
+        // Authenticated users
+        activeUsersPerMinute,
+        activeUsersLast5m,
+        activeUsersLast30m,
+        // Guests
+        activeGuestsPerMinute,
+        activeGuestsLast5m,
+        activeGuestsLast30m,
+        // Combined
+        onlineNow: activeUsersPerMinute + activeGuestsPerMinute,
+        onlineLast5m: activeUsersLast5m + activeGuestsLast5m,
+        onlineLast30m: activeUsersLast30m + activeGuestsLast30m,
+        lastUpdated: Timestamp.now(),
+      }, { merge: true })
+
+      console.log(
+        `✅ Active users — 1m: ${activeUsersPerMinute}, 5m: ${activeUsersLast5m}, 30m: ${activeUsersLast30m}`,
+      )
+    } catch (error) {
+      console.error("❌ computeActiveUsersNow failed:", error)
+    }
+  },
+)

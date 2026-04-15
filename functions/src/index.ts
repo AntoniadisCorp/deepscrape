@@ -97,6 +97,10 @@ export const backfillDashboardSummary = analyticsRealtime.backfillDashboardSumma
 export const computeDailyTrends = analyticsRealtime.computeDailyTrends
 export const computeRangeMetrics = analyticsRealtime.computeRangeMetrics
 export const cleanupOldMetrics = analyticsRealtime.cleanupOldAnalytics
+export const computeActiveUsersNow = analyticsRealtime.computeActiveUsersNow
+
+/* Sessions — Presence */
+export const recordGuestPresence = sessions.recordGuestPresence
 
 // SESSION MANAGEMENT - Functions (Callable)
 export const createLoginSession = sessions.createLoginSession

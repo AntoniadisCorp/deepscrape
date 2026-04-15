@@ -84,8 +84,8 @@ export const createLoginSession = onCall(
   {
     cors: true,
     secrets: [],
-    enforceAppCheck: true,
     region: "us-central1",
+    memory: "512MiB",
   },
   async (request) => {
     const { userId, deviceId, metrics } = request.data as {
@@ -193,7 +193,7 @@ export const createLoginSession = onCall(
 export const revokeMyLoginSession = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -337,7 +337,7 @@ async function performSessionRevoke(
 export const revokeUserLoginSessionByAdmin = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -374,7 +374,7 @@ export const revokeUserLoginSessionByAdmin = onCall(
 export const revokeAllUserSessionsByAdmin = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -513,7 +513,6 @@ async function performSessionSignOut(userId: string, loginId: string, signOutRea
 export const signOutLoginSession = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -552,7 +551,6 @@ export const signOutLoginSession = onCall(
 export const getMyLoginSessionStatus = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -622,7 +620,7 @@ export const getMyLoginSessionStatus = onCall(
 export const recordLogoutMetrics = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -661,7 +659,6 @@ export const recordLogoutMetrics = onCall(
 export const getMyLoginSessions = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -709,7 +706,7 @@ export const getMyLoginSessions = onCall(
 export const getUserLoginSessionsByAdmin = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -781,7 +778,7 @@ export const getUserLoginSessionsByAdmin = onCall(
 export const validateSessionCookie = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -844,7 +841,7 @@ export const validateSessionCookie = onCall(
         return { valid: false, reason: "expired" }
       }
 
-      // Update lastActivityAt
+      // Update lastActivityAt + presence (real-time active-user tracking)
       const now = Timestamp.now()
       const batch = db.batch()
       const sessionRef = db.collection("loginSessions").doc(sessionId)
@@ -852,6 +849,15 @@ export const validateSessionCookie = onCall(
 
       const userSessionRef = db.doc(`users/${userId}`).collection("sessions").doc(sessionId)
       batch.update(userSessionRef, { lastActivityAt: now, syncedAt: now })
+
+      // Upsert presence doc — used by computeActiveUsersNow to count live users
+      const presenceRef = db.collection("presence").doc(userId)
+      batch.set(presenceRef, {
+        userId,
+        sessionId,
+        lastSeen: now,
+        isUser: true,
+      }, { merge: true })
 
       await batch.commit()
 
@@ -866,6 +872,43 @@ export const validateSessionCookie = onCall(
     } catch (error) {
       console.error("❌ Error validating session:", error)
       return { valid: false, reason: "server_error" }
+    }
+  },
+)
+
+/**
+ * Guest presence heartbeat — called every 60 s by unauthenticated clients.
+ * Updates `guests/{guestId}.lastSeen` so computeActiveUsersNow can count them.
+ * No auth required (guest users are anonymous).
+ */
+export const recordGuestPresence = onCall(
+  {
+    cors: true,
+    enforceAppCheck: false,
+    region: "us-central1",
+  },
+  async (request) => {
+    const { guestId } = request.data as { guestId: string }
+
+    if (!guestId || typeof guestId !== "string" || guestId.length > 128) {
+      throw new Error("Missing or invalid guestId")
+    }
+
+    try {
+      const guestRef = db.collection("guests").doc(guestId)
+      const guestDoc = await guestRef.get()
+
+      // Only update existing guests — never create via this endpoint
+      if (!guestDoc.exists) {
+        return { updated: false, reason: "not_found" }
+      }
+
+      await guestRef.update({ lastSeen: Timestamp.now() })
+
+      return { updated: true }
+    } catch (error) {
+      console.error("❌ Error recording guest presence:", error)
+      throw new Error("Failed to record presence")
     }
   },
 )
@@ -1080,7 +1123,7 @@ export const sendDeviceVerificationCode = onCall(
 export const verifyAndTrustDevice = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -1194,7 +1237,7 @@ export const verifyAndTrustDevice = onCall(
 export const isDeviceTrusted = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -1263,7 +1306,7 @@ export const isDeviceTrusted = onCall(
 export const getTrustedDevices = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
@@ -1306,7 +1349,7 @@ export const getTrustedDevices = onCall(
 export const removeTrustedDevice = onCall(
   {
     cors: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     region: "us-central1",
   },
   async (request) => {
