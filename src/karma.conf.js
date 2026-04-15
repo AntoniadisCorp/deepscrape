@@ -53,5 +53,10 @@ module.exports = function (config) {
     },
     singleRun: false,
     restartOnFileChange: true,
+    browserConsoleLogOptions: {
+      level: 'log',
+      format: '%b %T: %m',
+      terminal: true,
+    },
   });
 };

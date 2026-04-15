@@ -7,6 +7,11 @@
  *   // or for components:
  *   TestBed.configureTestingModule({ imports: [MyComponent], providers: getTestProviders() });
  */
+
+// Load test setup immediately when testing module is imported
+// This ensures console.error spy is set up in beforeEach for all tests
+import 'src/test-setup';
+
 import { EnvironmentProviders, PLATFORM_ID, Provider } from '@angular/core';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
