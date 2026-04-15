@@ -9,8 +9,67 @@ import { Resend } from "resend"
 import { db, dbName, auth as adminAuth } from "../app/config"
 import { env } from "../config/env"
 import { redis } from "../app/cacheConfig"
+import { lookupGeoByIp, normalizePublicIp } from "./analytics"
 
 const DATABASE_NAME = dbName || "easyscrape"
+
+type ResolvedSessionGeo = {
+  ip: string
+  location: string
+  region: string
+  country: string
+  latitude: number | null
+  longitude: number | null
+  timezone: string
+}
+
+function getRequestIp(request: unknown): string {
+  const rawRequest = (request as { rawRequest?: { headers?: Record<string, string | string[] | undefined>; ip?: string; socket?: { remoteAddress?: string } } })?.rawRequest
+  const forwarded = rawRequest?.headers?.["x-forwarded-for"]
+  const forwardedValue = Array.isArray(forwarded) ? forwarded[0] : forwarded
+
+  return normalizePublicIp(forwardedValue || rawRequest?.ip || rawRequest?.socket?.remoteAddress || "")
+}
+
+async function resolveSessionGeo(request: unknown, fallbackIp: string): Promise<ResolvedSessionGeo> {
+  const requestIp = getRequestIp(request)
+  const normalizedFallbackIp = normalizePublicIp(fallbackIp)
+  const lookupIp = requestIp || normalizedFallbackIp
+
+  const fallback: ResolvedSessionGeo = {
+    ip: lookupIp || "0.0.0.0",
+    location: "Unknown",
+    region: "Unknown",
+    country: "Unknown",
+    latitude: null,
+    longitude: null,
+    timezone: "UTC",
+  }
+
+  if (!lookupIp) {
+    return fallback
+  }
+
+  try {
+    const geoData = await lookupGeoByIp(lookupIp)
+    if (!geoData) {
+      return fallback
+    }
+
+    return {
+      ip: lookupIp,
+      location: geoData.city || "Unknown",
+      region: geoData.region || "Unknown",
+      country: geoData.countryLong || "Unknown",
+      latitude: geoData.latitude,
+      longitude: geoData.longitude,
+      timezone: geoData.timeZone || "UTC",
+    }
+  } catch (error) {
+    console.warn("Session geo lookup fallback due to error:", error)
+    return fallback
+  }
+}
 
 /**
  * Enterprise login session management with device tracking,
@@ -25,7 +84,7 @@ export const createLoginSession = onCall(
   {
     cors: true,
     secrets: [],
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -53,6 +112,9 @@ export const createLoginSession = onCall(
 
     try {
       const now = new Date()
+      const resolvedGeo = await resolveSessionGeo(request, metrics.ip)
+      const resolvedLocation = metrics.location && metrics.location !== "Unknown" ? metrics.location : resolvedGeo.location
+      const resolvedIp = resolvedGeo.ip || metrics.ip || "0.0.0.0"
       const sessionId = `${userId}-${deviceId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
       // Create session record
@@ -64,11 +126,16 @@ export const createLoginSession = onCall(
         lastActivityAt: Timestamp.now(),
         revokedAt: null,
         active: true,
-        ipAddress: metrics.ip,
+        ipAddress: resolvedIp,
         userAgent: metrics.userAgent,
         browser: metrics.browser,
         os: metrics.os,
-        location: metrics.location,
+        location: resolvedLocation,
+        region: resolvedGeo.region,
+        country: resolvedGeo.country,
+        latitude: resolvedGeo.latitude,
+        longitude: resolvedGeo.longitude,
+        timezone: resolvedGeo.timezone,
         providerId: metrics.providerId,
         expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days
       }
@@ -103,6 +170,15 @@ export const createLoginSession = onCall(
         success: true,
         sessionId,
         expiresAt: sessionData.expiresAt.toISOString(),
+        resolvedMetrics: {
+          ip: resolvedIp,
+          location: resolvedLocation,
+          region: resolvedGeo.region,
+          country: resolvedGeo.country,
+          latitude: resolvedGeo.latitude,
+          longitude: resolvedGeo.longitude,
+          timezone: resolvedGeo.timezone,
+        },
       }
     } catch (error) {
       console.error("❌ Error creating login session:", error)
@@ -117,7 +193,7 @@ export const createLoginSession = onCall(
 export const revokeMyLoginSession = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -133,106 +209,230 @@ export const revokeMyLoginSession = onCall(
     }
 
     try {
-      const userId = auth.uid
-      const revokedAt = Timestamp.now()
-
-      // Get the session to verify ownership
-      const sessionDoc = await db.collection("loginSessions").doc(loginId).get()
-      if (!sessionDoc.exists) {
-        throw new Error("Session not found")
-      }
-
-      const sessionData = sessionDoc.data()
-      // PHASE 2.1: RBAC - Prevent cross-user revocation
-      if (sessionData?.userId !== userId) {
-        throw new Error("Unauthorized: You can only revoke your own sessions")
-      }
-
-      // PHASE 2.1: Check if requester is admin (for audit trail)
       const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
-      const isAdmin = tokenRole === "admin"
+      const result = await performSessionRevoke(auth.uid, loginId, reason, false, tokenRole)
 
-      // Update Firestore
-      const batch = db.batch()
-      const sessionRef = db.collection("loginSessions").doc(loginId)
-      batch.update(sessionRef, {
-        revokedAt,
-        active: false,
-        revokedBy: userId,
-        revokedByRole: isAdmin ? "admin" : "user",
-        revokeReason: reason || "user_initiated_revoke",
-      })
-
-      // Also update user subcollection
-      const userSessionRef = db.doc(`users/${userId}`).collection("sessions").doc(loginId)
-      batch.update(userSessionRef, {
-        revokedAt,
-        active: false,
-        syncedAt: Timestamp.now(),
-      })
-
-      const loginHistoryEventRef = db
-        .collection("login_metrics")
-        .doc(userId)
-        .collection("login_history_events")
-        .doc()
-      batch.set(loginHistoryEventRef, {
-        uid: userId,
-        eventType: "revoke",
-        eventSessionId: loginId,
-        providerId: sessionData?.providerId || "firebase",
-        browser: sessionData?.browser || "",
-        os: sessionData?.os || "",
-        userAgent: sessionData?.userAgent || "",
-        ipAddress: sessionData?.ipAddress || "",
-        location: sessionData?.location || "",
-        connected: false,
-        revokedAt,
-        revokedByUid: userId,
-        createdAt: revokedAt,
-      })
-
-      await batch.commit()
-
-      // Cache revocation in Redis (long TTL for audit trail)
-      const revocationCacheKey = `revoked:${loginId}`
-      const revocationTtl = 30 * 24 * 60 * 60 // 30 days
-      await redis.setex(revocationCacheKey, revocationTtl, JSON.stringify({
-        revokedAt: revokedAt.toDate().toISOString(),
-        userId,
-      }))
-
-      // Also invalidate the session cache
-      await redis.del(`session:${loginId}`)
-
-      // PHASE 2.1: Add audit log entry for all revocations (user or admin)
-      try {
-        await db.collection("audit_logs").add({
-          action: isAdmin ? "admin_revoke_session" : "user_revoke_session",
-          admin_uid: userId,
-          target_loginId: loginId,
-          target_userId: sessionData?.userId,
-          reason: reason || (isAdmin ? "admin_action" : "user_action"),
-          timestamp: Timestamp.now(),
-          isAdmin,
-        })
-      } catch (auditErr) {
-        console.warn("Failed to write audit log:", auditErr)
-        // Continue despite audit log failure - revocation still successful
-      }
-
-      console.log(`✅ Session ${loginId} revoked for user ${userId}${isAdmin ? " by admin" : ""}`)
+      console.log(`✅ Session ${loginId} revoked for user ${result.targetUserId}`)
 
       return {
         success: true,
         loginId,
-        revokedAt: revokedAt.toDate().toISOString(),
+        revokedAt: result.revokedAt.toDate().toISOString(),
       }
     } catch (error) {
       console.error("❌ Error revoking session:", error)
       throw new Error(`Failed to revoke session: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   })
+
+async function performSessionRevoke(
+  actorUid: string,
+  loginId: string,
+  reason: string | undefined,
+  requireAdmin: boolean,
+  tokenRole?: string,
+) {
+  const revokedAt = Timestamp.now()
+
+  const sessionDoc = await db.collection("loginSessions").doc(loginId).get()
+  if (!sessionDoc.exists) {
+    throw new Error("Session not found")
+  }
+
+  const sessionData = sessionDoc.data()
+  const targetUserId = String(sessionData?.userId || "").trim()
+  if (!targetUserId) {
+    throw new Error("Invalid session record: missing userId")
+  }
+
+  const isAdmin = tokenRole === "admin"
+
+  if (requireAdmin && !isAdmin) {
+    throw new Error("Unauthorized: Admin role required")
+  }
+
+  if (!isAdmin && targetUserId !== actorUid) {
+    throw new Error("Unauthorized: You can only revoke your own sessions")
+  }
+
+  const revokeReason = reason || (isAdmin ? "admin_initiated_revoke" : "user_initiated_revoke")
+
+  const batch = db.batch()
+  const sessionRef = db.collection("loginSessions").doc(loginId)
+  batch.update(sessionRef, {
+    revokedAt,
+    active: false,
+    revokedBy: actorUid,
+    revokedByRole: isAdmin ? "admin" : "user",
+    revokeReason,
+  })
+
+  const userSessionRef = db.doc(`users/${targetUserId}`).collection("sessions").doc(loginId)
+  batch.set(userSessionRef, {
+    revokedAt,
+    active: false,
+    syncedAt: Timestamp.now(),
+  }, {merge: true})
+
+  const legacyRef = db.doc(`login_metrics/${targetUserId}/login_history_Info/${loginId}`)
+  batch.set(legacyRef, {
+    connected: false,
+    revokedAt,
+    revokedByUid: actorUid,
+  }, {merge: true})
+
+  const loginHistoryEventRef = db
+    .collection("login_metrics")
+    .doc(targetUserId)
+    .collection("login_history_events")
+    .doc()
+  batch.set(loginHistoryEventRef, {
+    uid: targetUserId,
+    eventType: "revoke",
+    eventSessionId: loginId,
+    providerId: sessionData?.providerId || "firebase",
+    browser: sessionData?.browser || "",
+    os: sessionData?.os || "",
+    userAgent: sessionData?.userAgent || "",
+    ipAddress: sessionData?.ipAddress || "",
+    location: sessionData?.location || "",
+    connected: false,
+    revokedAt,
+    revokedByUid: actorUid,
+    createdAt: revokedAt,
+  })
+
+  await batch.commit()
+
+  const revocationCacheKey = `revoked:${loginId}`
+  const revocationTtl = 30 * 24 * 60 * 60
+  await redis.setex(revocationCacheKey, revocationTtl, JSON.stringify({
+    revokedAt: revokedAt.toDate().toISOString(),
+    userId: targetUserId,
+  }))
+
+  await redis.del(`session:${loginId}`)
+
+  try {
+    await db.collection("audit_logs").add({
+      action: isAdmin ? "admin_revoke_session" : "user_revoke_session",
+      admin_uid: actorUid,
+      target_loginId: loginId,
+      target_userId: targetUserId,
+      reason: revokeReason,
+      timestamp: Timestamp.now(),
+      isAdmin,
+    })
+  } catch (auditErr) {
+    console.warn("Failed to write audit log:", auditErr)
+  }
+
+  return {
+    revokedAt,
+    targetUserId,
+    isAdmin,
+  }
+}
+
+export const revokeUserLoginSessionByAdmin = onCall(
+  {
+    cors: true,
+    enforceAppCheck: true,
+    region: "us-central1",
+  },
+  async (request) => {
+    const { loginId, reason } = request.data as { loginId: string; reason?: string }
+    const auth = request.auth
+
+    if (!auth) {
+      throw new Error("Unauthorized: You must be authenticated")
+    }
+
+    if (!loginId) {
+      throw new Error("Missing required field: loginId")
+    }
+
+    try {
+      const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
+      const result = await performSessionRevoke(auth.uid, loginId, reason, true, tokenRole)
+
+      console.log(`✅ Admin ${auth.uid} revoked session ${loginId} for user ${result.targetUserId}`)
+
+      return {
+        success: true,
+        loginId,
+        targetUserId: result.targetUserId,
+        revokedAt: result.revokedAt.toDate().toISOString(),
+      }
+    } catch (error) {
+      console.error("❌ Error in admin session revoke:", error)
+      throw new Error(`Failed to revoke user session: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  },
+)
+
+export const revokeAllUserSessionsByAdmin = onCall(
+  {
+    cors: true,
+    enforceAppCheck: true,
+    region: "us-central1",
+  },
+  async (request) => {
+    const {
+      targetUserId,
+      reason,
+      limit = 100,
+    } = request.data as {
+      targetUserId: string
+      reason?: string
+      limit?: number
+    }
+    const auth = request.auth
+
+    if (!auth) {
+      throw new Error("Unauthorized: You must be authenticated")
+    }
+
+    const normalizedTargetUserId = String(targetUserId || "").trim()
+    if (!normalizedTargetUserId) {
+      throw new Error("Missing required field: targetUserId")
+    }
+
+    const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
+    if (tokenRole !== "admin") {
+      throw new Error("Unauthorized: Admin role required")
+    }
+
+    const queryLimit = Math.max(1, Math.min(200, Number(limit) || 100))
+
+    try {
+      const snapshot = await db
+        .collection("loginSessions")
+        .where("userId", "==", normalizedTargetUserId)
+        .where("active", "==", true)
+        .limit(queryLimit)
+        .get()
+
+      const revokedSessionIds: string[] = []
+
+      for (const sessionDoc of snapshot.docs) {
+        const sessionId = sessionDoc.id
+        await performSessionRevoke(auth.uid, sessionId, reason || "admin_bulk_revoke", true, tokenRole)
+        revokedSessionIds.push(sessionId)
+      }
+
+      return {
+        success: true,
+        targetUserId: normalizedTargetUserId,
+        revokedCount: revokedSessionIds.length,
+        sessionIds: revokedSessionIds,
+      }
+    } catch (error) {
+      console.error("❌ Error in admin bulk session revoke:", error)
+      throw new Error(`Failed to revoke user sessions: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  },
+)
 
 async function performSessionSignOut(userId: string, loginId: string, signOutReason: string) {
   const signedOutAt = Timestamp.now()
@@ -313,7 +513,7 @@ async function performSessionSignOut(userId: string, loginId: string, signOutRea
 export const signOutLoginSession = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -352,7 +552,7 @@ export const signOutLoginSession = onCall(
 export const getMyLoginSessionStatus = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -422,7 +622,7 @@ export const getMyLoginSessionStatus = onCall(
 export const recordLogoutMetrics = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -461,7 +661,7 @@ export const recordLogoutMetrics = onCall(
 export const getMyLoginSessions = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -506,13 +706,82 @@ export const getMyLoginSessions = onCall(
   },
 )
 
+export const getUserLoginSessionsByAdmin = onCall(
+  {
+    cors: true,
+    enforceAppCheck: true,
+    region: "us-central1",
+  },
+  async (request) => {
+    const {
+      targetUserId,
+      limit = 50,
+      activeOnly = false,
+    } = request.data as {
+      targetUserId: string
+      limit?: number
+      activeOnly?: boolean
+    }
+    const auth = request.auth
+
+    if (!auth) {
+      throw new Error("Unauthorized")
+    }
+
+    const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
+    if (tokenRole !== "admin") {
+      throw new Error("Unauthorized: Admin role required")
+    }
+
+    const normalizedTargetUserId = String(targetUserId || "").trim()
+    if (!normalizedTargetUserId) {
+      throw new Error("Missing required field: targetUserId")
+    }
+
+    try {
+      const queryLimit = Math.max(1, Math.min(200, Number(limit) || 50))
+      let q = db
+        .collection("loginSessions")
+        .where("userId", "==", normalizedTargetUserId)
+
+      if (activeOnly) {
+        q = q.where("active", "==", true)
+      }
+
+      const snapshot = await q
+        .orderBy("lastActivityAt", "desc")
+        .limit(queryLimit)
+        .get()
+
+      const sessions = snapshot.docs.map((doc) => ({
+        loginId: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString?.() || doc.data().createdAt,
+        lastActivityAt: doc.data().lastActivityAt?.toDate?.()?.toISOString?.() || doc.data().lastActivityAt,
+        revokedAt: doc.data().revokedAt?.toDate?.()?.toISOString?.() || doc.data().revokedAt,
+        expiresAt: doc.data().expiresAt?.toDate?.()?.toISOString?.() || doc.data().expiresAt,
+      }))
+
+      return {
+        success: true,
+        targetUserId: normalizedTargetUserId,
+        sessions,
+        total: sessions.length,
+      }
+    } catch (error) {
+      console.error("❌ Error getting target user sessions:", error)
+      throw new Error(`Failed to get target user sessions: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  },
+)
+
 /**
        * Validate session cookie and update activity (called from heartbeat)
        */
 export const validateSessionCookie = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -811,7 +1080,7 @@ export const sendDeviceVerificationCode = onCall(
 export const verifyAndTrustDevice = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -925,7 +1194,7 @@ export const verifyAndTrustDevice = onCall(
 export const isDeviceTrusted = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -994,7 +1263,7 @@ export const isDeviceTrusted = onCall(
 export const getTrustedDevices = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
@@ -1037,7 +1306,7 @@ export const getTrustedDevices = onCall(
 export const removeTrustedDevice = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
