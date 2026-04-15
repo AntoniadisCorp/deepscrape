@@ -129,7 +129,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       const phoneOk = userData?.phoneVerified !== false;
 
       if (emailOk) {
-        await this.ensureCurrentSessionMetrics();
+        await this.ensureCurrentSessionMetrics(provider || undefined);
       }
 
       this.loading.email = false;
@@ -174,6 +174,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.phone = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -218,6 +219,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.code = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -257,6 +259,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       delay(1000),
       finalize(() => {
         this.loading.logout = false;
+        this.cdr.markForCheck();
       })
     ).subscribe({
       next: () => {

@@ -430,12 +430,12 @@ export class LoginComponent  {
 
     this.rememberLastLogin(providerId);
 
-    this.queuePostLoginTracking(user.uid, providerId);
-
     const isVerified = await this.onLoginUpdate({ user }, providerId);
     if (!isVerified) {
       return;
     }
+
+    await this.ensurePostLoginTracking(user.uid, providerId);
 
     this.firestoreService.setAnalyticsUserId(this.analytics, user.uid);
     this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
@@ -457,26 +457,7 @@ export class LoginComponent  {
 
       const providerId = result.providerId || result.user.providerData?.[0]?.providerId || 'oauth';
 
-      if (result.user.displayName || result.user.photoURL) {
-        await this.firestoreService.updateUserProfile(result.user, {
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL || DEFAULT_PROFILE_URL,
-        });
-      }
-
-      this.firestoreService.setAnalyticsUserId(this.analytics, result.user.uid);
-
-      await Promise.all([
-        this.firestoreService.storeUserData(result.user, providerId, true)
-      ]);
-
-      this.rememberLastLogin(providerId);
-
-      this.queuePostLoginTracking(result.user.uid, providerId);
-
-      this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-      const returnUrl = this.getReturnUrl();
-      await this.router.navigateByUrl(returnUrl);
+      await this.finishLogin(result.user, providerId);
     } catch (error) {
       this.handleError(error, 'login:redirect-result', 'oauth');
     }
@@ -500,8 +481,8 @@ export class LoginComponent  {
     }, 500); // 500ms debounce
   }
 
-  private queuePostLoginTracking(userId: string, providerId: string): void {
-    void this.guestTrackingService.ensurePostLoginSession({ userId, providerId }).catch((error) => {
+  private async ensurePostLoginTracking(userId: string, providerId: string): Promise<void> {
+    await this.guestTrackingService.ensurePostLoginSession({ userId, providerId }).catch((error) => {
       console.warn('Post-login session tracking failed:', error);
     });
   }
@@ -674,13 +655,17 @@ export class LoginComponent  {
             }
             this.handleError(error, 'login:identifier', 'email');
             this.handleAccountExistsError(error, 'password');
+            this.loading.email = false;
+            this.loginInProgress = false;
           },
           complete: () => {
             this.loading.email = false;
             this.loginInProgress = false;
           }
         });
-    } finally {
+    } catch (error) {
+      this.handleError(error, 'login:identifier', 'email');
+      this.loading.email = false;
       this.loginInProgress = false;
     }
   }
@@ -708,21 +693,7 @@ export class LoginComponent  {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: async (response) => {
-            // If user data is received, proceed with post-login actions.
-            if (response.user) {
-              try {
-                await this.finishLogin(response.user, 'google.com');
-              } catch (error) {
-                // Handle errors during token generation or post-login updates.
-                this.handleError(error, 'login:google', 'google.com');
-                return;
-              }
-            } else {
-              // Handle cases where no user is returned after sign-in.
-              await this.trackLoginAttempt('google.com', false);
-              this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN');
-              this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
-            }
+            await this.handleSocialLoginSuccess(response?.user || null, 'google.com')
           },
           error: async (error) => {
             if (await this.handleMfaRequired(error, 'google.com')) {
@@ -742,6 +713,8 @@ export class LoginComponent  {
             this.handleError(error, 'login:google', 'google.com');
             this.handleAccountExistsError(error, 'google.com');
             this.cdr.detectChanges();
+            this.loading.google = false;
+            this.loginInProgress = false;
           },
           complete: () => {
             this.loading.google = false; // Always reset loading state on completion.
@@ -750,7 +723,7 @@ export class LoginComponent  {
         });
     } catch (error) {
       this.handleError(error, 'login:google', 'google.com');
-    } finally {
+      this.loading.google = false;
       this.loginInProgress = false;
     }
   }
@@ -778,16 +751,7 @@ export class LoginComponent  {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: async (response) => {
-            // If user data is received, proceed with post-login actions.
-            if (response.user) {
-              try {
-                await this.finishLogin(response.user, 'github.com');
-              } catch (error) {
-                // Handle errors during token generation or post-login updates.
-                this.handleError(error, 'login:github', 'github.com');
-                return;
-              }
-            }
+            await this.handleSocialLoginSuccess(response?.user || null, 'github.com')
           },
           error: async (error) => {
             if (await this.handleMfaRequired(error, 'github.com')) {
@@ -806,6 +770,8 @@ export class LoginComponent  {
 
             this.handleError(error, 'login:github', 'github.com');
             this.handleAccountExistsError(error, 'github.com');
+            this.loading.github = false;
+            this.loginInProgress = false;
           },
           complete: () => {
             this.loading.github = false; // Always reset loading state on completion.
@@ -816,6 +782,21 @@ export class LoginComponent  {
       this.handleError(error, 'login:github', 'github.com');
       this.loading.github = false;
       this.loginInProgress = false;
+    }
+  }
+
+  private async handleSocialLoginSuccess(user: User | null, providerId: string): Promise<void> {
+    if (!user) {
+      await this.trackLoginAttempt(providerId, false)
+      this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN')
+      this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+      return
+    }
+
+    try {
+      await this.finishLogin(user, providerId)
+    } catch (error) {
+      this.handleError(error, `login:${providerId}`, providerId)
     }
   }
 
@@ -945,29 +926,14 @@ export class LoginComponent  {
 
       // If user credential is valid, proceed with post-verification actions.
       if (userCredential.user) {
-        let userData = await this.firestoreService.getUserData(userCredential.user.uid);
-        if (userData) {
-          const token = await userCredential.user.getIdToken(); // Get Firebase ID token.
-          await this.trackLoginAttempt('phone', true, token);
-
-          // Store updated user data in Firestore (Firebase automatically marks phone as verified).
-          await this.firestoreService.storeUserData(userCredential.user, 'phone', true);
-
-          if (!userCredential.user.phoneNumber) {
-            await this.trackLoginAttempt('phone', false);
-            this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_NUMBER_NOT_FOUND'), SnackBarType.error, '', 5000);
-            this.resetAuthFlow();
-            return;
-          }
-
-          this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFIED_SUCCESS'), SnackBarType.success);
-          const returnUrl = this.getReturnUrl();
-          this.router.navigateByUrl(returnUrl);
-        } else {
+        if (!userCredential.user.phoneNumber) {
           await this.trackLoginAttempt('phone', false);
-          this.showSnackbar(this.translate.instant('AUTH_ERRORS.SIGN_IN_FAILED_USER_DATA_NOT_FOUND'), SnackBarType.error, '', 3000);
+          this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_NUMBER_NOT_FOUND'), SnackBarType.error, '', 5000);
           this.resetAuthFlow();
+          return;
         }
+
+        await this.finishLogin(userCredential.user, 'phone');
       } else {
         await this.trackLoginAttempt('phone', false);
         this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_PHONE_VERIFICATION');
