@@ -38,6 +38,14 @@ export class BillingService {
     })
   }
 
+  private createCheckoutRequestId(prefix: string): string {
+    const randomPart = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+    return `${prefix}-${Date.now()}-${randomPart}`
+  }
+
   private getPurchasedCredits(billing: Partial<UserBilling> | UserBilling | undefined): number {
     if (!billing?.credits) {
       return 0
@@ -158,7 +166,11 @@ export class BillingService {
         interval: BillingInterval
         successUrl: string
         cancelUrl: string
-      }, { url: string; sessionId: string }>('createCheckoutSession', args)
+        checkoutRequestId: string
+      }, { url: string; sessionId: string }>('createCheckoutSession', {
+        ...args,
+        checkoutRequestId: this.createCheckoutRequestId('plan'),
+      })
     } finally {
       this.setLoading('checkout', false)
     }
@@ -177,7 +189,11 @@ export class BillingService {
         successUrl: string
         cancelUrl: string
         quantity?: number
-      }, { url: string; sessionId: string }>('createCheckoutSession', args)
+        checkoutRequestId: string
+      }, { url: string; sessionId: string }>('createCheckoutSession', {
+        ...args,
+        checkoutRequestId: this.createCheckoutRequestId('credit-pack'),
+      })
     } finally {
       this.setLoading('checkout', false)
     }
@@ -195,11 +211,13 @@ export class BillingService {
         customCredits: number
         successUrl: string
         cancelUrl: string
+        checkoutRequestId: string
       }, { url: string; sessionId: string }>('createCheckoutSession', {
         planId: 'custom_credits',
         customCredits: args.credits,
         successUrl: args.successUrl,
         cancelUrl: args.cancelUrl,
+        checkoutRequestId: this.createCheckoutRequestId('custom-credits'),
       })
     } finally {
       this.setLoading('checkout', false)
@@ -285,6 +303,42 @@ export class BillingService {
     } finally {
       this.setLoading('usageReport', false)
     }
+  }
+
+  async getAdminBillingObservability(args?: {
+    incidentLimit?: number
+    failedEventLimit?: number
+    pendingEventLimit?: number
+    pastDueLimit?: number
+    includeAcknowledged?: boolean
+  }): Promise<{
+    generatedAt: string
+    incidents: Array<Record<string, unknown>>
+    failedEvents: Array<Record<string, unknown>>
+    pendingEvents: Array<Record<string, unknown>>
+    pastDueAccounts: Array<Record<string, unknown>>
+  }> {
+    return this.firestoreService.callFunction<typeof args, {
+      generatedAt: string
+      incidents: Array<Record<string, unknown>>
+      failedEvents: Array<Record<string, unknown>>
+      pendingEvents: Array<Record<string, unknown>>
+      pastDueAccounts: Array<Record<string, unknown>>
+    }>('getAdminBillingObservability', args)
+  }
+
+  async acknowledgeBillingIncident(incidentId: string): Promise<{ ok: boolean; incidentId: string }> {
+    return this.firestoreService.callFunction<{ incidentId: string }, { ok: boolean; incidentId: string }>(
+      'acknowledgeBillingIncident',
+      { incidentId }
+    )
+  }
+
+  async requestStripeEventRetry(eventId: string): Promise<{ ok: boolean; eventId: string }> {
+    return this.firestoreService.callFunction<{ eventId: string }, { ok: boolean; eventId: string }>(
+      'requestStripeEventRetry',
+      { eventId }
+    )
   }
 
   getPlans$(includeFree = true): Observable<BillingCatalogPayload['plans']> {

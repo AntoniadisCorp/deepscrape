@@ -27,6 +27,11 @@ export const AdminRoutes: Routes = [
     data: { title: 'analytics', animation: 'admin_analytics' },
   },
   {
+    path: 'billing-observability',
+    loadComponent: () => import('../../pages').then(m => m.AdminBillingObservabilityComponent),
+    data: { title: 'billing observability', animation: 'admin_billing_observability' },
+  },
+  {
     path: 'migration/runs',
     loadComponent: () => import('../../pages').then(m => m.AdminMigrationRunsComponent),
     data: { title: 'migration runs', animation: 'admin_migration_runs' },

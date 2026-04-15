@@ -26,9 +26,12 @@ export const deepscrape = app.deepscrape
 /* Auth - Functions */
 // User Management - Functions
 export const linkGuestToUser = auth.linkGuestToUser
-export const getMyLoginSessions = auth.getMyLoginSessions
-export const revokeMyLoginSession = auth.revokeMyLoginSession
-export const getMyLoginSessionStatus = auth.getMyLoginSessionStatus
+export const getMyLoginSessions = sessions.getMyLoginSessions
+export const getUserLoginSessionsByAdmin = sessions.getUserLoginSessionsByAdmin
+export const revokeMyLoginSession = sessions.revokeMyLoginSession
+export const getMyLoginSessionStatus = sessions.getMyLoginSessionStatus
+export const revokeUserLoginSessionByAdmin = sessions.revokeUserLoginSessionByAdmin
+export const revokeAllUserSessionsByAdmin = sessions.revokeAllUserSessionsByAdmin
 export const enableTotpMfa = auth.enableTotpMfa
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
@@ -55,6 +58,9 @@ export const verifyCheckoutSession = stripe.verifyCheckoutSession
 export const getBillingUsage = stripe.getBillingUsage
 export const stripeWebhook = stripe.stripeWebhook
 export const grantPromotionalCredits = stripe.grantPromotionalCredits
+export const getAdminBillingObservability = stripe.getAdminBillingObservability
+export const acknowledgeBillingIncident = stripe.acknowledgeBillingIncident
+export const requestStripeEventRetry = stripe.requestStripeEventRetry
 export const expireTrialsToFree = stripe.expireTrialsToFree
 
 
