@@ -214,6 +214,7 @@ const mockOperationStatusService = {
  */
 export function getTestProviders(): (Provider | EnvironmentProviders)[] {
   const noopStorage = new NoopStorage();
+  const testStripePublishableKey = 'pk_test_deepscrape_testing_key';
 
   return [
     // --- Angular internals ---
@@ -222,7 +223,7 @@ export function getTestProviders(): (Provider | EnvironmentProviders)[] {
     provideRouter([]),
     provideHttpClient(withFetch()),
     provideHttpClientTesting(),
-    provideNgxStripe(),
+    provideNgxStripe(testStripePublishableKey),
 
     // --- Platform---
     { provide: PLATFORM_ID, useValue: 'browser' },
