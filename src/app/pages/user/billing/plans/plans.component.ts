@@ -500,6 +500,19 @@ export class PlansComponent {
     this.openPlanDetails('trial')
   }
 
+  async startTrialFromPromo(): Promise<void> {
+    const billing = await firstValueFrom(this.billing$)
+    if (!this.canStartTrial(billing)) {
+      return
+    }
+
+    try {
+      await this.billingService.startTrial()
+    } catch (error) {
+      console.error('Unable to start trial from plans promo', error)
+    }
+  }
+
   openUsage(): void {
     void this.router.navigate(['/billing/usage'])
   }
