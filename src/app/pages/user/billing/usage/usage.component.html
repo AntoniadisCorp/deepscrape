@@ -20,10 +20,47 @@
 
   <ng-container *ngIf="loadingState$ | async as loading">
   <div [@routeChildAnimation]="loading.usageReport ? 'loading' : selectedRange">
-    <div *ngIf="loading.usageReport" class="flex min-h-[320px] w-full items-center justify-center">
-      <mat-spinner
-        [diameter]="40"
-        class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
+    <div *ngIf="loading.usageReport" class="w-full" aria-hidden="true">
+      <div class="rounded-2xl bg-white/70 dark:bg-gray-800/45 px-5 py-4 mb-6 shadow-md">
+        <div class="loading-line-mid"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+          <div class="loading-line-short"></div>
+          <div class="mt-3 loading-key h-9"></div>
+        </div>
+        <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+          <div class="loading-line-short"></div>
+          <div class="mt-3 loading-key h-9"></div>
+        </div>
+        <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+          <div class="loading-line-short"></div>
+          <div class="mt-3 loading-key h-9"></div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white dark:bg-gray6 p-5 mb-8 shadow-md">
+        <div class="loading-line-mid"></div>
+        <div class="mt-4 loading-surface h-72 rounded-xl"></div>
+      </div>
+
+      <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+        <div class="loading-line-mid"></div>
+        <div class="mt-4 space-y-3">
+          <div class="grid grid-cols-6 gap-3">
+            <div class="loading-chip"></div>
+            <div class="loading-chip"></div>
+            <div class="loading-chip col-span-2"></div>
+            <div class="loading-chip"></div>
+            <div class="loading-chip"></div>
+          </div>
+          <div class="loading-key h-10"></div>
+          <div class="loading-key h-10 w-11/12"></div>
+          <div class="loading-key h-10 w-10/12"></div>
+          <div class="loading-key h-10 w-9/12"></div>
+        </div>
+      </div>
     </div>
 
     <ng-container *ngIf="!loading.usageReport">
