@@ -39,9 +39,10 @@ describe('HiddenDragScrollDirective', () => {
 
   it('should set scrollbar-hiding styles and class on init', () => {
     const host = directiveEl.nativeElement as HTMLElement;
-    expect(host.style.overflowX).toBe('scroll');
+    expect(host.style.overflowX).toBe('auto');
+    expect(host.style.overflowY).toBe('hidden');
     expect(host.style.scrollbarWidth).toBe('none');
-    expect(host.classList.contains('ms-overflow-style-none')).toBeTrue();
+    expect((host.style as CSSStyleDeclaration & { msOverflowStyle?: string }).msOverflowStyle).toBe('none');
   });
 
   it('should have default scrollSpeed set to 2.0', () => {
