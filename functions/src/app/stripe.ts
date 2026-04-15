@@ -543,7 +543,7 @@ const getDefaultBillingForPlan = (plan: BillingPlanTier = "free"): UserBilling =
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const submitEnterprisePlanRequest = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const uid = req.auth?.uid
     if (!uid) {
@@ -937,7 +937,7 @@ export const newStripeCustomer = onDocumentCreated(
 
 
 export const createPaymentIntent = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1020,7 +1020,7 @@ export const createPaymentIntent = onCallv2(
 )
 
 export const createSetupIntent = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1099,7 +1099,7 @@ export const createSetupIntent = onCallv2(
 
 
 export const startSubscription = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1197,7 +1197,7 @@ export const startSubscription = onCallv2(
 )
 
 export const getBillingCatalog = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async () => {
     return {
       plans: billingPlanCatalog,
@@ -1210,7 +1210,7 @@ export const getBillingCatalog = onCallv2(
 )
 
 export const validateStripeCatalog = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1392,7 +1392,7 @@ export const validateStripeCatalog = onCallv2(
 )
 
 export const getMyEntitlements = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1559,7 +1559,7 @@ export const getMyEntitlements = onCallv2(
 )
 
 export const startTrial = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1619,7 +1619,7 @@ export const startTrial = onCallv2(
 )
 
 export const getBillingUsage = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1877,7 +1877,7 @@ export const getBillingUsage = onCallv2(
 )
 
 export const createCheckoutSession = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2049,7 +2049,7 @@ export const createCheckoutSession = onCallv2(
 )
 
 export const createBillingPortalSession = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2081,7 +2081,7 @@ export const createBillingPortalSession = onCallv2(
 )
 
 export const resumeSubscriptionCancellation = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2153,7 +2153,7 @@ export const resumeSubscriptionCancellation = onCallv2(
 )
 
 export const verifyCheckoutSession = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2743,7 +2743,7 @@ export const updateUsage = onDocumentCreated(
   })
 
 export const grantPromotionalCredits = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const actorUid = req.auth?.uid
     if (!actorUid) {
@@ -2793,7 +2793,7 @@ export const grantPromotionalCredits = onCallv2(
 )
 
 export const getAdminBillingObservability = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const actorUid = req.auth?.uid
     if (!actorUid) {
@@ -2914,7 +2914,7 @@ export const getAdminBillingObservability = onCallv2(
 )
 
 export const acknowledgeBillingIncident = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const actorUid = req.auth?.uid
     if (!actorUid) {
@@ -2949,7 +2949,7 @@ export const acknowledgeBillingIncident = onCallv2(
 )
 
 export const requestStripeEventRetry = onCallv2(
-  { secrets: stripeSecrets, enforceAppCheck: true },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const actorUid = req.auth?.uid
     if (!actorUid) {
