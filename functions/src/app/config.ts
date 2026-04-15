@@ -90,14 +90,23 @@ const productionServiceAccount = env.IS_PRODUCTION ?
     null
 const selectedServiceAccount = productionServiceAccount || localServiceAccount
 
-admin.initializeApp(
-    selectedServiceAccount ?
-        {credential: admin.credential.cert(selectedServiceAccount)} :
-        undefined
-)
+// Only initialize Firebase if it hasn't been initialized already
+// This prevents errors when multiple modules load config.ts during tests
+const wasAlreadyInitialized = admin?.apps.length > 0
+if (!wasAlreadyInitialized) {
+    admin.initializeApp(
+        selectedServiceAccount ?
+            {credential: admin.credential.cert(selectedServiceAccount)} :
+            undefined
+    )
+}
 
 export const db = admin.firestore()
-db.settings({ databaseId: dbName })
+// Only call settings() if we just initialized Firebase for the first time
+// Otherwise, Firestore is already initialized and this call will fail
+if (!wasAlreadyInitialized) {
+    db.settings({ databaseId: dbName })
+}
 
 export const auth = admin.auth()
 

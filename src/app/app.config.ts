@@ -86,7 +86,7 @@ export const appConfig: ApplicationConfig = {
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideAnalytics(() => getAnalytics(initializeApp(environment.firebaseConfig))),
+    provideAnalytics(() => getAnalytics()),
     ScreenTrackingService, // track page views automatically
     UserTrackingService, // track unique users automatically
     ...hydrationProviders,
@@ -116,7 +116,7 @@ export const appConfig: ApplicationConfig = {
       return functions;
     }),
     provideMessaging(() => getMessaging()),
-    providePerformance(() => getPerformance(initializeApp(environment.firebaseConfig))),
+    providePerformance(() => getPerformance()),
     provideStorage(() => getStorage()),
     {
       provide: 'APP_CHECK',
