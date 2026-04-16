@@ -21,4 +21,22 @@ describe('AdminAnalyticsComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should initialize default filter state', () => {
+    expect(component.filters.period).toBe('last-7d');
+    expect(component.filters.realtime).toBeTrue();
+  });
+
+  it('should expose period options including last 7 days', () => {
+    const periods = component.periodOptions.map((x) => x.value);
+
+    expect(periods).toContain('last-7d');
+    expect(periods.length).toBeGreaterThan(3);
+  });
+
+  it('should initialize chart datasets with empty labels', () => {
+    expect(component.timelineChartData.labels).toEqual([]);
+    expect(component.countryChartData.labels).toEqual([]);
+    expect(component.browserChartData.labels).toEqual([]);
+  });
 });

@@ -14,4 +14,13 @@ describe('AuthService', () => {
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
+
+  it('should expose auth state observables', () => {
+    expect(typeof service.isAuthenticated).toBe('function');
+    expect(service.user$).toBeDefined();
+  });
+
+  it('should initialize with non-admin flag by default', () => {
+    expect(service.isAdmin).toBe(false);
+  });
 });

@@ -22,4 +22,26 @@ describe('AccountSettingsComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('routerLink should map account route to /settings root', () => {
+    expect(component.routerLink('account')).toEqual(['/settings']);
+    expect(component.routerLink('security')).toEqual(['/settings', 'security']);
+  });
+
+  it('getAnimationData should read animation key from outlet data', () => {
+    const outlet = {
+      activatedRouteData: { animation: 'settings-slide' },
+    } as any;
+
+    expect(component.getAnimationData(outlet)).toBe('settings-slide');
+  });
+
+  it('ngOnDestroy should unsubscribe router subscription', () => {
+    const unsubscribeSpy = jasmine.createSpy('unsubscribe');
+    (component as any).routeSub = { unsubscribe: unsubscribeSpy };
+
+    component.ngOnDestroy();
+
+    expect(unsubscribeSpy).toHaveBeenCalled();
+  });
 });

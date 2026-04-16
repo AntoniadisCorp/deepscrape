@@ -22,4 +22,14 @@ describe('PaymentmethodsComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render placeholder copy', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('paymentmethods works!');
+  });
+
+  it('should compile as standalone component', () => {
+    expect((PaymentMethodsComponent as any).ɵcmp.standalone).toBeTrue();
+  });
 });

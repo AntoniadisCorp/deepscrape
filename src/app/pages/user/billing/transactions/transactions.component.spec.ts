@@ -22,4 +22,14 @@ describe('TransactionsComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render placeholder copy', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('transactions works!');
+  });
+
+  it('should compile as standalone component', () => {
+    expect((TransactionsComponent as any).ɵcmp.standalone).toBeTrue();
+  });
 });

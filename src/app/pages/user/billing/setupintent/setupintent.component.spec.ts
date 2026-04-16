@@ -22,4 +22,14 @@ describe('SetupIntentComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should render payment component host element', () => {
+    const paymentHost = fixture.nativeElement.querySelector('app-payment');
+
+    expect(paymentHost).toBeTruthy();
+  });
+
+  it('should compile as standalone component', () => {
+    expect((SetupIntentComponent as any).ɵcmp.standalone).toBeTrue();
+  });
 });

@@ -14,4 +14,17 @@ describe('AiserviceService', () => {
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
+
+  it('should expose all primary AI transport methods', () => {
+    expect(typeof service.sendToJinaAI).toBe('function');
+    expect(typeof service.sendToClaudeAI).toBe('function');
+    expect(typeof service.sendToOpenAI).toBe('function');
+  });
+
+  it('should initialize model endpoint configuration', () => {
+    expect((service as any).claudeAiEndpoint).toContain('/messages');
+    expect((service as any).openAiEndpoint).toContain('/chat/completions');
+    expect((service as any).groqAiEndpoint).toContain('/chat/completions');
+    expect((service as any).jinaAiEndpoint).toContain('/');
+  });
 });

@@ -14,4 +14,13 @@ describe('FirestoreService', () => {
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
+
+  it('should identify localhost environment as a boolean', () => {
+    expect(typeof (service as any).getInstanceDB).toBe('function');
+    expect(typeof (service as any).getUserData).toBe('function');
+  });
+
+  it('should expose async data access methods', async () => {
+    await expectAsync((service as any).getUserData('user-1')).toBeResolved();
+  });
 });

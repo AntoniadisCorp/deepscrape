@@ -22,4 +22,23 @@ describe('BillingComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should apply grow class via host binding', () => {
+    const host: HTMLElement = fixture.nativeElement;
+
+    expect(host.classList.contains('grow')).toBeTrue();
+  });
+
+  it('getRouteAnimationData should return outlet animation key when available', () => {
+    const fakeOutlet = {
+      activatedRouteData: { animation: 'billing-transactions' },
+    } as any;
+
+    expect(component.getRouteAnimationData(fakeOutlet)).toBe('billing-transactions');
+  });
+
+  it('getRouteAnimationData should return fallback key when outlet is missing', () => {
+    expect(component.getRouteAnimationData(null)).toBe('billing-initial');
+    expect(component.getRouteAnimationData(undefined)).toBe('billing-initial');
+  });
 });
