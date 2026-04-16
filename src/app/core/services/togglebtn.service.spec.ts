@@ -70,4 +70,5 @@ describe('TogglebtnService', () => {
     service.closeMenu();
     service.closeMenu();
     expect(service.isOpen()).toBe(false);
-  });});
+  });
+});

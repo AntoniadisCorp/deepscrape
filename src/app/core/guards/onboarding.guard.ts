@@ -17,14 +17,19 @@ export const onboardingGuard: CanActivateFn = (route, state) => {
   return authService.isAuthenticated().pipe(
     take(1),
     map(({ isAuthenticated, user }) => {
-      const safeReturnUrl = resolveSafeReturnUrl(route.queryParams['returnUrl'] || state.url)
+      const safeLoginReturnUrl = resolveSafeReturnUrl(route.queryParams['returnUrl'] || state.url)
+      const resolvedPostOnboardingReturnUrl = resolveSafeReturnUrl(route.queryParams['returnUrl'] || '/dashboard')
+      const safePostOnboardingReturnUrl =
+        resolvedPostOnboardingReturnUrl === '/service/onboarding'
+          ? '/dashboard'
+          : resolvedPostOnboardingReturnUrl
 
       if (!isAuthenticated || !user) {
-        return router.createUrlTree(['/service/login'], { queryParams: { returnUrl: safeReturnUrl } });
+        return router.createUrlTree(['/service/login'], { queryParams: { returnUrl: safeLoginReturnUrl } });
       }
       // Bootstrap admins are auto-onboarded server-side; never show them the wizard
       if (authService.isAdmin || user.onboardedAt != null) {
-        return router.parseUrl(safeReturnUrl);
+        return router.parseUrl(safePostOnboardingReturnUrl);
       }
       return true;
     }),

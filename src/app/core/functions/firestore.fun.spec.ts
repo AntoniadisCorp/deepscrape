@@ -63,7 +63,7 @@ describe('firestore.fun', () => {
       expect(translate.instant).toHaveBeenCalledWith('AUTH_ERRORS.TOO_MANY_ATTEMPTS_TRY_LATER');
     });
 
-    it('should use error message as fallback', () => {
+    it('should return unknown-error translation when code is not mapped', () => {
       spyOn(translate, 'instant').and.returnValue('');
 
       const error = { message: 'Custom error message' };

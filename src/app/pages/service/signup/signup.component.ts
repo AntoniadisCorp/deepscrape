@@ -260,7 +260,6 @@ export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
                             if (phoneNumber) {
                                 confirmationResult = await linkWithPhoneNumber(userCredential.user, phoneNumber, this.recaptchaVerifier)
                                 phoneLinked = true;
-                                await this.firestoreService.updateUserPhoneNumber(userCredential.user.uid, phoneNumber, false)
                             }
                             await this.firestoreService.storeUserData(userCredential.user, "password", false, null, phoneNumber ? false : null)
                             // Redirect logic: only go to phone verification if phone was entered and linked
