@@ -108,3 +108,12 @@ export interface SessionDisplayInfo extends LoginSession {
     deviceFingerprintMatch: boolean;
     humanReadableTime: string;
 }
+
+/**
+ * PHASE 4.3: A single activity data point stored in the loginSessions/{id}/activity subcollection.
+ */
+export interface SessionActivityPoint {
+    timestamp: Date;
+    activeSeconds: number;
+    activityCount: number;
+}

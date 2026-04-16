@@ -4,17 +4,14 @@ import { MatCardModule } from '@angular/material/card'
 import { MatTooltipModule } from '@angular/material/tooltip'
 import { MatIconModule } from '@angular/material/icon'
 import { FirestoreService } from '../../services/firestore.service'
-import { SessionDisplayInfo } from '../../types/global.interface'
+import { SessionActivityPoint, SessionDisplayInfo } from '../../types/global.interface'
+import { environment } from 'src/environments/environment'
 
 /**
  * PHASE 4.3: Session Activity Visualization Component
  * Displays a sparkline/timeline of activity for a user session over time
  */
-export interface ActivityData {
-  timestamp: Date
-  activeSeconds: number
-  activityCount: number
-}
+type ActivityData = SessionActivityPoint
 
 interface DailySummary {
   date: Date
@@ -43,38 +40,26 @@ export class SessionActivityComponent implements OnInit {
     }
   }
 
+  /** Only allow mock fallback in dev / emulator; never in production. */
+  private readonly allowMockFallback = !environment.production || environment.emulators
+
   private async loadActivityData(sessionId: string) {
     try {
-      // Try to load real activity data from Firestore first
-      const firestoreData = await this.loadFromFirestore(sessionId)
-      if (firestoreData && firestoreData.length > 0) {
+      const firestoreData = await this.firestore.getLoginSessionActivity(sessionId)
+      if (firestoreData.length > 0) {
         this.activityData.set(firestoreData)
         this.dailySummary.set(this.calculateDailySummary(firestoreData))
-      } else {
-        // Fallback to mock data for development/emulator testing
-        const mockActivity = this.generateMockActivityData()
-        this.activityData.set(mockActivity)
-        this.dailySummary.set(this.calculateDailySummary(mockActivity))
+        return
       }
     } catch (error) {
-      console.error('Failed to load activity data, using mock data:', error)
-      // Fallback to mock data on error
+      console.error('Failed to load activity data from Firestore:', error)
+    }
+
+    if (this.allowMockFallback) {
       const mockActivity = this.generateMockActivityData()
       this.activityData.set(mockActivity)
       this.dailySummary.set(this.calculateDailySummary(mockActivity))
     }
-  }
-
-  /**
-   * Load real activity data from Firestore subcollection
-   * Queries loginSessions/{sessionId}/activity for actual activity records
-   */
-  private async loadFromFirestore(sessionId: string): Promise<ActivityData[]> {
-    // A typed endpoint for per-session activity is not yet exposed by FirestoreService.
-    // Return an empty list and let the component use the mock visualization fallback.
-    void sessionId
-    void this.firestore
-    return []
   }
 
   /**

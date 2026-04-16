@@ -11,7 +11,7 @@ import {
   where
 } from '@angular/fire/firestore'
 import { connectFunctionsEmulator, Functions, httpsCallable } from '@angular/fire/functions'
-import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryEvent, loginHistoryInfo, loginMetrics, UserDetails, Users } from '../types'
+import { BrowserProfile, CartPack, CrawlConfig, CrawlPack, CrawlResultConfig, Guest, loginHistoryEvent, loginHistoryInfo, loginMetrics, SessionActivityPoint, UserDetails, Users } from '../types'
 import { catchError, from, map, Observable, of, switchMap, throwError } from 'rxjs'
 import { WindowToken } from './window.service'
 import { environment } from 'src/environments/environment'
@@ -518,6 +518,50 @@ export class FirestoreService {
         { success: boolean; loginId: string; targetUserId: string; revokedAt: string }
       >('revokeUserLoginSessionByAdmin', { loginId, reason })
     )
+  }
+
+  /** In-memory cache keyed by sessionId → sorted activity points. */
+  private readonly _sessionActivityCache = new Map<string, SessionActivityPoint[]>()
+
+  /**
+   * Fetch activity data for a specific login session from the Firestore subcollection
+   * `loginSessions/{sessionId}/activity`, ordered ascending by timestamp, limited to 100 docs.
+   * Results are cached in memory for the lifetime of the service instance.
+   */
+  async getLoginSessionActivity(sessionId: string): Promise<SessionActivityPoint[]> {
+    if (this._sessionActivityCache.has(sessionId)) {
+      return this._sessionActivityCache.get(sessionId)!
+    }
+
+    const result = await this.runAsyncInInjectionContext(
+      this._injector,
+      async (): Promise<SessionActivityPoint[]> => {
+        const colRef = collection(this.firestore, 'loginSessions', sessionId, 'activity')
+        const q = query(colRef, orderBy('timestamp', 'asc'), limit(100))
+        const snap = await getDocs(q)
+        return snap.docs.map((d) => {
+          const raw = d.data()
+          const ts = raw['timestamp']
+          return {
+            timestamp: ts && typeof ts.toDate === 'function' ? (ts as { toDate(): Date }).toDate() : new Date(ts),
+            activeSeconds: typeof raw['activeSeconds'] === 'number' ? raw['activeSeconds'] : 0,
+            activityCount: typeof raw['activityCount'] === 'number' ? raw['activityCount'] : 0,
+          } satisfies SessionActivityPoint
+        })
+      },
+    )
+
+    this._sessionActivityCache.set(sessionId, result)
+    return result
+  }
+
+  /** Remove a cached session activity entry (e.g. after a page refresh). */
+  clearLoginSessionActivityCache(sessionId?: string): void {
+    if (sessionId) {
+      this._sessionActivityCache.delete(sessionId)
+    } else {
+      this._sessionActivityCache.clear()
+    }
   }
 
   revokeAllUserSessionsByAdmin(targetUserId: string, reason?: string, limit: number = 100): Observable<{
