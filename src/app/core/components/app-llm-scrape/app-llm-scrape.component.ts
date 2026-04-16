@@ -32,6 +32,21 @@ import { CrawlOperationStatus } from '../../enum';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { map } from 'rxjs/internal/operators/map';
 
+interface TokenUsage {
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  totalTokens?: number | null;
+  [key: string]: number | null | undefined;
+}
+
+type AIRole = 'user' | 'assistant' | 'system';
+
+interface AIMessage {
+  content: string;
+  usage: TokenUsage | null;
+  role: AIRole | null;
+}
+
 @Component({
   selector: 'app-llm-scrape',
   imports: [MatIcon, MarkdownModule, MatProgressSpinner, GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe, RadioToggleComponent, BrowserCookiesComponent],
@@ -154,7 +169,7 @@ export class AppLLMScrapeComponent {
   }
 
 
-  protected onDropDownSelected($event: any) {
+  protected onDropDownSelected($event: Event) {
     // throw new Error('Method not implemented.');
   }
 
@@ -232,11 +247,7 @@ export class AppLLMScrapeComponent {
             return result // .slice(0, 2) splitArrayIntoChunks(result.split('[!'), 6)
           })
 
-          let subsequentPosts: Observable<{
-            content: string;
-            usage: any | null;
-            role: any | null;
-          }>[] = []
+          let subsequentPosts: Observable<AIMessage>[] = []
 
           const role: string = aitype === 'claude' ? 'user' : 'system'
           for await (const content of subsequentContent) {
@@ -272,10 +283,11 @@ export class AppLLMScrapeComponent {
 
           this.cdr?.detectChanges()
         },
-        error: (error: any) => {
+        error: (error: unknown) => {
 
           // print the error
-          console.error('Error processing data:', error, arrayBufferToString(error.error));
+          const errorDetails = error && typeof error === 'object' ? (error as any).error : undefined;
+          console.error('Error processing data:', error, errorDetails ? arrayBufferToString(errorDetails) : 'Unknown error');
           // set the error message to show on the screen by snackbar popup
           this.errorMessage = 'Error processing data. Please check console for details.';
 
@@ -287,7 +299,7 @@ export class AppLLMScrapeComponent {
       })
   }
 
-  private chooseAIModel(messages: any) {
+  private chooseAIModel(messages: { role: string; content: string }[]) {
     const modelAI = this.modelAI.value.code
 
     switch (modelAI) {
@@ -306,21 +318,27 @@ export class AppLLMScrapeComponent {
     }
   }
 
-  private sendBatchToOpenAI(messages: { role: string, content: string }[]):
-    Observable<{ content: string, usage: any | null, role: any | null }> {
+  private sendBatchToOpenAI(messages: { role: string; content: string }[]):
+    Observable<AIMessage> {
 
     return this.aiapi.sendToOpenAI(messages, this.modelAI.value.name)
 
   }
 
-  private sendToClaudeAi(messages: { role: string, content: string }[]):
-    Observable<{ content: string, role: string, usage: any | null }> {
+  private sendToClaudeAi(messages: { role: string; content: string }[]):
+    Observable<AIMessage> {
 
-    return this.aiapi.sendToClaudeAI(messages, this.modelAI.value.name, "you are a nice assistant")
+    return this.aiapi.sendToClaudeAI(messages, this.modelAI.value.name, "you are a nice assistant").pipe(
+      map((response: any) => ({
+        content: response.content,
+        usage: response.usage || null,
+        role: response.role || ('assistant' as AIRole)
+      } as AIMessage))
+    )
   }
 
 
-  private getResultsFromAI(subsequentPosts: Observable<{ content: string, usage: any | null, role: any | null }>[]) {
+  private getResultsFromAI(subsequentPosts: Observable<AIMessage>[]) {
 
     // this.detailsMessage = 'Process AI Data'
     /* Initialize the Results viariables  */
@@ -338,17 +356,18 @@ export class AppLLMScrapeComponent {
       .pipe(takeUntil(this.destroy$))
       .subscribe(
         {
-          next: (result: any) => {
+          next: (result: AIMessage) => {
 
             this.jsonChunk['content'] += result.content || ''
 
 
             if (result?.usage) {
-              total_tokens = !(result?.usage as OpenAITokenDetails).total_tokens ?
-                (result?.usage as OpenAITokenDetails).completion_tokens + (result?.usage as OpenAITokenDetails).prompt_tokens :
-                (result?.usage as OpenAITokenDetails).total_tokens
+              const usage = result?.usage as unknown as any;
+              total_tokens = !usage?.total_tokens ?
+                (usage?.completion_tokens || 0) + (usage?.prompt_tokens || 0) :
+                usage?.total_tokens || 0
 
-              total_cost = calculateOpenAICost(result?.usage as OpenAITokenDetails, this.modelAI.value.name)
+              total_cost = calculateOpenAICost(usage, this.modelAI.value.name)
 
               // set jsonChunk usage
               this.jsonChunk['usage'] = { total_tokens, total_cost }

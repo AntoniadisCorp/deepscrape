@@ -973,11 +973,11 @@ export const createPaymentIntent = onCallv2(
 
       // if cartId is not in session of the browser storage
       if (!cartId) {
-        /* const listpayment = await stripe.paymentIntents.list({ customer: user?.stripeId })
-        // cancel all previous paymentIntent
-        listpayment.data.forEach(async (item) => {
-            await stripe.paymentIntents.cancel(item.id)
-        }) */
+        const listpayment = await stripe.paymentIntents.list({ customer: user?.stripeId })
+        // cancel all previous paymentIntent in parallel
+        await Promise.all(listpayment.data.map(async (item) => {
+          await stripe.paymentIntents.cancel(item.id)
+        }))
         const paymentIntent = await stripe.paymentIntents.create({
           receipt_email: userEmail,
           currency,

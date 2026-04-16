@@ -1,5 +1,5 @@
 import { AsyncPipe, isPlatformBrowser, NgClass, NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
+import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID, OnDestroy } from '@angular/core'
 import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
@@ -33,7 +33,7 @@ import { DropdownComponent } from 'src/app/core/components'
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
 })
-export class AppUserLayoutComponent {
+export class AppUserLayoutComponent implements OnDestroy {
 
   private window: Window = inject(WindowToken)
   private localStorage = inject(LocalStorage)
@@ -370,8 +370,7 @@ export class AppUserLayoutComponent {
   // Removed themeIsDark() method
 
   ngOnDestroy(): void {
-    //Called once, before the instance is destroyed.
-    //Add 'implements OnDestroy' to the class.
+    // Cleanup all subscriptions to prevent memory leaks
     this.logoutSubscription?.unsubscribe()
     this.orgLoadSubscription?.unsubscribe()
     this.invitationLoadSubscription?.unsubscribe()

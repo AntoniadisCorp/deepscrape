@@ -48,7 +48,9 @@ import {
   user,
   verifyBeforeUpdateEmail,
   AdditionalUserInfo,
-  UserInfo
+  UserInfo,
+  MultiFactorError,
+  MultiFactorAssertion
 } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { Analytics } from '@angular/fire/analytics';
@@ -70,7 +72,7 @@ type loginCredentials = {
   mergeRequired: boolean;
   user: User;
   result: UserCredential;
-  credential?: any;
+  credential?: AuthCredential | undefined;
   existingUid?: string;
 };
 
@@ -83,7 +85,7 @@ type loginCredentials = {
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, MatProgressSpinner, MatIcon, TranslateModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
-  // Removed ChangeDetectionStrategy.OnPush as it requires manual change detection for async operations
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent  {
   // Injected services using Angular's inject function for better testability and type safety.
@@ -140,9 +142,9 @@ export class LoginComponent  {
   private destroy$ = new Subject<void>();
 
   /** Debounce timer for analytics events. */
-  private analyticsDebounceTimer: any = null;
+  private analyticsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   /** Analytics event queue for batching. */
-  private analyticsEventQueue: any[] = [];
+  private analyticsEventQueue: Array<{ event: string; properties?: Record<string, unknown> }> = [];
   private window = inject(WindowToken);
 
   /**
@@ -222,7 +224,7 @@ export class LoginComponent  {
    * typically used in the template for validation.
    * @returns {any} The controls of the login form.
    */
-  get f(): any {
+  get f() {
     return this.loginForm.controls;
   }
 
@@ -263,7 +265,7 @@ export class LoginComponent  {
    * @param {string} context - Context of the error.
    * @param {string} provider - Provider causing the error.
    */
-  private handleError(error: any, context: string, provider: string) {
+  private handleError(error: unknown, context: string, provider: string) {
     const errorMsg = this.getFriendlyAuthErrorMessage(error);
     this.errorMessage = errorMsg;
     this.showSnackbar(errorMsg, SnackBarType.error, '', 5000);
@@ -272,23 +274,23 @@ export class LoginComponent  {
     this.loginInProgress = false;
   }
 
-  private async handleMfaRequired(error: any, providerId: string): Promise<boolean> {
-    if (error?.code !== 'auth/multi-factor-auth-required') {
+  private async handleMfaRequired(error: MultiFactorError, providerId: string): Promise<boolean> {
+    if ((error as any)?.code !== 'auth/multi-factor-auth-required') {
       return false;
     }
 
     try {
       const resolver = this.firestoreService.getMultiFactorResolver(error);
       const hints = resolver.hints || [];
-      const phoneFactor = hints.find((hint: any) =>
+      const phoneFactor = hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
         hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
       );
-      const totpFactor = hints.find((hint: any) =>
+      const totpFactor = hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
         hint?.factorId === TotpMultiFactorGenerator.FACTOR_ID || (hint?.factorId === 'totp')
       );
 
       if (!phoneFactor && !totpFactor) {
-        const factorList = hints.map((h: any) => h?.factorId || 'unknown').join(', ') || 'none';
+        const factorList = hints.map((h: { factorId?: string }) => h?.factorId || 'unknown').join(', ') || 'none';
         this.errorMessage = `This account requires a second factor, but none of the enrolled factors are currently supported by this client. Enrolled factors: ${factorList}.`;
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
         return true;
@@ -350,7 +352,7 @@ export class LoginComponent  {
       throw new Error('MFA resolver is not ready. Please try again.')
     }
 
-    const phoneHint = this.mfaResolver.hints.find((hint: any) =>
+    const phoneHint = this.mfaResolver.hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
       hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
     )
     if (!phoneHint) {
@@ -382,7 +384,7 @@ export class LoginComponent  {
     this.errorMessage = '';
 
     try {
-      let assertion: any;
+      let assertion: MultiFactorAssertion;
       if (this.mfaFactorType === 'phone') {
         if (!this.mfaVerificationId) {
           throw new Error('Verification code was not sent. Please resend and try again.');
@@ -443,7 +445,7 @@ export class LoginComponent  {
     await this.router.navigateByUrl(returnUrl);
   }
 
-  private shouldFallbackToRedirect(error: any): boolean {
+  private shouldFallbackToRedirect(error: MultiFactorError): boolean {
     const code = error?.code;
     return code === 'auth/popup-blocked' ||
       code === 'auth/web-storage-unsupported' ||
@@ -467,7 +469,7 @@ export class LoginComponent  {
    * @description Debounced analytics event tracker.
    * @param {any} event - Analytics event payload.
    */
-  private debounceTrackEvent(event: any) {
+  private debounceTrackEvent(event: { event: string; properties?: Record<string, unknown> }) {
     this.analyticsEventQueue.push(event);
     if (this.analyticsDebounceTimer) clearTimeout(this.analyticsDebounceTimer);
     this.analyticsDebounceTimer = setTimeout(() => {
@@ -508,7 +510,7 @@ export class LoginComponent  {
         errorMsg: errorMsg || null,
         context: context || null
       };
-      this.debounceTrackEvent(payload);
+      this.debounceTrackEvent({ event: 'login_attempt', properties: payload });
     } catch (error) {
       console.warn('Login analytics tracking skipped:', error);
     }
@@ -592,7 +594,7 @@ export class LoginComponent  {
       // Initialize RecaptchaVerifier with the Firebase Auth instance and container element (not id).
       this.recaptchaVerifier = new RecaptchaVerifier(this.auth, this.recaptchaContainer.nativeElement, {
         'size': 'invisible', // Set to invisible to avoid user interaction initially.
-        callback: (response: any) => {
+        callback: (response: { credential: string }) => {
           // Callback function when reCAPTCHA is successfully solved.
           console.log('Recaptcha solved:', response);
           // If the current authentication method is phone and the verification code hasn't been sent,
@@ -806,7 +808,7 @@ export class LoginComponent  {
    * @param {any} error - The error object returned by Firebase authentication.
    * @param {string} providerId - The ID of the provider that caused the error (e.g., 'google.com', 'github.com').
    */
-  private handleAccountExistsError(error: any, providerId: string): void {
+  private handleAccountExistsError(error: MultiFactorError, providerId: string): void {
     const errorCode: string = error?.code as string;
 
     if (errorCode === 'auth/account-exists-with-different-credential') {
@@ -837,7 +839,7 @@ export class LoginComponent  {
       // this.showSnackbar('Account successfully linked!', SnackBarType.success, '', 3000); // Optional success message.
       this.pendingCredential = null; // Clear the pending credential after successful linking.
       return usercredential;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error linking account:', error);
       this.errorMessage = getErrorMessage(error, this.translate);
       // this.showSnackbar(`Error linking account: ${this.errorMessage}`, SnackBarType.error, '', 5000); // Optional error message.
@@ -849,28 +851,33 @@ export class LoginComponent  {
   /**
    * @description Extracts a Firebase authentication error code from a raw error object or string.
    * This method ensures that the error object consistently has a `code` property.
-   * @param {any} error - The raw error object or string.
-   * @returns {any} The normalized error object with a `code` property.
+   * @param {unknown} error - The raw error object or string.
+   * @returns {{ code: string; message?: string }} The normalized error object with a `code` property.
    */
-  private extractFirebaseError(error: any): any {
+  private extractFirebaseError(error: MultiFactorError | string): { code: string; message?: string } {
     // If the error is a string and contains 'auth/', attempt to parse the error code.
-    if (typeof error === 'string' && error.toString().includes('auth/')) {
+    if (typeof error === 'string') {
       console.warn('Extracted Firebase error code:', error);
       const match = error.match(/auth\/([^)]+)/); // Regex to find the code.
       if (match && match[1]) {
         // Return a new error object with the extracted code and original message.
         return { code: match[1], message: error };
       }
+      return { code: 'unknown_auth_error', message: error };
     }
-    return error; // Return the error as is if no parsing is needed or possible.
+    // For MultiFactorError object
+    if (error && typeof error === 'object' && 'code' in error) {
+      return { code: (error as any).code || 'unknown_error', message: (error as any).message };
+    }
+    return { code: 'unknown_error', message: String(error) };
   }
 
   /**
    * @description Returns the appropriate Firebase Auth provider based on the provider ID.
    * @param {string} providerId - The ID of the authentication provider (e.g., 'google.com', 'github.com').
-   * @returns {any | null} The Firebase Auth provider class or `null` if not found.
+   * @returns {typeof GoogleAuthProvider | typeof GithubAuthProvider | null} The Firebase Auth provider class or `null` if not found.
    */
-  private getProvider(providerId: string): any | null {
+  private getProvider(providerId: string): typeof GoogleAuthProvider | typeof GithubAuthProvider | null {
     switch (providerId) {
       case GoogleAuthProvider.PROVIDER_ID:
         return GoogleAuthProvider;
@@ -898,7 +905,7 @@ export class LoginComponent  {
       this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier);
       this.phoneVerificationSent = true; // Indicate that the code has been sent.
       this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT'), SnackBarType.success);
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.handleError(error, 'sendPhoneVerificationCode', 'phone');
       this.cdr.detectChanges();
       this.resetAuthFlow();
@@ -940,7 +947,7 @@ export class LoginComponent  {
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
         this.resetAuthFlow();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.handleError(error, 'verifyPhoneNumberCode', 'code');
       this.cdr.detectChanges();
       this.resetAuthFlow();
@@ -1029,10 +1036,11 @@ export class LoginComponent  {
     this.recaptchaVerifier?.clear();
   }
 
-  private getFriendlyAuthErrorMessage(error: any): string {
-    const explicitMessage = typeof error?.message === 'string' ? error.message.trim() : ''
+  private getFriendlyAuthErrorMessage(error: unknown): string {
+    const errorObj = error && typeof error === 'object' ? (error as any) : {};
+    const explicitMessage = typeof errorObj?.message === 'string' ? errorObj.message.trim() : ''
     const normalizedMessage = explicitMessage.toLowerCase()
-    const code = String(error?.code || '').toLowerCase()
+    const code = String(errorObj?.code || '').toLowerCase()
 
     if (
       code === 'auth/invalid-argument' ||
