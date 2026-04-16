@@ -1,4 +1,5 @@
-import { Injectable, inject, signal, Signal } from '@angular/core'
+import { Injectable, inject, PLATFORM_ID, signal } from '@angular/core'
+import { isPlatformBrowser } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
 import { from, Observable } from 'rxjs'
 import { map } from 'rxjs'
@@ -43,6 +44,7 @@ export interface SendVerificationCodeResult {
 export class DeviceVerificationService {
   private firestore = inject(FirestoreService)
   private http = inject(HttpClient)
+  private platformId = inject(PLATFORM_ID)
 
   readonly requiresVerification = signal(false)
   readonly pendingDeviceId = signal('')
@@ -53,6 +55,15 @@ export class DeviceVerificationService {
    * Compute device fingerprint from browser
    */
   getDeviceFingerprint(): DeviceFingerprint {
+    if (!isPlatformBrowser(this.platformId)) {
+      return {
+        userAgent: 'server',
+        ipAddress: '',
+        deviceId: 'server-device',
+        timestamp: new Date()
+      }
+    }
+
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     if (ctx) {

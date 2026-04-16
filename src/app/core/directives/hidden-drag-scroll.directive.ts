@@ -31,10 +31,8 @@ export class HiddenDragScrollDirective implements OnInit, OnDestroy {
       // Setup all event listeners
       this.setupEvents();
     });
-    // Keep scrolling enabled without forcing a persistent scrollbar.
+    // Keep scrolling behavior without overriding host layout styles.
     const element = this.el.nativeElement as HTMLElement;
-    element.style.display = 'block';
-    element.style.maxWidth = '100%';
     element.style.overflowX = 'auto';
     element.style.overflowY = 'hidden';
     element.style.scrollbarWidth = 'none'; // Firefox

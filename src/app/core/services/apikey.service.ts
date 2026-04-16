@@ -313,24 +313,44 @@ export class ApiKeyService {
         this.SessionStorage.setItem('apiKeys', JSON.stringify(keys));
     }
 
-    private isRecentAuthRequiredError(error: any): boolean {
-        const code = String(error?.code || '').toLowerCase()
-        const message = String(error?.message || '').toLowerCase()
+    private getSecurityErrorCode(error: any): ApiKeySecurityErrorCode | null {
+        const rawCode = [
+            error?.details?.code,
+            error?.error?.code,
+            error?.code,
+        ].find((value) => typeof value === 'string' && value.trim().length > 0)
 
-        return message.includes('recent authentication required')
+        const normalizedCode = String(rawCode || '').toUpperCase()
+        switch (normalizedCode) {
+            case 'RECENT_AUTH_REQUIRED':
+            case 'MFA_REQUIRED':
+            case 'MFA_ENROLL_REQUIRED':
+                return normalizedCode as ApiKeySecurityErrorCode
+            default:
+                return null
+        }
+    }
+
+    private hasSecurityError(error: any, code: ApiKeySecurityErrorCode, fallbackMessage: string): boolean {
+        const explicitCode = this.getSecurityErrorCode(error)
+        if (explicitCode) {
+            return explicitCode === code
+        }
+
+        const message = String(error?.message || '').toLowerCase()
+        return message.includes(fallbackMessage)
+    }
+
+    private isRecentAuthRequiredError(error: any): boolean {
+        return this.hasSecurityError(error, 'RECENT_AUTH_REQUIRED', 'recent authentication required')
     }
 
     private isMfaRequiredError(error: any): boolean {
-        const code = String(error?.code || '').toLowerCase()
-        const message = String(error?.message || '').toLowerCase()
-
-        return code.includes('permission-denied') ||
-            message.includes('mfa step-up required')
+        return this.hasSecurityError(error, 'MFA_REQUIRED', 'mfa step-up required')
     }
 
     private isMfaEnrollmentRequiredError(error: any): boolean {
-        const message = String(error?.message || '').toLowerCase()
-        return message.includes('mfa enrollment is required')
+        return this.hasSecurityError(error, 'MFA_ENROLL_REQUIRED', 'mfa enrollment is required')
     }
 
     ngOnDestroy(): void {

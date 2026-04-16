@@ -69,13 +69,13 @@ function serveapp(): express.Application {
   })
   
   // PHASE 1.4: Middleware to clear session cookie on logout
-  server.post('/logout', (req: Request, res: Response, next: NextFunction) => {
+  server.post('/logout', (req: Request, res: Response) => {
     res.clearCookie('sid', {
       httpOnly: true,
       path: '/'
     })
     console.log('✅ Session cookie cleared on logout')
-    next()
+    return res.sendStatus(204)
   })
 
   // Apply advanced Upstash rate limiter to all requests (except /api which has its own limiter)

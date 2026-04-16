@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core'
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { FormsModule } from '@angular/forms'
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog'
@@ -31,7 +31,7 @@ import { firstValueFrom } from 'rxjs'
   templateUrl: './device-verification-modal.component.html',
   styleUrl: './device-verification-modal.component.scss'
 })
-export class DeviceVerificationModalComponent implements OnInit {
+export class DeviceVerificationModalComponent implements OnInit, OnDestroy {
   private deviceVerification = inject(DeviceVerificationService)
   private auth = inject(AuthService)
   private snackBar = inject(MatSnackBar)
@@ -46,22 +46,33 @@ export class DeviceVerificationModalComponent implements OnInit {
 
   codeInput = ''
   deviceName = ''
+  private countdownIntervalId: ReturnType<typeof setInterval> | null = null
 
   ngOnInit() {
     // Set up interval to update countdown
-    const interval = setInterval(() => {
+    this.countdownIntervalId = setInterval(() => {
       if (this.verificationExpiry()) {
         const remaining = this.getTimeRemaining()
         this.timeRemaining.set(remaining)
 
         // Expire if time is up
         if (remaining === '00:00') {
-          clearInterval(interval)
+          if (this.countdownIntervalId) {
+            clearInterval(this.countdownIntervalId)
+            this.countdownIntervalId = null
+          }
           this.verificationSent.set(false)
           this.snackBar.open('Code expired. Please request a new one.', 'Dismiss', { duration: 5000 })
         }
       }
     }, 1000)
+  }
+
+  ngOnDestroy(): void {
+    if (this.countdownIntervalId) {
+      clearInterval(this.countdownIntervalId)
+      this.countdownIntervalId = null
+    }
   }
 
   async sendCode(method: 'email' | 'sms') {

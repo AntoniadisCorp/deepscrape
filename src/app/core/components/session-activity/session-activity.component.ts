@@ -16,6 +16,13 @@ export interface ActivityData {
   activityCount: number
 }
 
+interface DailySummary {
+  date: Date
+  duration: number
+  requestCount: number
+  status: 'active'
+}
+
 @Component({
   selector: 'app-session-activity',
   imports: [CommonModule, MatCardModule, MatTooltipModule, MatIconModule],
@@ -28,7 +35,7 @@ export class SessionActivityComponent implements OnInit {
   private firestore = inject(FirestoreService)
 
   readonly activityData = signal<ActivityData[]>([])
-  readonly dailySummary = signal<any[]>([])
+  readonly dailySummary = signal<DailySummary[]>([])
 
   ngOnInit() {
     if (this.session?.sessionId) {
@@ -63,29 +70,11 @@ export class SessionActivityComponent implements OnInit {
    * Queries loginSessions/{sessionId}/activity for actual activity records
    */
   private async loadFromFirestore(sessionId: string): Promise<ActivityData[]> {
-    try {
-      // Query the activity subcollection for this session
-      // In production, this would fetch real activity records from:
-      // /loginSessions/{sessionId}/activity/
-      const activityRef = await (this.firestore as any).getCollection(
-        `loginSessions/${sessionId}/activity`,
-        (ref: any) => ref.orderBy('timestamp', 'desc').limit(168) // Last 7 days of hourly data
-      )
-
-      if (!activityRef) {
-        return []
-      }
-
-      // Transform Firestore docs to ActivityData format
-      return activityRef.map((doc: any) => ({
-        timestamp: doc.timestamp?.toDate ? doc.timestamp.toDate() : new Date(doc.timestamp),
-        activeSeconds: doc.activeSeconds || 0,
-        activityCount: doc.activityCount || 0,
-      }))
-    } catch (error) {
-      console.warn('Could not load from Firestore:', error)
-      return []
-    }
+    // A typed endpoint for per-session activity is not yet exposed by FirestoreService.
+    // Return an empty list and let the component use the mock visualization fallback.
+    void sessionId
+    void this.firestore
+    return []
   }
 
   /**
@@ -115,8 +104,8 @@ export class SessionActivityComponent implements OnInit {
   /**
    * Calculate daily summary from activity data
    */
-  private calculateDailySummary(activity: ActivityData[]): any[] {
-    const dailyMap = new Map<string, any>()
+  private calculateDailySummary(activity: ActivityData[]): DailySummary[] {
+    const dailyMap = new Map<string, DailySummary>()
 
     activity.forEach((act) => {
       const dateKey = new Date(act.timestamp).toDateString()
@@ -188,7 +177,7 @@ export class SessionActivityComponent implements OnInit {
     return `${minutes}m`
   }
 
-  getDailySummary() {
+  getDailySummary(): DailySummary[] {
     return this.dailySummary()
   }
 }

@@ -10,6 +10,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { timer } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-reset-password-handler',
@@ -141,7 +142,7 @@ export class ActionHandlerComponent implements OnInit {
     }
 
     console.log('Step 3: Updating Firestore...');
-    await this.authService.updateEmailVerificationStatus(currentUser.uid).toPromise();
+    await firstValueFrom(this.authService.updateEmailVerificationStatus(currentUser.uid));
 
     console.log('Step 4: Refreshing user data...');
     await this.authService.refreshUserData();

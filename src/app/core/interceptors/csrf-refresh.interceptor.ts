@@ -15,7 +15,6 @@ import { catchError, switchMap } from 'rxjs/operators';
 
 const CSRF_RETRIED = new HttpContextToken<boolean>(() => false);
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-let latestCsrfToken: string | null = null;
 
 function readCookieValue(cookieName: string, win: Window): string | null {
   const cookieSource = typeof win.document?.cookie === 'string' ? win.document.cookie : '';
@@ -41,12 +40,10 @@ function withCsrfHeader(req: HttpRequest<unknown>, win: Window, tokenOverride?: 
     return req;
   }
 
-  const csrfToken = tokenOverride || readCookieValue('_csrf', win) || latestCsrfToken;
+  const csrfToken = tokenOverride || readCookieValue('_csrf', win);
   if (!csrfToken) {
     return req;
   }
-
-  latestCsrfToken = csrfToken;
 
   return req.clone({
     setHeaders: {
@@ -68,10 +65,6 @@ function fetchAndAttachCsrfToken(
   return rawHttp.get<{ csrfToken?: string }>('/csrf-token', { withCredentials: true }).pipe(
     switchMap((response) => {
       const freshToken = typeof response?.csrfToken === 'string' ? response.csrfToken : null;
-      if (freshToken) {
-        latestCsrfToken = freshToken;
-      }
-
       const tokenizedRequest = withCsrfHeader(req, win, freshToken);
       const requestWithContext = contextOverride
         ? tokenizedRequest.clone({ context: req.context.set(contextOverride, true) })
