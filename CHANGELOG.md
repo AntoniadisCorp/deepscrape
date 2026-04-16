@@ -1,3 +1,10 @@
+# [0.7.0-beta.7](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-04-16)
+
+
+### Bug Fixes
+
+* **ci:** recreate release asset branches without stale LFS refs ([3e38477](https://github.com/deepscrape/deepscrape/commit/3e38477d018ec24b2dfe462c0bcb1d65c5b4c087))
+
 ## [0.6.2-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.4...v0.6.2-beta.5) (2026-03-19)
 
 
