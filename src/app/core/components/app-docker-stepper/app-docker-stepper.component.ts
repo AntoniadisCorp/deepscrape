@@ -34,6 +34,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 export class AppDockerStepperComponent {
   private destroyRef = inject(DestroyRef)
   private fb: FormBuilder = inject(FormBuilder)
+  existingMachines: DropDownOption[] = []
 
   readonly clipboardButton = ClipboardbuttonComponent
   currentStep = model.required<number>()
