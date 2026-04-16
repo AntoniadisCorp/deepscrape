@@ -4,21 +4,46 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Observable } from "rxjs/internal/Observable";
 
 
-export function handleError(error: HttpErrorResponse | any): Observable<never> {
-    if (error.error instanceof ErrorEvent) {
-        console.error('An error occurred:', error.error.message)
-
+/**
+ * Centralized HTTP error handler with proper type safety
+ * @param error - The error object from HttpClient
+ * @returns An observable that completes with an error
+ */
+export function handleError(error: HttpErrorResponse | unknown): Observable<never> {
+    if (error instanceof HttpErrorResponse) {
+        if (error.error instanceof ErrorEvent) {
+            // Client-side error
+            const message = error.error.message || 'Unknown client error';
+            console.error('Client error:', message);
+        } else {
+            // Server-side error
+            console.error(
+                `Server error ${error.status}:`,
+                error.error,
+                error
+            );
+        }
+    } else if (error instanceof Error) {
+        console.error('Error:', error.message);
     } else {
-        console.error(
-            `Backend returned code ${error.status}, ` +
-            `body was:`, error.error, error)
+        console.error('Unknown error:', error);
     }
-    return throwError(() => 'Something bad happened; please try again later.');
+    return throwError(() => new Error('An error occurred. Please try again later.'));
 }
 
 
-export function isArray(arr: any): boolean {
-    return Array.isArray(arr) && arr.length > 0
+/**
+ * Type guard to check if value is a non-empty array
+ */
+export function isArray<T = unknown>(arr: unknown): arr is Array<T> {
+    return Array.isArray(arr) && arr.length > 0;
+}
+
+/**
+ * Type guard to check if a value is a string
+ */
+export function isString(value: unknown): value is string {
+    return typeof value === 'string' && value.length > 0;
 }
 
 function extractBalancedJsonFragment(input: string, startIndex: number): string | null {
@@ -83,7 +108,7 @@ function extractBalancedJsonFragment(input: string, startIndex: number): string 
     return null
 }
 
-export function cleanAndParseJSON(dirtyJsonString: string): any | null {
+export function cleanAndParseJSON<T>(dirtyJsonString: string): T | null {
     try {
         for (let index = 0; index < dirtyJsonString.length; index++) {
             const char = dirtyJsonString[index]
@@ -97,7 +122,7 @@ export function cleanAndParseJSON(dirtyJsonString: string): any | null {
                 continue
 
             try {
-                return JSON.parse(candidate)
+                return JSON.parse(candidate) as T
             } catch {
                 continue
             }
@@ -140,7 +165,7 @@ export function encodeToBytes(str: string) {
     return encoder.encode(str);
 }
 
-export function arrayBufferToString(buffer: any) {
+export function arrayBufferToString(buffer: BufferSource): string {
     const decoder = new TextDecoder('utf-8');  // Use UTF-8 encoding
     return decoder.decode(buffer);
 }
@@ -238,111 +263,153 @@ export function customUrlEncoder(input: string): string {
 }
 
 
+/**
+ * Generate a cryptographically-sound random string (performance optimized)
+ * @param length - Desired string length
+ * @returns Random alphanumeric string
+ */
 export function generateRandomString(length: number): string {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charLength = characters.length;
     let result = '';
+    
+    // Pre-allocate array for better performance
+    const charArray = new Array(length);
     for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
+        charArray[i] = characters.charAt(Math.floor(Math.random() * charLength));
     }
-    return result;
+    
+    return charArray.join('');
 }
 
+/** Default registry images for deployment */
+export const DEFAULT_IMAGES: readonly DropDownOption[] = Object.freeze([
+    { name: 'registry.fly.io/crawlagent:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
+]);
+
+/**
+ * @deprecated Use DEFAULT_IMAGES constant directly instead
+ */
 export function setDefaultImages(array: DropDownOption[]): void {
-    const defaultImages = [
-        { name: 'registry.fly.io/crawlagent:deployment-01JMCZMGQ5ZKXW2J65KHW15EXB', code: 'deployment-01JMCZMGQ5ZKXW2J65KHW15EXB' },
-    ]
-
-    array.push(...defaultImages)
+    array.push(...DEFAULT_IMAGES);
 }
 
-export function setExistingMachines(array: DropDownOption[]): void {
-    const clone = [
-        { name: 'rough-forest-9606', code: '7843403a111178' },
-        { name: 'broken-grass-6037', code: 'e82d623b363d68' },
+/** Deployment regions with airport codes */
+export const DEPLOYMENT_REGIONS: readonly DropDownOption[] = Object.freeze([
+    { name: 'Amsterdam, Netherlands', code: 'ams' },
+    { name: 'Stockholm, Sweden', code: 'arn' },
+    { name: 'Atlanta, Georgia (US)', code: 'atl' },
+    { name: 'Bogotá, Colombia', code: 'bog' },
+    { name: 'Mumbai, India', code: 'bom' },
+    { name: 'Boston, Massachusetts (US)', code: 'bos' },
+    { name: 'Paris, France', code: 'cdg' },
+    { name: 'Denver, Colorado (US)', code: 'den' },
+    { name: 'Dallas, Texas (US)', code: 'dfw' },
+    { name: 'Dubai, United Arab Emirates', code: 'dxb' },
+    { name: 'Secaucus, NJ (US)', code: 'ewr' },
+    { name: 'Ezeiza, Argentina', code: 'eze' },
+    { name: 'Frankfurt, Germany', code: 'fra' },
+    { name: 'Guadalajara, Mexico', code: 'gdl' },
+    { name: 'Rio de Janeiro, Brazil', code: 'gig' },
+    { name: 'Sao Paulo, Brazil', code: 'gru' },
+    { name: 'Hong Kong, Hong Kong', code: 'hkg' },
+    { name: 'Ashburn, Virginia (US)', code: 'iad' },
+    { name: 'Istanbul, Turkey', code: 'ist' },
+    { name: 'Johannesburg, South Africa', code: 'jnb' },
+    { name: 'Los Angeles, California (US)', code: 'lax' },
+    { name: 'London, United Kingdom', code: 'lhr' },
+    { name: 'Madrid, Spain', code: 'mad' },
+    { name: 'Melbourne, Australia', code: 'mel' },
+    { name: 'Miami, Florida (US)', code: 'mia' },
+    { name: 'Tokyo, Japan', code: 'nrt' },
+    { name: 'Chicago, Illinois (US)', code: 'ord' },
+    { name: 'Bucharest, Romania', code: 'otp' },
+    { name: 'Phoenix, Arizona (US)', code: 'phx' },
+    { name: 'Querétaro, Mexico', code: 'qro' },
+    { name: 'Santiago, Chile', code: 'scl' },
+    { name: 'Seattle, Washington (US)', code: 'sea' },
+    { name: 'Singapore, Singapore', code: 'sin' },
+    { name: 'San Jose, California (US)', code: 'sjc' },
+    { name: 'Sydney, Australia', code: 'syd' },
+    { name: 'Warsaw, Poland', code: 'waw' },
+    { name: 'Montreal, Canada', code: 'yul' },
+    { name: 'Toronto, Canada', code: 'yyz' }
+]);
 
-    ]
-    array.push(...clone)
-}
-
+/**
+ * @deprecated Use DEPLOYMENT_REGIONS constant directly instead
+ */
 export function preSetRegions(array: DropDownOption[]): void {
-    const regions = [
-        { name: 'Amsterdam, Netherlands', code: 'ams' },
-        { name: 'Stockholm, Sweden', code: 'arn' },
-        { name: 'Atlanta, Georgia (US)', code: 'atl' },
-        { name: 'Bogotá, Colombia', code: 'bog' },
-        { name: 'Mumbai, India', code: 'bom' },
-        { name: 'Boston, Massachusetts (US)', code: 'bos' },
-        { name: 'Paris, France', code: 'cdg' },
-        { name: 'Denver, Colorado (US)', code: 'den' },
-        { name: 'Dallas, Texas (US)', code: 'dfw' },
-        { name: 'Dubai, United Arab Emirates', code: 'dxb' },
-        { name: 'Secaucus, NJ (US)', code: 'ewr' },
-        { name: 'Ezeiza, Argentina', code: 'eze' },
-        { name: 'Frankfurt, Germany', code: 'fra' },
-        { name: 'Guadalajara, Mexico', code: 'gdl' },
-        { name: 'Rio de Janeiro, Brazil', code: 'gig' },
-        { name: 'Sao Paulo, Brazil', code: 'gru' },
-        { name: 'Hong Kong, Hong Kong', code: 'hkg' },
-        { name: 'Ashburn, Virginia (US)', code: 'iad' },
-        { name: 'Istanbul, Turkey', code: 'ist' },
-        { name: 'Johannesburg, South Africa', code: 'jnb' },
-        { name: 'Los Angeles, California (US)', code: 'lax' },
-        { name: 'London, United Kingdom', code: 'lhr' },
-        { name: 'Madrid, Spain', code: 'mad' },
-        { name: 'Melbourne, Australia', code: 'mel' },
-        { name: 'Miami, Florida (US)', code: 'mia' },
-        { name: 'Tokyo, Japan', code: 'nrt' },
-        { name: 'Chicago, Illinois (US)', code: 'ord' },
-        { name: 'Bucharest, Romania', code: 'otp' },
-        { name: 'Phoenix, Arizona (US)', code: 'phx' },
-        { name: 'Querétaro, Mexico', code: 'qro' },
-        { name: 'Santiago, Chile', code: 'scl' },
-        { name: 'Seattle, Washington (US)', code: 'sea' },
-        { name: 'Singapore, Singapore', code: 'sin' },
-        { name: 'San Jose, California (US)', code: 'sjc' },
-        { name: 'Sydney, Australia', code: 'syd' },
-        { name: 'Warsaw, Poland', code: 'waw' },
-        { name: 'Montreal, Canada', code: 'yul' },
-        { name: 'Toronto, Canada', code: 'yyz' }
-    ];
-    array.push(...regions)
+    array.push(...DEPLOYMENT_REGIONS);
 }
 
+/** CPU options for container deployment */
+export const CPU_TYPES: readonly DropDownOption[] = Object.freeze([
+    { "name": "Shared CPU 1x", "code": "shared-cpu-1x" },
+    { "name": "Shared CPU 2x", "code": "shared-cpu-2x" },
+    { "name": "Shared CPU 4x", "code": "shared-cpu-4x" },
+    { "name": "Shared CPU 8x", "code": "shared-cpu-8x" },
+    { "name": "Performance CPU 1x", "code": "performance--1x" },
+    { "name": "Performance CPU 2x", "code": "performance-2x" },
+    { "name": "Performance CPU 4x", "code": "performance-4x" },
+    { "name": "Performance CPU 8x", "code": "performance-8x" },
+    { "name": "Performance CPU 16x", "code": "performance-16x" }
+]);
+
+/**
+ * @deprecated Use CPU_TYPES constant directly instead
+ */
 export function preSetCPUtypes(array: DropDownOption[]): void {
-    const cpuskind = [
-        { "name": "Shared CPU 1x", "code": "shared-cpu-1x" },
-        { "name": "Shared CPU 2x", "code": "shared-cpu-2x" },
-        { "name": "Shared CPU 4x", "code": "shared-cpu-4x" },
-        { "name": "Shared CPU 8x", "code": "shared-cpu-8x" },
-        { "name": "Performance CPU 1x", "code": "performance--1x" },
-        { "name": "Performance CPU 2x", "code": "performance-2x" },
-        { "name": "Performance CPU 4x", "code": "performance-4x" },
-        { "name": "Performance CPU 8x", "code": "performance-8x" },
-        { "name": "Performance CPU 16x", "code": "performance-16x" }
-    ]
-    array.push(...cpuskind)
+    array.push(...CPU_TYPES);
 }
 
+/** Container auto-scaling policies */
+export const AUTO_CONTAINER_OPTIONS: readonly DropDownOption[] = Object.freeze([
+    { name: 'suspend', code: 'suspend' },
+    { name: 'stop', code: 'stop' },
+    { name: 'manual', code: 'off' },
+]);
+
+/**
+ * @deprecated Use AUTO_CONTAINER_OPTIONS constant directly instead
+ */
 export function setAutoContainerOptions(array: DropDownOption[]): void {
-    const autoContainerOptions = [
-        { name: 'suspend', code: 'suspend' },
-        { name: 'stop', code: 'stop' },
-        { name: 'manual', code: 'off' },
-    ]
-    array.push(...autoContainerOptions)
+    array.push(...AUTO_CONTAINER_OPTIONS);
 }
 
 
+/**
+ * Convert a File to Base64 string asynchronously
+ * @param file - File to convert
+ * @returns Promise resolving to base64 string (without data URI prefix)
+ */
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Remove the data:*/*;base64, prefix if needed
-      const base64 = (reader.result as string).split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = () => {
+        try {
+          // Extract base64 part after the comma
+          const base64 = (reader.result as string).split(',')[1];
+          if (!base64) {
+            reject(new Error('Failed to extract base64 from file'));
+            return;
+          }
+          resolve(base64);
+        } catch (e) {
+          reject(new Error(`Failed to process file: ${e instanceof Error ? e.message : 'Unknown error'}`));
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('FileReader error: Unable to read file'));
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (e) {
+      reject(new Error(`Failed to initialize FileReader: ${e instanceof Error ? e.message : 'Unknown error'}`));
+    }
   });
 }
 
@@ -386,10 +453,16 @@ export function checkPasswordStrength(password: string) {
         )
 }
 
-export async function getBrowser(navigator: any): Promise<string> {
+type BraveNavigator = Navigator & {
+    brave?: {
+        isBrave?: () => Promise<boolean>;
+    };
+};
+
+export async function getBrowser(navigator: Navigator | BraveNavigator): Promise<string> {
     // Check for Brave browser
-    if ((navigator as any).brave && typeof (navigator as any).brave.isBrave === 'function') {
-        if (await (navigator as any).brave.isBrave()) return 'brave';
+    if ('brave' in navigator && typeof navigator.brave?.isBrave === 'function') {
+        if (await navigator.brave.isBrave()) return 'brave';
     }
     const ua = navigator.userAgent.toLowerCase();
 

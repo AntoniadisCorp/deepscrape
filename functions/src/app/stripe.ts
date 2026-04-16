@@ -725,7 +725,7 @@ const alignToMinuteCeilSeconds = (ms: number): number => {
   return Math.floor(ceilMs / 1000)
 }
 
-const ensureNonEmptyMeterWindow = (startSeconds: number, endSeconds: number): { startSeconds: number; endSeconds: number } => {
+const ensureNonEmptyMeterWindow = (startSeconds: number, endSeconds: number): { startSeconds: number, endSeconds: number } => {
   if (endSeconds > startSeconds) {
     return { startSeconds, endSeconds }
   }
@@ -828,15 +828,15 @@ type StripeCustomerInput = {
 }
 
 export async function createCustomer(firebaseUser: StripeCustomerInput): Promise<Stripe.Response<Stripe.Customer>> {
-  const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
-    const stripe = getStripe(secret)
+  const secret = stripeSecrets.find((s) => s.name === "STRIPE_SECRET_KEY")?.value()
+  const stripe = getStripe(secret)
   const providerData = firebaseUser?.providerData as UserInfo[] | undefined
 
   const email = firebaseUser?.email || providerData?.[0]?.email || undefined
   const name = firebaseUser?.displayName || providerData?.[0]?.displayName || undefined
   const phone = firebaseUser?.phoneNumber || providerData?.[0]?.phoneNumber || undefined
 
-  return await stripe.customers.create({
+  return stripe.customers.create({
     email,
     name,
     phone: phone || undefined,
@@ -872,17 +872,21 @@ export const newStripeCustomer = onDocumentCreated(
     const userPath = `users/${userId}`
 
     try {
-      const userDoc = await db.doc(userPath).get()
+      const [userDoc, fallbackAuthUserResult] = await Promise.all([
+        db.doc(userPath).get(),
+        adminAuth.getUser(userId).then((user) => ({ok: true as const, user})).catch((error) => ({ok: false as const, error})),
+      ])
+
       const firebaseUser = userDoc.data() as Users
       if (!firebaseUser) {
         throw new Error(`User document not found for userId: ${userId}`)
       }
 
       let fallbackAuthUser: Awaited<ReturnType<typeof adminAuth.getUser>> | null = null
-      try {
-        fallbackAuthUser = await adminAuth.getUser(userId)
-      } catch (authError) {
-        console.warn(`Could not load auth profile for user ${userId}:`, authError)
+      if (fallbackAuthUserResult.ok) {
+        fallbackAuthUser = fallbackAuthUserResult.user
+      } else {
+        console.warn(`Could not load auth profile for user ${userId}:`, fallbackAuthUserResult.error)
       }
 
       const userEmail =
@@ -2702,10 +2706,11 @@ export const updateUsage = onDocumentCreated(
     const usageRatio = usageCap > 0 ? nextUsage / usageCap : 0
     const periodWindow = new Date().toISOString().slice(0, 7)
 
-    for (const threshold of usageThresholds) {
-      if (usageRatio >= threshold) {
+    const alertWrites = usageThresholds
+      .filter((threshold) => usageRatio >= threshold)
+      .map((threshold) => {
         const percent = Math.round(threshold * 100)
-        await emitUsageAlert({
+        return emitUsageAlert({
           uid: userId,
           alertId: createAlertId(`usage_${percent}`, periodWindow),
           title: `Usage at ${percent}%`,
@@ -2718,8 +2723,9 @@ export const updateUsage = onDocumentCreated(
             ratio: usageRatio,
           },
         })
-      }
-    }
+      })
+
+    await Promise.all(alertWrites)
 
     const billingRef = db.doc(`users/${userId}/billing/current`)
     const billingSnap = await billingRef.get()
@@ -2972,7 +2978,7 @@ export const requestStripeEventRetry = onCallv2(
       throw new HttpsError("not-found", "Event not found")
     }
 
-    const eventData = eventSnap.data() as { processed?: boolean; failed?: boolean } | undefined
+    const eventData = eventSnap.data() as { processed?: boolean, failed?: boolean } | undefined
     if (eventData?.processed === true && eventData?.failed !== true) {
       throw new HttpsError("failed-precondition", "Event already processed successfully")
     }

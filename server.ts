@@ -10,6 +10,10 @@ import { fileURLToPath } from 'node:url'
 import { env } from './src/config/env'
 import cookieParser from 'cookie-parser'
 
+type SessionCookiePayload = {
+  sessionId?: string
+}
+
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
   const server: express.Application = express()
@@ -46,7 +50,7 @@ function serveapp(): express.Application {
   server.use((req: Request, res: Response, next: NextFunction) => {
     const originalJson = res.json.bind(res)
     
-    res.json = function(data: any) {
+    res.json = function(data: SessionCookiePayload) {
       // After successful login/heartbeat, set HttpOnly session cookie
       if (data && (req.path.includes('login') || req.path.includes('heartbeat')) && data.sessionId) {
         const isDevelopment = env.PRODUCTION !== 'true'
@@ -118,7 +122,7 @@ function serveapp(): express.Application {
   }))
 
   // All regular routes use the Angular engine **
-  server.get(/.*/, (req: Request, res: Response, next: any) => {
+  server.get(/.*/, (req: Request, res: Response, next: NextFunction) => {
     console.log(
       chalk.bgYellow('Request Method:'), req.method,
       chalk.bgYellow('Request URL:'), req.url,
