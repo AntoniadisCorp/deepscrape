@@ -7,6 +7,11 @@
  *   // or for components:
  *   TestBed.configureTestingModule({ imports: [MyComponent], providers: getTestProviders() });
  */
+
+// Load test setup immediately when testing module is imported
+// This ensures console.error spy is set up in beforeEach for all tests
+import 'src/test-setup';
+
 import { EnvironmentProviders, PLATFORM_ID, Provider } from '@angular/core';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -126,6 +131,7 @@ const mockAuthService = {
   userSubject: { value: null, next: () => {} },
   user$: of(null),
   isAuthenticated: () => of({ isAuthenticated: false, user: null }),
+  getEnrolledMultiFactorHints: () => [],
   signOut: () => Promise.resolve(),
 };
 
@@ -208,6 +214,7 @@ const mockOperationStatusService = {
  */
 export function getTestProviders(): (Provider | EnvironmentProviders)[] {
   const noopStorage = new NoopStorage();
+  const testStripePublishableKey = 'pk_test_deepscrape_testing_key';
 
   return [
     // --- Angular internals ---
@@ -216,7 +223,7 @@ export function getTestProviders(): (Provider | EnvironmentProviders)[] {
     provideRouter([]),
     provideHttpClient(withFetch()),
     provideHttpClientTesting(),
-    provideNgxStripe(),
+    provideNgxStripe(testStripePublishableKey),
 
     // --- Platform---
     { provide: PLATFORM_ID, useValue: 'browser' },

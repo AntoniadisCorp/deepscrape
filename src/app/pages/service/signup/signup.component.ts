@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, DestroyRef, ViewChild, ElementRef, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, DestroyRef, ViewChild, ElementRef, PLATFORM_ID, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -39,9 +39,10 @@ interface SignupForm {
         TranslateModule,
     ],
     templateUrl: './signup.component.html',
-    styleUrl: './signup.component.scss'
+    styleUrl: './signup.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SignupComponent implements OnInit, OnDestroy {
+export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
     @ViewChild('recaptchaContainer', { static: false }) recaptchaContainer!: ElementRef<HTMLDivElement>;
     /** Instance of Firebase RecaptchaVerifier for phone authentication. */
     public recaptchaVerifier!: RecaptchaVerifier;
@@ -219,6 +220,7 @@ export class SignupComponent implements OnInit, OnDestroy {
     async signup() {
         this.errorMessage = ''
         if (this.signupForm.valid) {
+            this.loading.email = true
             const { email, confirmPassword, name, phoneNumber } = this.signupForm.value
             // Check if the email already exists
             this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({
@@ -227,6 +229,7 @@ export class SignupComponent implements OnInit, OnDestroy {
                         if (response.exists) {
                             this.errorMessage = this.translate.instant('SIGNUP.EMAIL_ALREADY_EXISTS')
                             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+                            this.loading.email = false
                             return
                         }
                         const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential                        // Configure email verification with proper action code settings
@@ -265,16 +268,19 @@ export class SignupComponent implements OnInit, OnDestroy {
                                 navigationState.verificationId = confirmationResult.verificationId;
                                 navigationState.phoneNumber = phoneNumber;
                             }
+                            this.loading.email = false;
                             this.router.navigate(['/service/verification'], { state: navigationState });
                         }
                     } catch (error: any) {
                         this.errorMessage = getErrorMessage(error, this.translate)
                         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+                        this.loading.email = false
                     }
                 },
                 error: (error) => {
                     this.errorMessage = getErrorMessage(error, this.translate)
                     this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+                    this.loading.email = false
                 }
             })
         }
@@ -288,7 +294,9 @@ export class SignupComponent implements OnInit, OnDestroy {
         duration: number = 3000) {
 
         this.snackbarService.showSnackbar(message, type, action, duration)
-    } ngOnDestroy(): void {
+    }
+
+    ngOnDestroy(): void {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.emailCheckSubs?.unsubscribe()

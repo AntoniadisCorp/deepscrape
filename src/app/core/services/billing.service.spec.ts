@@ -3,11 +3,13 @@ import { User } from '@angular/fire/auth'
 import { firstValueFrom, of } from 'rxjs'
 import { BillingService } from './billing.service'
 import { FirestoreService } from './firestore.service'
+import { AuthService } from './auth.service'
 import { getTestProviders } from 'src/app/testing';
 
 describe('BillingService', () => {
   let service: BillingService
   let firestoreServiceMock: jasmine.SpyObj<Pick<FirestoreService, 'authState' | 'doc' | 'docData' | 'callFunction'>>
+  let authServiceMock: Pick<AuthService, 'user$' | 'isAdmin'>
 
   const setAuthenticatedBilling = (billing: Record<string, unknown>) => {
     firestoreServiceMock.authState.and.returnValue(of({ uid: 'user_1' } as User))
@@ -36,19 +38,25 @@ describe('BillingService', () => {
     ))
 
     firestoreServiceMock.authState.and.returnValue(of(null))
+    authServiceMock = {
+      user$: of(null),
+      isAdmin: false,
+    }
 
     TestBed.configureTestingModule({
       providers: [
         ...getTestProviders(),
         BillingService,
         { provide: FirestoreService, useValue: firestoreServiceMock },
+        { provide: AuthService, useValue: authServiceMock },
       ],
     })
-
-    service = TestBed.inject(BillingService)
   })
 
   it('returns free access mode when user is not authenticated', async () => {
+    firestoreServiceMock.authState.and.returnValue(of(null))
+    service = TestBed.inject(BillingService)
+
     const mode = await firstValueFrom(service.getAccessMode$())
     const canAccess = await firstValueFrom(service.canAccessPaidFeatures$())
 
@@ -62,6 +70,8 @@ describe('BillingService', () => {
       features: {},
       credits: { balance: 0, reserved: 0 },
     })
+
+    service = TestBed.inject(BillingService)
 
     const mode = await firstValueFrom(service.getAccessMode$())
 
@@ -79,6 +89,8 @@ describe('BillingService', () => {
       features: {},
     })
 
+    service = TestBed.inject(BillingService)
+
     const mode = await firstValueFrom(service.getAccessMode$())
     const purchasedCredits = await firstValueFrom(service.getPurchasedCredits$())
     const canAccess = await firstValueFrom(service.canAccessPaidFeatures$())
@@ -88,7 +100,7 @@ describe('BillingService', () => {
     expect(canAccess).toBeTrue()
   })
 
-  it('canPurchaseCredits$ is true only for free plan without subscription', async () => {
+  it('canPurchaseCredits$ is true for free plan without subscription', async () => {
     setAuthenticatedBilling({
       plan: 'free',
       subscriptionId: null,
@@ -96,15 +108,21 @@ describe('BillingService', () => {
       features: {},
     })
 
+    service = TestBed.inject(BillingService)
+
     const canPurchase = await firstValueFrom(service.canPurchaseCredits$())
     expect(canPurchase).toBeTrue()
+  })
 
+  it('canPurchaseCredits$ is false when free plan has an active subscription', async () => {
     setAuthenticatedBilling({
       plan: 'free',
       subscriptionId: 'sub_123',
       credits: { purchasedBalance: 0, purchasedReserved: 0 },
       features: {},
     })
+
+    service = TestBed.inject(BillingService)
 
     const cannotPurchase = await firstValueFrom(service.canPurchaseCredits$())
     expect(cannotPurchase).toBeFalse()
@@ -117,10 +135,30 @@ describe('BillingService', () => {
       features: { api_access: true },
     })
 
+    service = TestBed.inject(BillingService)
+
     const enabled = await firstValueFrom(service.hasFeature$('api_access'))
     const disabled = await firstValueFrom(service.hasFeature$('missing_feature'))
 
     expect(enabled).toBeTrue()
     expect(disabled).toBeFalse()
+  })
+
+  it('bypasses paywall checks for platform admins on free billing', async () => {
+    setAuthenticatedBilling({
+      plan: 'free',
+      subscriptionId: null,
+      credits: { purchasedBalance: 0, purchasedReserved: 0 },
+      features: {},
+    })
+
+    authServiceMock.isAdmin = true
+    service = TestBed.inject(BillingService)
+
+    const canAccess = await firstValueFrom(service.canAccessPaidFeatures$())
+    const hasFeature = await firstValueFrom(service.hasFeature$('anti_bot'))
+
+    expect(canAccess).toBeTrue()
+    expect(hasFeature).toBeTrue()
   })
 })

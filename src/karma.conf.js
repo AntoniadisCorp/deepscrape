@@ -15,6 +15,8 @@ if (!process.env.CHROME_BIN) {
 }
 
 module.exports = function (config) {
+  const isCI = Boolean(process.env.CI);
+
   config.set({
     basePath: '',
     frameworks: ['jasmine'],
@@ -35,10 +37,10 @@ module.exports = function (config) {
       subdir: '.',
       reporters: [{ type: 'html' }, { type: 'text-summary' }, { type: 'lcovonly' }],
     },
-    reporters: ['progress', 'kjhtml'],
+    reporters: isCI ? ['dots'] : ['progress', 'kjhtml'],
     port: 9876,
     colors: true,
-    logLevel: config.LOG_INFO,
+    logLevel: isCI ? config.LOG_ERROR : config.LOG_INFO,
     autoWatch: true,
     browsers: ['Chrome'],
     customLaunchers: {
@@ -53,5 +55,17 @@ module.exports = function (config) {
     },
     singleRun: false,
     restartOnFileChange: true,
+    captureConsole: !isCI,
+    browserConsoleLogOptions: isCI
+      ? {
+        level: 'error',
+        format: '%b %T: %m',
+        terminal: false,
+      }
+      : {
+        level: 'log',
+        format: '%b %T: %m',
+        terminal: true,
+      },
   });
 };

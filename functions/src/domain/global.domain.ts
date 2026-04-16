@@ -108,6 +108,8 @@ export type loginHistoryInfo = {
     signOutTime?: Date // Optional field to store sign out time
     sessionKey?: string // Optional field to link to a session
     deviceFingerprintHash?: string
+    revokedAt?: Date | null
+    revokedByUid?: string | null
 }
 
 export type Guest = {
@@ -190,4 +192,58 @@ export type UserSettings = {
         allowNotifications?: boolean
     }
     preferences?: { [key: string]: boolean | string | number }
+}
+
+/**
+ * Enterprise login session - tracks authenticated user sessions per device
+ * Stored in /loginSessions/{sessionId} and users/{userId}/sessions/{sessionId}
+ * @since 2026-04-06 Enterprise SaaS architecture
+ */
+export type LoginSession = {
+    sessionId: string
+    userId: string
+    deviceId: string
+    createdAt: Date
+    lastActivityAt: Date
+    expiresAt: Date
+    revokedAt: Date | null
+    active: boolean
+    ipAddress: string
+    userAgent: string
+    browser: string
+    os: string
+    location: string
+    providerId: string
+}
+
+/**
+ * Login session metrics - aggregated data for admin analytics
+ */
+export type LoginSessionMetrics = {
+    sessionId: string
+    userId: string
+    deviceId: string
+    totalDuration: number // milliseconds
+    totalRequests: number
+    totalHeartbeats: number
+    createdAt: Date
+    lastActivityAt: Date
+    createdFromIp: string
+    revokedAt?: Date | null
+    revokeReason?: string
+}
+
+/**
+ * Device fingerprint cache for session deduplication
+ */
+export type DeviceFingerprint = {
+    fingerprintHash: string
+    userId: string
+    browser: string
+    os: string
+    deviceType: string
+    firstSeenAt: Date
+    lastSeenAt: Date
+    sessionCount: number
+    isVerified: boolean
 }

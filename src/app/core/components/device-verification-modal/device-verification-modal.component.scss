@@ -1,0 +1,66 @@
+.device-verification-modal {
+  min-width: 400px;
+  padding: 20px;
+
+  .subtitle {
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 20px;
+  }
+
+  .verification-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    h3 {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .method-buttons {
+      display: flex;
+      gap: 12px;
+      flex-direction: column;
+
+      button {
+        padding: 12px 16px;
+        font-size: 16px;
+      }
+    }
+  }
+
+  .code-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .info-text {
+      color: rgba(0, 0, 0, 0.6);
+      font-size: 14px;
+      margin: 0 0 16px 0;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .countdown {
+      padding: 12px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: 500;
+      color: #ff6b6b;
+
+      p {
+        margin: 0;
+        font-size: 14px;
+      }
+    }
+  }
+
+  mat-dialog-actions {
+    margin-top: 24px;
+  }
+}

@@ -1,5 +1,5 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core'
+import { Component, HostListener, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core'
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -92,6 +92,7 @@ interface HourlyAccumulator {
   providers: [provideNativeDateAdapter()],
   templateUrl: './admin-migration.component.html',
   styleUrl: './admin-migration.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminMigrationComponent implements OnInit, OnDestroy {
   private readonly firestoreService = inject(FirestoreService)

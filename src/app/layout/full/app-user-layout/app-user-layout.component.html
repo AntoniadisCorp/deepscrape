@@ -19,7 +19,7 @@
           <path
             clip-rule="evenodd"
             fill-rule="evenodd"
-          d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
+            d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
         </svg>
       </button>
       <a
@@ -31,33 +31,38 @@
           <img
             src=""
             alt=""
-            [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
+            [srcset]="
+              (isDarkMode$ | async)
+                ? 'assets/logo-512x512_sky.png 2x'
+                : 'assets/logo-512x512.png 2x'
+            "
             class="mt-4 h-20 border-none max-h-[80%] xs:max-h-max" />
-          </h1>
-          <h1
-            class="hidden text-2xl xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
-            DeepScrape
-          </h1>
-        </a>
-      </div>
-      <div class="flex items-center gap-4">
-        <!-- Crawler Packager in Cart -->
-        @if (cartPackager$ | async) {
-          <app-cart-pack-notify></app-cart-pack-notify>
-          <app-dropdown-cart class="fixed"></app-dropdown-cart>
-        }
+        </h1>
+        <h1
+          class="hidden text-2xl xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
+          DeepScrape
+        </h1>
+      </a>
+    </div>
+    <div class="flex min-w-0 flex-1 items-center justify-end gap-4">
+      <!-- Crawler Packager in Cart -->
+      @if (cartPackager$ | async) {
+        <app-cart-pack-notify></app-cart-pack-notify>
+        <app-dropdown-cart class="fixed"></app-dropdown-cart>
+      }
 
-        <div class="flex items-center justify-end gap-2 w-full">
-          <!-- Lang Mode Switch -->
-          <app-lang-picker></app-lang-picker>
-          <!-- Theme Mode Switch -->
-          <app-theme-toggle
+      <div class="flex min-w-0 flex-1 items-center justify-end gap-2">
+        <!-- Lang Mode Switch -->
+        <app-lang-picker></app-lang-picker>
+        <!-- Theme Mode Switch -->
+        <app-theme-toggle
           [color]="{
             dark: '#373737f0',
-            light: '#fff'
+            light: '#fff',
           }"></app-theme-toggle>
-        </div>
-        @if (user) {
+      </div>
+      @if (user) {
+        <div class="relative shrink-0">
           <!-- Profile Image Menu Button -->
           <button
             type="button"
@@ -71,266 +76,180 @@
               loading="eager"
               ng-img="true"
               decoding="sync"
-              [srcset]="user | provider : user.providerId : 'photoURL'"
-              [name]="user | provider : user.providerId : 'displayName'"
+              [srcset]="user | provider: user.providerId : 'photoURL'"
+              [name]="user | provider: user.providerId : 'displayName'"
               alt="user photo" />
-            </button>
-            <!-- DropDown Profile Menu -->
-            @if (showProfileMenu) {
+          </button>
+          <!-- DropDown Profile Menu -->
+        @if (showProfileMenu) {
+          <div
+            @enableProfileMenu
+            appOutsideClick
+            (outsideClick)="openProfileMenu($event)"
+            class="absolute left-1/2 top-[calc(100%+0.625rem)] z-[90] -translate-x-1/2 list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:-top-[20px] before:left-1/2 before:-translate-x-1/2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:-top-[18px] after:left-1/2 after:-translate-x-1/2 after:h-0 after:w-0 after:border-[9px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6">
+            <div class="px-4 py-3" role="none">
               <div
-                @enableProfileMenu
-                appOutsideClick
-                (outsideClick)="openProfileMenu($event)"
-                class="fixed right-[1.1rem] top-[4.5rem] z-[90] list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6 md:right-[2.1rem] lg:right-[8.2rem]">
-                <div class="px-4 py-3" role="none">
-                  <div
-                    class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
-                    role="none">
-                    @if (userLoading) {
-                      <div>
-                        <div
-                        class="relative h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-400"></div>
-                      </div>
-                    }
-                    <div>
-                      <p>{{ user | provider : user.providerId : 'displayName' }}</p>
-                    </div>
+                class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
+                role="none">
+                @if (userLoading) {
+                  <div class="py-0.5">
+                    <div class="loading-line-mid"></div>
                   </div>
+                }
+                <div>
+                  <p>{{ user | provider: user.providerId : 'displayName' }}</p>
                 </div>
-                <div class="px-4 py-3" role="none">
-                  <p class="text-sm text-gray-900 dark:text-white" role="none">
-                    <!--  {{
+              </div>
+            </div>
+            <div class="px-4 py-3" role="none">
+              <p class="text-sm text-gray-900 dark:text-white" role="none">
+                <!--  {{
                     this.userData?.profile?.first_name +
                     ' ' +
                     this.userData?.profile?.last_name
                     }} -->
-                  </p>
-                  <div
-                    class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
-                    role="none">
-                    @if (userLoading) {
-                      <div>
-                        <div
-                        class="relative h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-400"></div>
-                      </div>
-                    }
-                    <div>
-                      <p>{{ user | provider : user.providerId : 'email' }}</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-600/30" role="none">
-                  <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Workspace</p>
-                  @if (orgLoading) {
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Loading workspaces...</div>
-                  } @else if (organizations.length) {
-                    <select
-                      title="Select active workspace"
-                      aria-label="Select active workspace"
-                      class="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-                      [ngModel]="selectedOrgId"
-                      (ngModelChange)="switchOrganization($event)">
-                      @for (org of organizations; track org.id) {
-                        <option [value]="org.id">
-                          {{ org.name || org.slug || org.id }} ({{ org.membership?.role || 'member' }})
-                        </option>
-                      }
-                    </select>
-                  } @else {
-                    <div class="text-xs text-gray-500 dark:text-gray-400">No workspaces found</div>
-                  }
-                </div>
-                @if (invitations.length) {
-                  <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-600/30" role="none">
-                    <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Pending Invitations</p>
-                    <div class="space-y-2">
-                      @for (invite of invitations; track invite.id) {
-                        <div class="rounded-md border border-gray-200 p-2 dark:border-gray-600/30">
-                          <div class="text-xs text-gray-500 dark:text-gray-400">{{ invite.orgId }} • {{ invite.role }}</div>
-                          <button
-                            type="button"
-                            class="mt-1 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            [disabled]="inviteActionLoading"
-                            (click)="acceptInvitation(invite.id)">
-                            Accept
-                          </button>
-                        </div>
-                      }
-                    </div>
+              </p>
+              <div
+                class="truncate text-sm font-medium text-gray-900 dark:text-gray-300"
+                role="none">
+                @if (userLoading) {
+                  <div class="py-0.5">
+                    <div class="loading-line-mid"></div>
                   </div>
                 }
-                <ul class="py-1">
-                  <li>
-                    <a
-                      role="dashboard"
-                      alt="dashboard"
-                      (click)="closeProfileMenu($event, user.uid)"
-                      routerLinkActive="Active"
-                      routerLink="/dashboard"
-                      class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white">
-                      <div class="mt-1">
-                        <mat-icon fontSet="material-icons-outlined">
-                          space_dashboard
-                        </mat-icon>
-                      </div>
-                      <div>Dashboard</div>
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                      role="billing"
-                      alt="billing"
-                      (click)="closeProfileMenu($event, user.uid)"
-                      routerLinkActive="Active"
-                      routerLink="/billing">
-                      <div class="mt-1">
-                        <mat-icon fontSet="material-icons-outlined">wallet</mat-icon>
-                      </div>
-                      <div>Billing</div>
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                      role="chatai"
-                      alt="chatai"
-                      (click)="closeProfileMenu($event, user.uid)"
-                      routerLinkActive="Active"
-                      routerLink="/chatai">
-                      <div class="mt-1"><mat-icon>auto_awesome</mat-icon></div>
-                      <div>Chatai</div>
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                      role="settings"
-                      alt="settings"
-                      (click)="closeProfileMenu($event, user.uid)"
-                      routerLinkActive="Active"
-                      routerLink="/settings">
-                      <div class="mt-1">
-                        <mat-icon fontSet="material-icons-outlined">settings</mat-icon>
-                      </div>
-                      <div>Settings</div>
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      (click)="logout()"
-                      class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                      role="logout"
-                      alt="logout">
-                      <div class="mt-1"><mat-icon>logout</mat-icon></div>
-                      <div class="flex w-fit items-start justify-start gap-3">
-                        Sign out @if (loading) {
-                        <!-- Loading spinner -->
-                        <mat-spinner
-                          [diameter]="20"
-                        class="stroke-gray-200"></mat-spinner>
-                      }
-                    </div>
-                  </a>
-                </li>
-              </ul>
+                <div>
+                  <p>{{ user | provider: user.providerId : 'email' }}</p>
+                </div>
+              </div>
             </div>
-          }
-        } @else {
-          <!-- <a
-          [routerLink]="loginPath"
-          alt="signin"
-          class="mt-2 h-8 border-none dark:text-gray-100"
-          >
-          <mat-icon class="h-8 border-none">login</mat-icon>
-        </a> -->
-        <button
-          type="button"
-          (click)="openProfileMenu()"
-          class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
-          aria-expanded="false">
-          <span class="sr-only">Open user menu</span>
-          <img
-            class="rounded-full object-contain"
-            [srcset]="''"
-            alt="user photo" />
-          </button>
-          @if (showProfileMenu) {
             <div
-              @enableProfileMenu
-              appOutsideClick
-              (outsideClick)="openProfileMenu($event)"
-              class="fixed right-[1.1rem] top-[4.5rem] z-[90] list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:bottom-full before:right-2 before:top-[-21px] before:-ml-2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:bottom-full after:right-2 after:top-[-20px] after:z-[60px] after:-ml-2 after:h-0 after:w-0 after:border-[10px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6 md:right-[2.1rem] lg:right-[8.2rem]">
-              <ul class="py-1">
-                <li>
-                  <a
-                    role="dashboard"
-                    alt="dashboard"
-                    (click)="closeProfileMenu($event)"
-                    routerLinkActive="Active"
-                    routerLink="/dashboard"
-                    class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white">
-                    <div class="mt-1">
-                      <mat-icon fontSet="material-icons-outlined">
-                        space_dashboard
-                      </mat-icon>
+              class="px-4 py-3 border-t border-gray-100 dark:border-gray-600/30"
+              role="none">
+              <p
+                class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+                Workspace
+              </p>
+              @if (orgLoading) {
+                <div class="space-y-2" aria-hidden="true">
+                  <div class="loading-key h-9"></div>
+                  <div class="loading-key h-9 w-11/12"></div>
+                </div>
+              } @else if (organizations.length) {
+                <app-dropdown
+                  [control]="workspaceControl"
+                  [options]="workspaceDropdownOptions"
+                  [dropDownName]="'Workspace'"
+                  [padding]="'py-2.5 pl-3 pr-3'"
+                  [enableMenuAnimation]="true"
+                  (select)="onWorkspaceSelected($event)"></app-dropdown>
+              } @else {
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  No workspaces found
+                </div>
+              }
+            </div>
+            @if (invitations.length) {
+              <div
+                class="px-4 py-3 border-t border-gray-100 dark:border-gray-600/30"
+                role="none">
+                <p
+                  class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+                  Pending Invitations
+                </p>
+                <div class="space-y-2">
+                  @for (invite of invitations; track invite.id) {
+                    <div
+                      class="rounded-md border border-gray-200 p-2 dark:border-gray-600/30">
+                      <div class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ invite.orgId }} • {{ invite.role }}
+                      </div>
+                      <button
+                        type="button"
+                        class="mt-1 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="inviteActionLoading"
+                        (click)="acceptInvitation(invite.id)">
+                        Accept
+                      </button>
                     </div>
-                    <div>Dashboard</div>
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                    role="billing"
-                    alt="billing"
-                    (click)="closeProfileMenu($event)"
-                    routerLinkActive="Active"
-                    routerLink="/billing">
-                    <div class="mt-1">
-                      <mat-icon fontSet="material-icons-outlined">wallet</mat-icon>
-                    </div>
-                    <div>Billing</div>
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                    role="chatai"
-                    alt="chatai"
-                    (click)="closeProfileMenu($event)"
-                    routerLinkActive="Active"
-                    routerLink="/chatai">
-                    <div class="mt-1"><mat-icon>auto_awesome</mat-icon></div>
-                    <div>Chatai</div>
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                    role="settings"
-                    alt="settings"
-                    (click)="closeProfileMenu($event)"
-                    routerLinkActive="Active"
-                    routerLink="/settings">
-                    <div class="mt-1">
-                      <mat-icon fontSet="material-icons-outlined">settings</mat-icon>
-                    </div>
-                    <div>Settings</div>
-                  </a>
-                </li>
-                <li>
-                  <a
-                    (click)="logout()"
-                    class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
-                    role="logout"
-                    alt="logout">
-                    <div class="mt-1"><mat-icon>logout</mat-icon></div>
-                    <div class="flex w-fit items-start justify-start gap-3">
-                      Sign out @if (loading) {
+                  }
+                </div>
+              </div>
+            }
+            <ul class="py-1">
+              <li>
+                <a
+                  role="dashboard"
+                  alt="dashboard"
+                  (click)="closeProfileMenu($event, user.uid)"
+                  routerLinkActive="Active"
+                  routerLink="/dashboard"
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white">
+                  <div class="mt-1">
+                    <mat-icon fontSet="material-icons-outlined">
+                      space_dashboard
+                    </mat-icon>
+                  </div>
+                  <div>Dashboard</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="billing"
+                  alt="billing"
+                  (click)="closeProfileMenu($event, user.uid)"
+                  routerLinkActive="Active"
+                  routerLink="/billing">
+                  <div class="mt-1">
+                    <mat-icon fontSet="material-icons-outlined">
+                      wallet
+                    </mat-icon>
+                  </div>
+                  <div>Billing</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="chatai"
+                  alt="chatai"
+                  (click)="closeProfileMenu($event, user.uid)"
+                  routerLinkActive="Active"
+                  routerLink="/chatai">
+                  <div class="mt-1"><mat-icon>auto_awesome</mat-icon></div>
+                  <div>Chatai</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="settings"
+                  alt="settings"
+                  (click)="closeProfileMenu($event, user.uid)"
+                  routerLinkActive="Active"
+                  routerLink="/settings">
+                  <div class="mt-1">
+                    <mat-icon fontSet="material-icons-outlined">
+                      settings
+                    </mat-icon>
+                  </div>
+                  <div>Settings</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  (click)="logout()"
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="logout"
+                  alt="logout">
+                  <div class="mt-1"><mat-icon>logout</mat-icon></div>
+                  <div class="flex w-fit items-start justify-start gap-3">
+                    Sign out
+                    @if (loading) {
                       <!-- Loading spinner -->
                       <mat-spinner
                         [diameter]="20"
-                      class="stroke-gray-200"></mat-spinner>
+                        class="stroke-gray-200"></mat-spinner>
                     }
                   </div>
                 </a>
@@ -338,6 +257,116 @@
             </ul>
           </div>
         }
+        </div>
+      } @else {
+        <div class="relative shrink-0">
+          <!-- <a
+            [routerLink]="loginPath"
+            alt="signin"
+            class="mt-2 h-8 border-none dark:text-gray-100"
+            >
+            <mat-icon class="h-8 border-none">login</mat-icon>
+          </a> -->
+          <button
+            type="button"
+            (click)="openProfileMenu()"
+            class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
+            aria-expanded="false">
+            <span class="sr-only">Open user menu</span>
+            <img
+              class="rounded-full object-contain"
+              [srcset]="''"
+              alt="user photo" />
+          </button>
+        @if (showProfileMenu) {
+          <div
+            @enableProfileMenu
+            appOutsideClick
+            (outsideClick)="openProfileMenu($event)"
+            class="absolute left-1/2 top-[calc(100%+0.625rem)] z-[90] -translate-x-1/2 list-none divide-y divide-gray-100 rounded-lg border-2 border-gray-200 bg-white text-base shadow-md transition-shadow duration-300 before:absolute before:-top-[20px] before:left-1/2 before:-translate-x-1/2 before:h-0 before:w-0 before:border-[10px] before:border-solid before:border-transparent before:border-b-[#BDBDBD] before:content-[''] after:absolute after:-top-[18px] after:left-1/2 after:-translate-x-1/2 after:h-0 after:w-0 after:border-[9px] after:border-solid after:border-transparent after:border-b-white after:content-[''] hover:shadow-lg dark:divide-gray-300/[.08] dark:divide-gray-600 dark:border-gray5/10 dark:bg-gray6 dark:text-gray-100 dark:before:border-b-gray5/10 dark:after:border-b-gray6 dark:hover:shadow-md dark:hover:shadow-gray6">
+            <ul class="py-1">
+              <li>
+                <a
+                  role="dashboard"
+                  alt="dashboard"
+                  (click)="closeProfileMenu($event)"
+                  routerLinkActive="Active"
+                  routerLink="/dashboard"
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white">
+                  <div class="mt-1">
+                    <mat-icon fontSet="material-icons-outlined">
+                      space_dashboard
+                    </mat-icon>
+                  </div>
+                  <div>Dashboard</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="billing"
+                  alt="billing"
+                  (click)="closeProfileMenu($event)"
+                  routerLinkActive="Active"
+                  routerLink="/billing">
+                  <div class="mt-1">
+                    <mat-icon fontSet="material-icons-outlined">
+                      wallet
+                    </mat-icon>
+                  </div>
+                  <div>Billing</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="chatai"
+                  alt="chatai"
+                  (click)="closeProfileMenu($event)"
+                  routerLinkActive="Active"
+                  routerLink="/chatai">
+                  <div class="mt-1"><mat-icon>auto_awesome</mat-icon></div>
+                  <div>Chatai</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="settings"
+                  alt="settings"
+                  (click)="closeProfileMenu($event)"
+                  routerLinkActive="Active"
+                  routerLink="/settings">
+                  <div class="mt-1">
+                    <mat-icon fontSet="material-icons-outlined">
+                      settings
+                    </mat-icon>
+                  </div>
+                  <div>Settings</div>
+                </a>
+              </li>
+              <li>
+                <a
+                  (click)="logout()"
+                  class="flex flex-row items-center gap-2 justify-start text-center py-2 cursor-pointer px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-300/[.08] dark:hover:text-white"
+                  role="logout"
+                  alt="logout">
+                  <div class="mt-1"><mat-icon>logout</mat-icon></div>
+                  <div class="flex w-fit items-start justify-start gap-3">
+                    Sign out
+                    @if (loading) {
+                      <!-- Loading spinner -->
+                      <mat-spinner
+                        [diameter]="20"
+                        class="stroke-gray-200"></mat-spinner>
+                    }
+                  </div>
+                </a>
+              </li>
+            </ul>
+          </div>
+        }
+        </div>
       }
     </div>
   </div>
@@ -345,28 +374,33 @@
 <!-- <div class="mx-auto w-full bg-white dark:bg-gray-900">
 <div class="mt-28 flex"> -->
 
-  <!-- Inner Section
+<!-- Inner Section
   -->
-  <div
-    [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
-    class="w-full mt-20 px-4 flex-grow pt-0 lg:px-20 3xl:px-32 py-2 relative rounded-lg lg:max-h-full h-full gap-2">
-    <app-sidebar
-      [barClosed]="closeAsideBar"
-      [resizeScreen]="viewSmallDevices"
+<div
+  [ngClass]="{ 'flex flex-row': !closeAsideBar && !viewSmallDevices }"
+  class="relative mt-20 h-full w-full min-w-0 flex-grow gap-2 overflow-x-clip rounded-lg px-4 py-2 pt-0 lg:max-h-full lg:px-20 3xl:px-32">
+  <app-sidebar
+    class="shrink-0"
+    [barClosed]="closeAsideBar"
+    [resizeScreen]="viewSmallDevices"
     (backDropPressed)="onCloseAsideBar($event)"></app-sidebar>
-    <router-outlet [@routeAnimation]="currentRouteAnimation" #outlet="outlet"></router-outlet>
+  <div class="min-w-0 flex-1 overflow-x-clip">
+    <router-outlet
+      [@routeAnimation]="currentRouteAnimation"
+      #outlet="outlet"></router-outlet>
   </div>
-  @if(!compIsLoading) {
-    <app-footer [color]="footerColor"></app-footer>
+</div>
+@if (!compIsLoading) {
+  <app-footer [color]="footerColor"></app-footer>
 
-    <!-- <div  class="hidden">{{footerColor}}</div> -->
-  } @else {
-    <span class="flex w-full items-center justify-center">
-      <mat-spinner
-        [diameter]="40"
+  <!-- <div  class="hidden">{{footerColor}}</div> -->
+} @else {
+  <span class="flex w-full items-center justify-center">
+    <mat-spinner
+      [diameter]="40"
       class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
-    </span>
-  }
+  </span>
+}
 <!-- </div>
 [ngClass]="!closeAsideBar ? 'show' : 'hidden'"
 [@asideBarAnimation]="!closeAsideBar ? 'open' : 'closed'"

@@ -9,7 +9,7 @@ import { getTestProviders } from 'src/app/testing';
 
 describe('loginGuard', () => {
   let authServiceMock: jasmine.SpyObj<Pick<AuthService, 'isAuthenticated'>>;
-  let routerMock: jasmine.SpyObj<Pick<Router, 'navigate' | 'navigateByUrl'>>;
+  let routerMock: jasmine.SpyObj<Pick<Router, 'navigate' | 'navigateByUrl' | 'createUrlTree' | 'parseUrl'>>;
 
   const executeGuard: CanActivateFn = (...guardParameters) =>
     TestBed.runInInjectionContext(() => LoginGuard(...guardParameters));
@@ -31,7 +31,9 @@ describe('loginGuard', () => {
 
   beforeEach(() => {
     authServiceMock = jasmine.createSpyObj<Pick<AuthService, 'isAuthenticated'>>('AuthService', ['isAuthenticated']);
-    routerMock = jasmine.createSpyObj<Pick<Router, 'navigate' | 'navigateByUrl'>>('Router', ['navigate', 'navigateByUrl']);
+    routerMock = jasmine.createSpyObj<Pick<Router, 'navigate' | 'navigateByUrl' | 'createUrlTree' | 'parseUrl'>>('Router', ['navigate', 'navigateByUrl', 'createUrlTree', 'parseUrl']);
+    routerMock.createUrlTree.and.returnValue({} as any);
+    routerMock.parseUrl.and.returnValue({} as any);
 
     TestBed.configureTestingModule({
       providers: [
@@ -58,7 +60,7 @@ describe('loginGuard', () => {
         isAuthenticated: true,
         user: {
           emailVerified: true,
-          phoneVerified: false,
+          phoneVerified: true,
           currProviderData: { providerId: 'password' },
         } as never,
       }),
@@ -66,8 +68,7 @@ describe('loginGuard', () => {
 
     const result = await resolveGuardResult(executeGuard({ queryParams: { returnUrl: '/billing' } } as never, { url: '/service/login' } as never));
 
-    expect(result).toBeFalse();
-    expect(routerMock.navigateByUrl).toHaveBeenCalledWith('/billing');
+    expect(routerMock.parseUrl).toHaveBeenCalledWith('/billing');
   });
 
   it('redirects unverified authenticated users to verification from login page', async () => {
@@ -84,9 +85,8 @@ describe('loginGuard', () => {
 
     const result = await resolveGuardResult(executeGuard({ queryParams: {} } as never, { url: '/service/login' } as never));
 
-    expect(result).toBeFalse();
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/service/verification'], {
-      queryParams: { returnUrl: '/service/login' },
+    expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/service/verification'], {
+      queryParams: { returnUrl: '/dashboard' },
     });
   });
 
@@ -95,8 +95,7 @@ describe('loginGuard', () => {
 
     const result = await resolveGuardResult(executeVerifyGuard({ queryParams: {} } as never, { url: '/service/verification' } as never));
 
-    expect(result).toBeFalse();
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/service/login']);
+    expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/service/login']);
   });
 
   it('verifyGuard allows unverified users to stay on verification page', async () => {

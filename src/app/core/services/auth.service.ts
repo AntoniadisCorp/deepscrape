@@ -3,12 +3,16 @@ import { isPlatformBrowser } from '@angular/common';
 import {
   Auth, AuthProvider, authState, browserLocalPersistence, connectAuthEmulator, EmailAuthProvider, FacebookAuthProvider,
   getAuth,
+  getMultiFactorResolver,
   GithubAuthProvider,
-  GoogleAuthProvider, indexedDBLocalPersistence, linkWithPhoneNumber, linkWithPopup, PhoneAuthProvider, reauthenticateWithCredential, RecaptchaVerifier, setPersistence, signInWithCredential,
+  GoogleAuthProvider, indexedDBLocalPersistence, linkWithPopup, multiFactor, MultiFactorInfo, MultiFactorResolver, PhoneAuthProvider, PhoneMultiFactorInfo, reauthenticateWithCredential, RecaptchaVerifier, setPersistence, signInWithCredential,
+  PhoneMultiFactorGenerator,
   signInWithPhoneNumber,
   signInWithPopup,
   signInWithRedirect,
   signOut,
+  TotpMultiFactorGenerator,
+  TotpSecret,
   unlink,
   updatePassword,
   User,
@@ -22,7 +26,7 @@ import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
 import { FirestoreService } from './firestore.service'
 import { environment } from 'src/environments/environment';
 import { from } from 'rxjs/internal/observable/from';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { map } from 'rxjs/internal/operators/map';
 import { tap } from 'rxjs/internal/operators/tap';
@@ -30,25 +34,24 @@ import { API_AUTH_FIREBASE } from '../variables';
 import { cleanAndParseJSON, handleError } from '../functions';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
-import { of, pipe, timestamp } from 'rxjs';
+import { firstValueFrom, of, pipe, timestamp } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CookieService } from 'ngx-cookie-service';
-import { LocalStorage } from './storage.service';
 import { Analytics } from '@angular/fire/analytics';
 import { HeartbeatService } from './heartbeat.service';
 import { AnalyticsService } from './analytics.service';
+import { GuestTrackingService } from './guest-tracking.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly unsupportedMfaFirstFactors = new Set(['phone', 'anonymous', 'gc.apple.com'])
 
   private destroyRef = inject(DestroyRef)
   private analytics = inject(Analytics)
    private platformId = inject<Object>(PLATFORM_ID);
-  private cookieService = inject(CookieService)
-  private localStorage = inject(LocalStorage)
   private heartbeatService = inject(HeartbeatService)
+  private guestTrackingService = inject(GuestTrackingService)
   token: string | undefined = ''
   isAdmin: boolean = false
   private currentLoginId: string = ''
@@ -68,10 +71,90 @@ export class AuthService {
 
   ) {
     this.initAuth()
+
+    this.heartbeatService.sessionRevoked$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.handleRevokedSession()
+      })
   }
 
   private isBrowserRuntime(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  private getAuthProviderData(user: User, userData: Users): UserInfo[] {
+    return user.providerData.length > 0 ? user.providerData : (userData.providerData || [])
+  }
+
+  private normalizeSignInProvider(signInProvider: string | null | undefined): string {
+    const normalized = String(signInProvider || '').trim()
+    if (!normalized) return ''
+
+    if (normalized === 'password' || normalized === 'phone' || normalized === 'anonymous' || normalized === 'custom') {
+      return normalized
+    }
+
+    // Firebase claim values for OAuth providers are usually already '*.com'.
+    return normalized
+  }
+
+  private getCurrentProviderId(
+    user: User,
+    userData: Users,
+    providerData: UserInfo[],
+    signInProvider?: string | null,
+  ): string {
+    // Keep UI "currently logged in with" stable to the app-tracked provider,
+    // and avoid switching it during provider-link flows.
+    if (userData.providerId && providerData.some((provider) => provider.providerId === userData.providerId)) {
+      return userData.providerId
+    }
+
+    const normalizedSignInProvider = this.normalizeSignInProvider(signInProvider)
+    if (normalizedSignInProvider && providerData.some((provider) => provider.providerId === normalizedSignInProvider)) {
+      return normalizedSignInProvider
+    }
+
+    if (normalizedSignInProvider === 'password' || normalizedSignInProvider === 'phone') {
+      return normalizedSignInProvider
+    }
+
+    return userData.providerId || providerData[0]?.providerId || user.providerData[0]?.providerId || ''
+  }
+
+  private buildCombinedUserData(
+    user: User,
+    userData: Users,
+    emailVerifiedFromClaims: boolean | null,
+    phoneVerifiedFromClaims: boolean | null,
+    signInProvider?: string | null,
+  ) {
+    const providerData = this.getAuthProviderData(user, userData)
+    const currentProviderId = this.getCurrentProviderId(user, userData, providerData, signInProvider)
+    const currProviderData = providerData.find((provider: UserInfo) => provider.providerId === currentProviderId) || providerData[0] || null
+
+    return {
+      ...userData,
+      uid: user.uid,
+      email: user.email,
+      emailVerified: user.emailVerified || emailVerifiedFromClaims || false,
+      phoneNumber: user.phoneNumber || userData.phoneNumber || null,
+      phoneVerified: phoneVerifiedFromClaims || userData.phoneVerified || null,
+      providerParent: user.providerId || userData.providerParent || 'firebase',
+      providerId: currentProviderId,
+      providerData,
+      currProviderData,
+    }
+  }
+
+  private hasAdminRoleClaim(claims: Record<string, unknown> | undefined): boolean {
+    if (!claims) {
+      return false
+    }
+
+    const role = claims['role']
+    return typeof role === 'string' && role.trim().toLowerCase() === 'admin'
   }
 
   isAuthenticated(): Observable<{ isAuthenticated: boolean, user: Users & { currProviderData: UserInfo | null } | null }> {
@@ -84,6 +167,7 @@ export class AuthService {
           this.authStateResolved.next(false);
           this.userSubject.next(null);
           this.token = undefined;
+          this.isAdmin = false;
           this.heartbeatService.stop(); // Stop heartbeat if not authenticated
           return { isAuthenticated: false, user: null }; // Ensure consistent return type
         }
@@ -95,32 +179,43 @@ export class AuthService {
 
         // Save token
         this.token = await user.getIdToken();
+
+        const loginState = this.guestTrackingService.getSessionContext()
+        if (loginState.loginId) {
+          try {
+            const sessionStatus = await this.fireService.callFunction<
+              { loginId: string },
+              { loginId: string; active: boolean; revoked: boolean }
+            >('getMyLoginSessionStatus', { loginId: loginState.loginId })
+
+            if (sessionStatus?.revoked || sessionStatus?.active === false) {
+              this.handleRevokedSession()
+              return { isAuthenticated: false, user: null }
+            }
+          } catch (sessionStatusError) {
+            console.error('Failed to check login session status:', sessionStatusError)
+          }
+        }
+
         const userData = await this.fireService.getUserData(user.uid) as Users; // Firestore data
 
         if (!userData) throw new Error('No user data found');
 
-        const getTokenResult = await user.getIdTokenResult() // Get token result for custom claims
+        const getTokenResult = await user.getIdTokenResult(true) // Force-refresh token so newly set claims are available on first login
 
         // Extract custom claims for phoneVerified
         const phoneVerifiedFromClaims = getTokenResult.claims?.['phoneVerified'] === true; // Ensure it's explicitly true
         const emailVerifiedFromClaims = getTokenResult.claims?.['email_verified'] === true; // Capture custom claim
-        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
-        // Determine current login provider user info
-        const currProviderLogin = userData.providerId || null;
-        const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null;
+        const signInProvider = String((getTokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
+        const combinedUserData: Users & { currProviderData: UserInfo | null } = this.buildCombinedUserData(
+          user,
+          userData,
+          emailVerifiedFromClaims,
+          phoneVerifiedFromClaims,
+          signInProvider,
+        )
 
-        // Combine data: Prioritize Firebase Auth user.emailVerified and custom claims for phoneVerified
-        const combinedUserData: Users & { currProviderData: UserInfo | null } = {
-          ...userData, // Start with Firestore data
-          uid: user.uid, // Ensure UID is from Firebase Auth
-          email: user.email, // Use Firebase Auth's email
-          emailVerified: user.emailVerified || emailVerifiedFromClaims, // Use Firebase Auth's emailVerified
-          phoneNumber: user.phoneNumber || userData.phoneNumber || null, // Use Firebase Auth's phoneNumber if available, else Firestore's, default to null
-          phoneVerified: phoneVerifiedFromClaims || userData.phoneVerified || null, // Prioritize custom claim for phoneVerified, else Firestore's, default to null
-          currProviderData // Add current provider data
-        };
-
-        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
+        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined)
         console.log('User is admin:', this.isAdmin, getTokenResult.claims)
 
         // Save user data to the subject
@@ -138,6 +233,7 @@ export class AuthService {
         this.authStateResolved.next(false)
         this.userSubject.next(null);
         this.token = undefined;
+        this.isAdmin = false;
         return of({ isAuthenticated: false, user: null })
       })
     )
@@ -168,12 +264,14 @@ export class AuthService {
       // Refresh Firebase Auth user to get updated emailVerified flag (only if current user)
       let phoneVerifiedFromClaims: boolean | null = null
       let emailVerifiedFromClaims: boolean | null = null
+      let signInProvider: string | null = null
       if (!userId && this.auth.currentUser) {
         await this.auth.currentUser.reload()
-        const getTokenResult = await this.auth.currentUser.getIdTokenResult()
+        const getTokenResult = await this.auth.currentUser.getIdTokenResult(true)
         phoneVerifiedFromClaims = getTokenResult.claims?.['phoneVerified'] === true; // Capture custom claim
         emailVerifiedFromClaims = getTokenResult.claims?.['email_verified'] === true; // Capture custom claim
-        this.isAdmin = typeof getTokenResult.claims?.['role'] === 'string' && getTokenResult.claims?.['role'] === 'admin'
+        signInProvider = String((getTokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
+        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined)
         console.log('User is admin after refresh:', this.isAdmin, getTokenResult.claims)
       }
 
@@ -184,20 +282,19 @@ export class AuthService {
         throw new Error('User data not found in Firestore');
       }
 
-      // Determine current login provider user info
-      const currProviderLogin = userData.providerId || null;
-      const currProviderData = userData.providerData.find((p: any) => p.providerId === currProviderLogin) || null;
+      const authUser = this.auth.currentUser
 
-      // Combine data: Prioritize Firebase Auth user.emailVerified and custom claims for phoneVerified
-      const combinedUserData: Users & { currProviderData: UserInfo | null } = {
-        ...userData, // Start with Firestore data
-        uid: this.auth.currentUser?.uid || userData.uid, // Ensure UID is from Firebase Auth
-        email: this.auth.currentUser?.email || userData.email, // Use Firebase Auth's email
-        emailVerified: this.auth.currentUser?.emailVerified || emailVerifiedFromClaims || userData.emailVerified, // Use Firebase Auth's emailVerified
-        phoneNumber: this.auth.currentUser?.phoneNumber || userData.phoneNumber || null, // Use Firebase Auth's phoneNumber if available, else Firestore's, default to null
-        phoneVerified: phoneVerifiedFromClaims || userData.phoneVerified || null, // Prioritize custom claim for phoneVerified, else Firestore's, default to null
-        currProviderData // Add current provider data
-      };
+      if (!authUser) {
+        throw new Error('No authenticated user found while refreshing user data')
+      }
+
+      const combinedUserData: Users & { currProviderData: UserInfo | null } = this.buildCombinedUserData(
+        authUser,
+        userData,
+        emailVerifiedFromClaims,
+        phoneVerifiedFromClaims,
+        signInProvider,
+      )
 
       // Update the user subject with fresh data
       this.userSubject.next(combinedUserData);
@@ -211,10 +308,10 @@ export class AuthService {
   }
 
   // Update email verification status in backend
-  updateEmailVerificationStatus(uid: string, emailVerified: boolean): Observable<{ success: boolean }> {
+  updateEmailVerificationStatus(uid: string, emailVerified?: boolean): Observable<{ success: boolean }> {
     return this.http.post<{ success: boolean }>(
       `${API_AUTH_FIREBASE}/email/verification`,
-      { uid, emailVerified }
+      { uid }
     ).pipe(
       catchError((error) => {
         console.error('Email verification update error:', error);
@@ -288,6 +385,58 @@ export class AuthService {
     );
   }
 
+  /**
+   * Auto-detects identifier type and resolves it to an email before signing in.
+   *
+   * Detection order:
+   *  - Contains `@`            → treat as email directly
+   *  - Starts with `+`         → E.164 phone (resolved via BFF to email)
+   *  - Otherwise               → username (resolved via BFF to email)
+   */
+  signInByIdentifier(identifier: string, password: string) {
+    const isEmail = identifier.includes('@');
+    const isPhone = identifier.startsWith('+');
+
+    if (isEmail) {
+      return this.signInWithEmail(identifier, password);
+    }
+
+    // Resolve phone/username → email via BFF, then sign in
+    const endpoint = isPhone
+      ? `${API_AUTH_FIREBASE}/resolve-identifier`
+      : `${API_AUTH_FIREBASE}/resolve-identifier`;
+
+    const body = isPhone ? { phone: identifier } : { username: identifier };
+
+    return this.http
+      .post<{ email: string }>(endpoint, body)
+      .pipe(
+        switchMap(({ email }) => this.signInWithEmail(email, password)),
+        catchError((error) => {
+          const firebaseCode = String(error?.code || '')
+          // Preserve original Firebase auth errors so MFA resolver can read full payload.
+          if (firebaseCode.startsWith('auth/')) {
+            return throwError(() => error)
+          }
+
+          const code = error?.status === 404 ? 'auth/user-not-found' : 'auth/unknown'
+          return throwError(() => ({ code, message: error?.error?.message ?? error?.message }))
+        })
+      );
+  }
+
+  /**
+   * Resolve a username or E.164 phone to the registered email.
+   * Used by UI to pre-populate or validate the identifier.
+   */
+  resolveLoginIdentifier(identifier: string): Observable<{ email: string }> {
+    const isPhone = identifier.startsWith('+');
+    const body = isPhone ? { phone: identifier } : { username: identifier };
+    return this.http
+      .post<{ email: string }>(`${API_AUTH_FIREBASE}/resolve-identifier`, body)
+      .pipe(catchError((error) => throwError(() => error.error || error)));
+  }
+
   // Phone sign-in methods
   async signInWithPhone(phoneNumber: string, appVerifier: RecaptchaVerifier) {
     return signInWithPhoneNumber(this.auth, phoneNumber, appVerifier);
@@ -298,7 +447,7 @@ export class AuthService {
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('No user logged in');
 
-    return linkWithPhoneNumber(currentUser, phoneNumber, appVerifier);
+    return this.fireService.linkWithPhoneNumber(currentUser, phoneNumber, appVerifier);
   }
   // Check if phone number is available
   checkPhoneNumberAvailability(phoneNumber: string): Observable<{
@@ -318,14 +467,10 @@ export class AuthService {
 
   // Check if phone number exists in the system
   checkPhoneNumberExists(phoneNumber: string): Observable<{
-    exists: boolean,
-    uid?: string,
-    providers?: string[]
+    exists: boolean
   }> {
     return this.http.post<{
-      exists: boolean,
-      uid?: string,
-      providers?: string[]
+      exists: boolean
     }>(`${API_AUTH_FIREBASE}/provider/phone/check`, { phoneNumber }).pipe(
       catchError((error) => {
         console.error('Phone number existence check error:', error);
@@ -343,7 +488,7 @@ export class AuthService {
 
     return this.http.post<{ success: boolean, message: string }>(
       `${API_AUTH_FIREBASE}/phone/link`,
-      { uid: currentUser.uid, phoneNumber }
+      { phoneNumber }
     ).pipe(
       catchError((error) => {
         console.error('Phone linking error:', error);
@@ -353,10 +498,19 @@ export class AuthService {
   }
 
   // Update phone verification status in backend to set custom claims
-  updatePhoneVerificationStatus(uid: string, phoneVerified: boolean): Observable<{ success: boolean }> {
+  updatePhoneVerificationStatus(uid: string, phoneVerified?: boolean): Observable<{ success: boolean }> {
+    const authHeaderToken = this.token || ''
+    const headers = authHeaderToken
+      ? new HttpHeaders({ Authorization: `Bearer ${authHeaderToken}` })
+      : undefined
+
     return this.http.post<{ success: boolean }>(
       `${API_AUTH_FIREBASE}/phone/update-verification`,
-      { uid, phoneVerified }
+      { uid, phoneVerified },
+      {
+        headers,
+        withCredentials: true,
+      }
     ).pipe(
       catchError((error) => {
         console.error('Phone verification update error:', error);
@@ -371,16 +525,10 @@ export class AuthService {
       const result = await confirmationResult.confirm(code);
       const currentUser = this.auth.currentUser;
 
-      if (currentUser) {          // Update phone verification status in Firestore
-        await this.fireService.updatePhoneVerificationStatus(currentUser.uid, true);
-
-        // Update backend verification status
-        this.updatePhoneVerificationStatus(currentUser.uid, true)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: (response) => console.log('Phone verification status updated:', response),
-            error: (error) => console.error('Failed to update phone verification status:', error)
-          })
+      if (currentUser) {
+        // Force a fresh token before syncing claims/status to backend.
+        this.token = await currentUser.getIdToken(true)
+        await firstValueFrom(this.updatePhoneVerificationStatus(currentUser.uid, true))
 
         // Refresh user data
         await this.refreshUserData()
@@ -393,6 +541,199 @@ export class AuthService {
     }
   }
 
+  getEnrolledMultiFactorHints(): readonly MultiFactorInfo[] {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return [];
+    }
+
+    return multiFactor(currentUser).enrolledFactors;
+  }
+
+  async startTotpEnrollment(): Promise<{
+    secret: TotpSecret,
+    secretKey: string,
+    qrCodeUrl: string
+  }> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const providerIds = currentUser.providerData
+      .map((provider) => provider.providerId)
+      .filter((providerId) => !!providerId)
+
+    const hasSupportedFirstFactor = providerIds.some(
+      (providerId) => !this.unsupportedMfaFirstFactors.has(providerId)
+    )
+
+    if (!hasSupportedFirstFactor) {
+      throw new Error('Authenticator app MFA is not available for this sign-in method. Use email/password, Google, or GitHub as first factor, then enroll MFA.')
+    }
+
+    const multiFactorSession = await this.fireService.getMultiFactorSession(currentUser);
+    let secret: TotpSecret;
+    try {
+      secret = await this.fireService.generateTotpSecret(multiFactorSession);
+    } catch (error: any) {
+      const rawMessage = String(error?.message || '').toUpperCase();
+      if (rawMessage.includes('TOTP BASED MFA NOT ENABLED') || rawMessage.includes('OPERATION_NOT_ALLOWED')) {
+        throw new Error('TOTP MFA is not enabled for this Firebase project. Enable TOTP in Firebase Auth > Multi-factor authentication.')
+      }
+      if (rawMessage.includes('UNSUPPORTED_FIRST_FACTOR')) {
+        throw new Error('Authenticator app MFA is not available for the current sign-in method. Sign in with email/password, Google, or GitHub and try again.')
+      }
+      if (rawMessage.includes('MISSING PHONEENROLLMENTINFO') || rawMessage.includes('MISSING PHONE ENROLLMENT INFO')) {
+        throw new Error('Your current Firebase Auth configuration requires SMS MFA to be enrolled first. Add SMS / Text message as a second factor, then enable authenticator app MFA.')
+      }
+      throw error
+    }
+    const accountLabel = currentUser.email || currentUser.uid;
+
+    return {
+      secret,
+      secretKey: secret.secretKey,
+      qrCodeUrl: secret.generateQrCodeUrl(accountLabel, 'deepscrape')
+    };
+  }
+
+  async completeTotpEnrollment(secret: TotpSecret, verificationCode: string, displayName: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const assertion = TotpMultiFactorGenerator.assertionForEnrollment(secret, verificationCode);
+    await this.fireService.enrollMultiFactor(currentUser, assertion, displayName.trim() || 'Authenticator app');
+    await this.refreshUserData();
+  }
+
+  async startPhoneMfaEnrollment(phoneNumber: string, appVerifier: RecaptchaVerifier): Promise<string> {
+    const currentUser = this.auth.currentUser
+    if (!currentUser) {
+      throw new Error('No user logged in')
+    }
+
+    const tokenResult = await currentUser.getIdTokenResult(true)
+    const signInProvider = String((tokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
+    if (this.unsupportedMfaFirstFactors.has(signInProvider)) {
+      throw new Error('SMS MFA is not available for the current sign-in method. Sign in with email/password, Google, or GitHub and try again.')
+    }
+
+    const multiFactorSession = await this.fireService.getMultiFactorSession(currentUser)
+    return await this.fireService.verifyPhoneNumberForMfa({ phoneNumber, session: multiFactorSession }, appVerifier)
+  }
+
+  async completePhoneMfaEnrollment(verificationId: string, code: string, displayName: string = 'SMS / Text message'): Promise<void> {
+    const currentUser = this.auth.currentUser
+    if (!currentUser) {
+      throw new Error('No user logged in')
+    }
+
+    const credential = PhoneAuthProvider.credential(verificationId, code)
+    const assertion = PhoneMultiFactorGenerator.assertion(credential)
+    await this.fireService.enrollMultiFactor(currentUser, assertion, displayName.trim() || 'SMS / Text message')
+    await this.refreshUserData()
+  }
+
+  async unenrollMultiFactor(enrollmentUid: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    await this.fireService.unenrollMultiFactor(currentUser, enrollmentUid);
+    await this.refreshUserData();
+  }
+
+  // ── MFA challenge resolution (sign-in / link with MFA required) ──────────
+
+  getMfaResolverFromError(error: any): MultiFactorResolver | null {
+    if (error?.code !== 'auth/multi-factor-auth-required') return null
+    try {
+      return getMultiFactorResolver(this.auth, error)
+    } catch {
+      return null
+    }
+  }
+
+  async startPhoneMfaChallenge(
+    resolver: MultiFactorResolver,
+    hintUid: string,
+    appVerifier: RecaptchaVerifier
+  ): Promise<string> {
+    const phoneFactor = resolver.hints.find(h => h.uid === hintUid) as PhoneMultiFactorInfo | undefined
+    if (!phoneFactor) throw new Error('Phone factor hint not found')
+    const provider = new PhoneAuthProvider(this.auth)
+    return provider.verifyPhoneNumber(
+      { multiFactorHint: phoneFactor, session: resolver.session },
+      appVerifier
+    )
+  }
+
+  async completeMfaPhoneChallenge(
+    resolver: MultiFactorResolver,
+    verificationId: string,
+    code: string
+  ): Promise<UserCredential> {
+    const credential = PhoneAuthProvider.credential(verificationId, code)
+    const assertion = PhoneMultiFactorGenerator.assertion(credential)
+    return resolver.resolveSignIn(assertion)
+  }
+
+  async completeMfaTotpChallenge(
+    resolver: MultiFactorResolver,
+    hintUid: string,
+    code: string
+  ): Promise<UserCredential> {
+    const assertion = TotpMultiFactorGenerator.assertionForSignIn(hintUid, code)
+    return resolver.resolveSignIn(assertion)
+  }
+
+  private mapTotpProjectConfigError(error: any): never {
+    const message = String(error?.message || '').toLowerCase()
+
+    if (message.includes('permission-denied') || message.includes('administrator')) {
+      throw new Error('Only administrators can update TOTP MFA project configuration.')
+    }
+
+    if (message.includes('service account') || message.includes('permission')) {
+      throw new Error('The backend runtime is missing IAM permissions to update Firebase Auth project configuration.')
+    }
+
+    throw new Error(error?.message || 'Failed to update TOTP MFA project configuration')
+  }
+
+  /**
+   * Enable TOTP MFA for the entire Firebase project.
+   * Only administrators can invoke this function.
+   * This must be done before users can enroll authenticator apps.
+   */
+  async enableTotpMfaForProject(): Promise<{ success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }> {
+    try {
+      const result = await this.fireService.callFunction<
+        { dryRun?: boolean },
+        { success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }
+      >('enableTotpMfa', { dryRun: false });
+      return result;
+    } catch (error: any) {
+      this.mapTotpProjectConfigError(error)
+    }
+  }
+
+  async getTotpMfaProjectStatus(): Promise<{ success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }> {
+    try {
+      const result = await this.fireService.callFunction<
+        { dryRun?: boolean },
+        { success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }
+      >('enableTotpMfa', { dryRun: true })
+      return result
+    } catch (error: any) {
+      this.mapTotpProjectConfigError(error)
+    }
+  }
+
   async updatePassword(newPassword: string): Promise<UserCredential | null> {
     const currentUser = this.auth.currentUser;
 
@@ -400,25 +741,67 @@ export class AuthService {
       throw new Error('No user logged in');
     }
 
-    try {
-      // Check if the user is already linked with the password provider
-      const isPasswordLinked = currentUser.providerData.some(
-        (provider) => provider.providerId === EmailAuthProvider.PROVIDER_ID
-      );
+    // Keep provider data in sync before deciding between link vs. update flows.
+    await currentUser.reload();
 
-      if (!isPasswordLinked) {
-        // Link the password provider if not already linked
-        const credential = EmailAuthProvider.credential(currentUser.email || '', newPassword);
-        return await this.linkWithCredential(credential)
-      }
+    const email = currentUser.email?.trim();
+    if (!email) {
+      throw new Error('Current user does not have an email address.');
+    }
 
-      // Update the password
+    const isPasswordLinked = currentUser.providerData.some(
+      (provider) => provider.providerId === EmailAuthProvider.PROVIDER_ID
+    );
+
+    if (isPasswordLinked) {
       await this.fireService.updatePassword(currentUser, newPassword)
       return null
-    } catch (error) {
-      console.error('Error updating password:', error);
-      throw new Error('Failed to update password. Please ensure your current password is correct.');
     }
+
+    try {
+      // First-time setup for oauth users: attach email/password to the active account.
+      const credential = EmailAuthProvider.credential(email, newPassword);
+      return await this.linkWithCredential(credential)
+    } catch (error: any) {
+      const errorCode = error?.code || '';
+
+      const canFallbackToUpdate =
+        errorCode === 'auth/provider-already-linked' ||
+        errorCode === 'auth/email-already-in-use' ||
+        errorCode === 'auth/credential-already-in-use';
+
+      if (canFallbackToUpdate) {
+        await this.fireService.updatePassword(currentUser, newPassword)
+        return null
+      }
+
+      console.error('Error updating password:', error);
+      throw error;
+    }
+  }
+
+  async reauthenticateWithPassword(currentPassword: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    const isPasswordLinked = currentUser.providerData.some(
+      (provider) => provider.providerId === EmailAuthProvider.PROVIDER_ID
+    );
+
+    if (!isPasswordLinked) {
+      throw new Error('Password reauthentication is not available for this sign-in method.');
+    }
+
+    if (!currentUser.email) {
+      throw new Error('Current user does not have an email for password reauthentication.');
+    }
+
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+    this.token = await currentUser.getIdToken(true);
   }
 
   // Verify and sign in with phone credential
@@ -441,7 +824,13 @@ export class AuthService {
         console.warn('linkWithPopup not available during SSR');
         return; // or throw error
       }
-      return await this.fireService.linkWithPopup(currentUser, provider)
+
+      const expectedUid = currentUser.uid
+      const linked = await this.fireService.linkWithPopup(currentUser, provider)
+      if (!linked?.user || linked.user.uid !== expectedUid) {
+        throw new Error('Provider link aborted because auth context changed to a different account. Sign in again and retry linking from the original account.')
+      }
+      return linked
     } else {
       throw new Error('No user is currently signed in.');
     }
@@ -454,6 +843,12 @@ export class AuthService {
 
       if (!currentUser) {
         throw new Error('No user is currently signed in.');
+      }
+
+      const tokenResult = await currentUser.getIdTokenResult(true)
+      const signInProvider = String((tokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
+      if (signInProvider && signInProvider === providerId) {
+        throw new Error(`Cannot unlink currently active sign-in provider (${providerId}).`)
       }
 
       // Check if the provider is linked
@@ -577,12 +972,12 @@ export class AuthService {
     return await this.fireService.linkGuestToUser(uid, guestId)
   }
 
-  async recordLoginMetrics(userId: string, metrics: Partial<loginHistoryInfo>, guestInfo?: Guest) {
+  async recordLoginMetrics(userId: string, metrics: Partial<loginHistoryInfo>, guestInfo?: Guest, sessionId?: string) {
     if (!metrics.providerId) {
       throw new Error("providerId is required for loginHistoryInfo");
     }
     // Cast metrics to loginHistoryInfo after ensuring required fields are present
-    const result = await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo)
+    const result = await this.fireService.setUserLoginMetrics(userId, metrics as loginHistoryInfo, guestInfo, sessionId)
     // Store loginId in memory for use during logout
     if (result?.loginId) {
       this.currentLoginId = result.loginId
@@ -592,10 +987,10 @@ export class AuthService {
 
   logout() {
     const tokenTemp = this.token
-    let { userId, loginId } = this.getLoginIdFromStorage()
-    userId = userId || this.userSubject.value?.uid || ''
+    let { userId, loginId } = this.guestTrackingService.getSessionContext()
+    userId = String(userId || this.userSubject.value?.uid || '')
     // Use in-memory loginId first, fallback to storage
-    loginId = this.currentLoginId || loginId
+    loginId = String(this.currentLoginId || loginId || '')
 
     // Immediately clear user state to prevent race conditions with Firestore listeners
     this.userSubject.next(null);
@@ -607,6 +1002,9 @@ export class AuthService {
       tap(() => {
         this.trackingLogout('logout', false, this.token)
         this.token = undefined
+        this.isAdmin = false
+        this.currentLoginId = ''
+        this.guestTrackingService.clear()
       }),
       switchMap(() => from(this.fireService.signOut())),
       catchError(async (error) => {
@@ -626,7 +1024,7 @@ export class AuthService {
           method: 'logout',
           withError,
           timestamp: new Date().toISOString()
-        }, token, this.userSubject.value?.uid, this.getLoginIdFromStorage().guestId)
+        }, token, this.userSubject.value?.uid, this.guestTrackingService.getSessionContext().guestId || undefined)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe();
       }
@@ -635,17 +1033,22 @@ export class AuthService {
     }
   }
 
-  private getLoginIdFromStorage() {
-    // Try to get loginId from cookie first, then fallback to localStorage
-    const aid = this.cookieService.get('aid')
+  private handleRevokedSession(): void {
+    this.currentLoginId = ''
+    this.token = undefined
+    this.isAdmin = false
+    this.userSubject.next(null)
+    this.authStateResolved.next(false)
 
-    // parse loginId from aid cookie if exists
-    let { loginId, userId, guestId } = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string }
+    this.guestTrackingService.clear()
 
-    // Fallback to localStorage if not found in cookie
-    loginId = loginId || this.localStorage.getItem('loginId') || '' as string
+    this.fireService.signOut().catch((error) => {
+      console.error('Failed to sign out after session revocation:', error)
+    })
+  }
 
-    return { loginId, userId, guestId }
+  onSessionRevoked(): void {
+    this.handleRevokedSession()
   }
 
   ngOnDestroy() {

@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, HostListener, inject, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { themeStorageKey, ThemeToggleComponent, AnimatedBgComponent, LangPickerComponent } from 'src/app/shared';
@@ -22,6 +22,7 @@ import { Observable } from 'rxjs';
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit {
   private localStorage = inject(LocalStorage);

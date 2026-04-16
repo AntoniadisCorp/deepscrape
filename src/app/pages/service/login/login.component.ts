@@ -13,7 +13,7 @@ import {
   PLATFORM_ID,
   DOCUMENT
 } from '@angular/core';
-import { FormGroup, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormGroup, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -27,38 +27,42 @@ import {
   AuthCredential,
   ConfirmationResult,
   fetchSignInMethodsForEmail,
+  getMultiFactorResolver,
   getAdditionalUserInfo,
   GithubAuthProvider,
   GoogleAuthProvider,
   isSignInWithEmailLink,
   linkWithCredential,
+  MultiFactorResolver,
   OAuthProvider,
   PhoneAuthProvider,
+  PhoneMultiFactorGenerator,
   RecaptchaVerifier,
   signInWithEmailAndPassword,
   signInWithEmailLink,
   signInWithPopup,
+  TotpMultiFactorGenerator,
   updateCurrentUser,
   User,
   UserCredential,
   user,
   verifyBeforeUpdateEmail,
   AdditionalUserInfo,
-  UserInfo
+  UserInfo,
+  MultiFactorError,
+  MultiFactorAssertion
 } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { Analytics } from '@angular/fire/analytics';
 import { HttpClient } from '@angular/common/http';
 
-import { CookieService } from 'ngx-cookie-service'; // Import CookieService
-
 import { I18nService } from 'src/app/core/i18n';
-import { cleanAndParseJSON, getBrowser, getDeviceFingerprintHash, getErrorMessage } from 'src/app/core/functions';
-import { AnalyticsService, AuthService, FirestoreService, LocalStorage, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
+import { getBrowser, getErrorMessage, resolveSafeReturnUrl } from 'src/app/core/functions';
+import { AnalyticsService, AuthService, FirestoreService, GuestTrackingService, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { NAVIGATOR } from 'src/app/core/providers';
-import { loginHistoryInfo, Guest, Loading } from 'src/app/core/types';
+import { Loading } from 'src/app/core/types';
 /**
  * @description Represents the credentials obtained after a login attempt,
  * including information about whether a merge is required, the user object,
@@ -68,7 +72,7 @@ type loginCredentials = {
   mergeRequired: boolean;
   user: User;
   result: UserCredential;
-  credential?: any;
+  credential?: AuthCredential | undefined;
   existingUid?: string;
 };
 
@@ -78,10 +82,10 @@ type loginCredentials = {
  */
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinner, MatIcon, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, MatProgressSpinner, MatIcon, TranslateModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
-  // Removed ChangeDetectionStrategy.OnPush as it requires manual change detection for async operations
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent  {
   // Injected services using Angular's inject function for better testability and type safety.
@@ -91,14 +95,13 @@ export class LoginComponent  {
   private analytics = inject(Analytics, { optional: true });
   /** Custom analytics service for application-specific event tracking. */
   private analyticsService = inject(AnalyticsService);
-  /** Local storage service for storing key-value pairs. */
-  private localStorage = inject(LocalStorage);
   /** Platform identifier for SSR detection */
   private platformId = inject<Object>(PLATFORM_ID);
   /** A service for handling component destruction, used with `takeUntilDestroyed`. */
   private DestroyRef = inject(DestroyRef)
 
   private themePicker = inject(ThemeService)
+  private guestTrackingService = inject(GuestTrackingService)
   protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
 
   // Component properties
@@ -108,6 +111,12 @@ export class LoginComponent  {
   protected loginForm: FormGroup;
   /** Stores any error messages to be displayed to the user. */
   protected errorMessage: string = '';
+  protected lastLoginHint: {
+    providerId: string;
+    providerLabel: string;
+    maskedIdentifier: string;
+    updatedAt: string;
+  } | null = null;
   /** Instance of Firebase RecaptchaVerifier for phone authentication. */
   public recaptchaVerifier!: RecaptchaVerifier;
   /** Stores the confirmation result after sending a phone verification code. */
@@ -118,15 +127,24 @@ export class LoginComponent  {
   public phoneVerificationSent: boolean = false;
   /** Stores a pending credential for linking accounts in case of existing accounts with different providers. */
   protected pendingCredential: AuthCredential | null = null;
+  public showMfaChallenge = false;
+  public mfaCode = '';
+  private mfaResolver: MultiFactorResolver | null = null;
+  private mfaEnrollmentUid = '';
+  private mfaVerificationId = '';
+  public mfaFactorType: 'totp' | 'phone' = 'totp';
+  public mfaPhoneDisplay = '';
+  private mfaProviderId = 'password';
+  public mfaDisplayName = 'Authenticator app';
 
   // Subscriptions to manage memory leaks
   /** Subject for unsubscribing all subscriptions. */
   private destroy$ = new Subject<void>();
 
   /** Debounce timer for analytics events. */
-  private analyticsDebounceTimer: any = null;
+  private analyticsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   /** Analytics event queue for batching. */
-  private analyticsEventQueue: any[] = [];
+  private analyticsEventQueue: Array<{ event: string; properties?: Record<string, unknown> }> = [];
   private window = inject(WindowToken);
 
   /**
@@ -151,7 +169,6 @@ export class LoginComponent  {
    * @param {Document} document - Injected `Document` object for DOM manipulation.
    * @param {ChangeDetectorRef} cdr - Service for triggering change detection.
    * @param {SnackbarService} snackbarService - Service for displaying snackbar messages.
-   * @param {CookieService} cookieService - Service for managing cookies.
    */
   constructor(
     private formBuilder: FormBuilder,
@@ -167,7 +184,6 @@ export class LoginComponent  {
     @Inject(DOCUMENT) private document: Document,
     private cdr: ChangeDetectorRef,
     private snackbarService: SnackbarService,
-    private cookieService: CookieService,
   ) {
     // Initialize loading states for various authentication methods.
     this.loading = {
@@ -188,8 +204,8 @@ export class LoginComponent  {
       identifier: this.formBuilder.control('', {
         validators: [
           Validators.required,
-          // Pattern for email or phone number (phone must start with + and is required)
-          Validators.pattern(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+[1-9]\d{7,14})$/)
+          // email  OR  E.164 phone (+1234567890)  OR  username (3-30 alphanumeric/_/-)
+          Validators.pattern(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+[1-9]\d{7,14}|[a-zA-Z0-9_-]{3,30})$/)
         ]
       }),
       // Password field for email/password login.
@@ -208,7 +224,7 @@ export class LoginComponent  {
    * typically used in the template for validation.
    * @returns {any} The controls of the login form.
    */
-  get f(): any {
+  get f() {
     return this.loginForm.controls;
   }
 
@@ -249,8 +265,8 @@ export class LoginComponent  {
    * @param {string} context - Context of the error.
    * @param {string} provider - Provider causing the error.
    */
-  private handleError(error: any, context: string, provider: string) {
-    const errorMsg = getErrorMessage(error, this.translate);
+  private handleError(error: unknown, context: string, provider: string) {
+    const errorMsg = this.getFriendlyAuthErrorMessage(error);
     this.errorMessage = errorMsg;
     this.showSnackbar(errorMsg, SnackBarType.error, '', 5000);
     this.trackLoginAttempt(provider, false, undefined, errorMsg, context);
@@ -258,7 +274,178 @@ export class LoginComponent  {
     this.loginInProgress = false;
   }
 
-  private shouldFallbackToRedirect(error: any): boolean {
+  private async handleMfaRequired(error: MultiFactorError, providerId: string): Promise<boolean> {
+    if ((error as any)?.code !== 'auth/multi-factor-auth-required') {
+      return false;
+    }
+
+    try {
+      const resolver = this.firestoreService.getMultiFactorResolver(error);
+      const hints = resolver.hints || [];
+      const phoneFactor = hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
+        hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
+      );
+      const totpFactor = hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
+        hint?.factorId === TotpMultiFactorGenerator.FACTOR_ID || (hint?.factorId === 'totp')
+      );
+
+      if (!phoneFactor && !totpFactor) {
+        const factorList = hints.map((h: { factorId?: string }) => h?.factorId || 'unknown').join(', ') || 'none';
+        this.errorMessage = `This account requires a second factor, but none of the enrolled factors are currently supported by this client. Enrolled factors: ${factorList}.`;
+        this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
+        return true;
+      }
+
+      this.mfaResolver = resolver;
+      this.mfaProviderId = providerId;
+      this.mfaCode = '';
+
+      if (phoneFactor) {
+        this.mfaFactorType = 'phone';
+        this.mfaEnrollmentUid = '';
+        this.mfaDisplayName = phoneFactor.displayName || 'Phone number';
+        this.mfaPhoneDisplay = (phoneFactor as any)?.phoneNumber || 'your phone';
+        await this.sendMfaSmsCode();
+      } else {
+        this.mfaFactorType = 'totp';
+        this.mfaEnrollmentUid = totpFactor!.uid;
+        this.mfaDisplayName = totpFactor!.displayName || 'Authenticator app';
+        this.mfaPhoneDisplay = '';
+      }
+
+      this.mfaCode = '';
+      this.showMfaChallenge = true;
+      this.errorMessage = '';
+      this.loading.email = false;
+      this.loading.google = false;
+      this.loading.github = false;
+      this.loginInProgress = false;
+      this.cdr.detectChanges();
+      return true;
+    } catch (resolverError) {
+      this.handleError(resolverError, 'login:mfa:init', providerId);
+      return true;
+    }
+  }
+
+  private clearMfaChallenge(): void {
+    this.showMfaChallenge = false;
+    this.mfaResolver = null;
+    this.mfaEnrollmentUid = '';
+    this.mfaVerificationId = '';
+    this.mfaFactorType = 'totp';
+    this.mfaPhoneDisplay = '';
+    this.mfaProviderId = 'password';
+    this.mfaDisplayName = 'Authenticator app';
+    this.mfaCode = '';
+  }
+
+  public async resendMfaSmsCode(): Promise<void> {
+    if (!this.showMfaChallenge || this.mfaFactorType !== 'phone') {
+      return;
+    }
+    await this.sendMfaSmsCode();
+  }
+
+  private async sendMfaSmsCode(): Promise<void> {
+    if (!this.mfaResolver) {
+      throw new Error('MFA resolver is not ready. Please try again.')
+    }
+
+    const phoneHint = this.mfaResolver.hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
+      hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
+    )
+    if (!phoneHint) {
+      throw new Error('Phone second factor is not available for this account.')
+    }
+
+    if (!this.recaptchaVerifier) {
+      this.initializeRecaptcha()
+    }
+
+    const verificationId = await this.firestoreService.verifyPhoneNumberForMfa(
+      {
+        multiFactorHint: phoneHint,
+        session: this.mfaResolver.session,
+      },
+      this.recaptchaVerifier
+    )
+
+    this.mfaVerificationId = verificationId
+    this.showSnackbar('Verification code sent to your phone', SnackBarType.info, '', 3000)
+  }
+
+  public async submitMfaCode(): Promise<void> {
+    if (!this.mfaResolver || this.mfaCode.trim().length !== 6) {
+      return;
+    }
+
+    this.loading.mfa = true;
+    this.errorMessage = '';
+
+    try {
+      let assertion: MultiFactorAssertion;
+      if (this.mfaFactorType === 'phone') {
+        if (!this.mfaVerificationId) {
+          throw new Error('Verification code was not sent. Please resend and try again.');
+        }
+        const credential = PhoneAuthProvider.credential(this.mfaVerificationId, this.mfaCode.trim());
+        assertion = PhoneMultiFactorGenerator.assertion(credential);
+      } else {
+        if (!this.mfaEnrollmentUid) {
+          throw new Error('Authenticator challenge is not initialized. Please try again.');
+        }
+        assertion = TotpMultiFactorGenerator.assertionForSignIn(this.mfaEnrollmentUid, this.mfaCode.trim());
+      }
+
+      const userCredential = await this.firestoreService.resolveMultiFactorSignIn(this.mfaResolver, assertion);
+      await this.finishLogin(userCredential.user, this.mfaProviderId);
+      this.clearMfaChallenge();
+    } catch (error) {
+      this.handleError(error, 'login:mfa:verify', this.mfaProviderId);
+    } finally {
+      this.loading.mfa = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  public cancelMfaChallenge(): void {
+    this.clearMfaChallenge();
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  private async finishLogin(user: User, providerId: string): Promise<void> {
+    if (user.displayName || user.photoURL) {
+      await this.firestoreService.updateUserProfile(user, {
+        displayName: user.displayName,
+        photoURL: user.photoURL || DEFAULT_PROFILE_URL,
+      });
+    }
+
+    const token = await user.getIdToken();
+
+    await Promise.all([
+      this.trackLoginAttempt(providerId, true, token),
+      this.firestoreService.storeUserData(user, providerId, true)
+    ]);
+
+    this.rememberLastLogin(providerId);
+
+    const isVerified = await this.onLoginUpdate({ user }, providerId);
+    if (!isVerified) {
+      return;
+    }
+
+    await this.ensurePostLoginTracking(user.uid, providerId);
+
+    this.firestoreService.setAnalyticsUserId(this.analytics, user.uid);
+    this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
+    const returnUrl = this.getReturnUrl();
+    await this.router.navigateByUrl(returnUrl);
+  }
+
+  private shouldFallbackToRedirect(error: MultiFactorError): boolean {
     const code = error?.code;
     return code === 'auth/popup-blocked' ||
       code === 'auth/web-storage-unsupported' ||
@@ -272,23 +459,7 @@ export class LoginComponent  {
 
       const providerId = result.providerId || result.user.providerData?.[0]?.providerId || 'oauth';
 
-      if (result.user.displayName || result.user.photoURL) {
-        await this.firestoreService.updateUserProfile(result.user, {
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL || DEFAULT_PROFILE_URL,
-        });
-      }
-
-      this.firestoreService.setAnalyticsUserId(this.analytics, result.user.uid);
-
-      await Promise.all([
-        this.loginMetrics(result.user.uid, providerId),
-        this.firestoreService.storeUserData(result.user, providerId, true)
-      ]);
-
-      this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-      await this.router.navigateByUrl(returnUrl);
+      await this.finishLogin(result.user, providerId);
     } catch (error) {
       this.handleError(error, 'login:redirect-result', 'oauth');
     }
@@ -298,7 +469,7 @@ export class LoginComponent  {
    * @description Debounced analytics event tracker.
    * @param {any} event - Analytics event payload.
    */
-  private debounceTrackEvent(event: any) {
+  private debounceTrackEvent(event: { event: string; properties?: Record<string, unknown> }) {
     this.analyticsEventQueue.push(event);
     if (this.analyticsDebounceTimer) clearTimeout(this.analyticsDebounceTimer);
     this.analyticsDebounceTimer = setTimeout(() => {
@@ -310,6 +481,12 @@ export class LoginComponent  {
         });
       this.analyticsEventQueue = [];
     }, 500); // 500ms debounce
+  }
+
+  private async ensurePostLoginTracking(userId: string, providerId: string): Promise<void> {
+    await this.guestTrackingService.ensurePostLoginSession({ userId, providerId }).catch((error) => {
+      console.warn('Post-login session tracking failed:', error);
+    });
   }
 
   /**
@@ -333,7 +510,7 @@ export class LoginComponent  {
         errorMsg: errorMsg || null,
         context: context || null
       };
-      this.debounceTrackEvent(payload);
+      this.debounceTrackEvent({ event: 'login_attempt', properties: payload });
     } catch (error) {
       console.warn('Login analytics tracking skipped:', error);
     }
@@ -370,6 +547,28 @@ export class LoginComponent  {
     this.githubProvider.setCustomParameters({ prompt: 'select_account' })
 
     void this.handleRedirectSignInResult();
+    this.lastLoginHint = this.guestTrackingService.getLastLoginHint();
+  }
+
+  protected isLastUsedProvider(providerId: string): boolean {
+    return this.lastLoginHint?.providerId === providerId;
+  }
+
+  protected getLastUsedPasswordLabel(): string {
+    if (!this.isLastUsedProvider('password')) {
+      return '';
+    }
+
+    return this.lastLoginHint?.maskedIdentifier || this.lastLoginHint?.providerLabel || '';
+  }
+
+  private rememberLastLogin(providerId: string): void {
+    const identifier = providerId === 'password'
+      ? String(this.loginForm.get('identifier')?.value || '')
+      : '';
+
+    this.guestTrackingService.rememberLastLogin(providerId, identifier);
+    this.lastLoginHint = this.guestTrackingService.getLastLoginHint();
   }
 
   /**
@@ -395,7 +594,7 @@ export class LoginComponent  {
       // Initialize RecaptchaVerifier with the Firebase Auth instance and container element (not id).
       this.recaptchaVerifier = new RecaptchaVerifier(this.auth, this.recaptchaContainer.nativeElement, {
         'size': 'invisible', // Set to invisible to avoid user interaction initially.
-        callback: (response: any) => {
+        callback: (response: { credential: string }) => {
           // Callback function when reCAPTCHA is successfully solved.
           console.log('Recaptcha solved:', response);
           // If the current authentication method is phone and the verification code hasn't been sent,
@@ -434,59 +633,41 @@ export class LoginComponent  {
     const identifier = this.loginForm.get('identifier')?.value;
     const password = this.loginForm.get('password')?.value;
 
-    // Determine if the identifier is an email (contains '@').
-    const isEmail = identifier?.includes('@');
-
     try {
-      if (isEmail) {
-        this.currentAuthMethod = 'email'; // Set authentication method to email.
-        this.loading.email = true; // Set loading state for email login.
+      this.currentAuthMethod = 'email';
+      this.loading.email = true;
 
-        // Subscribe to the email sign-in observable from AuthService.
-        this.authService
-          .signInWithEmail(identifier, password)
-          .pipe(takeUntil(this.destroy$)) // No operators needed here, as further handling is in the subscribe block.
-          .subscribe({
-            next: async (response) => {
-              // If user data is received, proceed with post-login actions.
-              if (response.user) {
-                try {
-                  const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-                  // Perform parallel tracking and metric logging.
-                  await Promise.all([
-                    this.trackLoginAttempt('email', true, token),
-                    this.loginMetrics(response.user.uid, 'password'),
-                  ]);
-
-                  // Update user data and check verification status.
-                  const isVerified = await this.onLoginUpdate(response, 'password');
-                  if (!isVerified) return; // If not verified, stop here (redirection handled in onLoginUpdate).
-
-                  this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
-
-                  // Show success snackbar and navigate to the dashboard or return URL.
-                  this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                  const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                  this.router.navigateByUrl(returnUrl);
-                } catch (error) {
-                  // Handle errors during token generation or post-login updates.
-                  this.handleError(error, 'login:email', 'email');
-                  return;
-                }
+      // signInByIdentifier auto-detects email / phone / username
+      this.authService
+        .signInByIdentifier(identifier, password)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: async (response) => {
+            if (response.user) {
+              try {
+                await this.finishLogin(response.user, 'password');
+              } catch (error) {
+                this.handleError(error, 'login:identifier', 'email');
               }
-            },
-            error: async (error) => {
-              this.handleError(error, 'login:email', 'email');
-              this.handleAccountExistsError(error, 'password');
-            },
-            complete: () => {
-              this.loading.email = false; // Always reset loading state on completion.
-              this.loginInProgress = false;
             }
-          });
-      }
-    } finally {
+          },
+          error: async (error) => {
+            if (await this.handleMfaRequired(error, 'password')) {
+              return;
+            }
+            this.handleError(error, 'login:identifier', 'email');
+            this.handleAccountExistsError(error, 'password');
+            this.loading.email = false;
+            this.loginInProgress = false;
+          },
+          complete: () => {
+            this.loading.email = false;
+            this.loginInProgress = false;
+          }
+        });
+    } catch (error) {
+      this.handleError(error, 'login:identifier', 'email');
+      this.loading.email = false;
       this.loginInProgress = false;
     }
   }
@@ -514,45 +695,13 @@ export class LoginComponent  {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: async (response) => {
-            // If user data is received, proceed with post-login actions.
-            if (response.user) {
-              try {
-                // Update user profile with display name and photo URL if available.
-                if (response.user.displayName || response.user.photoURL) {
-                  await this.firestoreService.updateUserProfile(response.user, {
-                    displayName: response.user.displayName,
-                    photoURL: response.user.photoURL || DEFAULT_PROFILE_URL, // Use default if photoURL is null.
-                  });
-                }
-
-                const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-                // Perform parallel tracking, metric logging, and user data storage.
-                await Promise.all([
-                  this.trackLoginAttempt('google.com', true, token),
-                  this.loginMetrics(response.user.uid, 'google.com'),
-                  this.firestoreService.storeUserData(response.user, 'google.com', true)
-                ]);
-
-                this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
-
-                // Show success snackbar and navigate to the dashboard or return URL.
-                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                this.router.navigateByUrl(returnUrl);
-              } catch (error) {
-                // Handle errors during token generation or post-login updates.
-                this.handleError(error, 'login:google', 'google.com');
-                return;
-              }
-            } else {
-              // Handle cases where no user is returned after sign-in.
-              await this.trackLoginAttempt('google.com', false);
-              this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN');
-              this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
-            }
+            await this.handleSocialLoginSuccess(response?.user || null, 'google.com')
           },
           error: async (error) => {
+            if (await this.handleMfaRequired(error, 'google.com')) {
+              return;
+            }
+
             if (this.shouldFallbackToRedirect(error)) {
               try {
                 await this.authService.signInWithRedirectProvider(this.googleProvider);
@@ -566,6 +715,8 @@ export class LoginComponent  {
             this.handleError(error, 'login:google', 'google.com');
             this.handleAccountExistsError(error, 'google.com');
             this.cdr.detectChanges();
+            this.loading.google = false;
+            this.loginInProgress = false;
           },
           complete: () => {
             this.loading.google = false; // Always reset loading state on completion.
@@ -574,7 +725,7 @@ export class LoginComponent  {
         });
     } catch (error) {
       this.handleError(error, 'login:google', 'google.com');
-    } finally {
+      this.loading.google = false;
       this.loginInProgress = false;
     }
   }
@@ -602,39 +753,13 @@ export class LoginComponent  {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: async (response) => {
-            // If user data is received, proceed with post-login actions.
-            if (response.user) {
-              try {
-                // Update user profile with display name and photo URL if available.
-                if (response.user.displayName || response.user.photoURL) {
-                  await this.firestoreService.updateUserProfile(response.user, {
-                    displayName: response.user.displayName,
-                    photoURL: response.user.photoURL ? response.user.photoURL : DEFAULT_PROFILE_URL, // Use default if photoURL is null.
-                  });
-                }
-                const token = await response.user.getIdToken(); // Get Firebase ID token.
-
-                // Perform parallel tracking, metric logging, and user data storage.
-                await Promise.all([
-                  this.trackLoginAttempt('github.com', true, token),
-                  this.loginMetrics(response.user.uid, 'github.com'),
-                  this.firestoreService.storeUserData(response.user, 'github.com', true)
-                ]);
-
-                this.firestoreService.setAnalyticsUserId(this.analytics, response.user.uid); // Set user ID for analytics.
-
-                // Show success snackbar and navigate to the dashboard or return URL.
-                this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-                this.router.navigateByUrl(returnUrl);
-              } catch (error) {
-                // Handle errors during token generation or post-login updates.
-                this.handleError(error, 'login:github', 'github.com');
-                return;
-              }
-            }
+            await this.handleSocialLoginSuccess(response?.user || null, 'github.com')
           },
           error: async (error) => {
+            if (await this.handleMfaRequired(error, 'github.com')) {
+              return;
+            }
+
             if (this.shouldFallbackToRedirect(error)) {
               try {
                 await this.authService.signInWithRedirectProvider(this.githubProvider);
@@ -647,6 +772,8 @@ export class LoginComponent  {
 
             this.handleError(error, 'login:github', 'github.com');
             this.handleAccountExistsError(error, 'github.com');
+            this.loading.github = false;
+            this.loginInProgress = false;
           },
           complete: () => {
             this.loading.github = false; // Always reset loading state on completion.
@@ -660,13 +787,28 @@ export class LoginComponent  {
     }
   }
 
+  private async handleSocialLoginSuccess(user: User | null, providerId: string): Promise<void> {
+    if (!user) {
+      await this.trackLoginAttempt(providerId, false)
+      this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_SIGNIN')
+      this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+      return
+    }
+
+    try {
+      await this.finishLogin(user, providerId)
+    } catch (error) {
+      this.handleError(error, `login:${providerId}`, providerId)
+    }
+  }
+
   /**
    * @description Handles the Firebase 'auth/account-exists-with-different-credential' error.
    * Displays a warning message to the user, prompting them to link their accounts.
    * @param {any} error - The error object returned by Firebase authentication.
    * @param {string} providerId - The ID of the provider that caused the error (e.g., 'google.com', 'github.com').
    */
-  private handleAccountExistsError(error: any, providerId: string): void {
+  private handleAccountExistsError(error: MultiFactorError, providerId: string): void {
     const errorCode: string = error?.code as string;
 
     if (errorCode === 'auth/account-exists-with-different-credential') {
@@ -697,7 +839,7 @@ export class LoginComponent  {
       // this.showSnackbar('Account successfully linked!', SnackBarType.success, '', 3000); // Optional success message.
       this.pendingCredential = null; // Clear the pending credential after successful linking.
       return usercredential;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error linking account:', error);
       this.errorMessage = getErrorMessage(error, this.translate);
       // this.showSnackbar(`Error linking account: ${this.errorMessage}`, SnackBarType.error, '', 5000); // Optional error message.
@@ -709,28 +851,33 @@ export class LoginComponent  {
   /**
    * @description Extracts a Firebase authentication error code from a raw error object or string.
    * This method ensures that the error object consistently has a `code` property.
-   * @param {any} error - The raw error object or string.
-   * @returns {any} The normalized error object with a `code` property.
+   * @param {unknown} error - The raw error object or string.
+   * @returns {{ code: string; message?: string }} The normalized error object with a `code` property.
    */
-  private extractFirebaseError(error: any): any {
+  private extractFirebaseError(error: MultiFactorError | string): { code: string; message?: string } {
     // If the error is a string and contains 'auth/', attempt to parse the error code.
-    if (typeof error === 'string' && error.toString().includes('auth/')) {
+    if (typeof error === 'string') {
       console.warn('Extracted Firebase error code:', error);
       const match = error.match(/auth\/([^)]+)/); // Regex to find the code.
       if (match && match[1]) {
         // Return a new error object with the extracted code and original message.
         return { code: match[1], message: error };
       }
+      return { code: 'unknown_auth_error', message: error };
     }
-    return error; // Return the error as is if no parsing is needed or possible.
+    // For MultiFactorError object
+    if (error && typeof error === 'object' && 'code' in error) {
+      return { code: (error as any).code || 'unknown_error', message: (error as any).message };
+    }
+    return { code: 'unknown_error', message: String(error) };
   }
 
   /**
    * @description Returns the appropriate Firebase Auth provider based on the provider ID.
    * @param {string} providerId - The ID of the authentication provider (e.g., 'google.com', 'github.com').
-   * @returns {any | null} The Firebase Auth provider class or `null` if not found.
+   * @returns {typeof GoogleAuthProvider | typeof GithubAuthProvider | null} The Firebase Auth provider class or `null` if not found.
    */
-  private getProvider(providerId: string): any | null {
+  private getProvider(providerId: string): typeof GoogleAuthProvider | typeof GithubAuthProvider | null {
     switch (providerId) {
       case GoogleAuthProvider.PROVIDER_ID:
         return GoogleAuthProvider;
@@ -758,7 +905,7 @@ export class LoginComponent  {
       this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier);
       this.phoneVerificationSent = true; // Indicate that the code has been sent.
       this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT'), SnackBarType.success);
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.handleError(error, 'sendPhoneVerificationCode', 'phone');
       this.cdr.detectChanges();
       this.resetAuthFlow();
@@ -786,36 +933,21 @@ export class LoginComponent  {
 
       // If user credential is valid, proceed with post-verification actions.
       if (userCredential.user) {
-        let userData = await this.firestoreService.getUserData(userCredential.user.uid);
-        if (userData) {
-          const token = await userCredential.user.getIdToken(); // Get Firebase ID token.
-          await this.trackLoginAttempt('phone', true, token);
-
-          // Store updated user data in Firestore (Firebase automatically marks phone as verified).
-          await this.firestoreService.storeUserData(userCredential.user, 'phone', true);
-
-          if (!userCredential.user.phoneNumber) {
-            await this.trackLoginAttempt('phone', false);
-            this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_NUMBER_NOT_FOUND'), SnackBarType.error, '', 5000);
-            this.resetAuthFlow();
-            return;
-          }
-
-          this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_VERIFIED_SUCCESS'), SnackBarType.success);
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-          this.router.navigateByUrl(returnUrl);
-        } else {
+        if (!userCredential.user.phoneNumber) {
           await this.trackLoginAttempt('phone', false);
-          this.showSnackbar(this.translate.instant('AUTH_ERRORS.SIGN_IN_FAILED_USER_DATA_NOT_FOUND'), SnackBarType.error, '', 3000);
+          this.showSnackbar(this.translate.instant('AUTH_ERRORS.PHONE_NUMBER_NOT_FOUND'), SnackBarType.error, '', 5000);
           this.resetAuthFlow();
+          return;
         }
+
+        await this.finishLogin(userCredential.user, 'phone');
       } else {
         await this.trackLoginAttempt('phone', false);
         this.errorMessage = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_PHONE_VERIFICATION');
         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
         this.resetAuthFlow();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.handleError(error, 'verifyPhoneNumberCode', 'code');
       this.cdr.detectChanges();
       this.resetAuthFlow();
@@ -874,81 +1006,24 @@ export class LoginComponent  {
       );
     }
 
-    // Redirect to verification page if neither email nor phone is verified.
-    if (!response.user.emailVerified || userData.phoneVerified === false) {
+    const isPasswordProvider = providerId === 'password'
+    const emailOk = !isPasswordProvider || response.user.emailVerified === true
+    const phoneOk = userData.phoneVerified !== false
+
+    // Redirect to verification page when required verification is pending.
+    if (!emailOk || !phoneOk) {
       this.showSnackbar(
-        this.translate.instant('AUTH_ERRORS.EMAIL_OR_PHONE_NOT_VERIFIED'),
+        'Your email or phone number is not verified. Please verify to proceed.',
         SnackBarType.warning,
         '',
         5000
       );
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      const returnUrl = this.getReturnUrl();
       this.router.navigate(['/service/verification'], { queryParams: { returnUrl } });
       return false; // Indicate that verification is pending.
     }
 
     return true; // User is verified and can proceed.
-  }
-
-  /**
-   * @description Records login metrics, links guest sessions to authenticated users,
-   * and updates cookies.
-   * @param {string} userId - The Firebase UID of the authenticated user.
-   * @param {string} providerId - The ID of the authentication provider (e.g., 'google.com', 'password').
-   * @returns {Promise<void>} A promise that resolves when metrics are recorded and cookies updated.
-   */
-  public async loginMetrics(userId: string, providerId: string): Promise<void> {
-    let guestId = this.cookieService.get('gid'); // Get guest_id from cookies
-    let aid = this.cookieService.get('aid'); // Get authenticated user cookie
-    let guestfp = this.cookieService.get('guest_fp'); // Get guest fingerprint from cookies
-
-    let guestInfo: Guest | null = null;
-    // Get device fingerprint from localStorage or generate
-    const fingerprintData = guestfp
-
-    if (guestId) {
-      const { err, guestInfo: GuestData } = await this.authService.linkGuestToUser(userId, guestId);
-
-      guestInfo = GuestData;
-      if (err) {
-        console.warn('Guest link skipped due to recoverable error:', err);
-      }
-
-      this.cookieService.delete('gid'); // Clear the guest_id cookie
-      this.cookieService.set('aid', JSON.stringify({ userId, guestId }), 90, "/", "", true, "Lax"); // Set authenticated user cookie for 1 year
-    }
-
-    // Record login metrics
-    const connection = (this.navigator as any)?.connection?.effectiveType || null; // e.g. "wifi", "4g"
-    const ipAddress = '0.0.0.0'; // Placeholder, ideally obtained from a backend service
-    const browser = await getBrowser(this.navigator) || 'Unknown';
-    const userAgent = this.navigator.userAgent || 'Unknown';
-    const location = 'Unknown'; // Placeholder, ideally obtained from a geolocation service
-    const deviceType = this.navigator?.platform || 'Unknown';
-    const deviceFingerprintHash = await getDeviceFingerprintHash(fingerprintData, this.window);
-
-    const metrics: Partial<loginHistoryInfo> = {
-      ipAddress,
-      browser,
-      userAgent,
-      location,
-      deviceType,
-      connection,
-      providerId,
-      deviceFingerprintHash,
-    };
-
-    const currlogin = await this.authService.recordLoginMetrics(userId, metrics, guestInfo || undefined);
-
-    if (currlogin?.success && currlogin?.loginId) {
-      // Store loginId in localStorage for future reference (e.g., logout)
-      this.localStorage.setItem('loginId', currlogin.loginId);
-      
-      // Store loginId in aid cookie (create if doesn't exist, or update if exists)
-      const aidData = cleanAndParseJSON(aid || '{}') as { userId: string, guestId: string, loginId?: string };
-      const newAidData = { ...aidData, userId, loginId: currlogin.loginId, guestId: guestInfo?.id || aidData.guestId || '' };
-      this.cookieService.set('aid', JSON.stringify(newAidData), 90, '/', "", true, "Lax");
-    }
   }
 
   /**
@@ -959,5 +1034,30 @@ export class LoginComponent  {
     this.destroy$.next();
     this.destroy$.complete();
     this.recaptchaVerifier?.clear();
+  }
+
+  private getFriendlyAuthErrorMessage(error: unknown): string {
+    const errorObj = error && typeof error === 'object' ? (error as any) : {};
+    const explicitMessage = typeof errorObj?.message === 'string' ? errorObj.message.trim() : ''
+    const normalizedMessage = explicitMessage.toLowerCase()
+    const code = String(errorObj?.code || '').toLowerCase()
+
+    if (
+      code === 'auth/invalid-argument' ||
+      normalizedMessage.includes('missing phoneenrollmentinfo') ||
+      normalizedMessage.includes('phoneenrollmentinfo')
+    ) {
+      return 'SMS MFA must be enrolled before this authenticator app step can continue.'
+    }
+
+    if (explicitMessage && !code.startsWith('auth/')) {
+      return explicitMessage
+    }
+
+    return getErrorMessage(error, this.translate)
+  }
+
+  private getReturnUrl(): string {
+    return resolveSafeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))
   }
 }

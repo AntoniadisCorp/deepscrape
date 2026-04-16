@@ -159,6 +159,7 @@ export class AuthzService {
   private localStorage = inject(LocalStorage);
 
   private membershipsSubject = new BehaviorSubject<Record<string, OrgRole>>({});
+  private membershipsReadySubject = new BehaviorSubject<boolean>(false);
   private activeOrgIdSubject = new BehaviorSubject<string | null>(
     this.localStorage.getItem(ACTIVE_ORG_STORAGE_KEY),
   );
@@ -167,8 +168,10 @@ export class AuthzService {
   );
 
   private membershipsLoadedForUid: string | null = null;
+  private lastAuthenticatedUid: string | null = null;
 
   readonly memberships$ = this.membershipsSubject.asObservable();
+  readonly membershipsReady$ = this.membershipsReadySubject.asObservable();
   readonly activeOrgId$ = this.activeOrgIdSubject.asObservable();
   readonly strictOrgMode$ = this.strictOrgModeSubject.asObservable();
 
@@ -177,10 +180,23 @@ export class AuthzService {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => {
         if (!user?.uid) {
+          this.lastAuthenticatedUid = null;
           this.membershipsLoadedForUid = null;
           this.membershipsSubject.next({});
+          this.membershipsReadySubject.next(false);
+          this.setActiveOrgId(null);
           return;
         }
+
+        // Account switched in same browser session: clear potentially stale org context.
+        if (this.lastAuthenticatedUid && this.lastAuthenticatedUid !== user.uid) {
+          this.membershipsLoadedForUid = null;
+          this.membershipsSubject.next({});
+          this.membershipsReadySubject.next(false);
+          this.setActiveOrgId(user.defaultOrgId || null);
+        }
+
+        this.lastAuthenticatedUid = user.uid;
 
         const defaultOrgId = user.defaultOrgId || null;
         if (defaultOrgId && !this.activeOrgIdSubject.value) {
@@ -188,8 +204,12 @@ export class AuthzService {
         }
 
         if (this.membershipsLoadedForUid !== user.uid) {
-          void this.refreshMemberships(user.uid);
+          this.membershipsReadySubject.next(false);
+          void this.refreshMemberships(user.uid, defaultOrgId);
+          return;
         }
+
+        this.membershipsReadySubject.next(true);
       });
   }
 
@@ -261,7 +281,7 @@ export class AuthzService {
     );
   }
 
-  private async refreshMemberships(uid: string): Promise<void> {
+  private async refreshMemberships(uid: string, defaultOrgId: string | null): Promise<void> {
     try {
       const db = this.firestoreService.getInstanceDB('easyscrape');
       const membershipsRef = this.firestoreService.collection(db, 'memberships');
@@ -282,10 +302,29 @@ export class AuthzService {
 
       this.membershipsLoadedForUid = uid;
       this.membershipsSubject.next(nextMemberships);
+      this.membershipsReadySubject.next(true);
+
+      const currentActiveOrgId = this.activeOrgIdSubject.value;
+      const hasCurrentActiveOrg = !!currentActiveOrgId && !!nextMemberships[currentActiveOrgId];
+      if (hasCurrentActiveOrg) {
+        return;
+      }
+
+      if (defaultOrgId && nextMemberships[defaultOrgId]) {
+        this.setActiveOrgId(defaultOrgId);
+        return;
+      }
+
+      const firstMembershipOrgId = Object.keys(nextMemberships)[0] || null;
+      this.setActiveOrgId(firstMembershipOrgId);
     } catch (error) {
       console.error('Failed to refresh org memberships:', error);
       this.membershipsLoadedForUid = uid;
       this.membershipsSubject.next({});
+      this.membershipsReadySubject.next(true);
+      if (!this.activeOrgIdSubject.value) {
+        this.setActiveOrgId(defaultOrgId || null);
+      }
     }
   }
 }

@@ -22,4 +22,22 @@ describe('FeaturesComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should expose six core and six advanced features', () => {
+    expect(component.coreFeatures.length).toBe(6);
+    expect(component.advancedFeatures.length).toBe(6);
+  });
+
+  it('feature entries should contain title and description content', () => {
+    const sample = component.coreFeatures[0];
+
+    expect(sample.title).toBeTruthy();
+    expect(sample.description).toBeTruthy();
+  });
+
+  it('icons map should include known icon keys used by features', () => {
+    expect(component.icons['bot']).toBeTruthy();
+    expect(component.icons['network']).toBeTruthy();
+    expect(component.icons['brain']).toBeTruthy();
+  });
 });

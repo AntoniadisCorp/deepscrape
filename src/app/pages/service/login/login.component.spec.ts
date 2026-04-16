@@ -48,7 +48,7 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
     const form = (component as unknown as { loginForm: FormGroup }).loginForm;
 
-    form.patchValue({ identifier: 'not-an-email', password: 'valid-password' });
+    form.patchValue({ identifier: 'bad!', password: 'valid-password' });
     expect(form.get('identifier')?.invalid).toBeTrue();
 
     form.patchValue({ identifier: 'user@example.com', password: 'valid-password' });

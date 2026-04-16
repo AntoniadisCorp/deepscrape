@@ -22,7 +22,58 @@ type BillingChargeContext = {
     idempotencyBase: string
 }
 
+type OrganizationRole = "owner" | "admin" | "member" | "viewer"
+
+const ORG_ROLE_INVITE_CAP: Record<OrganizationRole, readonly OrganizationRole[]> = {
+    owner: ["owner", "admin", "member", "viewer"],
+    admin: ["member", "viewer"],
+    member: [],
+    viewer: [],
+}
+
+const getMembershipDocId = (userId: string, orgId: string): string => `${userId}_${orgId}`
+
+const getOrganizationMembership = async (
+    userId: string,
+    orgId: string
+): Promise<{id: string; orgId?: string; userId?: string; role?: OrganizationRole} | null> => {
+    const membershipSnap = await db.collection("memberships").doc(getMembershipDocId(userId, orgId)).get()
+
+    if (!membershipSnap.exists) {
+        return null
+    }
+
+    return {
+        id: membershipSnap.id,
+        ...(membershipSnap.data() || {}),
+    } as {id: string; orgId?: string; userId?: string; role?: OrganizationRole}
+}
+
+const canInviteOrganizationRole = (
+    actorRole: OrganizationRole | undefined,
+    requestedRole: OrganizationRole
+): boolean => {
+    if (!actorRole) {
+        return false
+    }
+
+    return ORG_ROLE_INVITE_CAP[actorRole]?.includes(requestedRole) === true
+}
+
 const randomSuffix = (): string => Math.random().toString(36).slice(2, 10)
+
+const getAuthErrorCode = (error: unknown): string => {
+    if (typeof error === "object" && error !== null && "code" in error) {
+        return String((error as { code?: unknown }).code || "")
+    }
+
+    return ""
+}
+
+const isPlatformAdminRequest = (req: Request): boolean => {
+    const role = typeof req.user?.role === "string" ? req.user.role.trim().toLowerCase() : ""
+    return role === "admin"
+}
 
 class ReverseAPIProxy {
     public router: Router
@@ -48,7 +99,7 @@ class ReverseAPIProxy {
         const token = authHeader.split(" ")[1]
 
         try {
-            const decodedToken = await auth.verifyIdToken(token)
+            const decodedToken = await auth.verifyIdToken(token, true)
             if (decodedToken) {
                 req.user = decodedToken
                 req.app.locals["user"] = token // Add user info to the request
@@ -58,7 +109,14 @@ class ReverseAPIProxy {
             }
         } catch (error) {
             console.error("JWT Verification Error:", error)
-            res.status(401).json({ error: "Unauthorized: Invalid token" })
+
+            const code = getAuthErrorCode(error)
+            if (code === "auth/id-token-revoked") {
+                res.status(401).json({ error: "Unauthorized: Session revoked", code: "session_revoked" })
+                return
+            }
+
+            res.status(401).json({ error: "Unauthorized: Invalid token", code: "invalid_token" })
         }
     }
 
@@ -66,6 +124,12 @@ class ReverseAPIProxy {
         const uid = req.user?.uid
         if (!uid) {
             res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+
+        if (isPlatformAdminRequest(req)) {
+            res.setHeader("x-billing-bypass", "platform_admin")
+            next()
             return
         }
 
@@ -310,7 +374,7 @@ class ReverseAPIProxy {
         const uid = req.user?.uid
         const orgId = req.params.orgId
         const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : ""
-        const role = typeof req.body?.role === "string" ? req.body.role : "member"
+        const role = typeof req.body?.role === "string" ? req.body.role as OrganizationRole : "member"
 
         if (!uid) {
             res.status(401).json({ error: "unauthorized", code: "unauthorized" })
@@ -329,6 +393,14 @@ class ReverseAPIProxy {
         }
 
         try {
+            const actorMembership = await getOrganizationMembership(uid, orgId)
+            const actorRole = actorMembership?.role
+
+            if (!actorMembership || !canInviteOrganizationRole(actorRole, role)) {
+                res.status(403).json({ error: "forbidden", code: "forbidden", message: "inviter cannot assign that organization role" })
+                return
+            }
+
             const existingInvite = await db.collection("invitations")
                 .where("orgId", "==", orgId)
                 .where("email", "==", email)
@@ -386,19 +458,81 @@ class ReverseAPIProxy {
     }
 
     private removeOrganizationMember = async (req: Request, res: Response): Promise<void> => {
+        const actorUid = req.user?.uid
         const orgId = req.params.orgId
         const memberUid = req.params.userId
-        if (!orgId || !memberUid) {
+        if (!actorUid || !orgId || !memberUid) {
             res.status(400).json({ error: "bad_request", code: "bad_request" })
             return
         }
 
         try {
+            const actorMembership = await getOrganizationMembership(actorUid, orgId)
+            const memberMembership = await getOrganizationMembership(memberUid, orgId)
+
+            if (!actorMembership?.role || !memberMembership?.role) {
+                res.status(404).json({ error: "not_found", code: "not_found" })
+                return
+            }
+
+            if (memberMembership.role === "owner" && actorMembership.role !== "owner") {
+                res.status(403).json({ error: "forbidden", code: "forbidden", message: "Only an owner can remove another owner" })
+                return
+            }
+
+            if (actorUid === memberUid && actorMembership.role === "owner") {
+                const ownersSnap = await db.collection("memberships")
+                    .where("orgId", "==", orgId)
+                    .where("role", "==", "owner")
+                    .limit(2)
+                    .get()
+
+                if (ownersSnap.size <= 1) {
+                    res.status(409).json({ error: "conflict", code: "last_owner", message: "Cannot remove the last owner from the organization" })
+                    return
+                }
+            }
+
             const membershipId = `${memberUid}_${orgId}`
             await db.collection("memberships").doc(membershipId).delete()
             res.status(204).send()
         } catch (error) {
             console.error("Failed to remove organization member:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
+    private listOrgInvitations = async (req: Request, res: Response): Promise<void> => {
+        const uid = req.user?.uid
+        const orgId = req.params.orgId
+        if (!uid) {
+            res.status(401).json({ error: "unauthorized", code: "unauthorized" })
+            return
+        }
+        if (!orgId) {
+            res.status(400).json({ error: "bad_request", code: "bad_request", message: "orgId is required" })
+            return
+        }
+
+        try {
+            const invitesSnap = await db.collection("invitations")
+                .where("orgId", "==", orgId)
+                .where("status", "==", "pending")
+                .limit(100)
+                .get()
+
+            const orgSnap = await db.collection("organizations").doc(orgId).get()
+            const orgName = orgSnap.exists ? (orgSnap.data()?.name || orgId) : orgId
+
+            const invitations = invitesSnap.docs.map((doc) => ({
+                id: doc.id,
+                orgName,
+                ...(doc.data() || {}),
+            }))
+
+            res.status(200).json({ invitations })
+        } catch (error) {
+            console.error("Failed to list org invitations:", error)
             res.status(500).json({ error: "internal", code: "internal" })
         }
     }
@@ -426,10 +560,33 @@ class ReverseAPIProxy {
                 .limit(200)
                 .get()
 
-            const invitations = invitesSnap.docs.map((doc) => ({
-                id: doc.id,
-                ...(doc.data() || {}),
-            }))
+            // Fetch org details for enrichment
+            const orgIds = new Set<string>()
+            invitesSnap.docs.forEach((doc) => {
+                const data = doc.data()
+                if (data?.orgId) {
+                    orgIds.add(data.orgId)
+                }
+            })
+
+            const orgMap: Record<string, string> = {}
+            for (const orgId of orgIds) {
+                try {
+                    const orgSnap = await db.collection("organizations").doc(orgId).get()
+                    orgMap[orgId] = orgSnap.exists ? (orgSnap.data()?.name || orgId) : orgId
+                } catch (e) {
+                    orgMap[orgId] = orgId
+                }
+            }
+
+            const invitations = invitesSnap.docs.map((doc) => {
+                const data = doc.data()
+                return {
+                    id: doc.id,
+                    orgName: orgMap[data?.orgId] || data?.orgId,
+                    ...(data || {}),
+                }
+            })
 
             res.status(200).json({ invitations })
         } catch (error) {
@@ -481,8 +638,14 @@ class ReverseAPIProxy {
                 return
             }
 
-            const role = invitation.role || "member"
+            const role = (invitation.role || "member") as OrganizationRole
             const membershipId = `${uid}_${invitation.orgId}`
+
+            const existingMembership = await getOrganizationMembership(uid, invitation.orgId)
+            if (existingMembership) {
+                res.status(409).json({ error: "conflict", code: "already_member" })
+                return
+            }
 
             const batch = db.batch()
             batch.set(db.collection("memberships").doc(membershipId), {
@@ -521,6 +684,27 @@ class ReverseAPIProxy {
         }
     }
 
+    private renameOrganization = async (req: Request, res: Response): Promise<void> => {
+        const orgId = req.params.orgId
+        const name = typeof req.body?.name === "string" ? req.body.name.trim() : ""
+
+        if (!orgId || name.length < 2 || name.length > 64) {
+            res.status(400).json({ error: "bad_request", code: "bad_request", message: "name must be between 2 and 64 characters" })
+            return
+        }
+
+        try {
+            await db.collection("organizations").doc(orgId).set({
+                name,
+                updatedAt: new Date(),
+            }, { merge: true })
+            res.status(204).send()
+        } catch (error) {
+            console.error("Failed to rename organization:", error)
+            res.status(500).json({ error: "internal", code: "internal" })
+        }
+    }
+
     // ------------------- Node JS Routes -------------------
 
     /**
@@ -532,9 +716,9 @@ class ReverseAPIProxy {
         this.router.get("/orgs/:orgId", requirePermission("organization", "read"), this.getOrganization)
         this.router.get("/orgs/:orgId/members", requirePermission("organization", "read"), this.listOrganizationMembers)
         this.router.get("/orgs/invitations/me", requirePermission("organization", "read"), this.listMyInvitations)
+        this.router.get("/orgs/:orgId/invitations", requirePermission("organization", "invite"), this.listOrgInvitations)
 
         /* Jina AI */
-        // this.router.get("/jina", helloWorld)
         this.router.get("/jina/:url", this.requirePaidAccess, requirePermission("ai", "execute"), jinaAICrawl)
 
         /**
@@ -602,6 +786,8 @@ class ReverseAPIProxy {
        */
 
     private httpRoutesPut(): void {
+        this.router.put("/orgs/:orgId", requirePermission("organization", "manage"), this.renameOrganization)
+
         /**
          * Machines by Arachnefly
          */

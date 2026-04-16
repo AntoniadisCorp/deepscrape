@@ -1,22 +1,25 @@
 import { inject, Injectable } from '@angular/core'
-import { BehaviorSubject, catchError, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
+import { BehaviorSubject, catchError, combineLatest, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
 import {
   BillingAccessMode,
   BillingCatalogPayload,
   BillingInterval,
   BillingLoadingState,
   BillingPlanTier,
+  EnterprisePlanRequestPayload,
   BillingUsageRequest,
   BillingUsageResponse,
   CreditPackCatalog,
   UserBilling,
 } from '../types'
+import { AuthService } from './auth.service'
 import { FirestoreService } from './firestore.service'
 
 @Injectable({
   providedIn: 'root'
 })
 export class BillingService {
+  private readonly authService = inject(AuthService)
   private readonly firestoreService = inject(FirestoreService)
   private readonly loadingStateSubject = new BehaviorSubject<BillingLoadingState>({
     checkout: false,
@@ -33,6 +36,14 @@ export class BillingService {
       ...this.loadingStateSubject.value,
       [key]: value,
     })
+  }
+
+  private createCheckoutRequestId(prefix: string): string {
+    const randomPart = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+    return `${prefix}-${Date.now()}-${randomPart}`
   }
 
   private getPurchasedCredits(billing: Partial<UserBilling> | UserBilling | undefined): number {
@@ -86,8 +97,15 @@ export class BillingService {
     shareReplay({ bufferSize: 1, refCount: true })
   )
 
+  readonly isPlatformAdmin$: Observable<boolean> = this.authService.user$.pipe(
+    map(() => this.authService.isAdmin),
+    shareReplay({ bufferSize: 1, refCount: true })
+  )
+
   hasFeature$(featureKey: string): Observable<boolean> {
-    return this.billing$.pipe(map((billing) => Boolean(billing.features?.[featureKey])))
+    return combineLatest([this.billing$, this.isPlatformAdmin$]).pipe(
+      map(([billing, isPlatformAdmin]) => isPlatformAdmin || Boolean(billing.features?.[featureKey]))
+    )
   }
 
   getAccessMode$(): Observable<BillingAccessMode> {
@@ -130,7 +148,9 @@ export class BillingService {
   }
 
   canAccessPaidFeatures$(): Observable<boolean> {
-    return this.getAccessMode$().pipe(map((mode) => mode !== 'free'))
+    return combineLatest([this.getAccessMode$(), this.isPlatformAdmin$]).pipe(
+      map(([mode, isPlatformAdmin]) => isPlatformAdmin || mode !== 'free')
+    )
   }
 
   async openCheckoutForPlan(args: {
@@ -146,7 +166,11 @@ export class BillingService {
         interval: BillingInterval
         successUrl: string
         cancelUrl: string
-      }, { url: string; sessionId: string }>('createCheckoutSession', args)
+        checkoutRequestId: string
+      }, { url: string; sessionId: string }>('createCheckoutSession', {
+        ...args,
+        checkoutRequestId: this.createCheckoutRequestId('plan'),
+      })
     } finally {
       this.setLoading('checkout', false)
     }
@@ -165,7 +189,11 @@ export class BillingService {
         successUrl: string
         cancelUrl: string
         quantity?: number
-      }, { url: string; sessionId: string }>('createCheckoutSession', args)
+        checkoutRequestId: string
+      }, { url: string; sessionId: string }>('createCheckoutSession', {
+        ...args,
+        checkoutRequestId: this.createCheckoutRequestId('credit-pack'),
+      })
     } finally {
       this.setLoading('checkout', false)
     }
@@ -183,11 +211,13 @@ export class BillingService {
         customCredits: number
         successUrl: string
         cancelUrl: string
+        checkoutRequestId: string
       }, { url: string; sessionId: string }>('createCheckoutSession', {
         planId: 'custom_credits',
         customCredits: args.credits,
         successUrl: args.successUrl,
         cancelUrl: args.cancelUrl,
+        checkoutRequestId: this.createCheckoutRequestId('custom-credits'),
       })
     } finally {
       this.setLoading('checkout', false)
@@ -259,6 +289,13 @@ export class BillingService {
     }>('verifyCheckoutSession', { sessionId })
   }
 
+  async submitEnterprisePlanRequest(payload: EnterprisePlanRequestPayload): Promise<{ success: boolean }> {
+    return this.firestoreService.callFunction<EnterprisePlanRequestPayload, { success: boolean }>(
+      'submitEnterprisePlanRequest',
+      payload
+    )
+  }
+
   async getUsageReport(args: BillingUsageRequest): Promise<BillingUsageResponse> {
     this.setLoading('usageReport', true)
     try {
@@ -266,6 +303,42 @@ export class BillingService {
     } finally {
       this.setLoading('usageReport', false)
     }
+  }
+
+  async getAdminBillingObservability(args?: {
+    incidentLimit?: number
+    failedEventLimit?: number
+    pendingEventLimit?: number
+    pastDueLimit?: number
+    includeAcknowledged?: boolean
+  }): Promise<{
+    generatedAt: string
+    incidents: Array<Record<string, unknown>>
+    failedEvents: Array<Record<string, unknown>>
+    pendingEvents: Array<Record<string, unknown>>
+    pastDueAccounts: Array<Record<string, unknown>>
+  }> {
+    return this.firestoreService.callFunction<typeof args, {
+      generatedAt: string
+      incidents: Array<Record<string, unknown>>
+      failedEvents: Array<Record<string, unknown>>
+      pendingEvents: Array<Record<string, unknown>>
+      pastDueAccounts: Array<Record<string, unknown>>
+    }>('getAdminBillingObservability', args)
+  }
+
+  async acknowledgeBillingIncident(incidentId: string): Promise<{ ok: boolean; incidentId: string }> {
+    return this.firestoreService.callFunction<{ incidentId: string }, { ok: boolean; incidentId: string }>(
+      'acknowledgeBillingIncident',
+      { incidentId }
+    )
+  }
+
+  async requestStripeEventRetry(eventId: string): Promise<{ ok: boolean; eventId: string }> {
+    return this.firestoreService.callFunction<{ eventId: string }, { ok: boolean; eventId: string }>(
+      'requestStripeEventRetry',
+      { eventId }
+    )
   }
 
   getPlans$(includeFree = true): Observable<BillingCatalogPayload['plans']> {

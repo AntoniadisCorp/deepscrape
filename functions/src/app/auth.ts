@@ -2,12 +2,11 @@
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
 import { FieldPath, FieldValue } from "firebase-admin/firestore"
-import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
-import { auth } from "firebase-functions/v1"
+import { db, dbName, getSecretFromManager, purgeSecretAndAllRevisions, saveToSecretManager, auth as adminAuth } from "./config"
+import { auth, runWith } from "firebase-functions/v1"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
 import { env } from "../config/env"
-// import { redis } from "./cacheConfig"
 
 const bootstrapAdminEmails = new Set(
     env.ADMIN_EMAILS
@@ -21,6 +20,8 @@ const isBootstrapAdmin = (email?: string | null): boolean => {
 
     return bootstrapAdminEmails.has(email.toLowerCase())
 }
+
+const MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS = 60 * 5
 
 
 export const trackGuest = auth
@@ -120,7 +121,8 @@ export const trackGuest = auth
     })
 
 
-export const setDefaultAdminRole = auth
+export const setDefaultAdminRole = runWith({ memory: "256MB", timeoutSeconds: 60 })
+    .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
@@ -128,12 +130,11 @@ export const setDefaultAdminRole = auth
 
             if (isBootstrapAdmin(user.email)) {
                 await adminAuth.setCustomUserClaims(user.uid, { role })
-                // Only set role in Firestore if defined
-                const userDoc: Record<string, unknown> = {}
-                if (role !== undefined) {
-                    userDoc.role = role
-                }
-                await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
+                // Set role and mark as onboarded — bootstrap admins skip the onboarding wizard
+                await db.collection("users").doc(user.uid).set({
+                    role,
+                    onboardedAt: FieldValue.serverTimestamp(),
+                }, { merge: true })
             }
         } catch (error) {
             console.error("Error setting default admin role:", error)
@@ -209,6 +210,127 @@ export const createDefaultOrganization = auth
             throw new HttpsError("internal", "Error creating default organization", error)
         }
     })
+
+/**
+ * Enable TOTP (Time-based One-Time Password) Multi-Factor Authentication for the Firebase project.
+ * This is a project-level configuration required before users can enroll in authenticator apps.
+ * Admin SDK operation using Identity Platform API.
+ * @see https://firebase.google.com/docs/auth/admin/manage-sessions#enable_mfa_for_a_user
+ */
+export const enableTotpMfa = onCallv2(async (req) => {
+    const DEFAULT_ADJACENT_INTERVALS = 5
+    try {
+        const authenticatedUid = req.auth?.uid
+        if (!authenticatedUid) {
+            throw new HttpsError("unauthenticated", "User must be authenticated")
+        }
+
+        const dryRun = req.data?.dryRun === true
+        const adjacentIntervalsRaw = req.data?.adjacentIntervals
+        const adjacentIntervals = Number.isInteger(adjacentIntervalsRaw)?
+            Number(adjacentIntervalsRaw) : DEFAULT_ADJACENT_INTERVALS
+
+        if (adjacentIntervals < 0 || adjacentIntervals > 10) {
+            throw new HttpsError("invalid-argument", "adjacentIntervals must be an integer between 0 and 10")
+        }
+
+        const tokenRole = typeof req.auth?.token?.["role"] === "string" ? req.auth.token["role"] as string : ""
+        const hasAdminClaim = tokenRole.toLowerCase() === "admin"
+
+        // Allow either role-claim admins or bootstrap admins.
+        let userEmail: string | null = null
+        if (!hasAdminClaim) {
+            userEmail = (await adminAuth.getUser(authenticatedUid)).email || null
+        }
+
+        if (!hasAdminClaim && (!userEmail || !isBootstrapAdmin(userEmail))) {
+            throw new HttpsError("permission-denied", "Only administrators can enable TOTP MFA for the project")
+        }
+
+        const configManager = adminAuth.projectConfigManager()
+        const currentConfig = await configManager.getProjectConfig()
+        const mfaConfig = currentConfig.multiFactorConfig
+        const totpProviderConfig = mfaConfig?.providerConfigs?.find((providerConfig) => !!providerConfig.totpProviderConfig)
+        const isAlreadyEnabled = mfaConfig?.state === "ENABLED" && totpProviderConfig?.state === "ENABLED"
+        const currentAdjacentIntervals = typeof totpProviderConfig?.totpProviderConfig?.adjacentIntervals === "number"?
+         totpProviderConfig.totpProviderConfig.adjacentIntervals : DEFAULT_ADJACENT_INTERVALS
+
+        if (dryRun) {
+            return {
+                success: true,
+                status: isAlreadyEnabled ? "enabled" : "disabled",
+                message: isAlreadyEnabled? "TOTP MFA is already enabled for this Firebase project.":
+                 "TOTP MFA is currently disabled for this Firebase project.",
+                config: {
+                    state: isAlreadyEnabled ? "ENABLED" : "DISABLED",
+                    adjacentIntervals: currentAdjacentIntervals,
+                },
+            }
+        }
+
+        if (isAlreadyEnabled) {
+            return {
+                success: true,
+                status: "already-enabled",
+                message: "TOTP MFA is already enabled for this Firebase project.",
+                config: {
+                    state: "ENABLED",
+                    adjacentIntervals: currentAdjacentIntervals,
+                },
+            }
+        }
+
+        const updatedConfig = await configManager.updateProjectConfig({
+            multiFactorConfig: {
+                state: "ENABLED" as const,
+                providerConfigs: [
+                    {
+                        state: "ENABLED" as const,
+                        totpProviderConfig: {
+                            adjacentIntervals,
+                        },
+                    },
+                ],
+            },
+        })
+
+        console.log("✅ TOTP MFA enabled successfully for project", {
+            actorUid: authenticatedUid,
+            actorEmail: userEmail,
+            hasAdminClaim,
+            previousState: mfaConfig?.state || "DISABLED",
+            previousAdjacentIntervals: currentAdjacentIntervals,
+            nextAdjacentIntervals: adjacentIntervals,
+        })
+
+        return {
+            success: true,
+            status: "enabled",
+            message: "TOTP MFA has been enabled for your Firebase project.",
+            config: {
+                state: "ENABLED",
+                adjacentIntervals: updatedConfig.multiFactorConfig?.providerConfigs?.[0]?.totpProviderConfig?.adjacentIntervals ?? adjacentIntervals,
+            },
+        }
+    } catch (error: unknown) {
+        console.error("Error enabling TOTP MFA:", error)
+        if (error instanceof HttpsError) {
+            throw error
+        }
+
+        const message = String((error as { message?: string })?.message || "")
+        const lowerMessage = message.toLowerCase()
+        if (
+            lowerMessage.includes("permission") ||
+            lowerMessage.includes("insufficient") ||
+            lowerMessage.includes("iam")
+        ) {
+            throw new HttpsError("permission-denied", "Runtime service account lacks permission to update Firebase Auth project config.")
+        }
+
+        throw new HttpsError("internal", "Failed to enable TOTP MFA for the project", error)
+    }
+})
 
 export const linkGuestToUser = onCallv2(async (req) => {
     try {
@@ -351,6 +473,84 @@ export const retrieveMyApiKeysPaging = onCallv2(
         }
     })
 
+export const deleteMyApiKey = onCallv2(async (req) => {
+    const apiKeyIdRaw = req.data?.apiKeyId
+    const apiKeyId = typeof apiKeyIdRaw === "string" ? apiKeyIdRaw.trim() : ""
+
+    if (!apiKeyId) {
+        throw new HttpsError("invalid-argument", "apiKeyId is required")
+    }
+
+    const userId = req?.auth?.uid
+    if (!userId) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const apiKeyRef = db.doc(`users/${userId}/apikeys/${apiKeyId}`)
+    const apiKeySnap = await apiKeyRef.get()
+
+    if (!apiKeySnap.exists) {
+        throw new HttpsError("not-found", "API key not found")
+    }
+
+    const apiKeyData = apiKeySnap.data() as {
+        name?: string
+        type?: string
+        permissions?: string[]
+        secretPath?: string
+        created_At?: Date
+        created_By?: string
+    } | undefined
+
+    const secretPath = typeof apiKeyData?.secretPath === "string" ? apiKeyData.secretPath : ""
+
+    let secretDeleted = false
+    let versionsDestroyed = 0
+    let secretPurgeError: string | null = null
+
+    if (secretPath) {
+        try {
+            const purgeResult = await purgeSecretAndAllRevisions(secretPath)
+            secretDeleted = purgeResult.secretDeleted
+            versionsDestroyed = purgeResult.versionsDestroyed
+        } catch (error) {
+            console.error("Error purging Secret Manager API key secret:", error)
+            secretPurgeError = error instanceof Error ? error.message : String(error)
+        }
+    }
+
+    const deletedAt = FieldValue.serverTimestamp()
+    const auditRef = db.collection(`users/${userId}/apikey_audit`).doc()
+
+    const batch = db.batch()
+    batch.set(auditRef, {
+        action: "deleted",
+        apiKeyId,
+        apiKeyName: apiKeyData?.name || null,
+        apiKeyType: apiKeyData?.type || null,
+        permissions: apiKeyData?.permissions || [],
+        secretPath: secretPath || null,
+        secretDeleted,
+        versionsDestroyed,
+        secretPurgeError,
+        created_At: apiKeyData?.created_At || null,
+        created_By: apiKeyData?.created_By || null,
+        deleted_At: deletedAt,
+        deleted_By: userId,
+    })
+    batch.delete(apiKeyRef)
+    await batch.commit()
+
+    return {
+        error: null,
+        apiKeyId,
+        auditId: auditRef.id,
+        secretDeleted,
+        versionsDestroyed,
+        message: "API key deleted successfully",
+    }
+})
+
 
 /**
     before retrieve secret add this policy
@@ -370,6 +570,35 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
         const userId = req?.auth?.uid
         if (!userId) {
             throw new Error("User must be authenticated")
+        }
+
+        const authTime = typeof req.auth?.token?.auth_time === "number" ? req.auth.token.auth_time : 0
+        const nowInSeconds = Math.floor(Date.now() / 1000)
+        const authAgeInSeconds = authTime > 0 ? nowInSeconds - authTime : Number.MAX_SAFE_INTEGER
+        const secondFactorSignIn = (req.auth?.token as { firebase?: { sign_in_second_factor?: string } })?.firebase?.sign_in_second_factor || null
+        const userRecord = await adminAuth.getUser(userId)
+        const enrolledFactors = userRecord.multiFactor?.enrolledFactors || []
+        const hasEnrolledMfa = enrolledFactors.length > 0
+
+        if (!hasEnrolledMfa) {
+            throw new HttpsError(
+                "failed-precondition",
+                "MFA enrollment is required before revealing API keys"
+            )
+        }
+
+        if (!secondFactorSignIn) {
+            throw new HttpsError(
+                "permission-denied",
+                "MFA step-up required before revealing API keys"
+            )
+        }
+
+        if (authAgeInSeconds > MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS) {
+            throw new HttpsError(
+                "failed-precondition",
+                "Recent authentication required before revealing API keys"
+            )
         }
 
         const apiKeysRef = db.doc(`users/${userId}/apikeys/${apiKey.id}`)
@@ -392,11 +621,40 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
             key: secretValue,
         }
 
+        await db.collection(`users/${userId}/apikey_audit`).add({
+            action: "revealed",
+            apiKeyId: apiKey.id,
+            apiKeyName: (keyData as { name?: string })?.name || null,
+            revealed_At: FieldValue.serverTimestamp(),
+            revealed_By: userId,
+            authAgeInSeconds,
+            secondFactorSignIn,
+            hasEnrolledMfa,
+        })
+
         return { error: null, apiKey: keyDataWithSecret, message: "API key retrieved successfully" }
     } catch (error) {
         console.error("Error retrieving API key:", error)
-        // throw new Error("Failed to create API key by id " + apiKeyId)
-        return { error, apiKeyId: null, message: "Failed to retrieve API secret" }
+
+        if (error instanceof HttpsError) {
+            return {
+                error: {
+                    code: error.code,
+                    message: error.message,
+                },
+                apiKeyId: null,
+                message: error.message,
+            }
+        }
+
+        return {
+            error: {
+                code: "internal",
+                message: "Failed to retrieve API secret",
+            },
+            apiKeyId: null,
+            message: "Failed to retrieve API secret",
+        }
     }
 })
 

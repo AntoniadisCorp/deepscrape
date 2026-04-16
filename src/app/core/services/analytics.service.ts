@@ -19,7 +19,17 @@ export class AnalyticsService {
   ) { }
 
   sendStatus() {
-    return this.http.get(`/status`)
+    if (!isPlatformBrowser(this.platformId)) {
+      return of(null)
+    }
+
+    if (!this.analyticsBackendAvailable) {
+      return of(null)
+    }
+
+    return this.http.get(`/status`).pipe(
+      catchError((error) => this.handleError(error))
+    )
   }
   
   /**

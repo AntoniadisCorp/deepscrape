@@ -13,6 +13,8 @@ import * as path from "path"
 import { env } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
+const EMULATOR_SECRET_PREFIX = "emulator-secret://"
+const EMULATOR_SECRETS_COLLECTION = "_emulator_secrets"
 export const stripeSecretParam = defineSecret("STRIPE_SECRET_KEY")
 export const stripeWebhookSecretParam =
     defineSecret("STRIPE_WEBHOOK_SECRET")
@@ -88,14 +90,23 @@ const productionServiceAccount = env.IS_PRODUCTION ?
     null
 const selectedServiceAccount = productionServiceAccount || localServiceAccount
 
-admin.initializeApp(
-    selectedServiceAccount ?
-        {credential: admin.credential.cert(selectedServiceAccount)} :
-        undefined
-)
+// Only initialize Firebase if it hasn't been initialized already
+// This prevents errors when multiple modules load config.ts during tests
+const wasAlreadyInitialized = admin?.apps.length > 0
+if (!wasAlreadyInitialized) {
+    admin.initializeApp(
+        selectedServiceAccount ?
+            {credential: admin.credential.cert(selectedServiceAccount)} :
+            undefined
+    )
+}
 
 export const db = admin.firestore()
-db.settings({ databaseId: dbName })
+// Only call settings() if we just initialized Firebase for the first time
+// Otherwise, Firestore is already initialized and this call will fail
+if (!wasAlreadyInitialized) {
+    db.settings({ databaseId: dbName })
+}
 
 export const auth = admin.auth()
 
@@ -153,12 +164,68 @@ export function generateApiKey() {
     return crypto.randomBytes(32).toString("hex")
 }
 
+function isEmulatorSecretPath(secretPath: string): boolean {
+    return secretPath.startsWith(EMULATOR_SECRET_PREFIX)
+}
+
+function toEmulatorSecretPath(secretId: string): string {
+    return `${EMULATOR_SECRET_PREFIX}${secretId}`
+}
+
+function fromEmulatorSecretPath(secretPath: string): string {
+    return secretPath.slice(EMULATOR_SECRET_PREFIX.length)
+}
+
+function getEmulatorSecretDoc(secretId: string) {
+    return db.collection(EMULATOR_SECRETS_COLLECTION).doc(secretId)
+}
+
+async function saveEmulatorSecret(
+    secretId: string,
+    value: string
+): Promise<string> {
+    await getEmulatorSecretDoc(secretId).set({
+        value,
+        updated_At: new Date(),
+    }, {merge: true})
+
+    return toEmulatorSecretPath(secretId)
+}
+
+async function readEmulatorSecret(secretPath: string): Promise<string> {
+    const secretId = fromEmulatorSecretPath(secretPath)
+    const snapshot = await getEmulatorSecretDoc(secretId).get()
+    const value = snapshot.data()?.["value"]
+    return typeof value === "string" ? value : ""
+}
+
+async function deleteEmulatorSecret(
+    secretPath: string
+): Promise<SecretPurgeResult> {
+    const secretId = fromEmulatorSecretPath(secretPath)
+    await getEmulatorSecretDoc(secretId).delete()
+
+    return {
+        secretPath,
+        versionsDestroyed: 1,
+        secretDeleted: true,
+    }
+}
+
 
 // Helper: Store API key in Cloud Secret Manager
 export async function saveToSecretManager(
     secretId: string | null | undefined,
     apiKey: string
 ) {
+    if (!secretId) {
+        throw new Error("secretId is required")
+    }
+
+    if (env.IS_EMULATOR) {
+        return saveEmulatorSecret(secretId, apiKey)
+    }
+
     // Create a new secret
     const [secret] = await secretManager.createSecret({
         parent: `projects/${env.GCP_PROJECT_ID}`,
@@ -197,11 +264,60 @@ export async function saveToSecretManager(
 }
 
 export async function getSecretFromManager(secretPath: string) {
+    if (isEmulatorSecretPath(secretPath)) {
+        return readEmulatorSecret(secretPath)
+    }
+
     // Get the secret version
     const [version] = await secretManager.accessSecretVersion({
         name: secretPath + "/versions/latest",
     })
     // Return the API key to show the user
     return version.payload?.data?.toString()
+}
+
+export type SecretPurgeResult = {
+    secretPath: string
+    versionsDestroyed: number
+    secretDeleted: boolean
+}
+
+export async function purgeSecretAndAllRevisions(secretPath: string):
+    Promise<SecretPurgeResult> {
+    if (isEmulatorSecretPath(secretPath)) {
+        return deleteEmulatorSecret(secretPath)
+    }
+
+    const [versions] = await secretManager.listSecretVersions({
+        parent: secretPath,
+    })
+
+    let versionsDestroyed = 0
+
+    for (const version of versions) {
+        const versionName = version.name
+        const state = version.state
+
+        if (!versionName) {
+            continue
+        }
+
+        if (state !== "DESTROYED") {
+            await secretManager.destroySecretVersion({
+                name: versionName,
+            })
+            versionsDestroyed += 1
+        }
+    }
+
+    await secretManager.deleteSecret({
+        name: secretPath,
+    })
+
+    return {
+        secretPath,
+        versionsDestroyed,
+        secretDeleted: true,
+    }
 }
 

@@ -9,6 +9,7 @@ import * as app from "./server"
 import * as auth from "./app/auth"
 import * as stripe from "./app/stripe"
 import * as analyticsRealtime from "./gfunctions/analytics-realtime"
+import * as sessions from "./gfunctions/sessions"
 // import path, { join } from "node:path"
 // import { fileURLToPath } from "node:url"
 
@@ -25,6 +26,13 @@ export const deepscrape = app.deepscrape
 /* Auth - Functions */
 // User Management - Functions
 export const linkGuestToUser = auth.linkGuestToUser
+export const getMyLoginSessions = sessions.getMyLoginSessions
+export const getUserLoginSessionsByAdmin = sessions.getUserLoginSessionsByAdmin
+export const revokeMyLoginSession = sessions.revokeMyLoginSession
+export const getMyLoginSessionStatus = sessions.getMyLoginSessionStatus
+export const revokeUserLoginSessionByAdmin = sessions.revokeUserLoginSessionByAdmin
+export const revokeAllUserSessionsByAdmin = sessions.revokeAllUserSessionsByAdmin
+export const enableTotpMfa = auth.enableTotpMfa
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole
@@ -41,6 +49,7 @@ export const updateUsage = stripe.updateUsage
 export const getBillingCatalog = stripe.getBillingCatalog
 export const getMyEntitlements = stripe.getMyEntitlements
 export const startTrial = stripe.startTrial
+export const submitEnterprisePlanRequest = stripe.submitEnterprisePlanRequest
 export const validateStripeCatalog = stripe.validateStripeCatalog
 export const createCheckoutSession = stripe.createCheckoutSession
 export const createBillingPortalSession = stripe.createBillingPortalSession
@@ -49,6 +58,9 @@ export const verifyCheckoutSession = stripe.verifyCheckoutSession
 export const getBillingUsage = stripe.getBillingUsage
 export const stripeWebhook = stripe.stripeWebhook
 export const grantPromotionalCredits = stripe.grantPromotionalCredits
+export const getAdminBillingObservability = stripe.getAdminBillingObservability
+export const acknowledgeBillingIncident = stripe.acknowledgeBillingIncident
+export const requestStripeEventRetry = stripe.requestStripeEventRetry
 export const expireTrialsToFree = stripe.expireTrialsToFree
 
 
@@ -56,6 +68,7 @@ export const expireTrialsToFree = stripe.expireTrialsToFree
 export const createMyApiKey = auth.createMyApiKey
 export const retrieveMyApiKeysPaging = auth.retrieveMyApiKeysPaging
 export const getApiKeyDoVisible = auth.getApiKeyDoVisible
+export const deleteMyApiKey = auth.deleteMyApiKey
 
 
 // CRAWL OPERATIONS - Function TRIGGERS
@@ -84,3 +97,22 @@ export const backfillDashboardSummary = analyticsRealtime.backfillDashboardSumma
 export const computeDailyTrends = analyticsRealtime.computeDailyTrends
 export const computeRangeMetrics = analyticsRealtime.computeRangeMetrics
 export const cleanupOldMetrics = analyticsRealtime.cleanupOldAnalytics
+export const computeActiveUsersNow = analyticsRealtime.computeActiveUsersNow
+
+/* Sessions — Presence */
+export const recordGuestPresence = sessions.recordGuestPresence
+
+// SESSION MANAGEMENT - Functions (Callable)
+export const createLoginSession = sessions.createLoginSession
+export const signOutLoginSession = sessions.signOutLoginSession
+export const recordLogoutMetrics = sessions.recordLogoutMetrics
+export const validateSessionCookie = sessions.validateSessionCookie
+export const cleanupExpiredSessions = sessions.cleanupExpiredSessions
+export const onLoginHistoryCreated = sessions.onLoginHistoryCreated
+
+// PHASE 4.2: DEVICE VERIFICATION - Functions
+export const sendDeviceVerificationCode = sessions.sendDeviceVerificationCode
+export const verifyAndTrustDevice = sessions.verifyAndTrustDevice
+export const isDeviceTrusted = sessions.isDeviceTrusted
+export const getTrustedDevices = sessions.getTrustedDevices
+export const removeTrustedDevice = sessions.removeTrustedDevice

@@ -1,11 +1,11 @@
 import { AsyncPipe, isPlatformBrowser, NgClass, NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID } from '@angular/core'
+import { ChangeDetectionStrategy, Component, HostBinding, inject, Inject, PLATFORM_ID, OnDestroy } from '@angular/core'
 import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { ActivatedRoute, ChildrenOutletContexts, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
-import { FormsModule } from '@angular/forms'
+import { FormControl, FormsModule } from '@angular/forms'
 import { catchError, delay, finalize, from, map, switchMap, throwError, timer, fromEvent } from 'rxjs' // Added fromEvent
 import { Observable } from 'rxjs/internal/Observable'
 import { of } from 'rxjs/internal/observable/of'
@@ -21,18 +21,19 @@ import { AppSidebarComponent } from '../../components'
 import { AppFooterComponent } from '../../footer'
 import { SCREEN_SIZE } from 'src/app/core/enum'
 import { CartPackNotifyComponent, DropdownCartComponent } from 'src/app/core/components'
+import { DropdownComponent } from 'src/app/core/components'
 /**
  * TODO: comment Component
  * @description Component for user layout including sidebar, header, and footer
  */
 @Component({
-  selector: 'app-user-layout',
-  imports: [NgClass, RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent, FormsModule],
+  selector: 'app-user-layout', 
+  imports: [NgClass, RouterOutlet, DropdownComponent, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent, FormsModule],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
 })
-export class AppUserLayoutComponent {
+export class AppUserLayoutComponent implements OnDestroy {
 
   private window: Window = inject(WindowToken)
   private localStorage = inject(LocalStorage)
@@ -53,6 +54,8 @@ export class AppUserLayoutComponent {
   organizations: OrganizationSummary[] = []
   invitations: OrganizationInvitation[] = []
   selectedOrgId: string | null = null
+  workspaceDropdownOptions: Array<{ name: string; code: string }> = []
+  readonly workspaceControl = new FormControl<{ name: string; code: string }>({ name: 'Select workspace', code: '' }, { nonNullable: true })
   orgLoading = false
   inviteActionLoading = false
   cartPackager$: Observable<any>
@@ -171,10 +174,21 @@ export class AppUserLayoutComponent {
         next: (response) => {
           this.organizations = response.organizations || []
           this.selectedOrgId = this.organizationService.getActiveOrganization() || this.organizations[0]?.id || null
+          this.workspaceDropdownOptions = this.organizations.map((org) => ({
+            code: org.id,
+            name: `${org.name || org.slug || org.id} (${org.membership?.role || 'member'})`,
+          }))
+          const selectedOption = this.workspaceDropdownOptions.find((option) => option.code === this.selectedOrgId)
+          if (selectedOption) {
+            this.workspaceControl.setValue(selectedOption)
+          } else if (this.workspaceDropdownOptions.length > 0) {
+            this.workspaceControl.setValue(this.workspaceDropdownOptions[0])
+          }
         },
         error: (error) => {
           console.error('Failed loading organizations in user layout:', error)
           this.organizations = []
+          this.workspaceDropdownOptions = []
         },
       })
 
@@ -193,6 +207,19 @@ export class AppUserLayoutComponent {
   switchOrganization(orgId: string): void {
     this.selectedOrgId = orgId
     this.organizationService.setActiveOrganization(orgId)
+    const selectedOption = this.workspaceDropdownOptions.find((option) => option.code === orgId)
+    if (selectedOption) {
+      this.workspaceControl.setValue(selectedOption)
+    }
+  }
+
+  onWorkspaceSelected(option: any): void {
+    const selectedCode = option?.code
+    if (!selectedCode) {
+      return
+    }
+
+    this.switchOrganization(selectedCode)
   }
 
   acceptInvitation(invitationId: string): void {
@@ -343,8 +370,7 @@ export class AppUserLayoutComponent {
   // Removed themeIsDark() method
 
   ngOnDestroy(): void {
-    //Called once, before the instance is destroyed.
-    //Add 'implements OnDestroy' to the class.
+    // Cleanup all subscriptions to prevent memory leaks
     this.logoutSubscription?.unsubscribe()
     this.orgLoadSubscription?.unsubscribe()
     this.invitationLoadSubscription?.unsubscribe()

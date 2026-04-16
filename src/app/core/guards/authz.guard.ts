@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { Observable } from 'rxjs/internal/Observable';
+import { Observable, combineLatest, of } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { map } from 'rxjs/internal/operators/map';
 import { AuthzService } from '../services';
 
@@ -15,15 +16,20 @@ export const authzGuard: CanActivateFn = (route): Observable<boolean> => {
 
   const authzData = route.data?.['authz'] as AuthzGuardData | undefined;
   if (!authzData?.resource || !authzData?.action) {
-    return authzService.hasPlatformAdminAccess$().pipe(
-      map(() => true),
-    );
+    if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+      console.warn(`[authzGuard] No authz data on route "${route.routeConfig?.path ?? '?'}". Passing through — add route data.authz to enforce RBAC.`);
+    }
+    return of(true);
   }
 
-  return authzService
-    .can$(authzData.resource, authzData.action as never)
+  return combineLatest([
+    authzService.can$(authzData.resource, authzData.action as never),
+    authzService.membershipsReady$,
+  ])
     .pipe(
-      map((allowed) => {
+      filter(([, ready]) => ready),
+      take(1),
+      map(([allowed]) => {
         if (!allowed) {
           router.navigate(['/']);
           return false;

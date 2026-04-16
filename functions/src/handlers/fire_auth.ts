@@ -1,15 +1,51 @@
+/* eslint-disable valid-jsdoc */
+/* eslint-disable max-len */
 /* eslint-disable object-curly-spacing */
 /* eslint-disable indent */
 /* eslint-disable new-cap */
 /* eslint-disable require-jsdoc */
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { auth } from "../app/config"
+import { auth, db } from "../app/config"
 import { Request, Response } from "express"
 
 
 // test email before checking providers with pattern
 // eslint-disable-next-line max-len
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+const PHONE_E164_REGEX = /^\+[1-9]\d{6,14}$/
+
+const mergeCustomClaims = async (
+    uid: string,
+    claims: Record<string, unknown>
+) => {
+    const userRecord = await auth.getUser(uid)
+    const existingClaims = userRecord.customClaims || {}
+
+    await auth.setCustomUserClaims(uid, {
+        ...existingClaims,
+        ...claims,
+    })
+}
+
+const getErrorCode = (error: unknown): string | undefined => {
+    if (typeof error === "object" && error !== null && "code" in error) {
+        return String((error as { code: unknown }).code)
+    }
+
+    return undefined
+}
+
+const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+        return error.message
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+        return String((error as { message: unknown }).message)
+    }
+
+    return "Unknown error"
+}
 
 export const checkUserEmailExistance = async (req: Request, res: Response) => {
     const { email } = req.params as { email: string }
@@ -37,8 +73,8 @@ export const checkUserEmailExistance = async (req: Request, res: Response) => {
                 hasMultipleProviders: false,
             })
         }
-    } catch (error: any) {
-        if (error.code === "auth/user-not-found") {
+    } catch (error: unknown) {
+        if (getErrorCode(error) === "auth/user-not-found") {
             return res.status(200).send({ emailExists: false })
         }
         console.error("Error checking user email existence:", error)
@@ -75,8 +111,8 @@ export const checkUserEmailForDifferentProvider =
                     hasMultipleProviders: false,
                 })
             }
-        } catch (error: any) {
-            if (error.code === "auth/user-not-found") {
+        } catch (error: unknown) {
+            if (getErrorCode(error) === "auth/user-not-found") {
                 return res.status(200).send({ exists: false })
             }
             console.error(
@@ -84,7 +120,7 @@ export const checkUserEmailForDifferentProvider =
                 error,
             )
             return res.status(500).send({ error: "Internal Server Error",
-                message: error })
+                message: getErrorMessage(error) })
         }
     }
 
@@ -93,32 +129,43 @@ export const updateEmailVerificationStatus = async (
     res: Response,
 ) => {
     res.type("application/json")
-    const { uid, emailVerified } = req.body as {
-        uid: string,
-        emailVerified: boolean,
-    }
+    const { uid } = req.body as { uid: string }
 
     try {
-        if (!uid || typeof emailVerified !== "boolean") {
+        if (!uid) {
             return res.status(400).send({
                 error: "Missing required fields",
-                message: "Both uid and emailVerified are required",
+                message: "uid is required",
             })
         }
 
-        // Set custom claims for email verification
-        await auth.setCustomUserClaims(uid, { email_verified: emailVerified })
+        const userRecord = await auth.getUser(uid)
+        const emailVerified = userRecord.emailVerified === true
+
+        if (!emailVerified) {
+            return res.status(409).send({
+                error: "Email not verified",
+                message: "Firebase Auth does not yet report this email as verified.",
+            })
+        }
+
+        await mergeCustomClaims(uid, { email_verified: true })
+        await db.collection("users").doc(uid).set({
+            emailVerified: true,
+            updated_At: new Date(),
+        }, { merge: true })
 
         return res.status(200).send({
             success: true,
-            message: "Email verification status updated successfully",
+            emailVerified: true,
+            message: "Email verification status synced successfully",
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating email verification status:", error)
 
         return res.status(500).send({
             error: "Internal Server Error",
-            message: error.message,
+            message: getErrorMessage(error),
         })
     }
 }
@@ -130,7 +177,7 @@ export const verifyLogin = async (req: Request, res: Response) => {
     }
 
     try {
-        const decodedToken = await auth.verifyIdToken(idToken)
+        const decodedToken = await auth.verifyIdToken(idToken, true)
         let { email, uid: newUid } = decodedToken
 
         if (!email) {
@@ -150,8 +197,8 @@ export const verifyLogin = async (req: Request, res: Response) => {
         let existingUserRecord
         try {
             existingUserRecord = await auth.getUserByEmail(email)
-        } catch (error: any) {
-            if (error.code === "auth/user-not-found") {
+        } catch (error: unknown) {
+            if (getErrorCode(error) === "auth/user-not-found") {
                  // No existing user → keep this new provider account
                 // Case 1: No user exists with this email. This is a new signup.
                 // Firebase automatically creates a user
@@ -183,10 +230,117 @@ export const verifyLogin = async (req: Request, res: Response) => {
             return res.status(200)
             .send({ mergeRequired: true, existingUid: existingUserRecord.uid })
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
+        if (getErrorCode(error) === "auth/id-token-revoked") {
+            return res.status(401)
+            .send({ error: "Unauthorized", code: "session_revoked", message: "Session revoked. Please sign in again." })
+        }
+
+        if (getErrorCode(error) === "auth/argument-error" || getErrorCode(error) === "auth/invalid-id-token") {
+            return res.status(401)
+            .send({ error: "Unauthorized", code: "invalid_token", message: "Invalid authentication token." })
+        }
+
         console.error("Error in verifyLogin, Merge provider error:", error)
         return res.status(500)
-        .send({ error: "Internal Server Error", message: error.message })
+        .send({ error: "Internal Server Error", message: getErrorMessage(error) })
+    }
+}
+
+// Allowed characters for usernames to prevent injection via Firestore queries
+const USERNAME_REGEX = /^[a-zA-Z0-9._-]{2,64}$/
+
+/**
+ * POST /oauth/resolve-identifier
+ * Resolves a username or E.164 phone number to the account email.
+ * Used by the login flow for non-email identifiers.WS
+ *
+ * Body: { username?: string } | { phone?: string }
+ * Response 200: { email: string }
+ * Response 400: invalid input
+ * Response 404: user not found
+ */
+export const resolveIdentifier = async (req: Request, res: Response) => {
+    res.type("application/json")
+
+    const usernameRaw: unknown = req.body?.username
+    const phoneRaw: unknown = req.body?.phone
+
+    const hasUsername = typeof usernameRaw === "string" && usernameRaw.trim().length > 0
+    const hasPhone = typeof phoneRaw === "string" && phoneRaw.trim().length > 0
+
+    if (!hasUsername && !hasPhone) {
+        return res.status(400).json({
+            error: "invalid-argument",
+            message: "Provide either 'username' or 'phone' in the request body.",
+        })
+    }
+
+    try {
+        if (hasPhone) {
+            const phone = (phoneRaw as string).trim()
+
+            if (!PHONE_E164_REGEX.test(phone)) {
+                return res.status(400).json({
+                    error: "invalid-argument",
+                    message: "Phone must be a valid E.164 number (e.g. +15551234567).",
+                })
+            }
+
+            // Firebase Auth can look up users directly by phone number
+            const userRecord = await auth.getUserByPhoneNumber(phone)
+            if (!userRecord.email) {
+                return res.status(404).json({
+                    error: "not-found",
+                    message: "No email associated with this phone number.",
+                })
+            }
+
+            return res.status(200).json({ email: userRecord.email })
+        }
+
+        // Username path — query Firestore users collection
+        const username = (usernameRaw as string).trim().toLowerCase()
+
+        if (!USERNAME_REGEX.test(username)) {
+            return res.status(400).json({
+                error: "invalid-argument",
+                message: "Username contains invalid characters.",
+            })
+        }
+
+        const snapshot = await db.collection("users")
+            .where("username", "==", username)
+            .limit(1)
+            .get()
+
+        if (snapshot.empty) {
+            return res.status(404).json({
+                error: "not-found",
+                message: "No account found for this username.",
+            })
+        }
+
+        const userData = snapshot.docs[0].data()
+        const email: string | undefined = userData?.email
+
+        if (!email || typeof email !== "string") {
+            return res.status(404).json({
+                error: "not-found",
+                message: "No email associated with this username.",
+            })
+        }
+
+        return res.status(200).json({ email })
+    } catch (error: unknown) {
+        if (getErrorCode(error) === "auth/user-not-found") {
+            return res.status(404).json({
+                error: "not-found",
+                message: "No account found for this phone number.",
+            })
+        }
+        console.error("resolveIdentifier error:", error)
+        return res.status(500).json({ error: "Internal Server Error" })
     }
 }
 

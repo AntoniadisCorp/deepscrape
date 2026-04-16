@@ -16,7 +16,7 @@ import { convertKeysToSnakeCase, switchPackageIcon, switchPackKey, } from 'src/a
 import { ActivatedRoute, Router } from '@angular/router';
 import { MarkdownModule } from 'ngx-markdown';
 import { ClipboardbuttonComponent, CPackComponent, DialogComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
-import { expandCollapseAnimation, fadeinCartItems } from 'src/app/animations';
+import { expandCollapseAnimation, fadeinCartItems, listStaggerAnimation } from 'src/app/animations';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
 import { filter } from 'rxjs/internal/operators/filter';
 import { tap } from 'rxjs/internal/operators/tap';
@@ -35,7 +35,8 @@ import { UserInfo } from '@angular/fire/auth';
     animations: [
         // animation triggers go here
         expandCollapseAnimation,
-        fadeinCartItems
+        fadeinCartItems,
+        listStaggerAnimation,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

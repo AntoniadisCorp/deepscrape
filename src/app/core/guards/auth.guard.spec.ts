@@ -9,7 +9,7 @@ import { getTestProviders } from 'src/app/testing';
 
 describe('authGuard', () => {
   let authServiceMock: jasmine.SpyObj<Pick<AuthService, 'isAuthenticated'>>;
-  let routerMock: jasmine.SpyObj<Pick<Router, 'navigate'>>;
+  let routerMock: jasmine.SpyObj<Pick<Router, 'navigate' | 'createUrlTree'>>;
 
   const executeGuard: CanActivateFn = (...guardParameters) =>
       TestBed.runInInjectionContext(() => authGuard(...guardParameters));
@@ -28,7 +28,8 @@ describe('authGuard', () => {
 
   beforeEach(() => {
     authServiceMock = jasmine.createSpyObj<Pick<AuthService, 'isAuthenticated'>>('AuthService', ['isAuthenticated']);
-    routerMock = jasmine.createSpyObj<Pick<Router, 'navigate'>>('Router', ['navigate']);
+    routerMock = jasmine.createSpyObj<Pick<Router, 'navigate' | 'createUrlTree'>>('Router', ['navigate', 'createUrlTree']);
+    routerMock.createUrlTree.and.returnValue({} as any);
 
     TestBed.configureTestingModule({
       providers: [
@@ -44,8 +45,7 @@ describe('authGuard', () => {
 
     const result = await resolveGuardResult(executeGuard({} as never, { url: '/dashboard' } as never));
 
-    expect(result).toBeFalse();
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/service/login'], {
+    expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/service/login'], {
       queryParams: { returnUrl: '/dashboard' },
     });
   });
@@ -65,8 +65,7 @@ describe('authGuard', () => {
 
     const result = await resolveGuardResult(executeGuard({} as never, { url: '/settings' } as never));
 
-    expect(result).toBeFalse();
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/service/verification'], {
+    expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/service/verification'], {
       queryParams: { returnUrl: '/settings' },
     });
   });
@@ -79,6 +78,7 @@ describe('authGuard', () => {
           emailVerified: true,
           phoneVerified: true,
           phoneNumber: '+10000000000',
+          onboardedAt: '2026-01-01T00:00:00.000Z',
           currProviderData: { providerId: 'password' },
         } as never,
       }),
@@ -87,6 +87,6 @@ describe('authGuard', () => {
     const result = await resolveGuardResult(executeGuard({} as never, { url: '/dashboard' } as never));
 
     expect(result).toBeTrue();
-    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(routerMock.createUrlTree).not.toHaveBeenCalled();
   });
 });

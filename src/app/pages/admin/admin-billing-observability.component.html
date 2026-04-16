@@ -1,0 +1,167 @@
+<section class="space-y-6">
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Billing Observability</h2>
+      <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
+        Monitor billing incidents, failed/pending Stripe events, and past-due accounts.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <a
+        routerLink="/admin/analytics"
+        class="btn btn-sm btn-gray btn-ring btn-ring-blue inline-flex items-center justify-center">
+        Back to Analytics
+      </a>
+      <button
+        type="button"
+        (click)="refresh()"
+        [disabled]="loading"
+        class="btn btn-sm btn-blue btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+    <label class="text-sm">
+      <span class="block mb-1 text-gray5/70 dark:text-gray-300">Incidents</span>
+      <input type="number" min="1" max="100" [(ngModel)]="incidentLimit" class="w-full rounded-md border border-gray-300 dark:border-gray6 bg-white dark:bg-gray6 p-2" />
+    </label>
+
+    <label class="text-sm">
+      <span class="block mb-1 text-gray5/70 dark:text-gray-300">Failed Events</span>
+      <input type="number" min="1" max="100" [(ngModel)]="failedEventLimit" class="w-full rounded-md border border-gray-300 dark:border-gray6 bg-white dark:bg-gray6 p-2" />
+    </label>
+
+    <label class="text-sm">
+      <span class="block mb-1 text-gray5/70 dark:text-gray-300">Pending Events</span>
+      <input type="number" min="1" max="100" [(ngModel)]="pendingEventLimit" class="w-full rounded-md border border-gray-300 dark:border-gray6 bg-white dark:bg-gray6 p-2" />
+    </label>
+
+    <label class="text-sm">
+      <span class="block mb-1 text-gray5/70 dark:text-gray-300">Past Due</span>
+      <input type="number" min="1" max="200" [(ngModel)]="pastDueLimit" class="w-full rounded-md border border-gray-300 dark:border-gray6 bg-white dark:bg-gray6 p-2" />
+    </label>
+
+    <label class="text-sm flex items-center gap-2 mt-7">
+      <input type="checkbox" [(ngModel)]="includeAcknowledged" />
+      <span class="text-gray5/70 dark:text-gray-300">Include acknowledged</span>
+    </label>
+  </div>
+
+  @if (error) {
+    <div class="rounded-lg p-3 text-sm bg-rose-50 text-rose-800 dark:bg-rose-900/20 dark:text-rose-300">
+      {{ error }}
+    </div>
+  }
+
+  @if (loading) {
+    <div class="rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
+      Loading billing observability data...
+    </div>
+  }
+
+  @if (!loading && data) {
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div class="rounded-xl border border-blue-300/40 dark:border-blue-500/30 bg-blue-50/60 dark:bg-blue-900/10 p-4">
+        <p class="text-xs text-blue-700/80 dark:text-blue-300/80">Incidents</p>
+        <p class="text-xl font-semibold text-blue-800 dark:text-blue-200">{{ data.incidents.length }}</p>
+      </div>
+      <div class="rounded-xl border border-rose-300/40 dark:border-rose-500/30 bg-rose-50/60 dark:bg-rose-900/10 p-4">
+        <p class="text-xs text-rose-700/80 dark:text-rose-300/80">Failed Events</p>
+        <p class="text-xl font-semibold text-rose-800 dark:text-rose-200">{{ data.failedEvents.length }}</p>
+      </div>
+      <div class="rounded-xl border border-amber-300/40 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-900/10 p-4">
+        <p class="text-xs text-amber-700/80 dark:text-amber-300/80">Pending Events</p>
+        <p class="text-xl font-semibold text-amber-800 dark:text-amber-200">{{ data.pendingEvents.length }}</p>
+      </div>
+      <div class="rounded-xl border border-violet-300/40 dark:border-violet-500/30 bg-violet-50/60 dark:bg-violet-900/10 p-4">
+        <p class="text-xs text-violet-700/80 dark:text-violet-300/80">Past Due Accounts</p>
+        <p class="text-xl font-semibold text-violet-800 dark:text-violet-200">{{ data.pastDueAccounts.length }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <article class="rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-3">
+        <h3 class="text-lg font-semibold text-gray5 dark:text-gray-100">Incidents</h3>
+        @if (data.incidents.length === 0) {
+          <p class="text-sm text-gray5/70 dark:text-gray-300">No incidents found.</p>
+        }
+        @for (incident of data.incidents; track incidentId(incident)) {
+          <div class="rounded-lg border border-gray-200 dark:border-gray6 p-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-sm font-semibold text-gray5 dark:text-gray-100">{{ incident['type'] || 'unknown' }}</p>
+                <p class="text-xs text-gray5/70 dark:text-gray-300">{{ incident['message'] || '' }}</p>
+                <p class="text-xs text-gray5/60 dark:text-gray-400 mt-1">{{ incident['createdAt'] || '-' }}</p>
+              </div>
+              <button
+                type="button"
+                [disabled]="acknowledgingIncidentIds.has(incidentId(incident))"
+                (click)="acknowledgeIncident(incidentId(incident))"
+                class="btn btn-sm btn-green btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ acknowledgingIncidentIds.has(incidentId(incident)) ? 'Acknowledging...' : 'Acknowledge' }}
+              </button>
+            </div>
+          </div>
+        }
+      </article>
+
+      <article class="rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-3">
+        <h3 class="text-lg font-semibold text-gray5 dark:text-gray-100">Failed Stripe Events</h3>
+        @if (data.failedEvents.length === 0) {
+          <p class="text-sm text-gray5/70 dark:text-gray-300">No failed events found.</p>
+        }
+        @for (event of data.failedEvents; track eventId(event)) {
+          <div class="rounded-lg border border-gray-200 dark:border-gray6 p-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-sm font-semibold text-gray5 dark:text-gray-100">{{ event['type'] || 'unknown' }}</p>
+                <p class="text-xs text-gray5/70 dark:text-gray-300">{{ event['lastError'] || '' }}</p>
+                <p class="text-xs text-gray5/60 dark:text-gray-400 mt-1">{{ event['failedAt'] || '-' }}</p>
+              </div>
+              <button
+                type="button"
+                [disabled]="retryingEventIds.has(eventId(event))"
+                (click)="retryEvent(eventId(event))"
+                class="btn btn-sm btn-amber btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ retryingEventIds.has(eventId(event)) ? 'Retrying...' : 'Retry' }}
+              </button>
+            </div>
+          </div>
+        }
+      </article>
+
+      <article class="rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-3">
+        <h3 class="text-lg font-semibold text-gray5 dark:text-gray-100">Pending Stripe Events</h3>
+        @if (data.pendingEvents.length === 0) {
+          <p class="text-sm text-gray5/70 dark:text-gray-300">No pending events found.</p>
+        }
+        @for (event of data.pendingEvents; track eventId(event)) {
+          <div class="rounded-lg border border-gray-200 dark:border-gray6 p-3">
+            <p class="text-sm font-semibold text-gray5 dark:text-gray-100">{{ event['type'] || 'unknown' }}</p>
+            <p class="text-xs text-gray5/70 dark:text-gray-300">Retry Count: {{ event['retryCount'] || 0 }}</p>
+            <p class="text-xs text-gray5/60 dark:text-gray-400">Started: {{ event['processingStartedAt'] || '-' }}</p>
+          </div>
+        }
+      </article>
+
+      <article class="rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4 space-y-3">
+        <h3 class="text-lg font-semibold text-gray5 dark:text-gray-100">Past Due Accounts</h3>
+        @if (data.pastDueAccounts.length === 0) {
+          <p class="text-sm text-gray5/70 dark:text-gray-300">No past due accounts found.</p>
+        }
+        @for (account of data.pastDueAccounts; track account['path']) {
+          <div class="rounded-lg border border-gray-200 dark:border-gray6 p-3">
+            <p class="text-sm font-semibold text-gray5 dark:text-gray-100">{{ account['uid'] || 'unknown' }}</p>
+            <p class="text-xs text-gray5/70 dark:text-gray-300">Plan: {{ account['plan'] || '-' }} · Status: {{ account['status'] || '-' }}</p>
+            <p class="text-xs text-gray5/60 dark:text-gray-400">Grace Until: {{ account['graceUntil'] || '-' }}</p>
+          </div>
+        }
+      </article>
+    </div>
+
+    <p class="text-xs text-gray5/60 dark:text-gray-400">Generated at {{ data.generatedAt }}</p>
+  }
+</section>

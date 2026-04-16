@@ -23,4 +23,20 @@ describe('AppSidebarNavDropdownComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('isBadge should return true when link has badge', () => {
+    component.link = { badge: { color: 'primary' }, children: [] };
+
+    expect(component.isBadge()).toBeTrue();
+  });
+
+  it('isIcon should return false when icon is missing', () => {
+    component.link = { children: [] };
+
+    expect(component.isIcon()).toBeFalse();
+  });
+
+  it('openMenu should default to true from constructor', () => {
+    expect(component.openMenu).toBeTrue();
+  });
 });
