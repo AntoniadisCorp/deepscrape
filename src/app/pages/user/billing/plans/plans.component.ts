@@ -1,5 +1,5 @@
 import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -17,7 +17,8 @@ import {
   UserBilling,
 } from 'src/app/core/types';
 import { AuthService, BillingService } from 'src/app/core/services';
-import { firstValueFrom, map, Observable } from 'rxjs';
+import { catchError, combineLatest, firstValueFrom, map, Observable, of, shareReplay, startWith } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WindowToken } from 'src/app/core/services';
 
 @Component({
@@ -35,12 +36,14 @@ import { WindowToken } from 'src/app/core/services';
           animate('220ms ease-in', style({ opacity: 0, transform: 'translateY(-6px) scale(0.98)' })),
         ]),
       ]),
-    ]
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 
 export class PlansComponent {
   private window: Window = inject(WindowToken)
+  private readonly destroyRef = inject(DestroyRef)
   planView: PlanPeriod
   planPeriods: Array<PlanPeriod> = []
 
@@ -57,8 +60,10 @@ export class PlansComponent {
   currentBillingValue: UserBilling | null = null
   offerBadgeMessage: string | null = null
   isBillingRestricted = false
+  platformAdminBypassActive = false
   customCreditsAmount = 250
   readonly loadingState$ = this.billingService.loadingState$
+  readonly pageReady$: Observable<boolean>
 
   currentPrice: PlanPeriod = { value: "monthly", label: "Monthly" }
 
@@ -69,7 +74,7 @@ export class PlansComponent {
     annually: { value: "annually", label: "Annually" },
   }
 
-  private readonly restrictedRoleKeywords = ['admin', 'manager', 'editor']
+  private readonly restrictedRoleKeywords = ['manager', 'editor']
 
   constructor(
     private readonly billingService: BillingService,
@@ -83,7 +88,7 @@ export class PlansComponent {
     this.plans$ = catalogPlans$.pipe(map((plans) => plans.filter((plan) => plan.id !== 'trial' && plan.id !== 'free')))
     this.billing$ = this.billingService.billing$
     this.currentPlan$ = this.billing$.pipe(map((billing) => billing.plan))
-    this.billing$.subscribe((billing) => {
+    this.billing$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((billing) => {
       this.currentBillingValue = billing
       this.currentPlanValue = billing.plan
 
@@ -93,7 +98,7 @@ export class PlansComponent {
       }
     })
 
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const shouldShowOffer = params.get('offer') === '1'
       if (!shouldShowOffer) {
         this.offerBadgeMessage = null
@@ -108,9 +113,23 @@ export class PlansComponent {
 
     this.creditPacks$ = this.billingService.getCreditPacks$()
     this.customCreditsConfig$ = this.billingService.getCustomCreditsConfig$()
+    this.pageReady$ = combineLatest([
+      this.billing$,
+      this.freePlan$,
+      this.trialPlan$,
+      this.plans$,
+      this.creditPacks$,
+      this.customCreditsConfig$,
+    ]).pipe(
+      map(() => true),
+      startWith(false),
+      catchError(() => of(true)),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    )
 
-    this.authService.user$.subscribe((user) => {
-      this.isBillingRestricted = this.isRestrictedRole(user?.role)
+    this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
+      this.platformAdminBypassActive = this.authService.isAdmin
+      this.isBillingRestricted = !this.platformAdminBypassActive && this.isRestrictedRole(user?.role)
     })
 
     this.planPeriods = [
@@ -395,15 +414,13 @@ export class PlansComponent {
   }
 
   getPlanTabClass(plan: BillingPlanCatalog, currentPlan: BillingPlanTier | null, billing: UserBilling | null | undefined): string {
-    if (this.isCurrentPlan(plan, currentPlan, billing)) {
-      if (plan.id === 'free') {
-        return 'relative px-6 py-2 rounded-full transition-all duration-300 ease-in-out text-white bg-violet-500 dark:bg-violet-500'
-      }
+    const base = 'relative inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70'
 
-      return 'relative px-6 py-2 rounded-full transition-all duration-300 ease-in-out text-gray-800 dark:text-gray-100 bg-transparent dark:bg-transparent border border-gray-400/40 dark:border-gray-500/40'
+    if (this.isCurrentPlan(plan, currentPlan, billing)) {
+      return `${base} bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-400/50 dark:ring-green-500/30 shadow-sm`
     }
 
-    return `relative px-6 py-2 rounded-full transition-all duration-300 ease-in-out text-white ${this.getPlanButtonClass(plan)}`
+    return `${base} text-white shadow-sm ${this.getPlanButtonClass(plan)}`
   }
 
   shouldShowFreeRecommendedBadge(plan: BillingPlanCatalog, currentPlan: BillingPlanTier | null, billing: UserBilling | null | undefined): boolean {
@@ -481,6 +498,19 @@ export class PlansComponent {
 
   openTrialDetails(): void {
     this.openPlanDetails('trial')
+  }
+
+  async startTrialFromPromo(): Promise<void> {
+    const billing = await firstValueFrom(this.billing$)
+    if (!this.canStartTrial(billing)) {
+      return
+    }
+
+    try {
+      await this.billingService.startTrial()
+    } catch (error) {
+      console.error('Unable to start trial from plans promo', error)
+    }
   }
 
   openUsage(): void {

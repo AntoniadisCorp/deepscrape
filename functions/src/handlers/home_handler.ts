@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
 import { Request, Response } from "express"
@@ -6,14 +7,6 @@ import { db } from "../app/config"
 import { Timestamp } from "firebase-admin/firestore"
 import { Users } from "../domain"
 
-export const helloWorld = async (req: Request, res: Response) => {
-    try {
-        res.status(200).json({ message: "Hello from the server!" })
-    } catch (error) {
-        console.error("Error:", error)
-        res.status(500).json({ error: "Failed to connect to the API" })
-    }
-}
 export const statusCheck = async (req: Request, res: Response) => {
     try {
         res.status(200).json({ status: "ok", message: "ok" })
@@ -32,6 +25,7 @@ export const heartbeat = async (req: Request, res: Response) => {
             req.app.locals["user"]
         const userId = parsedData?.userId
         const guestId = parsedData?.guestId || req.cookies["gid"]
+        const loginId = parsedData?.loginId
         const now = new Date()
         const nowMs = now.getTime()
         const windowMs = 5 * 60 * 1000
@@ -40,6 +34,139 @@ export const heartbeat = async (req: Request, res: Response) => {
         let firestoreCollection
         let id
         if (userId) {
+            if (loginId) {
+                // Check new loginSessions collection first (enterprise architecture)
+                const cachedRevoked = await redis.get(`revoked:${loginId}`)
+                if (cachedRevoked) {
+                    return res.status(401).json({
+                        success: false,
+                        code: "session_revoked",
+                        message: "Session has been revoked",
+                    })
+                }
+
+                // Check cached session validity
+                const cachedSession = await redis.get(`session:${loginId}`)
+                if (cachedSession && typeof cachedSession === "string") {
+                    try {
+                        const sessionData = JSON.parse(cachedSession)
+                        if (sessionData.userId === userId && sessionData.active) {
+                            // PHASE 3.1: Device fingerprint verification (optional)
+                            // Check if device fingerprint matches (if available)
+                            if (sessionData.deviceFingerprint) {
+                                const currentUserAgent = req.get("user-agent") || ""
+                                const ipAddress = req.ip || req.connection.remoteAddress || ""
+                                // Simple fingerprint check: UA + IP
+                                const expectedFingerprint = `${currentUserAgent}|${ipAddress}`
+                                const storedFingerprint = sessionData.deviceFingerprint
+
+                                if (expectedFingerprint !== storedFingerprint) {
+                                    // Device mismatch - log suspicious activity but don't block (optional enforcement)
+                                    console.warn(`⚠️ Device fingerprint mismatch for session ${loginId}: IP or UA changed`)
+                                    // Future: Could require re-auth or 2FA here
+                                }
+                            }
+
+                            // Valid cached session - update lastActivityAt
+                            await db
+                                .collection("loginSessions")
+                                .doc(loginId)
+                                .update({ lastActivityAt: Timestamp.now() })
+                                .catch((err) => console.warn("Failed to update session activity:", err))
+
+                            // Refresh Redis cache TTL
+                            await redis.setex(`session:${loginId}`, 30 * 60, cachedSession)
+                            // Continue to online tracking below
+                        }
+                    } catch (e) {
+                        // Fallthrough to Firestore check
+                    }
+                }
+
+                // Fallback: Check loginSessions collection (slower path)
+                try {
+                    const sessionSnap = await db.collection("loginSessions").doc(loginId).get()
+                    if (sessionSnap.exists) {
+                        const sessionData = sessionSnap.data() as {
+                            userId?: string
+                            active?: boolean
+                            revokedAt?: Timestamp | null
+                        }
+
+                        if (sessionData?.userId === userId && sessionData?.active === true && !sessionData?.revokedAt) {
+                            // Valid session - continue
+                        } else {
+                            // Revoked or invalid
+                            return res.status(401).json({
+                                success: false,
+                                code: "session_revoked",
+                                message: "Session has been revoked",
+                            })
+                        }
+                    }
+                } catch (e) {
+                    // If both checks fail, fallback to old login_history_Info for backwards compat
+                    console.log("loginSessions check failed, falling back to login_history_Info")
+                    const cacheKey = `auth:session:revoked:${userId}:${loginId}`
+                    const revokedCacheRaw = await redis.get<unknown>(cacheKey)
+                    let revokedCache: {revokedAt?: string} | null = null
+                    if (typeof revokedCacheRaw === "string") {
+                        try {
+                            const parsed = JSON.parse(revokedCacheRaw)
+                            revokedCache = parsed as {revokedAt?: string}
+                        } catch {
+                            revokedCache = null
+                        }
+                    } else {
+                        revokedCache = revokedCacheRaw as {
+                            revokedAt?: string
+                        } | null
+                    }
+
+                    if (revokedCache?.revokedAt) {
+                        return res.status(401).json({
+                            success: false,
+                            code: "session_revoked",
+                            message: "Session has been revoked",
+                        })
+                    }
+
+                    const loginDocPath =
+                        `login_metrics/${userId}/login_history_Info/${loginId}`
+                    const loginSnap = await db.doc(loginDocPath).get()
+                    if (loginSnap.exists) {
+                        const loginData = loginSnap.data() as {
+                            connected?: boolean
+                            revokedAt?: Timestamp | Date | null
+                            signOutTime?: Timestamp | Date | null
+                        }
+
+                        if (
+                            loginData?.connected === false ||
+                            loginData?.revokedAt ||
+                            loginData?.signOutTime
+                        ) {
+                            const revokedCacheKey =
+                                `auth:session:revoked:${userId}:${loginId}`
+                            const revokedData = JSON.stringify({
+                                revokedAt: new Date().toISOString(),
+                            })
+                            const thirtyDaysInSeconds = 60 * 60 * 24 * 30
+                            await redis.setex(
+                                revokedCacheKey,
+                                thirtyDaysInSeconds,
+                                revokedData,
+                            )
+                            return res.status(401).json({
+                                success: false,
+                                code: "session_revoked",
+                                message: "Session has been revoked",
+                            })
+                        }
+                    }
+                }
+            }
+
             key = `user:${userId}`
             firestoreCollection = "users"
             id = userId

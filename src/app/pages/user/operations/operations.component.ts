@@ -20,6 +20,7 @@ import { provideNativeDateAdapter } from '@angular/material/core'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatTimepickerModule, provideNativeDateTimeAdapter } from '@dhutaryan/ngx-mat-timepicker'
 import { UserInfo } from '@angular/fire/auth'
+import { listStaggerAnimation } from 'src/app/animations'
 import {
   DocumentData,
   Firestore,
@@ -49,6 +50,7 @@ type OperationPageCursor = {
   selector: 'app-operations',
   imports: [DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe, MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe, GinputComponent, DropdownComponent, RouterLink, PromptareaComponent, ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner, MatInputModule, DecimalPipe, MatTimepickerModule, MatDatepickerModule],
   providers: [provideNativeDateAdapter(), provideNativeDateTimeAdapter()],
+  animations: [listStaggerAnimation],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './operations.component.html',
   styleUrl: './operations.component.scss'

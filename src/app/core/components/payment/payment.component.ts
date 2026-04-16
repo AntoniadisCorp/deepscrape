@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core'
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, inject, signal, ViewChild } from '@angular/core'
 import { FirestoreService, SessionStorage, SnackbarService, STRIPE_PUBLIC_KEY } from '../../services'
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { CurrencyPipe } from '@angular/common';
@@ -11,7 +11,8 @@ import { SnackBarType } from '../snackbar/snackbar.component'
     selector: 'app-payment',
     imports: [ReactiveFormsModule, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
     templateUrl: './payment.component.html',
-    styleUrl: './payment.component.scss'
+  styleUrl: './payment.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaymentComponent {
 
@@ -22,6 +23,7 @@ export class PaymentComponent {
   readonly stripe = injectStripe(STRIPE_PUBLIC_KEY)
 
   private sessionStorage: Storage = inject(SessionStorage)
+  private cdr = inject(ChangeDetectorRef)
 
   checkoutForm: FormGroup
 
@@ -94,6 +96,7 @@ export class PaymentComponent {
             this.sessionStorage.setItem("cart", this.cartId || "") // clear cart
 
             this.elementsOptions.clientSecret = clientSecret as string
+            this.cdr.detectChanges()
           },
           error: (error) => {
             console.log("fire function createSetupIntent error", error)

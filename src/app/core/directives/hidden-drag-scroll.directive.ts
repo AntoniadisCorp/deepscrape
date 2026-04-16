@@ -31,12 +31,12 @@ export class HiddenDragScrollDirective implements OnInit, OnDestroy {
       // Setup all event listeners
       this.setupEvents();
     });
-      // Force the scrollbar to be hidden for cross-browser compatibility
+    // Keep scrolling behavior without overriding host layout styles.
     const element = this.el.nativeElement as HTMLElement;
-    element.style.overflowX = 'scroll';
+    element.style.overflowX = 'auto';
+    element.style.overflowY = 'hidden';
     element.style.scrollbarWidth = 'none'; // Firefox
-    // Microsoft Edge style - add via a class instead
-    element.classList.add('ms-overflow-style-none');
+    (element.style as CSSStyleDeclaration & { msOverflowStyle?: string }).msOverflowStyle = 'none';
   }
   
   private setupEvents(): void {

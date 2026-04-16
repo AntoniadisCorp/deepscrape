@@ -1,5 +1,6 @@
 <div class="container mx-auto px-4 py-8">
   <ng-container *ngIf="loadingState$ | async as loading">
+  <ng-container *ngIf="pageReady$ | async; else plansPageLoading">
   <div class="flex justify-end mb-4 gap-2">
     <button
       type="button"
@@ -23,7 +24,14 @@
   <div *ngIf="isBillingRestricted" class="mb-5 rounded-2xl border border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-4 py-3 text-red-800 dark:text-red-100 shadow-md">
     <div class="flex items-center gap-2">
       <mat-icon fontSet="material-icons-outlined" class="text-red-600 dark:text-red-300">block</mat-icon>
-      <span class="font-medium">Billing is disabled for administrator, manager, and editor accounts.</span>
+      <span class="font-medium">Billing is disabled for manager and editor accounts.</span>
+    </div>
+  </div>
+
+  <div *ngIf="platformAdminBypassActive" class="mb-5 rounded-2xl border border-sky-500/35 bg-sky-500/10 dark:bg-sky-400/10 px-4 py-3 text-sky-800 dark:text-sky-100 shadow-md">
+    <div class="flex items-center gap-2">
+      <mat-icon fontSet="material-icons-outlined" class="text-sky-600 dark:text-sky-300">shield</mat-icon>
+      <span class="font-medium">Platform admin bypass is active. Billing status is shown for reference, but paywall checks are bypassed.</span>
     </div>
   </div>
 
@@ -59,19 +67,33 @@
           </ul>
         </div>
 
-        <button
-          type="button"
-          class="self-start lg:self-center text-sm px-4 py-2 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
-          (click)="openTrialDetails()"
-        >
-          See 14-day trial details
-        </button>
+        <div class="self-start lg:self-center flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 text-sm px-4 py-2 rounded-full bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+            [disabled]="loading.trial || !canStartTrial(billing$ | async)"
+            [class.opacity-70]="loading.trial || !canStartTrial(billing$ | async)"
+            [class.cursor-not-allowed]="loading.trial || !canStartTrial(billing$ | async)"
+            (click)="startTrialFromPromo()"
+          >
+            <mat-spinner *ngIf="loading.trial" [diameter]="16" class="stroke-gray-200"></mat-spinner>
+            Start 14-day trial
+          </button>
+
+          <button
+            type="button"
+            class="text-sm px-4 py-2 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
+            (click)="openTrialDetails()"
+          >
+            See 14-day trial details
+          </button>
+        </div>
       </div>
     </div>
 
     <div
       *ngIf="shouldShowTrialStatus(trialPlan, billing$ | async)"
-      class="mb-8 rounded-2xl border border-gray-300/60 dark:border-gray-600/60 bg-gray-100/80 dark:bg-gray6/80 px-5 py-4 shadow-sm"
+      class="mb-8 rounded-2xl bg-gray-50 dark:bg-gray6/80 px-5 py-4 shadow-md"
     >
       <div class="flex items-center gap-3">
         <mat-icon fontSet="material-icons-outlined" class="text-primary dark:text-violet-300">info</mat-icon>
@@ -128,45 +150,62 @@
     </div>
   </ng-container>
 
-  <div class="flex text-lg justify-center mb-8 bg-gray-300/[0.4] dark:bg-gray-800 rounded-full p-1 shadow-md gap-2">
-    <button
-      title="{{ period.value === currentPrice.value ? 'Current Period ' + period.label : period.label }}"
-      *ngFor="let period of planPeriods"
-      class="relative px-6 py-2 rounded-full transition-all duration-300 ease-in-out"
-      [class.bg-gray6]="planView.value === period.value"
-      [class.dark:bg-gray-100]="planView.value === period.value"
-      [class.text-white]="planView.value === period.value || period.value === currentPrice.value"
-      [class.text-gray-600]="planView.value !== period.value && !(period.value === currentPrice.value)"
-      [class.dark:text-gray-100]="planView.value !== period.value"
-      [class.dark:text-gray6]="planView.value === period.value && !(period.value === currentPrice.value)"
-      [class.bg-violet-500]="period.value === currentPrice.value"
-      [class.dark:bg-violet-500]="period.value === currentPrice.value"
-      (click)="switchPlanView(period)">
-      <mat-icon
-        *ngIf="period.value === 'monthly'"
-        fontSet="material-icons-outlined"
-        class="absolute -top-1 left-0 text-xl text-green-300 -rotate-[60deg]"
-      >energy_savings_leaf</mat-icon>
-      {{ period.label }}
-    </button>
+  <!-- Billing Period Selector -->
+  <div class="mb-8 flex justify-center px-4">
+    <div
+      class="inline-grid w-full max-w-xs grid-cols-2 gap-1 rounded-2xl border border-gray-200/60 bg-gray-100/80 p-1.5 shadow-sm dark:border-white/[0.07] dark:bg-gray-800 sm:inline-flex sm:w-auto sm:max-w-none sm:flex-row"
+      role="group"
+      aria-label="Billing period">
+      <button
+        *ngFor="let period of planPeriods"
+        type="button"
+        title="{{ period.value === currentPrice.value ? 'Current billing period: ' + period.label : period.label }}"
+        class="relative inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70 sm:px-4"
+        [ngClass]="{
+          'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white font-semibold': planView.value === period.value && period.value !== currentPrice.value,
+          'bg-violet-500 shadow text-white font-semibold': planView.value === period.value && period.value === currentPrice.value,
+          'text-violet-600 dark:text-violet-300 bg-violet-50/60 dark:bg-violet-900/20': period.value === currentPrice.value && planView.value !== period.value,
+          'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200': planView.value !== period.value && period.value !== currentPrice.value
+        }"
+        (click)="switchPlanView(period)">
+        <mat-icon
+          *ngIf="period.value === 'monthly'"
+          fontSet="material-icons-outlined"
+          class="shrink-0 -rotate-90 text-emerald-400">energy_savings_leaf</mat-icon>
+        <span class="truncate">{{ period.label }}</span>
+        <span
+          *ngIf="period.value === currentPrice.value"
+          class="hidden sm:inline-flex ml-0.5 shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wider"
+          [ngClass]="{
+            'bg-white/25 text-white': planView.value === period.value,
+            'bg-violet-100 text-violet-700 dark:bg-violet-500/25 dark:text-violet-200': planView.value !== period.value
+          }">
+          Active
+        </span>
+      </button>
+    </div>
   </div>
 
-  <div class="flex flex-wrap items-center justify-center gap-2 mb-8" *ngIf="plans$ | async as plans">
+  <!-- Plan Tab Selector -->
+  <div class="mb-8 flex flex-wrap items-center justify-center gap-2 px-4" *ngIf="plans$ | async as plans">
     <button
       *ngFor="let plan of plans"
       type="button"
       [disabled]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
-      [class.opacity-70]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
       [class.cursor-not-allowed]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
       [ngClass]="getPlanTabClass(plan, currentPlan$ | async, billing$ | async)"
       (click)="openPlanDetails(plan.id)">
-      {{ plan.label }}
-      <span *ngIf="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)" class="ml-2 text-xs font-semibold uppercase tracking-wide">
+      <span>{{ plan.label }}</span>
+      <span
+        *ngIf="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
+        class="inline-flex items-center rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wider">
         Current
       </span>
-      <span *ngIf="shouldShowFreeRecommendedBadge(plan, currentPlan$ | async, billing$ | async)" class="btn-remove ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-green-200">
-        <mat-icon fontSet="material-icons-outlined" class="text-sm">energy_savings_leaf</mat-icon>
-        Recommended
+      <span
+        *ngIf="shouldShowFreeRecommendedBadge(plan, currentPlan$ | async, billing$ | async)"
+        class="btn-remove inline-flex items-center gap-1 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+        <mat-icon fontSet="material-icons-outlined" class="!h-3 !w-3">energy_savings_leaf</mat-icon>
+        Yours
       </span>
     </button>
   </div>
@@ -342,7 +381,7 @@
             <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Custom credit amount</span>
             <input
               type="number"
-              class="w-full rounded-xl border border-gray-300/70 dark:border-gray-700 bg-white/80 dark:bg-gray-800/50 px-4 py-3 text-gray-900 dark:text-gray-100"
+              class="w-full rounded-xl bg-white/80 dark:bg-gray-800/50 px-4 py-3 text-gray-900 shadow-sm dark:text-gray-100"
               [min]="customConfig.minimumCredits"
               [max]="customConfig.maximumCredits"
               [step]="1"
@@ -364,5 +403,14 @@
       </div>
     </ng-container>
   </div>
+  </ng-container>
+
+  <ng-template #plansPageLoading>
+    <div class="flex min-h-[420px] w-full items-center justify-center">
+      <mat-spinner
+        [diameter]="40"
+        class="stroke-sky-700 dark:stroke-sky-400"></mat-spinner>
+    </div>
+  </ng-template>
   </ng-container>
 </div>

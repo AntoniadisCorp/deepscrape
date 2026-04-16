@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PaymentTabComponent } from './payment.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('PaymentTabComponent', () => {
   let component: PaymentTabComponent;
@@ -8,7 +9,8 @@ describe('PaymentTabComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PaymentTabComponent]
+      imports: [PaymentTabComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 
@@ -19,5 +21,18 @@ describe('PaymentTabComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should render Payment Methods heading', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Payment Methods');
+  });
+
+  it('should render Add Card submit button', () => {
+    const button = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    expect(button).toBeTruthy();
+    expect(button.textContent?.trim()).toBe('Add Card');
   });
 });

@@ -1,12 +1,10 @@
 // auth.guard.ts
-import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { AuthService, FirestoreService } from '../services';
-import { map, take, switchMap, delay } from 'rxjs/operators';
-import { from, Observable, of } from 'rxjs';
-import { Auth } from '@angular/fire/auth';
+import { inject } from '@angular/core'
+import { CanActivateFn, Router } from '@angular/router'
+import { AuthService } from '../services'
+import { map } from 'rxjs/operators'
 
-export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
+export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService)
   const router = inject(Router)
 
@@ -15,29 +13,25 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean> => {
       const { isAuthenticated, user } = authData
 
       if (!isAuthenticated || !user) {
-        router.navigate(['/service/login'], { queryParams: { returnUrl: state.url } });
-        return false
+        return router.createUrlTree(['/service/login'], { queryParams: { returnUrl: state.url } })
       }
 
-      console.log('authGuard - Authenticated:', isAuthenticated, 'User:', user)
+      const isEmailVerified = user.emailVerified === true
+      const phoneVerified = user.phoneVerified
 
-      // ✅ Single source of truth: Use Firestore emailVerified (updated after email verification)
-      const isPhoneVerified = user?.phoneVerified || false;
-      const isEmailVerified = user?.emailVerified || false;
-
-      // Check if user needs email verification (password provider only)
-      if (user?.currProviderData?.providerId === 'password' && !isEmailVerified) {
-        router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
-        return false
+      if (user.currProviderData?.providerId === 'password' && !isEmailVerified) {
+        return router.createUrlTree(['/service/verification'], { queryParams: { returnUrl: state.url } })
       }
 
-      // Check if user needs phone verification
-      if (user?.phoneNumber && !isPhoneVerified) {
-        router.navigate(['/service/verification'], { queryParams: { returnUrl: state.url } })
-        return false
+      if (phoneVerified === false) {
+        return router.createUrlTree(['/service/verification'], { queryParams: { returnUrl: state.url } })
+      }
+
+      if (user.onboardedAt == null && !authService.isAdmin) {
+        return router.createUrlTree(['/service/onboarding'], { queryParams: { returnUrl: state.url } })
       }
 
       return true
     })
-  );
+  )
 }

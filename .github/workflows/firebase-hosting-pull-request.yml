@@ -2,7 +2,11 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on PR
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 permissions:
   checks: write
   contents: read
@@ -14,7 +18,7 @@ jobs:
       functions: ${{ steps.changes.outputs.functions }}
       angular: ${{ steps.changes.outputs.angular }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -33,7 +37,7 @@ jobs:
       FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       IP2LOCATION_GCS_PATH: ${{ vars.IP2LOCATION_GCS_PATH }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           
@@ -43,7 +47,7 @@ jobs:
           bun-version: latest
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22.x"
 

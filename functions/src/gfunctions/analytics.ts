@@ -128,6 +128,31 @@ const tmpDatabasePath = path.join(tmpDatabaseDir, databaseFile)
 
 let geoInitializationPromise: Promise<void> | null = null
 
+export type ResolvedGeoData = {
+  ip: string
+  countryShort: string
+  countryLong: string
+  region: string
+  city: string
+  latitude: number | null
+  longitude: number | null
+  timeZone: string
+}
+
+export function normalizePublicIp(value: string | null | undefined): string {
+  const raw = String(value || "").trim()
+  if (!raw) {
+    return ""
+  }
+
+  const first = raw.split(",")[0]?.trim() || ""
+  if (first.startsWith("::ffff:")) {
+    return first.substring(7)
+  }
+
+  return first
+}
+
 type ParsedGcsPath = {
   bucket: string,
   objectPath: string,
@@ -237,6 +262,35 @@ export async function initializeGeoDatabase(): Promise<void> {
   return geoInitializationPromise
 }
 
+export async function lookupGeoByIp(ipInput: string | null | undefined): Promise<ResolvedGeoData | null> {
+  const ip = normalizePublicIp(ipInput)
+  if (!ip) {
+    return null
+  }
+
+  await initializeGeoDatabase()
+  const ip2location = geoDBManager.getInstance()
+  const result = ip2location.getAll(ip) as Record<string, unknown>
+
+  if (String(result?.["countryShort"] || "") === "INVALID IP ADDRESS") {
+    return null
+  }
+
+  const latitudeRaw = Number(result?.["latitude"])
+  const longitudeRaw = Number(result?.["longitude"])
+
+  return {
+    ip,
+    countryShort: String(result?.["countryShort"] || "Unknown"),
+    countryLong: String(result?.["countryLong"] || "Unknown"),
+    region: String(result?.["region"] || "Unknown"),
+    city: String(result?.["city"] || "Unknown"),
+    latitude: Number.isFinite(latitudeRaw) ? latitudeRaw : null,
+    longitude: Number.isFinite(longitudeRaw) ? longitudeRaw : null,
+    timeZone: String(result?.["timeZone"] || "UTC"),
+  }
+}
+
 
 // Helper function to map timezone to continent
 function getContinentFromTimezone(timezone: string): string {
@@ -257,7 +311,10 @@ function getContinentFromTimezone(timezone: string): string {
 // Ensures unique guest analytics using fingerprinting and Redis/Firestore
 export async function guestTracker(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
-  console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
+  if (!env.IS_PRODUCTION) {
+    console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
+  }
+
   const user = req.app.locals["user"] as string | null
   const isUser = !!user
 
@@ -452,22 +509,10 @@ async function getClientIps(req: Request): Promise<{ ipv4: string | null, ipv6: 
 // Refactored getGeolocation function
 async function getGeolocation(ip: string) {
   try {
-    // Get the IP2Location instance
-    const ip2location = geoDBManager.getInstance()
-
-    // Perform IP lookup (synchronous, wrapped in Promise)
-    const geoData = await new Promise<IP2LocationRecord>((resolve, reject) => {
-      try {
-        const result = ip2location.getAll(ip)
-        if (result && result["countryShort"] !== "INVALID IP ADDRESS") {
-          resolve(result)
-        } else {
-          reject(new Error("Invalid IP address"))
-        }
-      } catch (error) {
-        reject(error)
-      }
-    })
+    const geoData = await lookupGeoByIp(ip)
+    if (!geoData) {
+      return {}
+    }
 
     // Emulate browser language and timezone (Node.js context)
     // In a browser, use navigator.language and Intl.DateTimeFormat directly
@@ -486,8 +531,8 @@ async function getGeolocation(ip: string) {
       country: geoData.countryLong || "Unknown",
       location: geoData.city || "Unknown",
       region: geoData.region || "Unknown",
-      latitude: parseFloat(geoData.latitude.toString()),
-      longitude: parseFloat(geoData.longitude.toString()),
+      latitude: geoData.latitude ?? 0,
+      longitude: geoData.longitude ?? 0,
       language,
       timezone,
     } as Pick<UserDetails, "geo" | "country" | "location" | "region" | "latitude" | "longitude" | "language" | "timezone">

@@ -1,5 +1,5 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core'
+import { ChangeDetectorRef, Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core'
 import { FormControl } from '@angular/forms'
 import { RouterLink } from '@angular/router'
 import { SlideInModalComponent } from 'src/app/core/components/slide-in-modal/slide-in-modal.component'
@@ -48,6 +48,7 @@ interface BackupRunItem {
   imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent],
   templateUrl: './admin-migration-backups.component.html',
   styleUrl: './admin-migration-backups.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminMigrationBackupsComponent implements OnInit {
   private readonly firestoreService = inject(FirestoreService)

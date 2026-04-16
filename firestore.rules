@@ -13,18 +13,17 @@ service cloud.firestore {
     // all client requests to your Firestore database will be denied until you Update
     // your rules
     match /{document=**} {
+      // Fallback rule: only admins can access documents not covered by specific rules below.
+      // All other access is denied by default.
       allow read: if isAdmin();
-
-      allow create: if isAuthenticated() && (isAdmin() || requestMatchesUID());
-      allow update: if isAuthenticated() && (isAdmin() || (resourceMatchesUID() && requestMatchesUID()));
-      allow delete: if isAuthenticated() && (isAdmin() || resourceMatchesUID());
+      allow write: if false;
     }
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isAuthenticated() && request.auth.uid == userId &&
-                  (request.auth.token.email_verified || 
-                   request.auth.token.phone_number != null ||
-                   (request.resource.data.phoneNumber == request.auth.token.phone_number && request.resource.data.phoneVerified == true));
+        allow create: if isAuthenticated() && request.auth.uid == userId &&
+              hasNoSensitiveUserFieldChanges(true);
+        allow update: if isAuthenticated() && request.auth.uid == userId &&
+              hasNoSensitiveUserFieldChanges(false);
 
       match /billing/{billingId} {
         allow read: if isAuthenticated() && request.auth.uid == userId;
@@ -65,14 +64,6 @@ service cloud.firestore {
     	return request.auth != null;
     }
     
-    function requestMatchesUID() {
-        return request.auth.uid == request.resource.data.uid;
-    }
-
-    function resourceMatchesUID() {
-        return request.auth.uid == resource.data.uid;
-    }
-
     function hasRole(roleName) {
       return request.auth != null
         && request.auth.token != null
@@ -80,63 +71,61 @@ service cloud.firestore {
         && request.auth.token.role == roleName;
     }
 
-    function hasTeamsClaim() {
-      return request.auth != null
-        && request.auth.token != null
-        && ('teams' in request.auth.token)
-        && request.auth.token.teams is list;
-    }
-
-    function hasOrganizationClaim(orgId) {
-      return request.auth != null
-        && request.auth.token != null
-        && ('organization' in request.auth.token)
-        && request.auth.token.organization == orgId;
-    }
-
     function isAdmin() {
-      return hasRole('admin') || (
-        request.auth != null
-        && request.auth.token != null
-        && ('email' in request.auth.token)
-        && request.auth.token.email in [
-          'prokopis123@gmail.com',
-          'prokopis3@gmail.com',
-          'admin@deepscrape.dev'
-        ]
-      );
+        return hasRole('admin');
     }
 
-    function isModerator() {
-      return hasRole('moderator');
+    function isValidCreatePhoneNumber() {
+      return !request.resource.data.keys().hasAny(['phoneNumber'])
+        || (
+          request.auth.token != null
+          && ('phone_number' in request.auth.token)
+          && request.auth.token.phone_number != null
+          && request.resource.data.phoneNumber == request.auth.token.phone_number
+        );
     }
 
-    function isManager() {
-      return hasRole('manager');
+    function hasNoSensitiveUserFieldChanges(isCreate) {
+      // During CREATE: phoneNumber can only be set when it matches auth token phone_number.
+      // phoneVerified and server-controlled fields must not be client-set.
+      // During UPDATE: block all sensitive changes, including phone fields.
+      let alwaysSensitiveFields = [
+        'uid', 'email', 'providerId', 'providerParent', 'providerData',
+        'role', 'defaultOrgId', 'plan', 'planInterval', 'stripeId', 'subscriptionId',
+        'status', 'currentUsage', 'balance', 'itemId', 'mfa_enabled',
+        'emailVerified', 'profileStatus', 'onboardedAt'
+      ];
+      let createBlockedFields = alwaysSensitiveFields.concat(['phoneVerified']);
+      let updateSensitiveFields = createBlockedFields.concat(['phoneNumber']);
+
+      return isCreate
+        ? !request.resource.data.keys().hasAny(createBlockedFields) && isValidCreatePhoneNumber()
+        : !request.resource.data.diff(resource.data).changedKeys().hasAny(updateSensitiveFields);
     }
 
-    function isUser() {
-      return hasRole('user');
+    function hasOrgRole(orgId, allowedRoles) {
+      return isAuthenticated()
+        && orgId is string
+        && exists(/databases/$(database)/documents/memberships/$(request.auth.uid + '_' + orgId))
+        && get(/databases/$(database)/documents/memberships/$(request.auth.uid + '_' + orgId)).data.role in allowedRoles;
     }
 
-    function isGuest() {
-      return hasRole('guest');
+    match /organizations/{orgId} {
+      allow read: if isAdmin() || hasOrgRole(orgId, ['owner', 'admin', 'member', 'viewer']);
+      allow create, update, delete: if false;
     }
 
-    function isTeamLeader(teamId) {
-      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]) && hasRole('team_leader');
+    match /memberships/{membershipId} {
+      allow read: if isAdmin()
+        || (isAuthenticated() && request.auth.uid == resource.data.userId)
+        || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
+
+      allow create, update, delete: if false;
     }
 
-    function isTeamMember(teamId) {
-      return hasTeamsClaim() && request.auth.token.teams.hasAny([teamId]);
-    }
-
-    function isOrganizationAdmin(orgId) {
-      return hasOrganizationClaim(orgId) && hasRole('org_admin');
-    }
-
-    function isOrganizationMember(orgId) {
-      return hasOrganizationClaim(orgId);
+    match /invitations/{inviteId} {
+      allow read: if isAdmin() || hasOrgRole(resource.data.orgId, ['owner', 'admin']);
+      allow create, update, delete: if false;
     }
     
     match /login_metrics/{docId} {
@@ -148,6 +137,12 @@ service cloud.firestore {
         allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
         allow create, update: if isAuthenticated() && request.auth.uid == docId;
         allow delete: if false;
+      }
+
+      match /login_history_events/{eventId} {
+        allow read: if isAuthenticated() && (request.auth.uid == docId || isAdmin());
+        allow create: if isAuthenticated() && request.auth.uid == docId;
+        allow update, delete: if false;
       }
     }
 
@@ -170,8 +165,43 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /device_verifications/{verificationId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /loginSessions/{sessionId} {
+      // Enterprise session management - controlled via Cloud Functions only
+      // Clients cannot directly write; all mutations go through callable functions
+      allow read: if isAdmin();
+      allow create, update, delete: if false; // Cloud Functions handle all mutations
+    }
+
+    match /users/{userId} {
+      match /sessions/{sessionId} {
+        // User subcollection for easy querying of own sessions
+        // Synced via Cloud Functions, read-only for clients
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow create, update, delete: if false; // Cloud Functions only
+      }
+
+      match /trusted_devices/{deviceId} {
+        allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+        allow create, update, delete: if false;
+      }
+    }
+
     match /operation_metrics/{operationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (('uid' in resource.data) && resource.data.uid == request.auth.uid) ||
+        (('userId' in resource.data) && resource.data.userId == request.auth.uid)
+      );
       allow write: if false;
     }
 

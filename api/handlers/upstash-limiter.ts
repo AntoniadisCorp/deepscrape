@@ -12,6 +12,13 @@ import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
 import { env } from "../../src/config/env"
 
+/**
+ * Extended Express Request with optional user property from auth middleware
+ */
+interface AuthenticatedRequest extends Request {
+  user?: { uid: string; [key: string]: unknown };
+}
+
 const sanitizeUpstashRestUrl = (value: string): string => {
   if (!value) {
     return ""
@@ -74,7 +81,7 @@ const apiRatelimit = new Ratelimit({
  * Includes automatic IP deny list protection
  */
 export async function upstashGeneralLimiter(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
 ): Promise<Response | void> {
@@ -94,7 +101,7 @@ export async function upstashGeneralLimiter(
     const userAgent = req.get("user-agent") || "unknown"
 
     // Use user UID if authenticated, otherwise use IP
-    const identifier = (req as any).user?.uid || ip
+    const identifier = req.user?.uid || ip
 
     // Apply rate limit with protection
     const { success, limit, remaining, reset, pending, reason } = await generalRatelimit.limit(
@@ -196,7 +203,7 @@ export async function upstashGeneralLimiter(
  * Stricter rate limit middleware for API endpoints
  */
 export async function upstashApiLimiter(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
 ): Promise<Response | void> {
@@ -211,7 +218,7 @@ export async function upstashApiLimiter(
     const userAgent = req.get("user-agent") || "unknown"
 
     // Use user UID if authenticated, otherwise use IP
-    const identifier = (req as any).user?.uid || ip
+    const identifier = req.user?.uid || ip
 
     // Apply rate limit with protection
     const { success, limit, remaining, reset, pending, reason } = await apiRatelimit.limit(

@@ -21,7 +21,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
   selector: 'app-profile-tab',
   imports: [StinputComponent, FormControlPipe, DatePipe, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective, ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss']
+  styleUrls: ['./profile.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileTabComponent {
 
@@ -32,7 +33,6 @@ export class ProfileTabComponent {
   private authService = inject(AuthService)
   private snackbarService = inject(SnackbarService)
 
-  protected isAdmin: boolean = false
   profileForm: FormGroup
 
   protected user: Users & { currProviderData: UserInfo | null } | null = null
@@ -57,6 +57,11 @@ export class ProfileTabComponent {
     return this.profileForm.get('previewUrl')
   }
 
+  get isAdmin(): boolean {
+    const role = (this.user?.role || '').trim().toLowerCase()
+    return this.authService.isAdmin || role === 'admin'
+  }
+
 
   validateFile(file: File): boolean {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
@@ -79,9 +84,6 @@ export class ProfileTabComponent {
     //Add 'implements OnInit' to the class.
     this.initProfileForm()
     this.initPhotoPreview()
-
-    this.isAdmin = this.authService.isAdmin
-    console.log('isAdmin:', this.isAdmin)
   }
 
 

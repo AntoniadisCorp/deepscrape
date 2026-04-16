@@ -1,17 +1,18 @@
 import { DatePipe, AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, HostBinding, HostListener, inject, Inject, OnInit, signal, ViewChild, ViewEncapsulation  } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, DestroyRef, HostBinding, HostListener, inject, Inject, OnInit, signal, ViewChild, ViewEncapsulation  } from '@angular/core';
 import { Observable, Subscription, tap, timer } from 'rxjs';
 import { NAVIGATOR } from 'src/app/core/providers';
 import { CheckboxComponent, ClipboardbuttonComponent, DialogComponent, PopupMenuComponent, SlideInModalComponent } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
 import { ApiKey, ApiKeyLoader, ApiKeyType } from 'src/app/core/types';
-import { ApiKeyService, LocalStorage } from 'src/app/core/services';
+import { ApiKeyService, AuthService, LocalStorage } from 'src/app/core/services';
 import { Outsideclick, RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { themeStorageKey } from 'src/app/shared';
 import { FormControlPipe } from 'src/app/core/pipes';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
+import { Router } from '@angular/router'
 
 @Component({
   selector: 'app-api-keys',
@@ -19,6 +20,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.scss',
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ApiKeysComponent implements OnInit {
 
@@ -39,9 +41,18 @@ export class ApiKeysComponent implements OnInit {
 
   protected dialogOpen = signal(false)
   protected KeyIdToDelete = signal<ApiKey>({} as ApiKey)
+  protected revealSecurityOpen = new FormControl<boolean>(false, { nonNullable: true })
+  protected revealPassword = new FormControl<string>('', { nonNullable: true, validators: [Validators.required] })
+  protected revealPendingKey = signal<ApiKey | null>(null)
+  protected revealSecurityError = signal<string>('')
+  protected revealSecurityMode = signal<'password' | 'mfa-required' | 'mfa-enroll-required'>('password')
+  protected revealSecurityLoading = false
+  private cdr = inject(ChangeDetectorRef)
 
   constructor(
     private apiKeyService: ApiKeyService,
+    private authService: AuthService,
+    private router: Router,
     @Inject(NAVIGATOR) private navigator: Navigator
   ) {
 
@@ -75,11 +86,18 @@ export class ApiKeysComponent implements OnInit {
   deleteApiKey(key: ApiKey) {
     if (!key || !key.id) return
     console.log('deleting key', key)
-    this.apiKeyService.deleteApiKey(key);
-    timer(100)
+    this.apiKeySub = this.apiKeyService.deleteApiKey(key)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.closePopupMenu(new Event(''), key);
+      .subscribe({
+        next: () => {
+          this.closePopupMenu(new Event(''), key)
+          this.dialogOpen.set(false)
+          this.cdr.detectChanges()
+        },
+        error: (error) => {
+          console.error('Error deleting API key:', error)
+          this.cdr.detectChanges()
+        },
       })
   }
   disableApiKey(key: ApiKey) {
@@ -87,6 +105,7 @@ export class ApiKeysComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.closePopupMenu(new Event(''), key);
+        this.cdr.detectChanges()
       })
     throw new Error('Method not implemented.');
   }
@@ -99,12 +118,21 @@ export class ApiKeysComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.closePopupMenu(new Event(''), key);
+        this.cdr.detectChanges()
       })
     }).catch(err => {
       console.error('Failed to copy API key: ', err);
     });
   }
   toggleKeyVisibility(key: ApiKey) {
+    if (!key || !key.id) {
+      return
+    }
+
+    if (!key.visibility) {
+      this.revealPendingKey.set(key)
+    }
+
     const keyId = key.id as string
     this.apiKeyLoading.visibility[keyId] = true
 
@@ -115,9 +143,26 @@ export class ApiKeysComponent implements OnInit {
         },
         error: (err: any) => {
           console.error(err)
+
+          if (err?.code === 'RECENT_AUTH_REQUIRED') {
+            this.revealSecurityMode.set('password')
+            this.revealSecurityOpen.setValue(true)
+            this.revealSecurityError.set('Please confirm your password to reveal this API key.')
+          } else if (err?.code === 'MFA_REQUIRED') {
+            this.revealSecurityMode.set('mfa-required')
+            this.revealSecurityOpen.setValue(true)
+            this.revealSecurityError.set('Sign in again with MFA and then retry revealing this key.')
+          } else if (err?.code === 'MFA_ENROLL_REQUIRED') {
+            this.revealSecurityMode.set('mfa-enroll-required')
+            this.revealSecurityOpen.setValue(true)
+            this.revealSecurityError.set('MFA is required to reveal API keys. Set up MFA in Security settings.')
+          }
+
           this.apiKeyLoading.visibility[keyId] = false
+          this.cdr.detectChanges()
         }, complete: () => {
           this.apiKeyLoading.visibility[keyId] = false
+          this.cdr.detectChanges()
         }
       })
   }
@@ -188,6 +233,7 @@ export class ApiKeysComponent implements OnInit {
 
           // reset the input field in modal
           this.clearKeysInput()
+          this.cdr.detectChanges()
         },
         complete: () => {
           this.apiKeyLoading.modal = false
@@ -196,6 +242,7 @@ export class ApiKeysComponent implements OnInit {
 
           // close the modal
           this.isKeyModalOpen?.setValue(!this.isKeyModalOpen?.value)
+          this.cdr.detectChanges()
         }
       })
 
@@ -205,6 +252,57 @@ export class ApiKeysComponent implements OnInit {
       this.KeyIdToDelete.set(key)
       this.dialogOpen.set(true)
   }
+
+  protected cancelRevealSecurityStep(): void {
+    this.revealSecurityOpen.setValue(false)
+    this.revealPassword.setValue('')
+    this.revealSecurityError.set('')
+    this.revealSecurityMode.set('password')
+    this.revealSecurityLoading = false
+    this.revealPendingKey.set(null)
+    this.cdr.detectChanges()
+  }
+
+  protected confirmRevealSecurityStep(): void {
+    if (this.revealSecurityMode() !== 'password') {
+      return
+    }
+
+    if (this.revealPassword.invalid || this.revealSecurityLoading) {
+      return
+    }
+
+    const pendingKey = this.revealPendingKey()
+    if (!pendingKey) {
+      return
+    }
+
+    this.revealSecurityLoading = true
+    this.revealSecurityError.set('')
+
+    void this.authService.reauthenticateWithPassword(this.revealPassword.value)
+      .then(() => {
+        this.revealSecurityLoading = false
+        this.revealSecurityOpen.setValue(false)
+        this.revealPassword.setValue('')
+        this.revealSecurityError.set('')
+        this.revealSecurityMode.set('password')
+        this.toggleKeyVisibility(pendingKey)
+        this.cdr.detectChanges()
+      })
+      .catch((error: any) => {
+        console.error('Sensitive action reauthentication failed:', error)
+        this.revealSecurityLoading = false
+        this.revealSecurityError.set(error?.message || 'Password confirmation failed. Please try again.')
+        this.cdr.detectChanges()
+      })
+  }
+
+  protected goToSecuritySettings(): void {
+    this.cancelRevealSecurityStep()
+    void this.router.navigate(['/settings/security'])
+  }
+
   onCheckBoxChange() {
     console.log(this.defaultKey.value)
     // this.defaultKey.setValue(!this.defaultKey.value)

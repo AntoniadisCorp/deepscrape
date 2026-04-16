@@ -200,8 +200,6 @@ export class CartService {
   ngOnDestroy(): void {
     //Called once, before the instance is destroyed.
     //Add 'implements OnDestroy' to the class.
-
-    this.cartItemSubject?.unsubscribe()
     this.cartItemSubject?.complete()
   }
 }

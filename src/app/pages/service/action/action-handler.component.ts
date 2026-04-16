@@ -10,6 +10,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { timer } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-reset-password-handler',
@@ -135,11 +136,13 @@ export class ActionHandlerComponent implements OnInit {
     console.log('Step 2: Syncing Firestore...');
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
-      throw new Error('No user found after verification');
+      // Action links can be opened while logged out. Auth state will update on next sign-in.
+      console.log('No authenticated user during verification link handling; skipping profile sync.');
+      return;
     }
 
     console.log('Step 3: Updating Firestore...');
-    await this.firestoreService.updateEmailVerificationStatus(currentUser.uid, true);
+    await firstValueFrom(this.authService.updateEmailVerificationStatus(currentUser.uid));
 
     console.log('Step 4: Refreshing user data...');
     await this.authService.refreshUserData();
@@ -159,7 +162,7 @@ export class ActionHandlerComponent implements OnInit {
   /** Resolve the redirect URL after email verification */
   private resolveRedirectUrl(): string {
     if (!this.continueUrl) {
-      return '/dashboard';
+      return '/service/onboarding';
     }
 
     try {
@@ -173,7 +176,7 @@ export class ActionHandlerComponent implements OnInit {
     } catch {
       console.warn('Invalid continueUrl, using dashboard');
     }
-    return '/dashboard';
+    return '/service/onboarding';
   }
 
   /** Handle email verification errors */

@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl } from '@angular/forms';
 
 import { RadioButtonComponent } from './radio-button.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('RadioButtonComponent', () => {
   let component: RadioButtonComponent;
@@ -8,20 +10,29 @@ describe('RadioButtonComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RadioButtonComponent]
+      imports: [RadioButtonComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 
     fixture = TestBed.createComponent(RadioButtonComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('control', new FormControl<string>('', { nonNullable: true }));
+    fixture.componentRef.setInput('value', 'test-value');
     fixture.detectChanges();
-  });/* The code snippet `this.control = new FormControl('', { nonNullable: true, validators:
-  [Validators.required] })` is attempting to create a new instance of a `FormControl` object
-  and assign it to the `control` property of the `RadioButtonComponent` class. However, there
-  are a couple of issues with this code: */
+  });
 
+  it('returns fallback label when no title is set', () => {
+    expect(component.setTitle()).toBe('set a Title');
+  });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('returns the title when set', () => {
+    component.title = 'My Option';
+    expect(component.setTitle()).toBe('My Option');
+  });
+
+  it('reflects control value changes', () => {
+    component.control.setValue('test-value');
+    expect(component.control.value).toBe('test-value');
   });
 });

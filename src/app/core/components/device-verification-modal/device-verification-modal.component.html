@@ -1,0 +1,87 @@
+<div class="device-verification-modal">
+  <h2 mat-dialog-title>Verify Your Device</h2>
+
+  <mat-dialog-content>
+    <p class="subtitle">
+      We detected a login from a new device. Please verify your identity to continue.
+    </p>
+
+    <!-- Step 1: Choose verification method -->
+    <div *ngIf="!verificationSent()" class="verification-methods">
+      <h3>Choose verification method:</h3>
+      <div class="method-buttons">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="sendCode('email')"
+          [disabled]="isSending()"
+        >
+          <span *ngIf="!isSending()">📧 Verify via Email</span>
+          <mat-spinner *ngIf="isSending()" diameter="20"></mat-spinner>
+        </button>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="sendCode('sms')"
+          [disabled]="isSending()"
+        >
+          <span *ngIf="!isSending()">📱 Verify via SMS</span>
+          <mat-spinner *ngIf="isSending()" diameter="20"></mat-spinner>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Enter verification code -->
+    <div *ngIf="verificationSent()" class="code-entry">
+      <p class="info-text">
+        A verification code has been sent to your {{ verificationMethod() === 'email' ? 'email' : 'phone' }}.
+      </p>
+
+      <mat-form-field class="full-width">
+        <mat-label>Verification Code</mat-label>
+        <input
+          matInput
+          [(ngModel)]="codeInput"
+          placeholder="Enter 6-digit code"
+          maxlength="6"
+          [disabled]="isVerifying()"
+        />
+      </mat-form-field>
+
+      <mat-form-field class="full-width">
+        <mat-label>Device Name (optional)</mat-label>
+        <input
+          matInput
+          [(ngModel)]="deviceName"
+          placeholder="e.g., Work MacBook, Home PC"
+          [disabled]="isVerifying()"
+        />
+      </mat-form-field>
+
+      <div class="countdown" *ngIf="verificationExpiry()">
+        <p>Code expires in: {{ getTimeRemaining() }}</p>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button
+      mat-button
+      (click)="close()"
+      [disabled]="isVerifying()"
+    >
+      Cancel
+    </button>
+
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="verify()"
+      *ngIf="verificationSent()"
+      [disabled]="!codeInput || codeInput.length !== 6 || isVerifying()"
+    >
+      <span *ngIf="!isVerifying()">Verify & Continue</span>
+      <mat-spinner *ngIf="isVerifying()" diameter="20"></mat-spinner>
+    </button>
+  </mat-dialog-actions>
+</div>

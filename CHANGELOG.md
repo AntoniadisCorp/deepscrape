@@ -1,18 +1,34 @@
-## [0.6.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.3...v0.6.4) (2026-03-19)
+# [0.7.0-beta.7](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-04-16)
 
 
 ### Bug Fixes
 
-* **ci:** recreate release asset branches without stale LFS refs ([3e38477](https://github.com/AntoniadisCorp/deepscrape/commit/3e38477d018ec24b2dfe462c0bcb1d65c5b4c087))
+* **ci:** recreate release asset branches without stale LFS refs ([3e38477](https://github.com/deepscrape/deepscrape/commit/3e38477d018ec24b2dfe462c0bcb1d65c5b4c087))
 
-## [0.6.2](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.1...v0.6.2) (2026-03-18)
+## [0.6.2-beta.5](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.4...v0.6.2-beta.5) (2026-03-19)
 
 
 ### Bug Fixes
 
-* **build:** sync package-lock for npm ci ([0674ea3](https://github.com/AntoniadisCorp/deepscrape/commit/0674ea3b22bbde00415e7cd98ef5ff1041644280))
-* **ci:** ensure hosting build runs for hosting-triggered deploys ([7d2a269](https://github.com/AntoniadisCorp/deepscrape/commit/7d2a2699585d4712c35ec3a6c6d663b5a5477337))
-* **deps:** patch Angular packages and refresh lockfiles ([05c4318](https://github.com/AntoniadisCorp/deepscrape/commit/05c4318b18e879e4e2ada05c8d1bf6241cbd969f))
+* **tests:** fix CI build failure and upgrade failing Karma specs ([676731e](https://github.com/AntoniadisCorp/deepscrape/commit/676731ebd7b5081325eb94969a6abce9999638d0))
+* **workflow:** update trigger to include push events for 'main' branch ([c99d202](https://github.com/AntoniadisCorp/deepscrape/commit/c99d202b8fd24432c3d7a493a70193784fb7f679))
+
+## [0.6.2-beta.4](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.3...v0.6.2-beta.4) (2026-03-19)
+
+
+### Bug Fixes
+
+* replace jest type with jasmine in tsconfig.json ([2399533](https://github.com/AntoniadisCorp/deepscrape/commit/23995336e50fdd79fa3b0959f89c7b601cf28e3a))
+* **tests:** address code review - add permissions to CI jobs and improve spec comments ([8e46995](https://github.com/AntoniadisCorp/deepscrape/commit/8e46995efd041671403d2016bc2c129fa5afb27e))
+* **tests:** fix 26 failing Karma tests - Q2-Q4 implementation phase ([0bb2633](https://github.com/AntoniadisCorp/deepscrape/commit/0bb2633741f9cfc208007ba2df562f5a1e9876c2))
+* **tests:** fix 3 remaining failing specs + add test CI workflow ([a23a1b1](https://github.com/AntoniadisCorp/deepscrape/commit/a23a1b10749becf9f1f82cc1483a28d073200d87))
+
+## [0.6.2-beta.3](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.2-beta.2...v0.6.2-beta.3) (2026-03-19)
+
+
+### Bug Fixes
+
+* **ci:** recreate release asset branches without stale LFS refs ([62a7910](https://github.com/AntoniadisCorp/deepscrape/commit/62a7910082fd4f59377ec356f11edcf122792a6f))
 
 ## [0.6.2-beta.1](https://github.com/AntoniadisCorp/deepscrape/compare/v0.6.1...v0.6.2-beta.1) (2026-03-18)
 

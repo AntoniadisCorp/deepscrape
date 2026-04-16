@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PassesComponent } from './passes.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('PassesComponent', () => {
   let component: PassesComponent;
@@ -8,7 +9,8 @@ describe('PassesComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PassesComponent]
+      imports: [PassesComponent],
+      providers: getTestProviders(),
     })
     .compileComponents();
 
@@ -19,5 +21,15 @@ describe('PassesComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should render placeholder copy', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('passes works!');
+  });
+
+  it('should compile as standalone component', () => {
+    expect((PassesComponent as any).ɵcmp.standalone).toBeTrue();
   });
 });

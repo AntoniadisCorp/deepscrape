@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { BrowserToken, browserProvider, Chrome } from './browser.service';
+import { getTestProviders } from 'src/app/testing';
 
 describe('BrowserService', () => {
   let originalChrome: any;
@@ -20,6 +21,7 @@ describe('BrowserService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         {
           provide: BrowserToken,
           useFactory: browserProvider,
@@ -30,14 +32,15 @@ describe('BrowserService', () => {
     const injectedChrome = TestBed.inject(BrowserToken);
     expect(injectedChrome).toEqual(mockChrome);
 
-    delete (window as any).chrome; // Cleanup mock
+    (window as any).chrome = originalChrome;
   });
 
   it('should return undefined when chrome is not available', () => {
-    delete (window as any).chrome; // Ensure `chrome` is undefined
+    (window as any).chrome = undefined;
 
     TestBed.configureTestingModule({
       providers: [
+        ...getTestProviders(),
         {
           provide: BrowserToken,
           useFactory: browserProvider,

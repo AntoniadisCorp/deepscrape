@@ -30,13 +30,15 @@ export function customUrlDecoder(input: string): string {
 /**
  * Event listener for HTTP server "listening" event.
  */
-export async function onListening() {
-    try {
-        await initializeGeoDatabase()
-        console.log("IP2Location database initialized successfully.")
-    } catch (error) {
-        console.error("Error initializing IP2Location database:!", error)
-    }
+export function onListening() {
+    // Warm up once at startup. initializeGeoDatabase is promise-cached and idempotent.
+    void initializeGeoDatabase()
+        .then(() => {
+            console.log("IP2Location database initialized successfully.")
+        })
+        .catch((error) => {
+            console.error("Error initializing IP2Location database:!", error)
+        })
     // debug('Listening on ' + bind);
 }
 
@@ -54,11 +56,13 @@ export function normalizePort(servPort: string) {
 
 /**
  * Event listener for HTTP server "error" event.
- * @param {any} error
+ * @param error
  * @returns {void}
  */
-export function onError(error: any): void {
-    if (error.syscall !== "listen") {
+export function onError(error: unknown): void {
+    const normalizedError = error as { syscall?: string; code?: string }
+
+    if (normalizedError.syscall !== "listen") {
         throw error
     }
 
@@ -67,7 +71,7 @@ export function onError(error: any): void {
         "Port " + port
 
     // handle specific listen errors with friendly messages
-    switch (error.code) {
+    switch (normalizedError.code) {
         case "EACCES":
             console.error(bind + " requires elevated privileges")
             process.exit(1)

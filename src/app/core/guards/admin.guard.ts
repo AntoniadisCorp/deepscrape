@@ -1,51 +1,19 @@
-import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { Auth } from '@angular/fire/auth';
-import { Observable } from 'rxjs';
-import { map, switchMap, tap } from 'rxjs/operators';
-import { AuthService, FirestoreService } from '../services';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
+import { take } from 'rxjs/internal/operators/take';
+import { map } from 'rxjs/internal/operators/map';
+import { AuthzService } from '../services';
 
-@Injectable({ providedIn: 'root' })
-export class AdminGuard implements CanActivate {
-    constructor(
-        private afAuth: AuthService,
-        private router: Router,
+export const adminGuard: CanActivateFn = () => {
+    const router = inject(Router);
+    const authzService = inject(AuthzService);
+    return authzService.hasPlatformAdminAccess$().pipe(
+        take(1),
+        map((isAdmin): boolean | UrlTree => (isAdmin ? true : router.createUrlTree(['/']))),
+    );
+};
 
-        private fireService: FirestoreService
-
-    ) { }
-
-    canActivate(): Observable<boolean> {
-        return this.fireService.authState().pipe(
-            map(user => ({ isAuthenticated: !!user, user })),
-            switchMap(async isAuthData => {
-                const { isAuthenticated, user } = isAuthData
-
-                if (!isAuthenticated) {
-                    this.router.navigate(['/login']);
-                    return false;
-                }
-                const tokenResult = await user?.getIdTokenResult();
-                return tokenResult;
-            }),
-            map(tokenResult => {
-                // console.log('AdminGuard - Token Result:', tokenResult)
-                if (tokenResult && typeof tokenResult !== 'boolean') {
-                    const role = tokenResult.claims?.['role'];
-                    if (typeof role === 'string') {
-                        return role === 'admin';
-                    }
-                    return false;
-                }
-                return false;
-            }),
-            tap(isAdmin => {
-                if (!isAdmin) {
-                    this.router.navigate(['/']);
-                }
-            })
-
-
-        )
-    }
+/** @deprecated Use the functional `adminGuard` instead. */
+export class AdminGuard {
+    canActivate = adminGuard;
 }

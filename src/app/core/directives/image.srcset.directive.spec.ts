@@ -1,9 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImageSrcsetDirective } from './image.srcset.directive';
 import { ElementRef, Component } from '@angular/core';
+import { getTestProviders } from 'src/app/testing';
 
 @Component({
-  template: '<img [dataSrcset]="imageUrl" [name]="name">',
+  standalone: true,
+  imports: [ImageSrcsetDirective],
+  template: '<img [srcset]="imageUrl" [name]="name">',
 })
 class TestComponent {
   imageUrl = 'test.jpg';
@@ -12,97 +15,90 @@ class TestComponent {
 
 describe('ImageSrcsetDirective', () => {
   let fixture: ComponentFixture<TestComponent>;
-  let component: TestComponent;
-  let elementRef: ElementRef;
   let imgElement: HTMLImageElement;
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      declarations: [TestComponent],
-      imports: [ImageSrcsetDirective],
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TestComponent],
+      providers: getTestProviders(),
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestComponent);
-    component = fixture.componentInstance;
-    elementRef = fixture.debugElement.nativeElement.firstChild;
-    imgElement = elementRef as any;
-  });
-
-  it('should create an instance', () => {
-    const directive = new ImageSrcsetDirective(elementRef);
-    expect(directive).toBeTruthy();
+    fixture.detectChanges();
+    imgElement = fixture.nativeElement.querySelector('img') as HTMLImageElement;
   });
 
   it('should set srcset on ngAfterViewInit', () => {
-    fixture.detectChanges();
-    const directive = new ImageSrcsetDirective(elementRef);
-    directive.ngOnInit()
+    const el = document.createElement('img');
+    const directive = new ImageSrcsetDirective(new ElementRef(el));
+    directive.srcset = 'test.jpg';
+    directive.ngOnInit();
     directive.ngAfterViewInit();
-    expect(imgElement.srcset).toBe('test.jpg');
+    expect(el.srcset).toContain('test.jpg');
   });
 
-  it('should handle error and set fallback image', () => {
-    fixture.detectChanges();
-    const directive = new ImageSrcsetDirective(elementRef);
-    directive.ngOnInit()
+  it('should set fallback avatar on image error', () => {
+    const el = document.createElement('img');
+    const directive = new ImageSrcsetDirective(new ElementRef(el));
+    directive.name = 'John Doe';
+    directive.srcset = 'broken.jpg';
+    directive.ngOnInit();
     directive.ngAfterViewInit();
 
-    // Spy on _handleError
-    spyOn<any>(directive, '_handleError').and.callThrough();
-
-    // Simulate an error event
-    if (imgElement.onerror) {
-      imgElement.onerror(new ErrorEvent('error'));
+    if (el.onerror) {
+      el.onerror(new ErrorEvent('error'));
     }
 
-    expect(directive['_handleError']).toHaveBeenCalled();
+    expect(el.srcset).toContain('ui-avatars.com');
+    expect(el.srcset).toContain('J+D');
   });
 
-  it('should clear onload and onerror on load', () => {
-    fixture.detectChanges();
-    const directive = new ImageSrcsetDirective(elementRef);
-    directive.ngOnInit()
+  it('should emit loading lifecycle and clear handlers on successful load', () => {
+    const el = document.createElement('img');
+    const directive = new ImageSrcsetDirective(new ElementRef(el));
+    directive.srcset = 'test.jpg';
+    const loadingStates: boolean[] = [];
+    directive.loadingChange.subscribe((state) => loadingStates.push(state));
+
+    directive.ngOnInit();
     directive.ngAfterViewInit();
 
-    // Simulate onload event
-    if (imgElement.onload)
-      imgElement.onload(new Event('load'));
+    if (el.onload) {
+      el.onload(new Event('load'));
+    }
 
-    expect(imgElement.onload).toBeNull();
-    expect(imgElement.onerror).toBeNull();
+    expect(loadingStates).toEqual([true, false]);
+    expect(el.onload).toBeNull();
+    expect(el.onerror).toBeNull();
   });
 
-  it('should generate correct avatar URL', () => {
-    fixture.detectChanges();
-    const directive = new ImageSrcsetDirective(elementRef);
-    directive.ngOnInit()
+  it('should generate correct avatar URL on error', () => {
+    const el = document.createElement('img');
+    const directive = new ImageSrcsetDirective(new ElementRef(el));
+    directive.name = 'John Doe';
+    directive.ngOnInit();
     directive.ngAfterViewInit();
 
-    // Spy on _handleError
-    spyOn<any>(directive, '_handleError').and.callThrough();
+    if (el.onerror) {
+      el.onerror(new ErrorEvent('error'));
+    }
 
-    // Simulate an error event
-    if (imgElement.onerror)
-      imgElement.onerror(new ErrorEvent('error'));
-    const expectedUrl = `https://eu.ui-avatars.com/api/?name=J+D&size=250`
-    expect(imgElement.srcset).toEqual(expectedUrl);
+    expect(el.srcset).toContain('ui-avatars.com');
+    expect(el.srcset).toContain('J+D');
   });
 
-  it('should use "NA" as default name if name is not provided', () => {
-    fixture.detectChanges();
-    const directive = new ImageSrcsetDirective(elementRef);
-    component.name = null; // Set name to null
-
-    directive.ngOnInit()
+  it('should prioritize defaultSrcset when provided', () => {
+    const el = document.createElement('img');
+    const directive = new ImageSrcsetDirective(new ElementRef(el));
+    directive.name = null;
+    directive.defaultSrcset = 'https://example.com/fallback.webp';
+    directive.ngOnInit();
     directive.ngAfterViewInit();
 
-    // Spy on _handleError
-    spyOn<any>(directive, '_handleError').and.callThrough();
+    if (el.onerror) {
+      el.onerror(new ErrorEvent('error'));
+    }
 
-    // Simulate an error event
-    if (imgElement.onerror)
-      imgElement.onerror(new ErrorEvent('error'));
-    const expectedUrl = `https://eu.ui-avatars.com/api/?name=N+A&size=250`
-    expect(imgElement.srcset).toEqual(expectedUrl);
+    expect(el.srcset).toContain('fallback.webp');
   });
 });

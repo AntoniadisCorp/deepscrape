@@ -12,24 +12,13 @@ const sanitizeUpstashRestUrl = (value: string): string => {
         return ""
     }
 
-    try {
-        const parsed = new URL(value)
-        if (parsed.hostname.endsWith(".upstash.io.upstash.io")) {
-            parsed.hostname = parsed.hostname.replace(/\.upstash\.io\.upstash\.io$/, ".upstash.io")
-            return parsed.toString().replace(/\/$/, "")
-        }
-        return value
-    } catch {
-        const normalized = value
-            .trim()
-            .replace(/\.upstash\.io\.upstash\.io(?=$|\/)/, ".upstash.io")
+    // Strip surrounding whitespace and trailing slashes
+    let normalized = value.trim().replace(/\/+$/, "")
 
-        if (!normalized) {
-            return ""
-        }
+    // Deduplicate malformed hostnames like *.upstash.io.upstash.io
+    normalized = normalized.replace(/\.upstash\.io\.upstash\.io(\/|$)/, ".upstash.io$1")
 
-        return /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`
-    }
+    return /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`
 }
 
 // Initialize Upstash Redis client

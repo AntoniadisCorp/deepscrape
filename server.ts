@@ -8,6 +8,11 @@ import { SyncAIapis } from 'api'
 import { upstashApiLimiter, upstashGeneralLimiter } from 'api/handlers'
 import { fileURLToPath } from 'node:url'
 import { env } from './src/config/env'
+import cookieParser from 'cookie-parser'
+
+type SessionCookiePayload = {
+  sessionId?: string
+}
 
 // The Express app is exported so that it can be used by serverless Functions.
 function serveapp(): express.Application {
@@ -37,6 +42,44 @@ function serveapp(): express.Application {
 
   server.use(express.urlencoded({ limit: '3mb', extended: false }))
   server.use(express.json({ limit: '3mb' })) // Parse JSON bodies
+  
+  // PHASE 1.4: Cookie parser middleware for HttpOnly session cookies
+  server.use(cookieParser())
+
+  // Exact allowlist of paths that may receive a session cookie — prevents overly broad substring matching.
+  const SESSION_COOKIE_ALLOW_PATHS = new Set(['/api/auth/verify-login', '/api/event/heartbeat'])
+
+  // PHASE 1.4: HttpOnly cookie session middleware - sets secure session cookie after successful auth
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    const originalJson = res.json.bind(res)
+    
+    res.json = function(data: SessionCookiePayload) {
+      // After successful login/heartbeat, set HttpOnly session cookie
+      if (data && SESSION_COOKIE_ALLOW_PATHS.has(req.path) && data.sessionId) {
+        const isDevelopment = env.PRODUCTION !== 'true'
+        res.cookie('sid', data.sessionId, {
+          httpOnly: true,
+          secure: !isDevelopment,
+          sameSite: 'strict',
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
+          path: '/'
+        })
+        console.log('✅ Session cookie set via HttpOnly')
+      }
+      return originalJson(data)
+    }
+    next()
+  })
+  
+  // PHASE 1.4: Middleware to clear session cookie on logout
+  server.post('/logout', (req: Request, res: Response) => {
+    res.clearCookie('sid', {
+      httpOnly: true,
+      path: '/'
+    })
+    console.log('✅ Session cookie cleared on logout')
+    return res.sendStatus(204)
+  })
 
   // Apply advanced Upstash rate limiter to all requests (except /api which has its own limiter)
   server.use(upstashGeneralLimiter)
@@ -82,7 +125,7 @@ function serveapp(): express.Application {
   }))
 
   // All regular routes use the Angular engine **
-  server.get(/.*/, (req: Request, res: Response, next: any) => {
+  server.get(/.*/, (req: Request, res: Response, next: NextFunction) => {
     console.log(
       chalk.bgYellow('Request Method:'), req.method,
       chalk.bgYellow('Request URL:'), req.url,

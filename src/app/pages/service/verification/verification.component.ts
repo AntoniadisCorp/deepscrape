@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, Inject, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
-import { applyActionCode, Auth, sendEmailVerification, updateCurrentUser, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
+import { applyActionCode, Auth, sendEmailVerification, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
+import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
-import { AuthService, FirestoreService, SnackbarService } from 'src/app/core/services';
+import { AuthService, FirestoreService, GuestTrackingService, SnackbarService } from 'src/app/core/services';
+import { WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
 import { delay, finalize, Subscription, timer } from 'rxjs';
@@ -11,19 +12,23 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Loading } from 'src/app/core/types';
 import { getErrorMessage } from 'src/app/core/functions';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { OtpInputComponent } from 'src/app/shared';
+import { resolveSafeReturnUrl } from 'src/app/core/functions';
 
 @Component({
   selector: 'app-verification',
-  imports: [MatIcon, ReactiveFormsModule, TranslateModule],
+  standalone: true,
+  imports: [MatIcon, ReactiveFormsModule, TranslateModule, OtpInputComponent],
   templateUrl: './verification.component.html',
-  styleUrl: './verification.component.scss'
+  styleUrl: './verification.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
-  @ViewChild('recaptcha') recaptcha: any
+  @ViewChild('recaptcha') recaptcha: any;
   user: User | null = null;
-  logoutSubscription: Subscription;
-  timerSubscriber: Subscription;
+  logoutSubscription!: Subscription;
+  timerSubscriber!: Subscription;
   loading: Loading = {
     email: false,
     remove: false,
@@ -39,29 +44,39 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public recaptchaVerifier!: RecaptchaVerifier;
   public confirmationResult!: ConfirmationResult;
-  public verificationMethod: 'email' | 'phone' | null = null; // 'email' or 'phone'
-  public phoneVerificationForm: FormGroup;
-  private platformId = inject<Object>(PLATFORM_ID);
+  public verificationMethod: 'email' | 'phone' | null = null;
+  public phoneVerificationForm!: FormGroup;
+  private pendingVerificationId: string | null = null;
+  private pendingPhoneNumber: string | null = null;
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly auth = inject(Auth);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly window = inject(WindowToken);
+  private readonly snackbarService = inject(SnackbarService);
+  private readonly authService = inject(AuthService);
+  private readonly firestoreService = inject(FirestoreService);
+  private readonly guestTrackingService = inject(GuestTrackingService);
+  private readonly fb = inject(FormBuilder);
+  private readonly document = inject(DOCUMENT);
+  private readonly translate = inject(TranslateService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  constructor(
-    private auth: Auth,
-    private router: Router,
-    private snackbarService: SnackbarService,
-    private authService: AuthService,
-    private firestoreService: FirestoreService,
-    private fb: FormBuilder,
-    @Inject(DOCUMENT) private document: Document,
-    private cdr: ChangeDetectorRef,
-    private translate: TranslateService
-  ) {
+  constructor() {
     this.phoneVerificationForm = this.fb.group({
-      phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[1-9]\d{1,14}$/)]],
-      verificationCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]]
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\+[1-9]\d{7,14}$/)]],
+      verificationCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
     });
   }
 
   ngOnInit(): void {
     this.user = this.auth.currentUser
+    const navState = (this.router.getCurrentNavigation()?.extras?.state || this.window.history.state || {}) as {
+      verificationId?: string;
+      phoneNumber?: string;
+    }
+    this.pendingVerificationId = typeof navState.verificationId === 'string' ? navState.verificationId : null
+    this.pendingPhoneNumber = typeof navState.phoneNumber === 'string' ? navState.phoneNumber : null
     this.checkVerificationStatus()
   }
 
@@ -74,7 +89,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private initializeRecaptcha(): void {
     // Ensure the recaptcha-verification element is available before initializing
-    
+
     console.log(this.document.getElementById('recaptcha-verification'))
     if (this.document.getElementById('recaptcha-verification')) {
       this.recaptchaVerifier = new RecaptchaVerifier(this.auth, 'recaptcha-verification', {
@@ -84,7 +99,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
           if (this.verificationMethod === 'phone' && this.phoneVerificationForm.get('phoneNumber')?.valid) {
             this.sendPhoneVerificationCode();
           }
-        },        'expired-callback': () => {
+        }, 'expired-callback': () => {
           const message = this.translate.instant('VERIFICATION.RECAPTCHA_EXPIRED');
           this.showSnackbar(message, SnackBarType.warning);
         }
@@ -97,27 +112,45 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private async checkVerificationStatus(): Promise<void> {
     if (!this.user) {
-      this.router.navigate(['/service/login'])
-      return
+      this.router.navigate(['/service/login'], { queryParams: { returnUrl: this.getReturnUrl() } });
+      return;
     }
-    this.loading.email = true
+    this.loading.email = true;
+    try {
+      const userData = await this.firestoreService.getUserData(this.user.uid);
 
-    const userData = await this.firestoreService.getUserData(this.user.uid)
+      const provider = userData?.providerId ?? '';
+      const isSocial = ['google.com', 'github.com', 'facebook.com'].includes(provider);
+      // Social providers have email implicitly verified; password accounts must verify email
+      const emailOk = isSocial || this.user.emailVerified === true;
+      // null  = no phone was registered at signup (optional) → allowed through
+      // false = phone was registered at signup but NOT yet verified → must verify
+      // true  = phone verified
+      const phoneOk = userData?.phoneVerified !== false;
 
-    if (this.user.emailVerified && userData?.phoneVerified) {
-      this.router.navigate(['/dashboard']); // Both verified, go to dashboard
-    } else if (!this.user.emailVerified && userData?.phoneVerified === null) {
-      this.verificationMethod = 'email'
-    } else if ((userData?.phoneVerified === false || this.user.phoneNumber) && !userData?.phoneVerified) {
-      this.verificationMethod = 'phone'
-      this.phoneVerificationForm.get('phoneNumber')?.setValue(this.user.phoneNumber)
-    } else {
-      // User has email verified but no phone number or phone not verified in Firestore
-      // Prompt to add/verify phone number if desired, or just proceed to dashboard
-      this.verificationMethod = 'phone'; // Default to phone verification if email is verified but phone is not
+      if (emailOk) {
+        await this.ensureCurrentSessionMetrics(provider || undefined);
+      }
+
+      this.loading.email = false;
+
+      if (emailOk && phoneOk) {
+        this.router.navigateByUrl(this.getReturnUrl());
+        return;
+      }
+      if (!emailOk) {
+        this.verificationMethod = 'email';
+        return;
+      }
+      // emailOk && !phoneOk: phone was registered but never verified
+      this.verificationMethod = 'phone';
+      this.phoneVerificationForm.get('phoneNumber')?.setValue(this.user.phoneNumber ?? userData?.phoneNumber ?? this.pendingPhoneNumber ?? '');
+    } catch (error: any) {
+      console.error('Error checking verification status:', error);
+      this.loading.email = false;
+    } finally {
+      this.cdr.markForCheck();
     }
-    this.loading.email = false
-    this.cdr.detectChanges(); // Ensure the view updates with the new state
   }
 
   async sendPhoneVerificationCode() {
@@ -128,24 +161,20 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       if (!phoneNumber) {
         throw new Error('Phone number is required.');
       }
-      
-      // If user already has an account, link the phone number
       if (this.user) {
         this.confirmationResult = await this.authService.linkPhoneNumber(phoneNumber, this.recaptchaVerifier);
       } else {
-        // This case should ideally not happen if user is redirected from signup/login
-        // but as a fallback, try to sign in with phone
         this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier);
-      }      console.log('Phone verification code sent:', this.confirmationResult)
+      }
       const message = this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT');
       this.showSnackbar(message, SnackBarType.success);
-      this.cdr.detectChanges(); // Ensure the view updates with the new state
     } catch (error: any) {
       console.error('Error sending phone verification code:', error);
       this.errorMessage = getErrorMessage(error, this.translate);
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.phone = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -156,25 +185,31 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       const verificationCode = this.phoneVerificationForm.get('verificationCode')?.value;
       if (!verificationCode) {
         throw new Error('Verification code is required.');
-      }      if (!this.confirmationResult) {
+      }
+      const verificationId = this.confirmationResult?.verificationId || this.pendingVerificationId;
+      if (!verificationId) {
         throw new Error(this.translate.instant('VERIFICATION.NO_CODE_INITIATED'));
       }
 
-      const credential = PhoneAuthProvider.credential(this.confirmationResult.verificationId, verificationCode);
-      
+      const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
+
       let userCredential;
       if (this.user) {
-        // If user is already logged in, link the credential
         userCredential = await linkWithCredential(this.user, credential);
       } else {
-        // If no user is logged in, sign in with the credential
-        userCredential = await this.authService.verifyPhoneCode(this.confirmationResult.verificationId, verificationCode);
-      }      if (userCredential.user) {
-        // FIXME: Update Firestore user data to mark phone as verified
-        await this.firestoreService.storeUserData(userCredential.user, "phone", true, null, true); // Update Firestore with phone number and verified status
+        userCredential = await this.authService.verifyPhoneCode(verificationId, verificationCode);
+      }
+      if (userCredential.user) {
+        await this.authService.updatePhoneVerificationStatus(userCredential.user.uid, true).toPromise();
+        await this.authService.refreshUserData(userCredential.user.uid);
+
+        await this.ensureCurrentSessionMetrics('phone', true);
+
+        this.pendingVerificationId = null;
         const message = this.translate.instant('VERIFICATION.PHONE_VERIFIED_SUCCESS');
         this.showSnackbar(message, SnackBarType.success);
-        this.router.navigate(['/dashboard']);      } else {
+        this.router.navigateByUrl(this.getReturnUrl());
+      } else {
         const message = this.translate.instant('AUTH_ERRORS.USER_NULL_AFTER_PHONE_VERIFICATION');
         this.showSnackbar(message, SnackBarType.error, '', 5000);
       }
@@ -184,6 +219,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.code = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -198,13 +234,14 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   async resendVerificationEmail() {
-    this.loading.email = true;    try {
+    this.loading.email = true;
+    try {
       if (this.auth.currentUser) {
         await sendEmailVerification(this.auth.currentUser);
         const message = this.translate.instant('VERIFICATION.EMAIL_SENT_SUCCESS');
         this.showSnackbar(message, SnackBarType.info, '', 5000);
       } else {
-        this.router.navigate(['/service/login']);
+        this.router.navigate(['/service/login'], { queryParams: { returnUrl: this.getReturnUrl() } });
       }
     } catch (error) {
       console.error('Error sending verification email:', error);
@@ -212,6 +249,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000);
     } finally {
       this.loading.email = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -221,6 +259,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
       delay(1000),
       finalize(() => {
         this.loading.logout = false;
+        this.cdr.markForCheck();
       })
     ).subscribe({
       next: () => {
@@ -249,6 +288,29 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.timerSubscriber?.unsubscribe();
     this.user = null;
     this.recaptchaVerifier?.clear()
+  }
+
+  private async ensureCurrentSessionMetrics(providerIdOverride?: string, force = false): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return;
+    }
+
+    const providerId = providerIdOverride || currentUser.providerData?.[0]?.providerId || 'password';
+
+    try {
+      await this.guestTrackingService.ensurePostLoginSession({
+        force,
+        providerId,
+        userId: currentUser.uid,
+      });
+    } catch (error) {
+      console.warn('Failed to record session metrics in verification flow:', error);
+    }
+  }
+
+  private getReturnUrl(): string {
+    return resolveSafeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))
   }
 }
 

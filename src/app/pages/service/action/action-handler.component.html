@@ -12,309 +12,318 @@
         "
         class="mt-4 h-9 w-9 rounded-full shadow-md border-none max-h-[80%] xs:max-h-max"
         loading="lazy" />
-      </div>
-      <header class="flex gap-2 mb-2 text-center">
-        <div
-          class="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center shadow-md"
+    </div>
+    <header class="flex gap-2 mb-2 text-center">
+      <div
+        class="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center shadow-md"
+        aria-hidden="true">
+        <svg
+          class="w-5 h-5 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
           aria-hidden="true">
-          <svg
-            class="w-5 h-5 text-white"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true">
-            <circle cx="12" cy="12" r="10" fill="#6366f1"></circle>
-            <path
-              d="M8 13.5L10.5 16L16 8"
-              stroke="white"
-              stroke-width="1.7"
-              stroke-linecap="round"
+          <circle cx="12" cy="12" r="10" fill="#6366f1"></circle>
+          <path
+            d="M8 13.5L10.5 16L16 8"
+            stroke="white"
+            stroke-width="1.7"
+            stroke-linecap="round"
             stroke-linejoin="round"></path>
-          </svg>
-        </div>
-        <div>
-          <h1
-            class="text-xl font-extrabold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">
-            @if (emailVerificationMode && oobCode) {
-              {{ 'VERIFICATION.EMAIL_TITLE' | translate }}
-            }
-            @if (email && oobCode && !emailVerificationMode) {
-              {{ 'RESET_PASSWORD.NEW_PASSWORD_TITLE' | translate }}
-            }
-            @if (!oobCode) {
-              {{ 'AUTH_ERRORS.INVALID_OR_MISSING_ACTION' | translate }}
-            }
-          </h1>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">
-            @if (emailVerificationMode && oobCode) {
-              {{ 'VERIFICATION.INSTRUCTION' | translate }}
-            }
-            @if (email && oobCode && !emailVerificationMode) {
-              {{ 'RESET_PASSWORD.NEW_PASSWORD_INSTRUCTION' | translate }}
-            }
-            @if (!oobCode) {
-              {{ 'AUTH_ERRORS.INVALID_OR_MISSING_ACTION' | translate }}
-            }
-          </p>
-        </div>
-      </header>
-      <div class="flex items-center gap-2 my-1">
-        <div
-        class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
-        <span class="text-xs text-gray-400 dark:text-gray-500 font-medium"></span>
-        <div
-        class="flex-1 h-px bg-gradient-to-l from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
+        </svg>
       </div>
-      <form
-        (ngSubmit)="resetPassword()"
-        autocomplete="off"
-        novalidate
-        class="flex flex-col gap-3">
-        @if (successMessage) {
-          <div
-            class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-2 py-2 rounded-lg relative mb-2 font-semibold flex items-center gap-2 animate-pulse text-xs"
-            role="alert">
-            <svg
-              class="w-4 h-4 text-green-500 dark:text-green-300"
-              fill="none"
+      <div>
+        <h1
+          class="text-xl font-extrabold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">
+          @if (emailVerificationMode && oobCode) {
+            {{ 'VERIFICATION.EMAIL_TITLE' | translate }}
+          }
+          @if (email && oobCode && !emailVerificationMode) {
+            {{ 'RESET_PASSWORD.NEW_PASSWORD_TITLE' | translate }}
+          }
+          @if (!oobCode) {
+            {{ 'AUTH_ERRORS.INVALID_OR_MISSING_ACTION' | translate }}
+          }
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 text-xs">
+          @if (emailVerificationMode && oobCode) {
+            {{ 'VERIFICATION.INSTRUCTION' | translate }}
+          }
+          @if (email && oobCode && !emailVerificationMode) {
+            {{ 'RESET_PASSWORD.NEW_PASSWORD_INSTRUCTION' | translate }}
+          }
+          @if (!oobCode) {
+            {{ 'AUTH_ERRORS.INVALID_OR_MISSING_ACTION' | translate }}
+          }
+        </p>
+      </div>
+    </header>
+    <div class="flex items-center gap-2 my-1">
+      <div
+        class="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
+      <span class="text-xs text-gray-400 dark:text-gray-500 font-medium"></span>
+      <div
+        class="flex-1 h-px bg-gradient-to-l from-transparent via-indigo-300 to-transparent dark:via-indigo-700"></div>
+    </div>
+    <form
+      (ngSubmit)="resetPassword()"
+      autocomplete="off"
+      novalidate
+      class="flex flex-col gap-3">
+      @if (successMessage) {
+        <div
+          class="bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-200 px-2 py-2 rounded-lg relative mb-2 font-semibold flex items-center gap-2 animate-pulse text-xs"
+          role="alert">
+          <svg
+            class="w-4 h-4 text-green-500 dark:text-green-300"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+          </svg>
+          <span class="block sm:inline">
+            {{ successMessage }}
+          </span>
+        </div>
+      }
+      @if (errorMessage) {
+        <div
+          class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-2 py-2 rounded-lg relative mb-2 font-semibold flex items-center gap-2 animate-pulse text-xs"
+          role="alert">
+          <svg
+            class="w-4 h-4 text-red-500 dark:text-red-300"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+          </svg>
+          <span class="block sm:inline">{{ errorMessage }}</span>
+        </div>
+      }
+
+      <!-- Loading Spinner for Email Verification -->
+      @if (
+        emailVerificationMode && loading && !successMessage && !errorMessage
+      ) {
+        <div class="flex flex-col items-center justify-center py-8 gap-3">
+          <svg
+            class="w-12 h-12 animate-spin text-indigo-600 dark:text-indigo-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
               stroke="currentColor"
               stroke-width="2"
-              viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
-              </svg>
-              <span class="block sm:inline">
-                {{ successMessage }}
-              </span>
-            </div>
+              fill="none"
+              opacity="0.25"></circle>
+            <path
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
+            {{ 'EMAIL_VERIFICATION.VERIFYING' | translate }}
+          </p>
+        </div>
+      }
+
+      <!-- Success Message with Redirect Info -->
+      @if (emailVerificationMode && successMessage && verificationSuccess) {
+        <div class="flex flex-col items-center justify-center py-8 gap-3">
+          <svg
+            class="w-12 h-12 text-green-600 dark:text-green-400"
+            fill="currentColor"
+            viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clip-rule="evenodd" />
+          </svg>
+          <p class="text-sm font-medium text-green-600 dark:text-green-400">
+            {{ 'EMAIL_VERIFICATION.SUCCESS' | translate }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {{ 'EMAIL_VERIFICATION.REDIRECTING' | translate }}
+          </p>
+        </div>
+      }
+
+      <!-- Loading Spinner for Password Reset -->
+      @if (
+        !emailVerificationMode && loading && !successMessage && !errorMessage
+      ) {
+        <div class="flex flex-col items-center justify-center py-8 gap-3">
+          <svg
+            class="w-12 h-12 animate-spin text-indigo-600 dark:text-indigo-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              opacity="0.25"></circle>
+            <path
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
+            {{ 'RESET_PASSWORD.PROCESSING' | translate }}
+          </p>
+        </div>
+      }
+
+      @if (email && !emailVerificationMode && !loading) {
+        <div>
+          <label
+            for="newPassword"
+            class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+            {{ 'RESET_PASSWORD.NEW_PASSWORD_LABEL' | translate }}
+          </label>
+          <input
+            id="newPassword"
+            type="password"
+            [(ngModel)]="newPassword"
+            name="newPassword"
+            required
+            minlength="8"
+            placeholder="{{
+              'RESET_PASSWORD.NEW_PASSWORD_PLACEHOLDER' | translate
+            }}"
+            autocomplete="new-password"
+            [class.border-red-400]="
+              newPassword.length > 0 && !isPasswordValid()
+            "
+            [class.border-green-400]="
+              newPassword.length > 0 && isPasswordValid()
+            "
+            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
+            (ngModelChange)="confirmPassword = ''" />
+          @if (newPassword.length > 0 && !isPasswordValid()) {
+            <small
+              class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+              {{ getPasswordStrengthMessage() }}
+            </small>
           }
-          @if (errorMessage) {
-            <div
-              class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-2 py-2 rounded-lg relative mb-2 font-semibold flex items-center gap-2 animate-pulse text-xs"
-              role="alert">
-              <svg
-                class="w-4 h-4 text-red-500 dark:text-red-300"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24">
+          @if (newPassword.length > 0 && isPasswordValid()) {
+            <small
+              class="text-green-600 dark:text-green-300 font-medium mt-0.5 text-xs flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
-                  </svg>        <span class="block sm:inline">{{ errorMessage }}</span>
-                </div>
-              }
-
-              <!-- Loading Spinner for Email Verification -->
-              @if (emailVerificationMode && loading && !successMessage && !errorMessage) {
-                <div
-                  class="flex flex-col items-center justify-center py-8 gap-3">
-                  <svg
-                    class="w-12 h-12 animate-spin text-indigo-600 dark:text-indigo-400"
-                    fill="none"
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd" />
+              </svg>
+              {{ 'RESET_PASSWORD.PASSWORD_STRENGTH_VALID' | translate }}
+            </small>
+          }
+        </div>
+      }
+      <!-- Confirm Password -->
+      @if (email && !emailVerificationMode && !loading) {
+        <div>
+          <label
+            for="confirmPassword"
+            class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
+            {{ 'RESET_PASSWORD.CONFIRM_PASSWORD_LABEL' | translate }}
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            required
+            minlength="8"
+            placeholder="{{
+              'RESET_PASSWORD.CONFIRM_PASSWORD_PLACEHOLDER' | translate
+            }}"
+            autocomplete="new-password"
+            [class.border-red-400]="
+              confirmPassword.length > 0 && !doPasswordsMatch()
+            "
+            [class.border-green-400]="
+              confirmPassword.length > 0 && doPasswordsMatch()
+            "
+            class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20" />
+          @if (confirmPassword.length > 0 && !doPasswordsMatch()) {
+            <small
+              class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
+              {{ 'RESET_PASSWORD.PASSWORDS_NOT_MATCH' | translate }}
+            </small>
+          }
+          @if (confirmPassword.length > 0 && doPasswordsMatch()) {
+            <small
+              class="text-green-600 dark:text-green-300 font-medium mt-0.5 text-xs flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd" />
+              </svg>
+              {{ 'RESET_PASSWORD.PASSWORDS_MATCH' | translate }}
+            </small>
+          }
+        </div>
+      }
+      <!-- Submit Button -->
+      @if (email && !emailVerificationMode && !loading) {
+        <div class="mt-4">
+          <button
+            type="submit"
+            [disabled]="!isFormValid() || loading"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-xs shadow-md hover:shadow-lg dark:bg-indigo-700 dark:hover:bg-indigo-600 dark:disabled:bg-gray-700">
+            @if (!loading) {
+              <span>
+                {{ 'RESET_PASSWORD.SET_NEW_PASSWORD_BTN' | translate }}
+              </span>
+            }
+            @if (loading) {
+              <span class="flex items-center justify-center gap-2">
+                <svg
+                  class="w-4 h-4 animate-spin"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
                     stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      fill="none"
+                    stroke-width="2"
+                    fill="none"
                     opacity="0.25"></circle>
-                    <path
-                      fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    {{ 'EMAIL_VERIFICATION.VERIFYING' | translate }}
-                  </p>
-                </div>
-              }
-
-              <!-- Success Message with Redirect Info -->
-              @if (emailVerificationMode && successMessage && verificationSuccess) {
-                <div
-                  class="flex flex-col items-center justify-center py-8 gap-3">
-                  <svg
-                    class="w-12 h-12 text-green-600 dark:text-green-400"
+                  <path
                     fill="currentColor"
-                    viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clip-rule="evenodd" />
-                    </svg>
-                    <p class="text-sm font-medium text-green-600 dark:text-green-400">
-                      {{ 'EMAIL_VERIFICATION.SUCCESS' | translate }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ 'EMAIL_VERIFICATION.REDIRECTING' | translate }}
-                    </p>      </div>
-                  }
-
-                  <!-- Loading Spinner for Password Reset -->
-                  @if (!emailVerificationMode && loading && !successMessage && !errorMessage) {
-                    <div
-                      class="flex flex-col items-center justify-center py-8 gap-3">
-                      <svg
-                        class="w-12 h-12 animate-spin text-indigo-600 dark:text-indigo-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          fill="none"
-                        opacity="0.25"></circle>
-                        <path
-                          fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                        {{ 'RESET_PASSWORD.PROCESSING' | translate }}
-                      </p>
-                    </div>
-                  }
-
-                  @if (email && !emailVerificationMode && !loading) {
-                    <div>
-                      <label
-                        for="newPassword"
-                        class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-                        {{ 'RESET_PASSWORD.NEW_PASSWORD_LABEL' | translate }}
-                      </label>
-                      <input
-                        id="newPassword"
-                        type="password"
-                        [(ngModel)]="newPassword"
-                        name="newPassword"
-                        required
-                        minlength="8"
-          placeholder="{{
-            'RESET_PASSWORD.NEW_PASSWORD_PLACEHOLDER' | translate
-          }}"
-                        autocomplete="new-password"
-                        [class.border-red-400]="newPassword.length > 0 && !isPasswordValid()"
-                        [class.border-green-400]="newPassword.length > 0 && isPasswordValid()"
-                        class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
-                        (ngModelChange)="confirmPassword = ''" />
-                        @if (newPassword.length > 0 && !isPasswordValid()) {
-                          <small
-                            class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
-                            {{ getPasswordStrengthMessage() }}
-                          </small>
-                        }
-                        @if (newPassword.length > 0 && isPasswordValid()) {
-                          <small
-                            class="text-green-600 dark:text-green-300 font-medium mt-0.5 text-xs flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path
-                                fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clip-rule="evenodd" />
-                              </svg>
-                              {{ 'RESET_PASSWORD.PASSWORD_STRENGTH_VALID' | translate }}
-                            </small>
-                          }
-                        </div>
-                        }      <!-- Confirm Password -->
-                        @if (email && !emailVerificationMode && !loading) {
-                          <div>
-                            <label
-                              for="confirmPassword"
-                              class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">
-                              {{ 'RESET_PASSWORD.CONFIRM_PASSWORD_LABEL' | translate }}
-                            </label>
-                            <input
-                              id="confirmPassword"
-                              type="password"
-                              [(ngModel)]="confirmPassword"
-                              name="confirmPassword"
-                              required
-                              minlength="8"
-          placeholder="{{
-            'RESET_PASSWORD.CONFIRM_PASSWORD_PLACEHOLDER' | translate
-          }}"
-                              autocomplete="new-password"
-          [class.border-red-400]="
-            confirmPassword.length > 0 && !doPasswordsMatch()
-          "
-          [class.border-green-400]="
-            confirmPassword.length > 0 && doPasswordsMatch()
-          "
-                              class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 focus:outline-none hover:bg-slate-100 dark:hover:bg-gray-700 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20" />
-                              @if (confirmPassword.length > 0 && !doPasswordsMatch()) {
-                                <small
-                                  class="text-red-600 dark:text-red-300 font-medium mt-0.5 block text-xs">
-                                  {{ 'RESET_PASSWORD.PASSWORDS_NOT_MATCH' | translate }}
-                                </small>
-                              }
-                              @if (confirmPassword.length > 0 && doPasswordsMatch()) {
-                                <small
-                                  class="text-green-600 dark:text-green-300 font-medium mt-0.5 text-xs flex items-center gap-1">
-                                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                      fill-rule="evenodd"
-                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                      clip-rule="evenodd" />
-                                    </svg>
-                                    {{ 'RESET_PASSWORD.PASSWORDS_MATCH' | translate }}
-                                  </small>
-                                }
-                              </div>
-                              }      <!-- Submit Button -->
-                              @if (email && !emailVerificationMode && !loading) {
-                                <div class="mt-4">
-                                  <button
-                                    type="submit"
-                                    [disabled]="!isFormValid() || loading"
-                                    class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-xs shadow-md hover:shadow-lg dark:bg-indigo-700 dark:hover:bg-indigo-600 dark:disabled:bg-gray-700">
-                                    @if (!loading) {
-                                      <span>
-                                        {{ 'RESET_PASSWORD.SET_NEW_PASSWORD_BTN' | translate }}
-                                      </span>
-                                    }
-                                    @if (loading) {
-                                      <span class="flex items-center justify-center gap-2">
-                                        <svg
-                                          class="w-4 h-4 animate-spin"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24">
-                                          <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            fill="none"
-                                          opacity="0.25"></circle>
-                                          <path
-                                            fill="currentColor"
-                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        {{ 'RESET_PASSWORD.SETTING_PASSWORD' | translate }}
-                                      </span>
-                                    }
-                                  </button>
-                                </div>
-                              }
-                            </form>
-                            <footer class="mt-3 text-center text-xs text-gray-600 dark:text-gray-300">
-                              <span>
-                                {{ 'RESET_PASSWORD.REMEMBERED' | translate }}
-                                <a
-                                  [routerLink]="['/service/login']"
-                                  class="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 cc-focus-ring">
-                                  {{ 'RESET_PASSWORD.LOGIN_LINK' | translate }}
-                                </a>
-                              </span>
-                            </footer>
-                          </section>
-                        </main>
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ 'RESET_PASSWORD.SETTING_PASSWORD' | translate }}
+              </span>
+            }
+          </button>
+        </div>
+      }
+    </form>
+    <footer class="mt-3 text-center text-xs text-gray-600 dark:text-gray-300">
+      <span>
+        {{ 'RESET_PASSWORD.REMEMBERED' | translate }}
+        <a
+          [routerLink]="['/service/login']"
+          class="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 cc-focus-ring">
+          {{ 'RESET_PASSWORD.LOGIN_LINK' | translate }}
+        </a>
+      </span>
+    </footer>
+  </section>
+</main>

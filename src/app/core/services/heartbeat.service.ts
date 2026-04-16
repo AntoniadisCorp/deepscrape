@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { interval, Subscription, merge, fromEvent, timer, Subject, of } from 'rxjs';
-import { takeUntil, switchMap, filter, startWith, tap, map } from 'rxjs/operators';
+import { interval, Subscription, merge, fromEvent, timer, Subject, throwError, Observable } from 'rxjs';
+import { takeUntil, switchMap, filter, startWith, tap, catchError } from 'rxjs/operators';
 import { WindowToken } from './window.service';
 
 @Injectable({ providedIn: 'root' })
@@ -13,6 +13,8 @@ export class HeartbeatService {
     private isPaused = false;
     private readonly inactivityMs = 5 * 60 * 1000; // 5 minutes
     private stop$ = new Subject<void>();
+    private sessionRevokedSubject = new Subject<void>();
+    sessionRevoked$ = this.sessionRevokedSubject.asObservable();
 
     constructor(private http: HttpClient) {
         // Listen for network changes
@@ -24,15 +26,8 @@ export class HeartbeatService {
         this.stop();
         this.isPaused = false;
 
-        // User activity observable
-        const activity$ = merge(
-            fromEvent(this.window, 'mousemove', { passive: true }),
-            fromEvent(this.window, 'keydown'),
-            fromEvent(this.window, 'touchstart', { passive: true })
-        );
-
         // Inactivity logic using RxJS
-        this.inactivitySub = activity$.pipe(
+        this.inactivitySub = this.createActivityStream().pipe(
             tap(() => {
                 if (this.isPaused) this.resume('activity');
             }),
@@ -45,26 +40,47 @@ export class HeartbeatService {
             takeUntil(this.stop$)
         ).subscribe();
 
-        const headers = new HttpHeaders({
-            'Authorization': `Bearer ${token || ''}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        });
+        const headers = this.buildHeaders(token);
 
         // Heartbeat interval
         this.intervalSub = interval(intervalMs).pipe(
             filter(() => !this.isPaused && navigator.onLine),
             takeUntil(this.stop$),
-            switchMap(() => this.http.post('/event/heartbeat', {}, { headers })),
+            switchMap(() => this.http.post('/event/heartbeat', {}, { headers }).pipe(
+                catchError((error) => this.handleHeartbeatError(error))
+            )),
         ).subscribe({
-            next(value) {
+            next() {
                 console.log('Heartbeat successful')
             },
             error(err) {
                 console.error('Heartbeat error:', err);
             },
         });
-        console.log('Heartbeat successful')
+    }
+
+    private createActivityStream(): Observable<Event | null> {
+        return merge(
+            fromEvent(this.window, 'mousemove', { passive: true }),
+            fromEvent(this.window, 'keydown'),
+            fromEvent(this.window, 'touchstart', { passive: true })
+        ).pipe(startWith(null));
+    }
+
+    private buildHeaders(token?: string): HttpHeaders {
+        return new HttpHeaders({
+            'Authorization': `Bearer ${token || ''}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        });
+    }
+
+    private handleHeartbeatError(error: any) {
+        if (error?.status === 401 && error?.error?.code === 'session_revoked') {
+            this.sessionRevokedSubject.next();
+        }
+
+        return throwError(() => error);
     }
 
     stop() {

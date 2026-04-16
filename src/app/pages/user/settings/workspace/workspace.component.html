@@ -1,0 +1,332 @@
+<section class="space-y-6">
+  <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      Active Workspace
+    </h2>
+    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+      Select which workspace is used for organization-scoped requests.
+    </p>
+
+    @if (isLoading()) {
+      <div class="mt-4 space-y-3" [@listStagger]="'workspaces-loading'" aria-hidden="true">
+        <div class="loading-key"></div>
+        <div class="loading-key w-11/12"></div>
+        <div class="loading-key w-10/12"></div>
+      </div>
+    } @else if (organizations().length) {
+      <div class="mt-3">
+        <app-dropdown
+          [control]="workspaceControl"
+          [options]="workspaceOptions()"
+          [dropDownName]="'Workspace'"
+          [padding]="'py-2.5 pl-3 pr-3'"
+          [enableMenuAnimation]="true"
+          (select)="onWorkspaceSelected($event)"></app-dropdown>
+      </div>
+    } @else {
+      <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+        No workspaces found.
+      </p>
+    }
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+        Create Workspace
+      </h3>
+      <form
+        class="mt-3 space-y-3"
+        [formGroup]="createOrgForm"
+        (ngSubmit)="createWorkspace()">
+        <app-stinput
+          [control]="createOrgForm.get('name') | formControl"
+          [leftIcon]="'apartment'"
+          [label]="'Workspace name'"></app-stinput>
+        <button
+          type="submit"
+          appRipple
+          rippleColor="dark"
+          class="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="createOrgForm.invalid || isSubmittingCreate()">
+          {{ isSubmittingCreate() ? 'Creating...' : 'Create Workspace' }}
+        </button>
+      </form>
+    </div>
+
+    <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+        Invite Member
+      </h3>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        Invite members to the selected workspace with scoped access.
+      </p>
+
+      @if (!selectedOrgId()) {
+        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          Select a workspace to send invites.
+        </p>
+      } @else {
+        <form
+          class="mt-3 space-y-3"
+          [formGroup]="inviteForm"
+          (ngSubmit)="inviteMember()">
+          <label
+            for="inviteEmail"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Invite email
+          </label>
+          <input
+            id="inviteEmail"
+            type="email"
+            autocomplete="email"
+            placeholder="teammate@example.com"
+            formControlName="email"
+            class="w-full rounded-xl bg-white/80 px-3 py-2 text-sm text-gray-900 shadow-sm outline-none ring-blue-500 focus:ring-2 dark:bg-gray-800/50 dark:text-gray-100" />
+          <div>
+            <app-dropdown
+              [control]="inviteRoleControl"
+              [options]="inviteRoleOptions"
+              [dropDownName]="'Role'"
+              [padding]="'py-2.5 pl-3 pr-3'"
+              [enableMenuAnimation]="true"
+              (select)="onInviteRoleSelected($event)"></app-dropdown>
+          </div>
+
+          <button
+            *ifAuthorized="{
+              resource: 'organization',
+              action: 'invite',
+              data: { orgId: selectedOrgId() || undefined },
+            }"
+            type="submit"
+            appRipple
+            rippleColor="dark"
+            class="rounded-full bg-gray-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+            [disabled]="inviteForm.invalid || isSubmittingInvite()">
+            {{ isSubmittingInvite() ? 'Sending...' : 'Send Invitation' }}
+          </button>
+
+          @if (!canManageCurrentOrg()) {
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              You do not have permission to invite members in this workspace.
+            </p>
+          }
+        </form>
+      }
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <!-- Sent Invitations Section -->
+    <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+          Sent Invitations
+        </h3>
+        <span
+          class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+          Outgoing
+        </span>
+      </div>
+      <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+        Pending invitations you've sent to team members.
+      </p>
+
+      @if (!selectedOrgId()) {
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+          Select a workspace to view sent invitations.
+        </p>
+      } @else if (isSentInvitationsLoading()) {
+        <div class="mt-4 space-y-3" [@listStagger]="'sent-loading'" aria-hidden="true">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="rounded-lg border border-blue-100/70 bg-blue-50/30 p-3 dark:border-blue-900/30 dark:bg-blue-900/10">
+              <div class="loading-line-mid"></div>
+              <div class="mt-2 loading-line-long"></div>
+              <div class="mt-2 loading-chip w-24"></div>
+            </div>
+          }
+        </div>
+      } @else if (!sentInvitations().length) {
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+          No pending invitations sent.
+        </p>
+      } @else {
+        <div class="mt-4 space-y-3" role="list" [@listStagger]="sentInvitations().length">
+          @for (invite of sentInvitations(); track invite.id) {
+            <div
+              class="rounded-lg border border-blue-100 bg-blue-50/30 p-3 dark:border-blue-900/30 dark:bg-blue-900/10"
+              role="listitem">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p
+                    class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ invite.email }}
+                  </p>
+                  <div class="mt-1.5 flex flex-wrap gap-2">
+                    <span
+                      class="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                      Role: {{ invite.role | titlecase }}
+                    </span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                      Pending
+                    </span>
+                  </div>
+                  @if (getCreatedAtDate(invite.createdAt); as createdAtDate) {
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      {{ (createdAtDate | date: 'short') || 'Recently' }}
+                    </p>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Incoming Invitations Section -->
+    <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+          Incoming Invitations
+        </h3>
+        <span
+          class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300">
+          Action Required
+        </span>
+      </div>
+      <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+        Invitations awaiting your acceptance to join workspaces.
+      </p>
+
+      @if (isIncomingInvitationsLoading()) {
+        <div class="mt-4 space-y-3" [@listStagger]="'incoming-loading'" aria-hidden="true">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="rounded-lg border border-green-100/70 bg-green-50/30 p-3 dark:border-green-900/30 dark:bg-green-900/10">
+              <div class="loading-line-mid"></div>
+              <div class="mt-2 loading-line-long"></div>
+              <div class="mt-2 loading-key h-8 w-36"></div>
+            </div>
+          }
+        </div>
+      } @else if (!incomingInvitations().length) {
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+          No incoming invitations.
+        </p>
+      } @else {
+        <div class="mt-4 space-y-3" role="list" [@listStagger]="incomingInvitations().length">
+          @for (invite of incomingInvitations(); track invite.id) {
+            <div
+              class="rounded-lg border border-green-100 bg-green-50/30 p-3 dark:border-green-900/30 dark:bg-green-900/10"
+              role="listitem">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p
+                    class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ invite.orgName || invite.orgId }}
+                  </p>
+                  <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
+                    Invited as:
+                    <span class="font-medium">
+                      {{ invite.role | titlecase }}
+                    </span>
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <span
+                      class="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                      From: {{ invite.email }}
+                    </span>
+                    @if (getCreatedAtDate(invite.createdAt); as createdAtDate) {
+                      <span
+                        class="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                        {{ (createdAtDate | date: 'short') || 'Recently' }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                appRipple
+                rippleColor="dark"
+                class="mt-3 rounded-full bg-green-600 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="isAcceptingInvite() === invite.id"
+                (click)="acceptInvitation(invite.id)">
+                {{
+                  isAcceptingInvite() === invite.id
+                    ? 'Accepting...'
+                    : 'Accept Invitation'
+                }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+        Members
+      </h3>
+      @if (!selectedOrgId()) {
+        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          Select a workspace to view members.
+        </p>
+      } @else if (isMembersLoading()) {
+        <div class="mt-3 space-y-2" [@listStagger]="'members-loading'" aria-hidden="true">
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="rounded-xl bg-white/70 p-3 shadow-sm dark:bg-gray-800/40">
+              <div class="loading-line-mid"></div>
+              <div class="mt-2 loading-line-short"></div>
+            </div>
+          }
+        </div>
+      } @else if (!members().length) {
+        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          No members found for this workspace.
+        </p>
+      } @else {
+        <div class="mt-3 space-y-2" role="list" [@listStagger]="members().length">
+          @for (member of members(); track member.id) {
+            <div
+              class="flex items-center justify-between rounded-xl bg-white/70 p-3 shadow-sm dark:bg-gray-800/40"
+              role="listitem">
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {{ member.userId }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Role: {{ member.role }}
+                </p>
+              </div>
+              @if (member.role !== 'owner') {
+                <button
+                  *ifAuthorized="{
+                    resource: 'organization',
+                    action: 'manage',
+                    data: { orgId: selectedOrgId() || undefined },
+                  }"
+                  type="button"
+                  appRipple
+                  rippleColor="dark"
+                  class="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  [disabled]="isRemovingMember() === member.userId"
+                  (click)="removeMember(member.userId)">
+                  {{
+                    isRemovingMember() === member.userId
+                      ? 'Removing...'
+                      : 'Remove'
+                  }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>

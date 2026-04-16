@@ -26,6 +26,49 @@
             <span class="block sm:inline">{{ errorMessage }}</span>
           </div>
         }
+        @if (showMfaChallenge) {
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-900/40">
+            <h2 class="mb-1 text-sm font-bold text-gray-900 dark:text-gray-100">
+              Complete your second factor
+            </h2>
+            <p class="mb-3 text-xs text-gray-600 dark:text-gray-300">
+              @if (mfaFactorType === 'phone') {
+                Enter the 6-digit SMS code sent to {{ mfaPhoneDisplay }} to finish signing in.
+              } @else {
+                Enter the current 6-digit code from {{ mfaDisplayName }} to finish signing in.
+              }
+            </p>
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              name="mfaCode"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="mfaCode"
+              placeholder="123456"
+              class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400" />
+            <div class="mt-3 flex gap-2">
+              <button type="button" (click)="submitMfaCode()" [disabled]="mfaCode.length !== 6 || loading.mfa"
+                class="flex-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white font-bold py-2 px-3 shadow-xl transition-all duration-200 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-500 cc-focus-ring text-sm">
+                @if (loading.mfa) {
+                  <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                } @else {
+                  Verify code
+                }
+              </button>
+              @if (mfaFactorType === 'phone') {
+                <button type="button" (click)="resendMfaSmsCode()" [disabled]="loading.mfa"
+                  class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100 disabled:opacity-60 dark:border-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50">
+                  Resend
+                </button>
+              }
+              <button type="button" (click)="cancelMfaChallenge()"
+                class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+            </div>
+          </div>
+        } @else {
         <!-- Social Login Buttons -->
         <div class="flex gap-2 mb-1">
           <button type="button" [disabled]="loading.github" (click)="loginWithGithub()"
@@ -34,6 +77,11 @@
             @if (!loading.github) {
               <mat-icon aria-label="github" svgIcon="github" class="w-5 h-5 text-gray-700 dark:text-gray-200 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
               <span>{{ 'LOGIN.GITHUB_BUTTON' | translate }}</span>
+              @if (isLastUsedProvider('github.com')) {
+                <span class="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:bg-slate-100 dark:text-slate-900">
+                  Last used
+                </span>
+              }
             } @else {
               <span class="flex h-6 w-16 items-center justify-center">
                 <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
@@ -46,6 +94,11 @@
             @if (!loading.google) {
               <mat-icon aria-label="google" svgIcon="google" class="w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-white"></mat-icon>
               <span>{{ 'LOGIN.GOOGLE_BUTTON' | translate }}</span>
+              @if (isLastUsedProvider('google.com')) {
+                <span class="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                  Last used
+                </span>
+              }
             } @else {
               <span class="flex h-6 w-16 items-center justify-center">
                 <mat-spinner [diameter]="24" class="stroke-blue-500"></mat-spinner>
@@ -60,7 +113,14 @@
         </div>
         <!-- Identifier -->
         <div>
-          <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
+          <div class="mb-0.5 flex items-center justify-between gap-2">
+            <label for="identifier" class="block text-xs font-medium text-gray-700 dark:text-gray-200">{{ 'LOGIN.IDENTIFIER_LABEL' | translate }}</label>
+            @if (isLastUsedProvider('password')) {
+              <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                Last used: {{ getLastUsedPasswordLabel() }}
+              </span>
+            }
+          </div>
           <input id="identifier" autocomplete="off" formControlName="identifier" required type="text" placeholder="{{ 'LOGIN.IDENTIFIER_PLACEHOLDER' | translate }}"
             class="cc-input block w-full rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50/70 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder-slate-400 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500 outline-none hover:bg-slate-100 dark:hover:bg-gray-700/30 hover:border-indigo-400 dark:hover:border-indigo-400 hover:shadow-lg dark:hover:shadow-indigo-900/20"
             [ngClass]="{'border-red-500 dark:border-red-400': loginForm.get('identifier')?.invalid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched), 'border-green-500 dark:border-green-400': loginForm.get('identifier')?.valid && (loginForm.get('identifier')?.dirty || loginForm.get('identifier')?.touched)}"
@@ -129,6 +189,7 @@
                   }
                 </button>
               </div>
+            }
             </form>
           </section>
           <div hidden #recaptchaContainer id="recaptcha-container"></div>

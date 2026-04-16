@@ -26,6 +26,13 @@ export const navigation = [
                 },
             },
             {
+                name: 'Billing Observability',
+                url: '/admin/billing-observability',
+                icon: {
+                    matIcon: 'monitoring'
+                }
+            },
+            {
                 name: 'Migration',
                 url: '/admin/migration',
                 icon: {

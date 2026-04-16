@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SetupIntentComponent } from './setupintent.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('SetupIntentComponent', () => {
   let component: SetupIntentComponent;
@@ -8,7 +9,8 @@ describe('SetupIntentComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SetupIntentComponent]
+      imports: [SetupIntentComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 
@@ -19,5 +21,15 @@ describe('SetupIntentComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should render payment component host element', () => {
+    const paymentHost = fixture.nativeElement.querySelector('app-payment');
+
+    expect(paymentHost).toBeTruthy();
+  });
+
+  it('should compile as standalone component', () => {
+    expect((SetupIntentComponent as any).ɵcmp.standalone).toBeTrue();
   });
 });

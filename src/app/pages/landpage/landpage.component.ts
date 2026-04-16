@@ -1,12 +1,14 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject, ChangeDetectionStrategy } from '@angular/core';
+import { NgFor } from '@angular/common';
 import { WindowToken } from 'src/app/core/services';
 
 import { trigger, state, style, animate, transition } from '@angular/animations';
 @Component({
     selector: 'app-landpage',
-    imports: [],
+  imports: [NgFor],
     templateUrl: './landpage.component.html',
     styleUrl: './landpage.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     animations: [
         trigger('fadeInOut', [
             state('void', style({

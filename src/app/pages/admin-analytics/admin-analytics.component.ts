@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
@@ -16,13 +16,83 @@ interface DayActivity {
     trend: number;
 }
 
+interface DailyBreakdownItem {
+    date: string;
+    totalLogins?: number;
+    newGuests?: number;
+    newUsers?: number;
+    guestConversions?: number;
+    conversionRate?: number;
+    byOS?: Record<string, number>;
+    byCountry?: Record<string, number>;
+    byBrowser?: Record<string, number>;
+    byDevice?: Record<string, number>;
+    byTimezone?: Record<string, number>;
+    byProvider?: Record<string, number>;
+    hour?: number;
+}
+
+interface Dashboard {
+    totalGuests?: number;
+    totalUsers?: number;
+    totalLogins?: number;
+    guestConversions?: number;
+    conversionRate?: number;
+    activeUsersNow?: number;
+    activeUsers?: number;
+    activeGuestsNow?: number;
+    activeGuests?: number;
+    onlineNow?: number;
+    online?: number;
+    topProviders?: Record<string, number>;
+    topCountries?: Record<string, number>;
+    topBrowsers?: Record<string, number>;
+    topDevices?: Record<string, number>;
+    topOperatingSystems?: Record<string, number>;
+    topOS?: Record<string, number>;
+    byCountry?: Record<string, number>;
+    byBrowser?: Record<string, number>;
+    byDevice?: Record<string, number>;
+    byOS?: Record<string, number>;
+    byTimezone?: Record<string, number>;
+}
+
+interface RangeMetrics {
+    totalGuests?: number;
+    newGuests?: number;
+    totalUsers?: number;
+    newUsers?: number;
+    totalLogins?: number;
+    logins?: number;
+    guestConversions?: number;
+    registeredGuests?: number;
+    conversions?: number;
+    conversionRate?: number;
+    activeUsersNow?: number;
+    activeUsers?: number;
+    activeGuestsNow?: number;
+    activeGuests?: number;
+    onlineNow?: number;
+    online?: number;
+    startDate?: string | Date;
+    endDate?: string | Date;
+    dailyBreakdown?: DailyBreakdownItem[];
+    byOS?: Record<string, number>;
+    byCountry?: Record<string, number>;
+    byBrowser?: Record<string, number>;
+    byDevice?: Record<string, number>;
+    byTimezone?: Record<string, number>;
+    byProvider?: Record<string, number>;
+}
+
 type AnalyticsPeriod = 'last-30m' | 'last-1h' | 'last-24h' | 'last-7d' | 'last-30d' | 'last-90d' | 'custom';
 
 @Component({
     selector: 'app-admin-analytics',
     imports: [BaseChartDirective, DecimalPipe, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent],
     templateUrl: './admin-analytics.component.html',
-    styleUrls: ['./admin-analytics.component.scss']
+    styleUrls: ['./admin-analytics.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminAnalyticsComponent implements OnInit {
     private firestoreService = inject(FirestoreService);
@@ -50,8 +120,8 @@ export class AdminAnalyticsComponent implements OnInit {
     private cacheTimestamp: number | null = null;
     private cachedPeriodKey: string | null = null;
     private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-    private cachedDashboard: any = null;
-    private cachedRangeMetrics: any = null;
+    private cachedDashboard: Dashboard | null = null;
+    private cachedRangeMetrics: RangeMetrics | null = null;
 
     // Filter state
     selectedPeriod: AnalyticsPeriod = 'last-7d';
@@ -203,7 +273,7 @@ export class AdminAnalyticsComponent implements OnInit {
                     label: (context) => {
                         const label = context.label || '';
                         const value = context.parsed || 0;
-                        const total = context.dataset.data.reduce((a: any, b: any) => a + b, 0);
+                        const total = context.dataset.data.reduce((a: number | string, b: number | string) => Number(a) + Number(b), 0);
                         const percentage = ((value / total) * 100).toFixed(1);
                         return `${label}: ${value} (${percentage}%)`;
                     }
@@ -372,7 +442,9 @@ export class AdminAnalyticsComponent implements OnInit {
         // Return cached data if still fresh
         if (!forceRefresh && this.isCacheValid(now) && this.cachedPeriodKey === periodKey) {
             console.log('✅ Using cached analytics data');
-            this.updateChartsFromOptimizedData(this.cachedDashboard, this.cachedRangeMetrics);
+            if (this.cachedDashboard && this.cachedRangeMetrics) {
+                this.updateChartsFromOptimizedData(this.cachedDashboard, this.cachedRangeMetrics);
+            }
             return;
         }
 
@@ -458,12 +530,12 @@ export class AdminAnalyticsComponent implements OnInit {
                this.cachedDashboard !== null;
     }
 
-    private updateChartsFromOptimizedData(dashboard: any, rangeMetrics: any) {
+    private updateChartsFromOptimizedData(dashboard: Dashboard, rangeMetrics: RangeMetrics) {
         this.applyDisplayMetrics(dashboard, rangeMetrics);
 
         // Extract daily breakdown for time-series charts
         const dailyData = rangeMetrics?.dailyBreakdown || [];
-        const labels = dailyData.map((day: any) => {
+        const labels = dailyData.map((day: DailyBreakdownItem) => {
             const parsed = new Date(day.date);
             if (Number.isNaN(parsed.getTime())) {
                 return String(day.date);
@@ -473,9 +545,9 @@ export class AdminAnalyticsComponent implements OnInit {
                 { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' } :
                 { month: 'short', day: 'numeric' });
         });
-        const loginData = dailyData.map((day: any) => day.totalLogins || 0);
-        const newGuestsData = dailyData.map((day: any) => day.newGuests || 0);
-        const newUsersData = dailyData.map((day: any) => day.newUsers || 0);
+        const loginData = dailyData.map((day: DailyBreakdownItem) => day.totalLogins || 0);
+        const newGuestsData = dailyData.map((day: DailyBreakdownItem) => day.newGuests || 0);
+        const newUsersData = dailyData.map((day: DailyBreakdownItem) => day.newUsers || 0);
 
         // Update Line Chart - Login Trend
         this.lineChartData = {
@@ -642,7 +714,7 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Generate recent activity data
-        this.recentActivity = dailyData.slice(-7).map((day: any) => ({
+        this.recentActivity = dailyData.slice(-7).map((day: DailyBreakdownItem) => ({
             date: new Date(day.date).toLocaleDateString(),
             logins: day.totalLogins || 0,
             newUsers: day.newUsers || 0,
@@ -652,20 +724,21 @@ export class AdminAnalyticsComponent implements OnInit {
         this.renderNow();
     }
 
-    private applyDisplayMetrics(dashboard: any, rangeMetrics: any): void {
+    private applyDisplayMetrics(dashboard: Dashboard, rangeMetrics: RangeMetrics): void {
         const dailyBreakdown = Array.isArray(rangeMetrics?.dailyBreakdown) ? rangeMetrics.dailyBreakdown : [];
 
-        const getNumber = (value: any): number | null => {
+        const getNumber = (value: unknown): number | null => {
             const parsed = Number(value);
             return Number.isFinite(parsed) ? parsed : null;
         };
 
-        const firstNumber = (source: any, keys: string[]): number | null => {
+        const firstNumber = (source: Dashboard | RangeMetrics | null, keys: string[]): number | null => {
             if (!source) {
                 return null;
             }
+            const sourceAsRecord = source as Record<string, unknown>;
             for (const key of keys) {
-                const value = getNumber(source[key]);
+                const value = getNumber(sourceAsRecord[key]);
                 if (value !== null) {
                     return value;
                 }
@@ -674,7 +747,7 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         const sumDaily = (key: string): number =>
-            dailyBreakdown.reduce((sum: number, row: any) => sum + Number(row?.[key] || 0), 0);
+            dailyBreakdown.reduce((sum: number, row: DailyBreakdownItem) => sum + Number((row as unknown as Record<string, unknown>)?.[key] || 0), 0);
 
         const periodGuests =
             firstNumber(rangeMetrics, ['totalGuests', 'newGuests'])
@@ -734,7 +807,7 @@ export class AdminAnalyticsComponent implements OnInit {
         this.displayPeriodDays = this.resolvePeriodDays(rangeMetrics);
     }
 
-    private resolvePeriodDays(rangeMetrics: any): number {
+    private resolvePeriodDays(rangeMetrics: RangeMetrics): number {
         const start = new Date(rangeMetrics?.startDate ?? '');
         const end = new Date(rangeMetrics?.endDate ?? '');
         if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
@@ -783,7 +856,7 @@ export class AdminAnalyticsComponent implements OnInit {
         }
 
         const rows = await this.firestoreService.getMetricsByDateRange(this.customStartDate, this.customEndDate);
-        const sorted = [...rows].sort((a: any, b: any) => String(a.date || '').localeCompare(String(b.date || '')));
+        const sorted = [...rows].sort((a: DailyBreakdownItem, b: DailyBreakdownItem) => String(a.date || '').localeCompare(String(b.date || '')));
 
         const byOS: Record<string, number> = {};
         const byCountry: Record<string, number> = {};
@@ -844,7 +917,7 @@ export class AdminAnalyticsComponent implements OnInit {
             byDevice,
             byTimezone,
             byProvider,
-            dailyBreakdown: sorted.map((row: any) => ({
+            dailyBreakdown: sorted.map((row: DailyBreakdownItem) => ({
                 date: row.date,
                 newGuests: Number(row.newGuests || 0),
                 newUsers: Number(row.newUsers || 0),
@@ -864,10 +937,10 @@ export class AdminAnalyticsComponent implements OnInit {
             this.toDateTimeKey(end),
         );
 
-        const totalGuests = rows.reduce((sum: number, row: any) => sum + Number(row.newGuests || 0), 0);
-        const totalUsers = rows.reduce((sum: number, row: any) => sum + Number(row.newUsers || 0), 0);
-        const totalLogins = rows.reduce((sum: number, row: any) => sum + Number(row.totalLogins || 0), 0);
-        const guestConversions = rows.reduce((sum: number, row: any) => sum + Number(row.guestConversions || 0), 0);
+        const totalGuests = rows.reduce((sum: number, row: DailyBreakdownItem) => sum + Number(row.newGuests || 0), 0);
+        const totalUsers = rows.reduce((sum: number, row: DailyBreakdownItem) => sum + Number(row.newUsers || 0), 0);
+        const totalLogins = rows.reduce((sum: number, row: DailyBreakdownItem) => sum + Number(row.totalLogins || 0), 0);
+        const guestConversions = rows.reduce((sum: number, row: DailyBreakdownItem) => sum + Number(row.guestConversions || 0), 0);
 
         const byOS: Record<string, number> = {};
         const byCountry: Record<string, number> = {};
@@ -906,7 +979,7 @@ export class AdminAnalyticsComponent implements OnInit {
             byCountry,
             byBrowser,
             byDevice,
-            dailyBreakdown: rows.map((row: any) => ({
+            dailyBreakdown: rows.map((row: DailyBreakdownItem) => ({
                 date: `${row.date}T${String(row.hour ?? 0).padStart(2, '0')}:00:00.000Z`,
                 newGuests: Number(row.newGuests || 0),
                 newUsers: Number(row.newUsers || 0),
@@ -978,7 +1051,7 @@ export class AdminAnalyticsComponent implements OnInit {
     /**
      * Update charts using legacy data structure
      */
-    private updateChartsFromLegacyData(guestAnalytics: any, loginCountsByDay: any) {
+    private updateChartsFromLegacyData(guestAnalytics: Record<string, unknown>, loginCountsByDay: Record<string, unknown>) {
         // Prepare login chart data
         const labels = Object.keys(loginCountsByDay).map(date =>
             new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -1038,25 +1111,25 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Guest by Country Chart (Top 10)
-        const topCountries = Object.entries(guestAnalytics.byCountry)
-            .sort(([, a], [, b]) => (b as number) - (a as number))
+        const topCountries = Object.entries((guestAnalytics['byCountry'] as Record<string, number>) || {})
+            .sort(([, a], [, b]) => b - a)
             .slice(0, 10);
         this.guestCountryChartData = {
             labels: topCountries.map(([country]) => country),
             datasets: [{
                 label: 'Guests by Country',
-                data: topCountries.map(([, count]) => count as number),
+                data: topCountries.map(([, count]) => count),
                 backgroundColor: '#3B82F6',
                 borderRadius: 6
             }]
         };
 
         // Guest by Browser Chart
-        const browserEntries = Object.entries(guestAnalytics.byBrowser);
+        const browserEntries = Object.entries((guestAnalytics['byBrowser'] as Record<string, number>) || {});
         this.guestBrowserChartData = {
             labels: browserEntries.map(([browser]) => browser),
             datasets: [{
-                data: browserEntries.map(([, count]) => count as number),
+                data: browserEntries.map(([, count]) => count),
                 backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
                 borderWidth: 2,
                 borderColor: '#fff'
@@ -1064,11 +1137,11 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Guest by Device Chart
-        const deviceEntries = Object.entries(guestAnalytics.byDevice);
+        const deviceEntries = Object.entries((guestAnalytics['byDevice'] as Record<string, number>) || {});
         this.guestDeviceChartData = {
             labels: deviceEntries.map(([device]) => device),
             datasets: [{
-                data: deviceEntries.map(([, count]) => count as number),
+                data: deviceEntries.map(([, count]) => count),
                 backgroundColor: ['#6366F1', '#EC4899', '#10B981', '#F59E0B'],
                 borderWidth: 2,
                 borderColor: '#fff'
@@ -1076,26 +1149,27 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Guest by OS Chart
-        const osEntries = this.getTopDimensionEntries(guestAnalytics.byOS, 10);
+        const osEntries = this.getTopDimensionEntries(guestAnalytics['byOS'], 10);
         this.guestOSChartData = {
             labels: osEntries.map(([os]) => os),
             datasets: [{
                 label: 'Operating Systems',
-                data: osEntries.map(([, count]) => count as number),
+                data: osEntries.map(([, count]) => count),
                 backgroundColor: '#8B5CF6',
                 borderRadius: 6
             }]
         };
 
         // Guest Activity Over Time Chart
-        const activityDates = Object.keys(guestAnalytics.byDay).sort().slice(-7);
+        const byDayRecord = (guestAnalytics['byDay'] as Record<string, number>) || {};
+        const activityDates = Object.keys(byDayRecord).sort().slice(-7);
         this.guestActivityChartData = {
             labels: activityDates.map(date =>
                 new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             ),
             datasets: [{
                 label: 'New Guests',
-                data: activityDates.map(date => guestAnalytics.byDay[date]),
+                data: activityDates.map(date => byDayRecord[date]),
                 borderColor: '#10B981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 fill: true,
@@ -1118,11 +1192,34 @@ export class AdminAnalyticsComponent implements OnInit {
         return normalized.length > 0 ? normalized : fallback;
     }
 
+    /**
+     * Aggregates a specific dimension across multiple rows
+     * @param rows Array of daily breakdown items
+     * @param dimensionKey The key to extract from each row (e.g., 'byOS', 'byCountry')
+     * @param fallback Fallback label for missing values
+     * @returns Aggregated Record<string, number>
+     */
+    private aggregateDimension(
+        rows: DailyBreakdownItem[],
+        dimensionKey: keyof DailyBreakdownItem,
+        fallback = 'Unknown'
+    ): Record<string, number> {
+        const result: Record<string, number> = {};
+        for (const row of rows) {
+            const dimensionData = row[dimensionKey] as Record<string, number> || {};
+            Object.entries(dimensionData).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, fallback);
+                result[normalized] = (result[normalized] || 0) + Number(v || 0);
+            });
+        }
+        return result;
+    }
+
     private getTopDimensionEntries(source: unknown, max = 10, fallback = 'Unknown'): Array<[string, number]> {
         const merged: Record<string, number> = {};
 
         if (Array.isArray(source)) {
-            source.forEach((entry: any) => {
+            source.forEach((entry: {country?: string; browser?: string; device?: string; os?: string; provider?: string; timezone?: string; name?: string; label?: string; count?: number; value?: number}) => {
                 const rawKey = entry?.country ?? entry?.browser ?? entry?.device ?? entry?.os ?? entry?.provider ?? entry?.timezone ?? entry?.name ?? entry?.label;
                 const key = this.normalizeDimensionKey(rawKey, fallback);
                 const count = Number(entry?.count ?? entry?.value ?? 0);

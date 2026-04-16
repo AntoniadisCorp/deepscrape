@@ -10,7 +10,7 @@
  * - enableProtection: true for advanced protection
  */
 
-import {Response, NextFunction} from "express"
+import {Request, Response, NextFunction} from "express"
 import {Ratelimit} from "@upstash/ratelimit"
 import {Redis} from "@upstash/redis"
 import {env} from "../config/env"
@@ -89,7 +89,7 @@ const eventRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
 }) : null
 
 async function applyRateLimit(
-  req: any,
+  req: Request,
   res: Response,
   next: NextFunction,
   ratelimit: Ratelimit | null,
@@ -239,7 +239,7 @@ async function applyRateLimit(
  * @param {NextFunction} next - Express next middleware function
  */
 export async function upstashFunctionLimiter(
-  req: any,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> {
@@ -247,7 +247,7 @@ export async function upstashFunctionLimiter(
 }
 
 export async function upstashEventLimiter(
-  req: any,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> {

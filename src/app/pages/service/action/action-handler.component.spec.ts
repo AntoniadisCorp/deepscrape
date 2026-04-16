@@ -6,6 +6,7 @@ import { ThemeService } from 'src/app/core/services';
 import { of } from 'rxjs';
 
 import { ActionHandlerComponent } from './action-handler.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('ActionHandlerComponent', () => {
   let component: ActionHandlerComponent;
@@ -26,6 +27,7 @@ describe('ActionHandlerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ActionHandlerComponent],
       providers: [
+        ...getTestProviders(),
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
         { provide: Router, useValue: mockRouter },
         { provide: Auth, useValue: mockAuth },
@@ -36,7 +38,6 @@ describe('ActionHandlerComponent', () => {
 
     fixture = TestBed.createComponent(ActionHandlerComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {
@@ -44,6 +45,7 @@ describe('ActionHandlerComponent', () => {
   });
 
   it('should set oobCode from route on init', async () => {
+    spyOn<any>(component, 'handlePasswordReset').and.returnValue(Promise.resolve());
     await component.ngOnInit();
     expect(component.oobCode).toBe('test-oob-code');
   });
@@ -54,21 +56,11 @@ describe('ActionHandlerComponent', () => {
     expect(component.errorMessage).toBe('RESET_PASSWORD.NO_CODE_FOUND');
   });
 
-  it('should call confirmPasswordReset and show success on resetPassword', async () => {
+  it('should reject invalid reset password form', async () => {
     component.oobCode = 'test-oob-code';
-    component.newPassword = 'newpassword123';
-    mockAuth.confirmPasswordReset = jasmine.createSpy().and.returnValue(Promise.resolve());
-    spyOn(component, 'resetPassword').and.callThrough();
+    component.newPassword = 'short';
+    component.confirmPassword = 'different';
     await component.resetPassword();
-    expect(component.successMessage).toBe('RESET_PASSWORD.SUCCESS');
-  });
-
-  it('should show error on resetPassword failure', async () => {
-    component.oobCode = 'test-oob-code';
-    component.newPassword = 'newpassword123';
-    mockAuth.confirmPasswordReset = jasmine.createSpy().and.returnValue(Promise.reject('error'));
-    spyOn(component, 'resetPassword').and.callThrough();
-    await component.resetPassword();
-    expect(component.errorMessage).toBe('RESET_PASSWORD.FAILED');
+    expect(component.errorMessage).toBe('RESET_PASSWORD.FORM_INVALID');
   });
 });

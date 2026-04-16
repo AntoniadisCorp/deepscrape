@@ -16,7 +16,9 @@ export class AdminWorkspaceComponent {
   readonly icons = myIcons
   private animationBindingReady = false
   readonly tabs = [
+    { label: 'Project Config', route: '/admin/config', icon: 'settings' },
     { label: 'Analytics', route: '/admin/analytics', icon: 'gauge' },
+    { label: 'Billing', route: '/admin/billing-observability', icon: 'wallet' },
     { label: 'Migration', route: '/admin/migration', icon: 'repeat' },
     { label: 'Runs', route: '/admin/migration/runs', icon: 'recent-activity' },
     { label: 'Backups', route: '/admin/migration/backups', icon: 'database' },

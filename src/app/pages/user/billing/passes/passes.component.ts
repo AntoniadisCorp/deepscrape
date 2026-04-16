@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 @Component({
     selector: 'app-passes',
     imports: [],
     templateUrl: './passes.component.html',
-    styleUrl: './passes.component.scss'
+    styleUrl: './passes.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PassesComponent {
 

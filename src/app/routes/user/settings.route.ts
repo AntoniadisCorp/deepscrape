@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { UserResolver } from 'src/app/core/services';
+import { authzGuard } from 'src/app/core/guards';
 
 
 export const settingsRoutes: Routes = [
@@ -34,5 +35,15 @@ export const settingsRoutes: Routes = [
         path: 'keys',
         loadComponent: () => import('../../pages').then(m => m.ApiKeysComponent),
         data: { title: 'API Keys', animation: 'apikeys' },
+    },
+    {
+        path: 'workspace',
+        loadComponent: () => import('../../pages').then(m => m.WorkspaceTabComponent),
+        canActivate: [authzGuard],
+        data: {
+            title: 'Workspace',
+            animation: 'workspace',
+            authz: { resource: 'organization', action: 'read' },
+        },
     },
 ]
