@@ -1,3 +1,10 @@
+# [0.7.0-beta.8](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.7...v0.7.0-beta.8) (2026-04-16)
+
+
+### Bug Fixes
+
+* **authz,security,test:** address PR [#70](https://github.com/deepscrape/deepscrape/issues/70) Copilot review findings ([d39190a](https://github.com/deepscrape/deepscrape/commit/d39190a13ce0a187f4c6a2c1032238e5afe99890))
+
 # [0.7.0-beta.7](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-04-16)
 
 
