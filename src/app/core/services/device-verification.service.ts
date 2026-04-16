@@ -1,5 +1,5 @@
 import { Injectable, inject, PLATFORM_ID, signal } from '@angular/core'
-import { isPlatformBrowser } from '@angular/common'
+import { DOCUMENT, isPlatformBrowser } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
 import { from, Observable } from 'rxjs'
 import { map } from 'rxjs'
@@ -45,6 +45,7 @@ export class DeviceVerificationService {
   private firestore = inject(FirestoreService)
   private http = inject(HttpClient)
   private platformId = inject(PLATFORM_ID)
+  private documentRef = inject(DOCUMENT)
 
   readonly requiresVerification = signal(false)
   readonly pendingDeviceId = signal('')
@@ -64,27 +65,45 @@ export class DeviceVerificationService {
       }
     }
 
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      ctx.textBaseline = 'top'
-      ctx.font = '14px Arial'
-      ctx.textBaseline = 'alphabetic'
-      ctx.fillStyle = '#f60'
-      ctx.fillRect(125, 1, 62, 20)
-      ctx.fillStyle = '#069'
-      ctx.fillText('Device Fingerprint', 2, 15)
-      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)'
-      ctx.fillText('Device Fingerprint', 4, 17)
+    const browserWindow = this.documentRef?.defaultView
+    const browserNavigator = browserWindow?.navigator
+    const browserScreen = browserWindow?.screen
+
+    if (!this.documentRef || !browserNavigator || !browserScreen) {
+      return {
+        userAgent: 'unknown',
+        ipAddress: '',
+        deviceId: 'browser-fallback-device',
+        timestamp: new Date()
+      }
     }
-    const canvasHash = canvas.toDataURL()
+
+    let canvasHash = ''
+    try {
+      const canvas = this.documentRef.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.textBaseline = 'top'
+        ctx.font = '14px Arial'
+        ctx.textBaseline = 'alphabetic'
+        ctx.fillStyle = '#f60'
+        ctx.fillRect(125, 1, 62, 20)
+        ctx.fillStyle = '#069'
+        ctx.fillText('Device Fingerprint', 2, 15)
+        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)'
+        ctx.fillText('Device Fingerprint', 4, 17)
+      }
+      canvasHash = canvas.toDataURL()
+    } catch {
+      canvasHash = ''
+    }
 
     // Generate device ID based on fingerprint
-    const navigatorInfo = `${navigator.userAgent}|${navigator.language}|${screen.width}x${screen.height}`
+    const navigatorInfo = `${browserNavigator.userAgent}|${browserNavigator.language}|${browserScreen.width}x${browserScreen.height}`
     const deviceId = this.hashString(navigatorInfo + canvasHash)
 
     return {
-      userAgent: navigator.userAgent,
+      userAgent: browserNavigator.userAgent,
       ipAddress: '', // Will be filled by backend
       deviceId,
       timestamp: new Date()
