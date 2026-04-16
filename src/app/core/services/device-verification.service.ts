@@ -69,11 +69,15 @@ export class DeviceVerificationService {
     const browserNavigator = browserWindow?.navigator
     const browserScreen = browserWindow?.screen
 
-    if (!this.documentRef || !browserNavigator || !browserScreen) {
+    if (!browserWindow || !browserNavigator || !browserScreen) {
+      const randomUuid = globalThis.crypto?.randomUUID?.()
+      const fallbackDeviceId = randomUuid
+        ? `browser-fallback-${randomUuid}`
+        : this.hashString(`browser-fallback-${Date.now()}-${Math.random()}`)
       return {
         userAgent: 'unknown',
         ipAddress: '',
-        deviceId: 'browser-fallback-device',
+        deviceId: fallbackDeviceId,
         timestamp: new Date()
       }
     }
@@ -94,7 +98,8 @@ export class DeviceVerificationService {
         ctx.fillText('Device Fingerprint', 4, 17)
       }
       canvasHash = canvas.toDataURL()
-    } catch {
+    } catch (error) {
+      console.warn('Canvas fingerprinting unavailable, continuing without canvas entropy', error)
       canvasHash = ''
     }
 
