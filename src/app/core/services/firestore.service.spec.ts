@@ -15,7 +15,7 @@ describe('FirestoreService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should identify localhost environment as a boolean', () => {
+  it('should expose instance db and user data methods', () => {
     expect(typeof (service as any).getInstanceDB).toBe('function');
     expect(typeof (service as any).getUserData).toBe('function');
   });

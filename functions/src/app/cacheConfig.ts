@@ -12,7 +12,11 @@ const sanitizeUpstashRestUrl = (value: string): string => {
         return ""
     }
 
-    const normalized = value.trim()
+    // Strip surrounding whitespace and trailing slashes
+    let normalized = value.trim().replace(/\/+$/, "")
+
+    // Deduplicate malformed hostnames like *.upstash.io.upstash.io
+    normalized = normalized.replace(/\.upstash\.io\.upstash\.io(\/|$)/, ".upstash.io$1")
 
     return /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`
 }

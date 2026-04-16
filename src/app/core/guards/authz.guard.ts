@@ -1,8 +1,10 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { Observable, combineLatest, of } from 'rxjs';
-import { filter, take } from 'rxjs/operators';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { filter } from 'rxjs/internal/operators/filter';
+import { take } from 'rxjs/internal/operators/take';
 import { map } from 'rxjs/internal/operators/map';
+import { switchMap } from 'rxjs/internal/operators/switchMap';
 import { AuthzService } from '../services';
 
 type AuthzGuardData = {
@@ -10,7 +12,7 @@ type AuthzGuardData = {
   action: 'execute' | 'read' | 'deploy' | 'update' | 'delete' | 'manage' | 'invite';
 };
 
-export const authzGuard: CanActivateFn = (route): Observable<boolean> => {
+export const authzGuard: CanActivateFn = (route): Observable<boolean | UrlTree> => {
   const router = inject(Router);
   const authzService = inject(AuthzService);
 
@@ -22,20 +24,11 @@ export const authzGuard: CanActivateFn = (route): Observable<boolean> => {
     return of(true);
   }
 
-  return combineLatest([
-    authzService.can$(authzData.resource, authzData.action as never),
-    authzService.membershipsReady$,
-  ])
-    .pipe(
-      filter(([, ready]) => ready),
-      take(1),
-      map(([allowed]) => {
-        if (!allowed) {
-          router.navigate(['/']);
-          return false;
-        }
-
-        return true;
-      }),
-    );
+  return authzService.membershipsReady$.pipe(
+    filter(ready => ready),
+    take(1),
+    switchMap(() => authzService.can$(authzData.resource, authzData.action as never)),
+    take(1),
+    map(allowed => (allowed ? true : router.createUrlTree(['/']))),
+  );
 };

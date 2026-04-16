@@ -31,7 +31,7 @@ describe('AuthzService', () => {
     expect(service.memberships$).toBeDefined();
   });
 
-  it('should have activeOrgId signal', () => {
+  it('should expose activeOrgId value', () => {
     expect(service.activeOrgId).toBeDefined();
   });
 });

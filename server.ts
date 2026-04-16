@@ -46,13 +46,16 @@ function serveapp(): express.Application {
   // PHASE 1.4: Cookie parser middleware for HttpOnly session cookies
   server.use(cookieParser())
 
+  // Exact allowlist of paths that may receive a session cookie — prevents overly broad substring matching.
+  const SESSION_COOKIE_ALLOW_PATHS = new Set(['/api/auth/verify-login', '/api/event/heartbeat'])
+
   // PHASE 1.4: HttpOnly cookie session middleware - sets secure session cookie after successful auth
   server.use((req: Request, res: Response, next: NextFunction) => {
     const originalJson = res.json.bind(res)
     
     res.json = function(data: SessionCookiePayload) {
       // After successful login/heartbeat, set HttpOnly session cookie
-      if (data && (req.path.includes('login') || req.path.includes('heartbeat')) && data.sessionId) {
+      if (data && SESSION_COOKIE_ALLOW_PATHS.has(req.path) && data.sessionId) {
         const isDevelopment = env.PRODUCTION !== 'true'
         res.cookie('sid', data.sessionId, {
           httpOnly: true,

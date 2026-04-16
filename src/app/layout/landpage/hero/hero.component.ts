@@ -14,7 +14,7 @@ import { myIcons } from 'src/app/shared';
 export class HeroComponent {
 
   readonly icons = myIcons
-  readonly bgImagePath = 'assets/images/bgland-optimized.webp'
+  readonly bgImagePath = 'images/bgland-optimized.webp'
   private scroll = inject(ScrollService);
   constructor(private router: Router, @Inject(DOCUMENT) private document: Document) { }
 
