@@ -30,7 +30,7 @@ describe('OperationStatusService', () => {
 
     service.getTaskStatusWithSnackbar('task-1', snackbarSpy).subscribe({
       next: () => {
-        expect(snackbarSpy).toHaveBeenCalledWith('Task completed succesfully!', SnackBarType.success);
+        expect(snackbarSpy).toHaveBeenCalledWith('Task completed successfully!', SnackBarType.success);
         done();
       },
     });
