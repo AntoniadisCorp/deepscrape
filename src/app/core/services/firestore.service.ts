@@ -125,6 +125,54 @@ export class FirestoreService {
     }
   }
 
+  private toCountMapFromSummary(summary: any, rawKey: string, topKey: string, itemKey: string, topN?: number): { [key: string]: number } | null {
+    const rawCounts = summary?.[rawKey]
+    if (rawCounts && typeof rawCounts === 'object' && !Array.isArray(rawCounts)) {
+      const entries = Object.entries(rawCounts as Record<string, number>)
+        .filter(([key]) => !!key)
+        .sort(([, left], [, right]) => Number(right) - Number(left))
+
+      return Object.fromEntries(typeof topN === 'number' ? entries.slice(0, topN) : entries)
+    }
+
+    const topItems = summary?.[topKey]
+    if (Array.isArray(topItems)) {
+      const items = topItems
+        .map((item: Record<string, unknown>) => {
+          const name = String(item?.[itemKey] || '')
+          const count = Number(item?.['count'] || 0)
+          return [name, count] as const
+        })
+        .filter(([name, count]) => !!name && Number.isFinite(count))
+
+      if (items.length > 0) {
+        return Object.fromEntries(typeof topN === 'number' ? items.slice(0, topN) : items)
+      }
+    }
+
+    return null
+  }
+
+  private async getGuestAnalyticsSummary(): Promise<any | null> {
+    try {
+      return await this.getDashboardSummary()
+    } catch (error) {
+      console.warn('Guest analytics summary unavailable, falling back to guests collection:', error)
+      return null
+    }
+  }
+
+  private async scanGuestsCollection(): Promise<QuerySnapshot<DocumentData> | null> {
+    try {
+      const guestsCollection = this.collection(this.firestore, 'guests')
+      const guestsQuery = this.query(guestsCollection)
+      return await this.getDocs(guestsQuery)
+    } catch (error) {
+      console.error('Failed to read guests collection:', error)
+      return null
+    }
+  }
+
 
   /**
    * This TypeScript function asynchronously retrieves user data based on a provided user ID.
@@ -776,12 +824,15 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: country (Ascending)
    */
   async getGuestsByCountry(topN: number = 10): Promise<{ [country: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
-      return {};
+    const summary = await this.getGuestAnalyticsSummary()
+    const optimized = this.toCountMapFromSummary(summary, 'byCountry', 'topCountries', 'country', topN)
+    if (optimized) {
+      return optimized
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
+      return {}
     }
 
     const countryMap: { [country: string]: number } = {};
@@ -804,12 +855,15 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: browser (Ascending)
    */
   async getGuestsByBrowser(): Promise<{ [browser: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
-      return {};
+    const summary = await this.getGuestAnalyticsSummary()
+    const optimized = this.toCountMapFromSummary(summary, 'byBrowser', 'topBrowsers', 'browser')
+    if (optimized) {
+      return optimized
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
+      return {}
     }
 
     const browserMap: { [browser: string]: number } = {};
@@ -827,12 +881,15 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: device (Ascending)
    */
   async getGuestsByDevice(): Promise<{ [device: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
-      return {};
+    const summary = await this.getGuestAnalyticsSummary()
+    const optimized = this.toCountMapFromSummary(summary, 'byDevice', 'topDevices', 'device')
+    if (optimized) {
+      return optimized
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
+      return {}
     }
 
     const deviceMap: { [device: string]: number } = {};
@@ -850,12 +907,15 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: os (Ascending)
    */
   async getGuestsByOS(): Promise<{ [os: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
-      return {};
+    const summary = await this.getGuestAnalyticsSummary()
+    const optimized = this.toCountMapFromSummary(summary, 'byOS', 'topOperatingSystems', 'os')
+    if (optimized) {
+      return optimized
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
+      return {}
     }
 
     const osMap: { [os: string]: number } = {};
@@ -879,11 +939,22 @@ export class FirestoreService {
     unregistered: number;
     conversionRate: number;
   }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
+    const summary = await this.getGuestAnalyticsSummary()
+    if (summary && typeof summary.totalGuests === 'number' && typeof summary.guestConversions === 'number') {
+      const registered = Number(summary.guestConversions || 0)
+      const totalGuests = Number(summary.totalGuests || 0)
+      const unregistered = Math.max(0, totalGuests - registered)
+      const conversionRate = Number(summary.conversionRate || (totalGuests > 0 ? (registered / totalGuests) * 100 : 0))
+
+      return {
+        registered,
+        unregistered,
+        conversionRate: Math.round(conversionRate * 100) / 100,
+      }
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
       return { registered: 0, unregistered: 0, conversionRate: 0 };
     }
 
@@ -915,11 +986,32 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: createdAt (Ascending)
    */
   async getGuestActivityByDay(limitDays: number = 7): Promise<{ [date: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
+    try {
+      const metricsCollection = this.collection(this.firestore, 'metrics_daily')
+      const metricsQuery = this.query(metricsCollection, this.orderBy('date', 'asc'))
+      const metricsSnapshot = await this.getDocs(metricsQuery)
+      if (!metricsSnapshot.empty) {
+        const ordered = metricsSnapshot.docs
+          .map(doc => doc.data())
+          .filter(data => !!data['date'])
+          .slice(-limitDays)
+
+        const optimized = ordered.reduce((accumulator, data) => {
+          const dateKey = String(data['date'])
+          accumulator[dateKey] = Number(data['newGuests'] || data['totalGuests'] || 0)
+          return accumulator
+        }, {} as { [date: string]: number })
+
+        if (Object.keys(optimized).length > 0) {
+          return optimized
+        }
+      }
+    } catch (error) {
+      console.warn('Daily metrics unavailable, falling back to guests collection:', error)
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
       return {};
     }
 
@@ -951,12 +1043,15 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: timezone (Ascending)
    */
   async getGuestsByTimezone(topN: number = 10): Promise<{ [timezone: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
-      return {};
+    const summary = await this.getGuestAnalyticsSummary()
+    const optimized = this.toCountMapFromSummary(summary, 'byTimezone', 'topTimezones', 'timezone', topN)
+    if (optimized) {
+      return optimized
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
+      return {}
     }
 
     const timezoneMap: { [timezone: string]: number } = {};
@@ -979,12 +1074,9 @@ export class FirestoreService {
    * INDEX REQUIRED: Collection: guests, Fields: language (Ascending)
    */
   async getGuestsByLanguage(): Promise<{ [language: string]: number }> {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
-      return {};
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
+      return {}
     }
 
     const languageMap: { [language: string]: number } = {};
@@ -1002,11 +1094,28 @@ export class FirestoreService {
    * This reduces the number of round trips to Firestore
    */
   async getComprehensiveGuestAnalytics() {
-    const guestsCollection = this.collection(this.firestore, 'guests');
-    const q = this.query(guestsCollection);
-    let err, querySnapshot = await this.getDocs(q);
-    if (err) {
-      console.error("Failed to get guests data:", err);
+    const summary = await this.getGuestAnalyticsSummary()
+    const byDay = await this.getGuestActivityByDay()
+
+    if (summary) {
+      const total = Number(summary.totalGuests || 0)
+      const registered = Number(summary.guestConversions || 0)
+      return {
+        total,
+        byCountry: this.toCountMapFromSummary(summary, 'byCountry', 'topCountries', 'country') || {},
+        byBrowser: this.toCountMapFromSummary(summary, 'byBrowser', 'topBrowsers', 'browser') || {},
+        byDevice: this.toCountMapFromSummary(summary, 'byDevice', 'topDevices', 'device') || {},
+        byOS: this.toCountMapFromSummary(summary, 'byOS', 'topOperatingSystems', 'os') || {},
+        byLanguage: {},
+        byTimezone: this.toCountMapFromSummary(summary, 'byTimezone', 'topTimezones', 'timezone') || {},
+        registered,
+        unregistered: Math.max(0, total - registered),
+        byDay,
+      }
+    }
+
+    const querySnapshot = await this.scanGuestsCollection()
+    if (!querySnapshot) {
       return null;
     }
 
