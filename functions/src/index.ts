@@ -33,6 +33,8 @@ export const getMyLoginSessionStatus = sessions.getMyLoginSessionStatus
 export const revokeUserLoginSessionByAdmin = sessions.revokeUserLoginSessionByAdmin
 export const revokeAllUserSessionsByAdmin = sessions.revokeAllUserSessionsByAdmin
 export const enableTotpMfa = auth.enableTotpMfa
+export const ensureBootstrapAdminAccess = auth.ensureBootstrapAdminAccess
+export const createBootstrapAdminPasswordAccount = auth.createBootstrapAdminPasswordAccount
 
 // ADMIN USER MANAGEMENT - Function TRIGGERS
 export const setDefaultAdminRole = auth.setDefaultAdminRole

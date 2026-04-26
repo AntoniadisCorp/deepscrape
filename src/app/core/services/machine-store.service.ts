@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs/internal/Subscription'
 import { Observable } from 'rxjs/internal/Observable'
 import { from } from 'rxjs/internal/observable/from'
 import { map } from 'rxjs/internal/operators/map'
+import { switchMap } from 'rxjs/internal/operators/switchMap'
 import { AuthService } from './auth.service'
 
 @Injectable({
@@ -20,6 +21,7 @@ export class MachineStoreService {
   private machineSubject = new BehaviorSubject<FlyMachine[] | null | undefined>(undefined)
   private totalPagesSubject = new BehaviorSubject<number>(1)
   private inTotalSubject = new BehaviorSubject<number>(0)
+  private machinePageCursors = new Map<string, Map<number, string | null>>()
   private SessionStorage: Storage = inject(SessionStorage)
 
 
@@ -67,19 +69,77 @@ export class MachineStoreService {
     }
   }
 
+  private getCursorKey(state: string | null): string {
+    return state || '__all__'
+  }
+
+  private getCursorStore(state: string | null): Map<number, string | null> {
+    const key = this.getCursorKey(state)
+    let store = this.machinePageCursors.get(key)
+
+    if (!store) {
+      store = new Map<number, string | null>([[1, null]])
+      this.machinePageCursors.set(key, store)
+    }
+
+    return store
+  }
+
+  private async resolveMachinePageCursor(currPage: number, pageSize: number, state: string | null): Promise<string | null> {
+    const cursorStore = this.getCursorStore(state)
+    if (currPage <= 1) {
+      cursorStore.set(1, null)
+      return null
+    }
+
+    const knownCursor = cursorStore.get(currPage)
+    if (knownCursor !== undefined) {
+      return knownCursor
+    }
+
+    let knownPage = 1
+    for (const page of Array.from(cursorStore.keys()).sort((left, right) => left - right)) {
+      if (page <= currPage) {
+        knownPage = page
+      }
+    }
+
+    let lastDocId = cursorStore.get(knownPage) ?? null
+
+    while (knownPage < currPage) {
+      const response = await this.firestoreService.callFunction<
+        { pageSize: number; state: string | null; lastDocId: string | null },
+        { hasMore: boolean; nextLastDocId: string | null }
+      >('getMachinesPaging', { pageSize, state, lastDocId })
+
+      cursorStore.set(knownPage + 1, response?.nextLastDocId ?? null)
+
+      if (!response?.hasMore && knownPage + 1 < currPage) {
+        throw new Error('Requested page exceeds total pages.')
+      }
+
+      lastDocId = response?.nextLastDocId ?? null
+      knownPage += 1
+    }
+
+    return cursorStore.get(currPage) ?? null
+  }
+
   private getMachinesByPagination(currPage: number = 1, pageSize: number = 10, state: string | null = null): Observable<any> {
-    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number; state: string | null }, any>(
-      'getMachinesPaging',
-      { currPage, pageSize, state }
-    ))
-      .pipe(
-        map((data: any) => {
-          const { error, machines, inTotal, totalPages, message } = data as any
+    return from(this.resolveMachinePageCursor(currPage, pageSize, state)).pipe(
+      switchMap((lastDocId) => from(this.firestoreService.callFunction<{ pageSize: number; state: string | null; lastDocId: string | null }, any>(
+        'getMachinesPaging',
+        { pageSize, state, lastDocId }
+      ))),
+      map((data: any) => {
+          const { error, machines, inTotal, totalPages, message, nextLastDocId } = data as any
 
           if (error) {
             console.error('Error retrieving machines by pagination:', error, machines, message)
             throw new Error(message, error)
           }
+
+          this.getCursorStore(state).set(currPage + 1, nextLastDocId ?? null)
 
           const newMachine = machines?.map((machine: FlyMachine): any => {
             // const created_At = (machine.created_at as any).toDate() // new Date((((key.created_At as any)._seconds * 1000) + ((key.created_At as any)._nanoseconds / 1000000)))
@@ -88,8 +148,8 @@ export class MachineStoreService {
           })
 
           return { machines: newMachine, inTotal, totalPages }
-        })
-      )
+      })
+    )
   }
 
 

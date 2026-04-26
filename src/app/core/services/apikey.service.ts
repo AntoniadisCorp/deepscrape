@@ -19,6 +19,7 @@ export class ApiKeyService {
     private retrieveKeysSub: Subscription;
     private apiKeysSubject = new BehaviorSubject<ApiKey[] | null>([]);
     private SessionStorage: Storage = inject(SessionStorage)
+    private apiKeyPageCursors = new Map<number, string | null>([[1, null]])
 
     apiKeys$ = this.apiKeysSubject.asObservable()
 
@@ -56,18 +57,22 @@ export class ApiKeyService {
     }
 
     private retrieveApiKeysPagination(apiKeyPage: number = 1, apiKeyPageSize: number = 10): Observable<ApiKey[]> {
-        return from(this.firestoreService.callFunction<{ apiKeyPage: number; apiKeyPageSize: number }, any>(
+        const lastDocId = this.apiKeyPageCursors.get(apiKeyPage) ?? null
+
+        return from(this.firestoreService.callFunction<{ pageSize: number; lastDocId: string | null }, any>(
             'retrieveMyApiKeysPaging',
-            { apiKeyPage, apiKeyPageSize }
+            { pageSize: apiKeyPageSize, lastDocId }
         ))
             .pipe(
                 map((data: any) => {
-                    const { error, apiKeys, message } = data as any
+                    const { error, apiKeys, message, nextLastDocId } = data as any
 
                     if (error) {
                         console.error('Error creating API key:', error, apiKeys, message);
                         throw new Error(message, error);
                     }
+
+                    this.apiKeyPageCursors.set(apiKeyPage + 1, nextLastDocId ?? null)
 
 
                     console.log(apiKeys)

@@ -21,7 +21,90 @@ const isBootstrapAdmin = (email?: string | null): boolean => {
     return bootstrapAdminEmails.has(email.toLowerCase())
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const resolveUserEmail = async (user: { uid: string; email?: string | null }): Promise<string | null> => {
+    if (user.email) {
+        return user.email
+    }
+
+    try {
+        const authUser = await adminAuth.getUser(user.uid)
+        return authUser.email || null
+    } catch {
+        return null
+    }
+}
+
+const setRoleClaim = async (uid: string, role: string): Promise<void> => {
+    const authUser = await adminAuth.getUser(uid)
+    const claims = (authUser.customClaims || {}) as Record<string, unknown>
+    await adminAuth.setCustomUserClaims(uid, {
+        ...claims,
+        role,
+    })
+}
+
+const syncBootstrapAdminRole = async (uid: string, email?: string | null): Promise<boolean> => {
+    const normalizedEmail = email?.trim().toLowerCase() || null
+    if (!isBootstrapAdmin(normalizedEmail)) {
+        return false
+    }
+
+    await setRoleClaim(uid, "admin")
+    await db.collection("users").doc(uid).set({
+        role: "admin",
+        onboardedAt: FieldValue.serverTimestamp(),
+        updated_At: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    return true
+}
+
 const MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS = 60 * 5
+
+type CursorPageResponse<T> = {
+    items: T[]
+    hasMore: boolean
+    nextLastDocId: string | null
+    inTotal: number
+    totalPages: number
+}
+
+const getCursorPage = async <T>(
+    collectionRef: FirebaseFirestore.CollectionReference,
+    baseQuery: FirebaseFirestore.Query,
+    pageSize: number,
+    lastDocId?: string | null,
+): Promise<CursorPageResponse<T>> => {
+    const normalizedPageSize = Math.max(1, pageSize)
+    let pagedQuery = baseQuery.limit(normalizedPageSize + 1)
+
+    if (lastDocId) {
+        const cursorSnapshot = await collectionRef.doc(lastDocId).get()
+        if (!cursorSnapshot.exists) {
+            throw new HttpsError("invalid-argument", "Pagination cursor is no longer valid")
+        }
+
+        pagedQuery = pagedQuery.startAfter(cursorSnapshot)
+    }
+
+    const [snapshot, totalCountSnapshot] = await Promise.all([
+        pagedQuery.get(),
+        baseQuery.count().get(),
+    ])
+
+    const docs = snapshot.docs.slice(0, normalizedPageSize)
+    const hasMore = snapshot.docs.length > normalizedPageSize
+
+    return {
+        items: docs.map((doc) => ({ id: doc.id, ...doc.data() } as T)),
+        hasMore,
+        nextLastDocId: hasMore && docs.length > 0 ? docs[docs.length - 1].id : null,
+        inTotal: totalCountSnapshot.data().count || 0,
+        totalPages: Math.max(1, Math.ceil((totalCountSnapshot.data().count || 0) / normalizedPageSize)),
+    }
+}
 
 
 export const trackGuest = auth
@@ -126,38 +209,132 @@ export const setDefaultAdminRole = runWith({ memory: "256MB", timeoutSeconds: 60
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
-            const role = "admin"
+            const userEmail = await resolveUserEmail(user)
 
-            if (isBootstrapAdmin(user.email)) {
-                await adminAuth.setCustomUserClaims(user.uid, { role })
-                // Set role and mark as onboarded — bootstrap admins skip the onboarding wizard
-                await db.collection("users").doc(user.uid).set({
-                    role,
-                    onboardedAt: FieldValue.serverTimestamp(),
-                }, { merge: true })
-            }
+            await syncBootstrapAdminRole(user.uid, userEmail)
         } catch (error) {
             console.error("Error setting default admin role:", error)
             throw new HttpsError("internal", "Error setting default admin role", error)
         }
     })
 
+export const ensureBootstrapAdminAccess = onCallv2(async (req) => {
+    const uid = req.auth?.uid
+    if (!uid) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    try {
+        const userRecord = await adminAuth.getUser(uid)
+        const email = userRecord.email || null
+        const granted = await syncBootstrapAdminRole(uid, email)
+
+        if (!granted) {
+            throw new HttpsError(
+                "permission-denied",
+                "Bootstrap admin access is only available for configured admin emails"
+            )
+        }
+
+        return {
+            success: true,
+            role: "admin",
+            email,
+        }
+    } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error
+        }
+
+        console.error("Error ensuring bootstrap admin access:", error)
+        throw new HttpsError("internal", "Failed to ensure bootstrap admin access", error)
+    }
+})
+
+export const createBootstrapAdminPasswordAccount = onCallv2(async (req) => {
+    const email = String(req.data?.email || "").trim().toLowerCase()
+    const password = String(req.data?.password || "")
+    const displayName = String(req.data?.displayName || "").trim()
+
+    if (!email || !EMAIL_REGEX.test(email)) {
+        throw new HttpsError("invalid-argument", "A valid email is required")
+    }
+
+    if (!isBootstrapAdmin(email)) {
+        throw new HttpsError(
+            "permission-denied",
+            "Password bootstrap is only available for configured admin emails"
+        )
+    }
+
+    if (password.length < 8) {
+        throw new HttpsError("invalid-argument", "Password must be at least 8 characters long")
+    }
+
+    try {
+        const existingUser = await adminAuth.getUserByEmail(email).catch((error: unknown) => {
+            if ((error as { code?: string })?.code === "auth/user-not-found") {
+                return null
+            }
+
+            throw error
+        })
+
+        if (existingUser) {
+            throw new HttpsError("already-exists", "An account already exists for this admin email")
+        }
+
+        const userRecord = await adminAuth.createUser({
+            email,
+            password,
+            displayName: displayName || undefined,
+            emailVerified: false,
+        })
+
+        await syncBootstrapAdminRole(userRecord.uid, email)
+
+        return {
+            success: true,
+            uid: userRecord.uid,
+            email,
+        }
+    } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error
+        }
+
+        const code = String((error as { code?: string })?.code || "")
+        if (code === "auth/email-already-exists") {
+            throw new HttpsError("already-exists", "An account already exists for this admin email")
+        }
+
+        if (code === "auth/invalid-password") {
+            throw new HttpsError("invalid-argument", "Password does not meet Firebase requirements")
+        }
+
+        console.error("Error creating bootstrap admin password account:", error)
+        throw new HttpsError("internal", "Failed to create bootstrap admin password account", error)
+    }
+})
+
 export const setDefaultRole = auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
-            if (isBootstrapAdmin(user.email)) {
-                return
-            }
+            const userEmail = await resolveUserEmail(user)
+            const role = isBootstrapAdmin(userEmail) ? "admin" : "user"
 
-            const role = "user"
-
-            await adminAuth.setCustomUserClaims(user.uid, { role })
+            await setRoleClaim(user.uid, role)
             // Only set role in Firestore if defined
             const userDoc: Record<string, unknown> = {}
             if (role !== undefined) {
                 userDoc.role = role
             }
+
+            if (role === "admin") {
+                userDoc.onboardedAt = FieldValue.serverTimestamp()
+            }
+
             await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
         } catch (error) {
             console.error("Error setting default role:", error)
@@ -442,30 +619,27 @@ export const createMyApiKey = onCallv2(async (req) => {
 export const retrieveMyApiKeysPaging = onCallv2(
 
     async (req) => {
-        const { apiKeyPage, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
         try {
             const userId = req?.auth?.uid
-            const page: number = apiKeyPage || 1
-            const limit: number = pageSize
 
             if (!userId) {
                 throw new Error("User must be authenticated")
             }
 
             const apiKeysRef = db.collection(`users/${userId}/apikeys`)
-            const apiKeysQuery = apiKeysRef.orderBy("created_At", "desc").limit(limit)
+            const apiKeysQuery = apiKeysRef.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(apiKeysRef, apiKeysQuery, pageSize, lastDocId)
 
-            if (page > 1) {
-                const previousLimit = limit * (page - 1)
-                const lastDoc = await apiKeysRef.orderBy("created_At", "desc").limit(previousLimit).get()
-                const lastDocument = lastDoc.docs[lastDoc.size - 1]
-                apiKeysQuery.startAfter(lastDocument)
+            return {
+                error: null,
+                apiKeys: pageResult.items,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
+                inTotal: pageResult.inTotal,
+                totalPages: pageResult.totalPages,
+                message: "API keys retrieved successfully",
             }
-
-            const apiKeys = await apiKeysQuery.get()
-            const apiKeysData = apiKeys.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-
-            return { error: null, apiKeys: apiKeysData, message: "API keys retrieved successfully" }
         } catch (error) {
             console.error("Error retrieving API key:", error)
             // throw new Error("Failed to create API key by id " + apiKeyId)
@@ -835,7 +1009,7 @@ export const getOperationsPaging = onCallv2(
 export const getBrowserProfilesPaging = onCallv2(
 
     async (req) => {
-        const { currPage = 1, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -843,53 +1017,29 @@ export const getBrowserProfilesPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const profilesRef = db.collection(`users/${userId}/browser`).orderBy("created_At", "desc")
+            const profilesCollection = db.collection(`users/${userId}/browser`)
+            const profilesRef = profilesCollection.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(profilesCollection, profilesRef, pageSize, lastDocId)
 
-            // Check if collection exists
-            const snapshot = await profilesRef.get()
-            if (snapshot.empty) {
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     profiles: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "Browser Profiles retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalBrowserProfilesQuery = await profilesRef.count().get()
-            const inTotal = totalBrowserProfilesQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-            let query = profilesRef.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await profilesRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const profilesSnapshot = await query.get()
-            const profiles = profilesSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                profiles,
-                totalPages,
-                inTotal,
+                profiles: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "Browser Profiles retrieved successfully",
             }
         } catch (error) {
@@ -901,7 +1051,7 @@ export const getBrowserProfilesPaging = onCallv2(
 export const getCrawlConfigsPaging = onCallv2(
 
     async (req) => {
-        const { currPage = 1, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -909,53 +1059,29 @@ export const getCrawlConfigsPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const configsRef = db.collection(`users/${userId}/crawlconfigs`).orderBy("created_At", "desc")
+            const configsCollection = db.collection(`users/${userId}/crawlconfigs`)
+            const configsRef = configsCollection.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(configsCollection, configsRef, pageSize, lastDocId)
 
-            // Check if collection exists
-            const snapshot = await configsRef.get()
-            if (snapshot.empty) {
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     configs: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "Crawler Configs retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalCrawlConfigsQuery = await configsRef.count().get()
-            const inTotal = totalCrawlConfigsQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-            let query = configsRef.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await configsRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const configsSnapshot = await query.get()
-            const configs = configsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                configs,
-                totalPages,
-                inTotal,
+                configs: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "Crawler Configs retrieved successfully",
             }
         } catch (error) {
@@ -966,7 +1092,7 @@ export const getCrawlConfigsPaging = onCallv2(
 
 export const getCrawlResultConfigsPaging = onCallv2(
     async (req) => {
-        const { currPage = 1, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -974,53 +1100,29 @@ export const getCrawlResultConfigsPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const configsRef = db.collection(`users/${userId}/crawlresultsconfig`).orderBy("created_At", "desc")
+            const resultsCollection = db.collection(`users/${userId}/crawlresultsconfig`)
+            const configsRef = resultsCollection.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(resultsCollection, configsRef, pageSize, lastDocId)
 
-            // Check if collection exists
-            const snapshot = await configsRef.get()
-            if (snapshot.empty) {
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     crawlResultConfigs: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "CrawlResult Configs retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalCrawlResultConfigsQuery = await configsRef.count().get()
-            const inTotal = totalCrawlResultConfigsQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-            let query = configsRef.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await configsRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const configsSnapshot = await query.get()
-            const crawlResultConfigs = configsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                crawlResultConfigs,
-                totalPages,
-                inTotal,
+                crawlResultConfigs: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "CrawlResult Configs retrieved successfully",
             }
         } catch (error) {
@@ -1070,7 +1172,7 @@ export const receiveLogs = onRequest(async (request, response) => {
 
 export const getMachinesPaging = onCallv2(
     async (req) => {
-        const { currPage = 1, pageSize = 10, state = null } = req.data
+        const { pageSize = 10, state = null, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -1078,54 +1180,30 @@ export const getMachinesPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const machinesRef = db.collection(`users/${userId}/machines`).orderBy("created_at", "desc")
+            const machinesCollection = db.collection(`users/${userId}/machines`)
+            const machinesRef = machinesCollection.orderBy("created_at", "desc")
             const filteredQuery = state && typeof state == "string" ? machinesRef.where("state", "==", state) : machinesRef.where("state", "!=", "destroyed")
-            // Check if collection exists
-            const snapshot = await filteredQuery.get()
-            if (snapshot.empty) {
+            const pageResult = await getCursorPage<Record<string, unknown>>(machinesCollection, filteredQuery, pageSize, lastDocId)
+
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     machines: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "Machines retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalMachinesQuery = await filteredQuery.count().get()
-            const inTotal = totalMachinesQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages && totalPages > 0) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-
-            let query = filteredQuery.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await filteredQuery.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const machinesSnapshot = await query.get()
-            const machines = machinesSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                machines,
-                totalPages,
-                inTotal,
+                machines: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "Machines retrieved successfully",
             }
         } catch (error) {
