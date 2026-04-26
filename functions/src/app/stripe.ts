@@ -351,6 +351,15 @@ const buildFreePlanFromExpiredTrial = (billing: UserBilling | undefined): Partia
   }
 }
 
+// FIX #3: Sync billing snapshot into user doc to eliminate subcollection reads on callable invocations.
+// Full-state writes use set({billing: data}, {merge: true}) so the whole billing field is replaced.
+const syncBillingToUserDoc = (
+  userRef: FirebaseFirestore.DocumentReference,
+  billing: Partial<UserBilling>,
+): Promise<FirebaseFirestore.WriteResult> => {
+  return userRef.set({ billing }, { merge: true })
+}
+
 const createAlertId = (type: string, windowId: string) => `${type}_${windowId}`
 
 const toSafeErrorMessage = (error: unknown): string => {
@@ -1405,13 +1414,22 @@ export const getMyEntitlements = onCallv2(
 
     const billingRef = db.doc(`users/${userId}/billing/current`)
     const userRef = db.doc(`users/${userId}`)
-    const [billingSnap, userSnap] = await Promise.all([billingRef.get(), userRef.get()])
+    // FIX #3: single user-doc read; billing cached in user.billing field after first write
+    const userSnap = await userRef.get()
 
-    const user = userSnap.data() as Users | undefined
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
     const tokenRole = getTokenRole(req)
 
+    // Prefer billing snapshot embedded in user doc; fall back to subcollection on first call
+    let existingBilling = user?.billing as UserBilling | undefined
+    let billingDocExists = existingBilling !== undefined
+    if (!existingBilling) {
+      const billingSnap = await billingRef.get()
+      billingDocExists = billingSnap.exists
+      existingBilling = billingSnap.exists ? billingSnap.data() as UserBilling : undefined
+    }
+
     if (isBillingRestrictedUser(user, tokenRole)) {
-      const existingBilling = billingSnap.exists ? billingSnap.data() as UserBilling : undefined
       const restrictedBilling: Partial<UserBilling> = {
         ...getDefaultBillingForPlan("free"),
         plan: "free",
@@ -1428,40 +1446,44 @@ export const getMyEntitlements = onCallv2(
         updatedAt: FieldValue.serverTimestamp(),
       }
 
-      await billingRef.set(restrictedBilling, { merge: true })
-      await userRef.set({
-        plan: "free",
-        status: "inactive",
-        subscriptionId: null,
-        stripeId: FieldValue.delete(),
-        updated_At: new Date(),
-      }, { merge: true })
+      await Promise.all([
+        billingRef.set(restrictedBilling, { merge: true }),
+        userRef.set({
+          billing: restrictedBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          stripeId: FieldValue.delete(),
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
 
-      const refreshed = await billingRef.get()
-      return { billing: refreshed.data(), userId }
+      return { billing: restrictedBilling, userId }
     }
 
-    if (!billingSnap.exists) {
+    if (!billingDocExists) {
       const initialPlan = mapPlanIdToTier(user?.plan || "free")
       const billing = getDefaultBillingForPlan(initialPlan)
-      await billingRef.set(billing, { merge: true })
+      await Promise.all([
+        billingRef.set(billing, { merge: true }),
+        syncBillingToUserDoc(userRef, billing),
+      ])
       return { billing, userId }
     }
 
-    const existingBilling = billingSnap.data() as UserBilling | undefined
-
     if (hasTrialExpired(existingBilling)) {
       const nextBilling = buildFreePlanFromExpiredTrial(existingBilling)
-      await billingRef.set(nextBilling, { merge: true })
-      await userRef.set({
-        plan: "free",
-        status: "inactive",
-        subscriptionId: null,
-        updated_At: new Date(),
-      }, { merge: true })
-
-      const refreshed = await billingRef.get()
-      return { billing: refreshed.data(), userId }
+      await Promise.all([
+        billingRef.set(nextBilling, { merge: true }),
+        userRef.set({
+          billing: nextBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
+      return { billing: nextBilling, userId }
     }
 
     const shouldInferPaygPlan =
@@ -1489,7 +1511,7 @@ export const getMyEntitlements = onCallv2(
 
         if (latestActiveRecurring && recurringMatch) {
           const effectivePlan: BillingPlanTier = latestActiveRecurring.status === "trialing" ? "trial" : recurringMatch.plan
-          await billingRef.set({
+          const inferredBilling = {
             plan: effectivePlan,
             planInterval: recurringMatch.interval,
             status: latestActiveRecurring.status,
@@ -1508,17 +1530,20 @@ export const getMyEntitlements = onCallv2(
               trialEndsAt: null,
             }),
             updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
+          }
 
-          await db.doc(`users/${userId}`).set({
-            plan: effectivePlan,
-            status: latestActiveRecurring.status,
-            subscriptionId: latestActiveRecurring.id,
-            updated_At: new Date(),
-          }, { merge: true })
+          await Promise.all([
+            billingRef.set(inferredBilling, { merge: true }),
+            userRef.set({
+              billing: inferredBilling,
+              plan: effectivePlan,
+              status: latestActiveRecurring.status,
+              subscriptionId: latestActiveRecurring.id,
+              updated_At: new Date(),
+            }, { merge: true }),
+          ])
 
-          const refreshed = await billingRef.get()
-          return { billing: refreshed.data(), userId }
+          return { billing: inferredBilling, userId }
         }
 
         const paymentIntents = await stripe.paymentIntents.list({
@@ -1536,22 +1561,25 @@ export const getMyEntitlements = onCallv2(
         }) : null
 
         if (inferredPlan) {
-          await billingRef.set({
+          const paygBilling = {
             ...getDefaultBillingForPlan(inferredPlan),
             plan: inferredPlan,
-            planInterval: "payAsYouGo",
+            planInterval: "payAsYouGo" as BillingInterval,
             status: "active",
             updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
+          }
 
-          await db.doc(`users/${userId}`).set({
-            plan: inferredPlan,
-            status: "active",
-            updated_At: new Date(),
-          }, { merge: true })
+          await Promise.all([
+            billingRef.set(paygBilling, { merge: true }),
+            userRef.set({
+              billing: paygBilling,
+              plan: inferredPlan,
+              status: "active",
+              updated_At: new Date(),
+            }, { merge: true }),
+          ])
 
-          const refreshed = await billingRef.get()
-          return { billing: refreshed.data(), userId }
+          return { billing: paygBilling, userId }
         }
       } catch (error) {
         console.warn("Entitlement inference from successful pay-as-you-go payments failed:", error)
@@ -1572,12 +1600,13 @@ export const startTrial = onCallv2(
 
     const userRef = db.doc(`users/${userId}`)
     const billingRef = db.doc(`users/${userId}/billing/current`)
-    const [userSnap, billingSnap] = await Promise.all([userRef.get(), billingRef.get()])
-    const user = userSnap.data() as Users | undefined
+    // FIX #3: single read — billing cached in user.billing after first write
+    const userSnap = await userRef.get()
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
 
     assertBillingAllowed(user, getTokenRole(req))
 
-    const billing = billingSnap.data() as UserBilling | undefined
+    const billing = user?.billing as UserBilling | undefined
     const alreadyUsedTrial = Boolean(billing?.trialUsedAt)
     if (alreadyUsedTrial) {
       throw new HttpsError("failed-precondition", "Trial can only be used once per account")
@@ -1604,17 +1633,19 @@ export const startTrial = onCallv2(
       updatedAt: FieldValue.serverTimestamp(),
     }
 
-    await billingRef.set(trialBilling, { merge: true })
-    await userRef.set({
-      plan: "trial",
-      status: "active",
-      subscriptionId: null,
-      updated_At: now,
-    }, { merge: true })
+    await Promise.all([
+      billingRef.set(trialBilling, { merge: true }),
+      userRef.set({
+        billing: trialBilling,
+        plan: "trial",
+        status: "active",
+        subscriptionId: null,
+        updated_At: now,
+      }, { merge: true }),
+    ])
 
-    const refreshed = await billingRef.get()
     return {
-      billing: refreshed.data(),
+      billing: trialBilling,
       userId,
       trialStartedAt: trialBilling.trialStartedAt,
       trialEndsAt: trialBilling.trialEndsAt,
@@ -1925,9 +1956,9 @@ export const createCheckoutSession = onCallv2(
     }
 
     const userSnap = await db.doc(`users/${userId}`).get()
-    const user = userSnap.data() as Users | undefined
-    const billingSnap = await db.doc(`users/${userId}/billing/current`).get()
-    const billing = billingSnap.data() as UserBilling | undefined
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
+    // FIX #3: billing embedded in user doc — no subcollection read needed
+    const billing = user?.billing as UserBilling | undefined
   assertBillingAllowed(user, getTokenRole(req))
     const userEmail = user?.email || user?.providerData?.[0]?.email || ""
 
@@ -1981,10 +2012,6 @@ export const createCheckoutSession = onCallv2(
 
     let trialPeriodDays: number | undefined
     if (checkoutMode === "subscription" && selectedPlan?.id === "pro") {
-      const billingRef = db.doc(`users/${userId}/billing/current`)
-      const billingSnap = await billingRef.get()
-      const billing = billingSnap.data() as UserBilling | undefined
-
       const alreadyUsedTrial = Boolean(
         billing?.trialUsedAt ||
         billing?.plan === "trial" ||
@@ -2097,12 +2124,13 @@ export const resumeSubscriptionCancellation = onCallv2(
 
     const userRef = db.doc(`users/${userId}`)
     const billingRef = db.doc(`users/${userId}/billing/current`)
-    const [userSnap, billingSnap] = await Promise.all([userRef.get(), billingRef.get()])
+    // FIX #3: single read — billing cached in user.billing after first write
+    const userSnap = await userRef.get()
 
-    const user = userSnap.data() as Users | undefined
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
     assertBillingAllowed(user, getTokenRole(req))
 
-    const billing = billingSnap.data() as UserBilling | undefined
+    const billing = user?.billing as UserBilling | undefined
     const subscriptionId = billing?.subscriptionId || user?.subscriptionId || null
     if (!subscriptionId) {
       throw new HttpsError("failed-precondition", "No active subscription found")
@@ -2118,7 +2146,7 @@ export const resumeSubscriptionCancellation = onCallv2(
     const effectivePlan: BillingPlanTier = updatedSubscription.status === "trialing" ?
      "trial" : (recurringMatch?.plan || currentPlan)
 
-    await billingRef.set({
+    const updatedBilling = {
       ...getDefaultBillingForPlan(effectivePlan),
       plan: effectivePlan,
       planInterval: recurringMatch?.interval || billing?.planInterval || null,
@@ -2138,18 +2166,21 @@ export const resumeSubscriptionCancellation = onCallv2(
         trialEndsAt: null,
       }),
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    }
 
-    await userRef.set({
-      plan: effectivePlan,
-      status: updatedSubscription.status,
-      subscriptionId: updatedSubscription.id,
-      updated_At: new Date(),
-    }, { merge: true })
+    await Promise.all([
+      billingRef.set(updatedBilling, { merge: true }),
+      userRef.set({
+        billing: updatedBilling,
+        plan: effectivePlan,
+        status: updatedSubscription.status,
+        subscriptionId: updatedSubscription.id,
+        updated_At: new Date(),
+      }, { merge: true }),
+    ])
 
-    const refreshed = await billingRef.get()
     return {
-      billing: refreshed.data(),
+      billing: updatedBilling,
       subscriptionId: updatedSubscription.id,
       cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
     }
@@ -2212,21 +2243,25 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
     const protectedUserSnap = await db.doc(`users/${uid}`).get()
     const protectedUser = protectedUserSnap.data() as Users | undefined
     if (isBillingRestrictedUser(protectedUser)) {
-      await db.doc(`users/${uid}/billing/current`).set({
+      const restrictedSessionBilling = {
         ...getDefaultBillingForPlan("free"),
-        plan: "free",
+        plan: "free" as BillingPlanTier,
         status: "inactive",
         subscriptionId: null,
-        planInterval: null,
+        planInterval: null as BillingInterval | null,
         updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true })
-      await db.doc(`users/${uid}`).set({
-        plan: "free",
-        status: "inactive",
-        subscriptionId: null,
-        stripeId: FieldValue.delete(),
-        updated_At: new Date(),
-      }, { merge: true })
+      }
+      await Promise.all([
+        db.doc(`users/${uid}/billing/current`).set(restrictedSessionBilling, { merge: true }),
+        db.doc(`users/${uid}`).set({
+          billing: restrictedSessionBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          stripeId: FieldValue.delete(),
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
       break
     }
 
@@ -2273,7 +2308,7 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         }
       }
 
-      await billingRef.set({
+      const checkoutBilling = {
         ...getDefaultBillingForPlan(effectivePlan),
         status: effectiveStatus,
         subscriptionId: effectiveSubscriptionId,
@@ -2281,14 +2316,18 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         ...subscriptionMeta,
         ...trialMeta,
         updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true })
+      }
 
-      await userRef.set({
-        plan: effectivePlan,
-        status: effectiveStatus,
-        subscriptionId: effectiveSubscriptionId,
-        updated_At: new Date(),
-      }, { merge: true })
+      await Promise.all([
+        billingRef.set(checkoutBilling, { merge: true }),
+        userRef.set({
+          billing: checkoutBilling,
+          plan: effectivePlan,
+          status: effectiveStatus,
+          subscriptionId: effectiveSubscriptionId,
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
 
       if (checkoutType === "plan_payg") {
         const includedCredits = getIncludedCreditsForPlanInterval(selectedPlan, "payAsYouGo")
@@ -2314,11 +2353,19 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
     }
 
     const graceUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString()
-    await db.doc(`users/${uid}/billing/current`).set({
-      status: "past_due",
-      graceUntil,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set({
+        status: "past_due",
+        graceUntil,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true }),
+      // Sync partial billing change to user doc via field-path update (best-effort)
+      db.doc(`users/${uid}`).update({
+        "billing.status": "past_due",
+        "billing.graceUntil": graceUntil,
+        "billing.updatedAt": FieldValue.serverTimestamp(),
+      }).catch(() => undefined),
+    ])
 
     await recordBillingIncident({
       type: "invoice.payment_failed",
@@ -2384,7 +2431,8 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
       recurringCreditGrantReasons.has(invoice.billing_reason || ""),
     )
 
-    await billingRef.set({
+    const invoicePaidBilling = {
+      ...(billing ?? getDefaultBillingForPlan("free")),
       status: "active",
       ...(plan ? { plan } : {}),
       ...(planInterval ? { planInterval } : {}),
@@ -2392,7 +2440,20 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
       ...trialFields,
       graceUntil: null,
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    }
+
+    await Promise.all([
+      billingRef.set({
+        status: "active",
+        ...(plan ? { plan } : {}),
+        ...(planInterval ? { planInterval } : {}),
+        ...(features ? { features } : {}),
+        ...trialFields,
+        graceUntil: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true }),
+      syncBillingToUserDoc(db.doc(`users/${uid}`), invoicePaidBilling),
+    ])
 
     if (shouldGrantIncludedCredits && plan && planInterval) {
       await addCreditsLedgerEntry({
@@ -2446,17 +2507,22 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
       break
     }
 
-    await db.doc(`users/${uid}/billing/current`).set({
+    const paymentIntentBilling = {
       ...getDefaultBillingForPlan(inferredPlan),
       plan: inferredPlan,
-      planInterval: "payAsYouGo",
+      planInterval: "payAsYouGo" as BillingInterval,
       status: "active",
       cancelAtPeriodEnd: false,
       cancelAt: null,
       currentPeriodStart: null,
       currentPeriodEnd: null,
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    }
+
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(paymentIntentBilling, { merge: true }),
+      syncBillingToUserDoc(db.doc(`users/${uid}`), paymentIntentBilling),
+    ])
 
     if (!checkoutType) {
       await addCreditsLedgerEntry({
@@ -2500,7 +2566,7 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
 
     const effectivePlan: BillingPlanTier = subscription.status === "trialing" ? "trial" : recurringMatch.plan
 
-    await db.doc(`users/${uid}/billing/current`).set({
+    const subscriptionBilling = {
       plan: effectivePlan,
       planInterval: recurringMatch.interval,
       status: subscription.status,
@@ -2519,14 +2585,18 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         trialEndsAt: null,
       }),
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    }
 
-    await db.doc(`users/${uid}`).set({
-      plan: effectivePlan,
-      status: subscription.status,
-      subscriptionId: subscription.id,
-      updated_At: new Date(),
-    }, { merge: true })
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(subscriptionBilling, { merge: true }),
+      db.doc(`users/${uid}`).set({
+        billing: subscriptionBilling,
+        plan: effectivePlan,
+        status: subscription.status,
+        subscriptionId: subscription.id,
+        updated_At: new Date(),
+      }, { merge: true }),
+    ])
     break
   }
   case "customer.subscription.deleted": {
@@ -2536,7 +2606,7 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
       break
     }
 
-    await db.doc(`users/${uid}/billing/current`).set({
+    const cancelledBilling = {
       ...getDefaultBillingForPlan("free"),
       status: "inactive",
       cancelAtPeriodEnd: false,
@@ -2544,14 +2614,18 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
       currentPeriodStart: null,
       currentPeriodEnd: null,
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    }
 
-    await db.doc(`users/${uid}`).set({
-      plan: "free",
-      status: "inactive",
-      subscriptionId: null,
-      updated_At: new Date(),
-    }, { merge: true })
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(cancelledBilling, { merge: true }),
+      db.doc(`users/${uid}`).set({
+        billing: cancelledBilling,
+        plan: "free",
+        status: "inactive",
+        subscriptionId: null,
+        updated_At: new Date(),
+      }, { merge: true }),
+    ])
     break
   }
   default:

@@ -8,25 +8,26 @@ import { getTestProviders } from 'src/app/testing';
 
 describe('BillingService', () => {
   let service: BillingService
-  let firestoreServiceMock: jasmine.SpyObj<Pick<FirestoreService, 'authState' | 'doc' | 'docData' | 'callFunction'>>
+  let firestoreServiceMock: jasmine.SpyObj<Pick<FirestoreService, 'authState' | 'callFunction'>>
   let authServiceMock: Pick<AuthService, 'user$' | 'isAdmin'>
+  let entitlementsBilling: Record<string, unknown> | undefined
 
   const setAuthenticatedBilling = (billing: Record<string, unknown>) => {
+    entitlementsBilling = billing
     firestoreServiceMock.authState.and.returnValue(of({ uid: 'user_1' } as User))
-    firestoreServiceMock.doc.and.returnValue({} as never)
-    firestoreServiceMock.docData.and.returnValue(of(billing as never))
   }
 
   beforeEach(() => {
-    firestoreServiceMock = jasmine.createSpyObj<Pick<FirestoreService, 'authState' | 'doc' | 'docData' | 'callFunction'>>(
+    entitlementsBilling = undefined
+    firestoreServiceMock = jasmine.createSpyObj<Pick<FirestoreService, 'authState' | 'callFunction'>>(
       'FirestoreService',
-      ['authState', 'doc', 'docData', 'callFunction'],
+      ['authState', 'callFunction'],
     )
 
     firestoreServiceMock.callFunction.and.callFake((
       ((name: string) => {
         if (name === 'getMyEntitlements') {
-          return Promise.resolve({ billing: undefined })
+          return Promise.resolve({ billing: entitlementsBilling })
         }
 
         if (name === 'getBillingCatalog') {

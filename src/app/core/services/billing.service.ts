@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core'
-import { BehaviorSubject, catchError, combineLatest, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
+import { BehaviorSubject, catchError, combineLatest, from, map, Observable, of, shareReplay, switchMap, tap } from 'rxjs'
 import {
   BillingAccessMode,
   BillingCatalogPayload,
@@ -13,6 +13,7 @@ import {
   UserBilling,
 } from '../types'
 import { AuthService } from './auth.service'
+import { CacheService } from './cache.service'
 import { FirestoreService } from './firestore.service'
 
 @Injectable({
@@ -20,7 +21,10 @@ import { FirestoreService } from './firestore.service'
 })
 export class BillingService {
   private readonly authService = inject(AuthService)
+  private readonly cacheService = inject(CacheService)
   private readonly firestoreService = inject(FirestoreService)
+  private readonly billingCacheNamespace = 'billing-entitlements'
+  private readonly billingCacheTtlMs = 5 * 60 * 1000
   private readonly loadingStateSubject = new BehaviorSubject<BillingLoadingState>({
     checkout: false,
     portal: false,
@@ -70,22 +74,33 @@ export class BillingService {
     return billing.plan && billing.plan !== 'free' ? Number(billing.credits.balance || 0) - Number(billing.credits.reserved || 0) : 0
   }
 
-  readonly billing$: Observable<UserBilling> = this.firestoreService.authState().pipe(
-    switchMap((firebaseUser) => {
+  // FIX #4: one-shot callable read + manual refresh trigger (eliminates real-time listener cost).
+  // Billing is denormalized onto user doc (FIX #3) so getMyEntitlements returns fresh data;
+  // call refreshBilling() after any local mutation to re-fetch.
+  private readonly billingRefreshTrigger$ = new BehaviorSubject<number>(0)
+
+  refreshBilling(): void {
+    this.cacheService.clear(this.billingCacheNamespace)
+    this.billingRefreshTrigger$.next(this.billingRefreshTrigger$.value + 1)
+  }
+
+  readonly billing$: Observable<UserBilling> = combineLatest([
+    this.firestoreService.authState(),
+    this.billingRefreshTrigger$,
+  ]).pipe(
+    switchMap(([firebaseUser]) => {
       if (!firebaseUser) {
         return of(this.defaultBilling())
       }
 
-      const billingRef = this.firestoreService.doc(`users/${firebaseUser.uid}/billing/current`)
+      const cached = this.cacheService.get<string, UserBilling>(this.billingCacheNamespace, firebaseUser.uid)
+      if (cached) {
+        return of(cached)
+      }
+
       return from(this.firestoreService.callFunction<void, { billing?: Partial<UserBilling> }>('getMyEntitlements')).pipe(
-        catchError(() => of({ billing: undefined })),
-        switchMap((entitlements) => this.firestoreService.docData<Partial<UserBilling>>(billingRef).pipe(
-          map((data) => this.mergeWithDefault(data as Partial<UserBilling> | undefined)),
-          catchError(() => {
-            const entitlementBilling = entitlements?.billing as Partial<UserBilling> | undefined
-            return of(this.mergeWithDefault(entitlementBilling))
-          })
-        )),
+        map((entitlements) => this.mergeWithDefault(entitlements?.billing as Partial<UserBilling> | undefined)),
+        tap((billing) => this.cacheService.set(this.billingCacheNamespace, firebaseUser.uid, billing, this.billingCacheTtlMs)),
         catchError(() => of(this.defaultBilling()))
       )
     }),
@@ -245,12 +260,14 @@ export class BillingService {
   }> {
     this.setLoading('trial', true)
     try {
-      return this.firestoreService.callFunction<void, {
+      const result = await this.firestoreService.callFunction<void, {
         billing?: Partial<UserBilling>
         userId?: string
         trialStartedAt?: string
         trialEndsAt?: string
       }>('startTrial')
+      this.refreshBilling()
+      return result
     } finally {
       this.setLoading('trial', false)
     }
@@ -263,11 +280,13 @@ export class BillingService {
   }> {
     this.setLoading('resumeCancellation', true)
     try {
-      return this.firestoreService.callFunction<void, {
+      const result = await this.firestoreService.callFunction<void, {
         billing?: Partial<UserBilling>
         subscriptionId?: string
         cancelAtPeriodEnd?: boolean
       }>('resumeSubscriptionCancellation')
+      this.refreshBilling()
+      return result
     } finally {
       this.setLoading('resumeCancellation', false)
     }
