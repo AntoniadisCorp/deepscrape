@@ -209,8 +209,8 @@ export const revokeMyLoginSession = onCall(
     }
 
     try {
-      const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
-      const result = await performSessionRevoke(auth.uid, loginId, reason, false, tokenRole)
+      const actorIsAdmin = await resolveActorIsAdmin(auth)
+      const result = await performSessionRevoke(auth.uid, loginId, reason, false, actorIsAdmin)
 
       console.log(`✅ Session ${loginId} revoked for user ${result.targetUserId}`)
 
@@ -230,7 +230,7 @@ async function performSessionRevoke(
   loginId: string,
   reason: string | undefined,
   requireAdmin: boolean,
-  tokenRole?: string,
+  actorIsAdmin = false,
 ) {
   const revokedAt = Timestamp.now()
 
@@ -245,7 +245,7 @@ async function performSessionRevoke(
     throw new Error("Invalid session record: missing userId")
   }
 
-  const isAdmin = tokenRole === "admin"
+  const isAdmin = actorIsAdmin
 
   if (requireAdmin && !isAdmin) {
     throw new Error("Unauthorized: Admin role required")
@@ -334,6 +334,41 @@ async function performSessionRevoke(
   }
 }
 
+const isAdminClaim = (token: Record<string, unknown> | undefined): boolean => {
+  const role = token?.role
+  return typeof role === "string" && role.trim().toLowerCase() === "admin"
+}
+
+const isBootstrapAdminEmail = (email?: string | null): boolean => {
+  if (!email) {
+    return false
+  }
+
+  const normalizedEmail = email.trim().toLowerCase()
+  return env.ADMIN_EMAILS.some((adminEmail) => adminEmail === normalizedEmail)
+}
+
+const resolveActorIsAdmin = async (
+  auth: { uid: string; token?: Record<string, unknown> },
+): Promise<boolean> => {
+  if (isAdminClaim(auth.token)) {
+    return true
+  }
+
+  const userDoc = await db.collection("users").doc(auth.uid).get()
+  const firestoreRole = userDoc.data()?.role
+  if (typeof firestoreRole === "string" && firestoreRole.trim().toLowerCase() === "admin") {
+    return true
+  }
+
+  try {
+    const authUser = await adminAuth.getUser(auth.uid)
+    return isBootstrapAdminEmail(authUser.email)
+  } catch {
+    return false
+  }
+}
+
 export const revokeUserLoginSessionByAdmin = onCall(
   {
     cors: true,
@@ -353,8 +388,8 @@ export const revokeUserLoginSessionByAdmin = onCall(
     }
 
     try {
-      const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
-      const result = await performSessionRevoke(auth.uid, loginId, reason, true, tokenRole)
+      const actorIsAdmin = await resolveActorIsAdmin(auth)
+      const result = await performSessionRevoke(auth.uid, loginId, reason, true, actorIsAdmin)
 
       console.log(`✅ Admin ${auth.uid} revoked session ${loginId} for user ${result.targetUserId}`)
 
@@ -398,8 +433,8 @@ export const revokeAllUserSessionsByAdmin = onCall(
       throw new Error("Missing required field: targetUserId")
     }
 
-    const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
-    if (tokenRole !== "admin") {
+    const actorIsAdmin = await resolveActorIsAdmin(auth)
+    if (!actorIsAdmin) {
       throw new Error("Unauthorized: Admin role required")
     }
 
@@ -417,7 +452,7 @@ export const revokeAllUserSessionsByAdmin = onCall(
 
       for (const sessionDoc of snapshot.docs) {
         const sessionId = sessionDoc.id
-        await performSessionRevoke(auth.uid, sessionId, reason || "admin_bulk_revoke", true, tokenRole)
+        await performSessionRevoke(auth.uid, sessionId, reason || "admin_bulk_revoke", true, actorIsAdmin)
         revokedSessionIds.push(sessionId)
       }
 
@@ -725,8 +760,8 @@ export const getUserLoginSessionsByAdmin = onCall(
       throw new Error("Unauthorized")
     }
 
-    const tokenRole = typeof auth.token.role === "string" ? auth.token.role : undefined
-    if (tokenRole !== "admin") {
+    const actorIsAdmin = await resolveActorIsAdmin(auth)
+    if (!actorIsAdmin) {
       throw new Error("Unauthorized: Admin role required")
     }
 

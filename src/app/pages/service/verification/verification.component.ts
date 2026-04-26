@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, DOCUMENT, inject, PLATFORM_ID } from '@angular/core';
-import { applyActionCode, Auth, sendEmailVerification, User, RecaptchaVerifier, ConfirmationResult, PhoneAuthProvider, linkWithCredential } from '@angular/fire/auth';
+import { applyActionCode, Auth, sendEmailVerification, User, RecaptchaVerifier, ConfirmationResult } from '@angular/fire/auth';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
@@ -7,7 +7,7 @@ import { AuthService, FirestoreService, GuestTrackingService, SnackbarService } 
 import { WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
-import { delay, finalize, Subscription, timer } from 'rxjs';
+import { delay, finalize, firstValueFrom, Subscription, timer } from 'rxjs';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Loading } from 'src/app/core/types';
 import { getErrorMessage } from 'src/app/core/functions';
@@ -162,9 +162,10 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
         throw new Error('Phone number is required.');
       }
       if (this.user) {
-        this.confirmationResult = await this.authService.linkPhoneNumber(phoneNumber, this.recaptchaVerifier);
+        this.pendingVerificationId = await this.authService.startPhoneMfaEnrollment(phoneNumber, this.recaptchaVerifier);
       } else {
         this.confirmationResult = await this.authService.signInWithPhone(phoneNumber, this.recaptchaVerifier);
+        this.pendingVerificationId = this.confirmationResult?.verificationId || null;
       }
       const message = this.translate.instant('AUTH_ERRORS.PHONE_VERIFICATION_SENT');
       this.showSnackbar(message, SnackBarType.success);
@@ -191,16 +192,16 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
         throw new Error(this.translate.instant('VERIFICATION.NO_CODE_INITIATED'));
       }
 
-      const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
-
       let userCredential;
       if (this.user) {
-        userCredential = await linkWithCredential(this.user, credential);
+        await this.authService.completePhoneMfaEnrollment(verificationId, verificationCode, 'SMS verification');
+        userCredential = { user: this.user };
       } else {
         userCredential = await this.authService.verifyPhoneCode(verificationId, verificationCode);
       }
       if (userCredential.user) {
-        await this.authService.updatePhoneVerificationStatus(userCredential.user.uid, true).toPromise();
+        const verifiedPhoneNumber = this.phoneVerificationForm.get('phoneNumber')?.value || this.pendingPhoneNumber || this.user?.phoneNumber || null;
+        await firstValueFrom(this.authService.updatePhoneVerificationStatus(userCredential.user.uid, true, verifiedPhoneNumber ?? undefined));
         await this.authService.refreshUserData(userCredential.user.uid);
 
         await this.ensureCurrentSessionMetrics('phone', true);

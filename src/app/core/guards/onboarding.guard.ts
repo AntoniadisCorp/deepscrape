@@ -27,8 +27,11 @@ export const onboardingGuard: CanActivateFn = (route, state) => {
       if (!isAuthenticated || !user) {
         return router.createUrlTree(['/service/login'], { queryParams: { returnUrl: safeLoginReturnUrl } });
       }
+      const role = String(user.role || '').trim().toLowerCase()
+      const isAdmin = authService.isAdmin || role === 'admin'
+
       // Bootstrap admins are auto-onboarded server-side; never show them the wizard
-      if (authService.isAdmin || user.onboardedAt != null) {
+      if (isAdmin || user.onboardedAt != null) {
         return router.parseUrl(safePostOnboardingReturnUrl);
       }
       return true;

@@ -27,7 +27,10 @@ export const authGuard: CanActivateFn = (route, state) => {
         return router.createUrlTree(['/service/verification'], { queryParams: { returnUrl: state.url } })
       }
 
-      if (user.onboardedAt == null && !authService.isAdmin) {
+      const role = String(user.role || '').trim().toLowerCase()
+      const isAdmin = authService.isAdmin || role === 'admin'
+
+      if (user.onboardedAt == null && !isAdmin) {
         return router.createUrlTree(['/service/onboarding'], { queryParams: { returnUrl: state.url } })
       }
 

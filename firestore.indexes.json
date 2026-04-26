@@ -196,13 +196,6 @@
       ]
     },
     {
-      "collectionGroup": "sessions",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "lastActivityAt", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "trusted_devices",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

@@ -157,6 +157,11 @@ export class AuthService {
     return typeof role === 'string' && role.trim().toLowerCase() === 'admin'
   }
 
+  private hasAdminFirestoreRole(userData: Users | null | undefined): boolean {
+    const role = String(userData?.role || '').trim().toLowerCase()
+    return role === 'admin'
+  }
+
   isAuthenticated(): Observable<{ isAuthenticated: boolean, user: Users & { currProviderData: UserInfo | null } | null }> {
     return this.fireService.authState().pipe(
       map(user => ({ isAuthenticated: !!user, user })),
@@ -215,7 +220,7 @@ export class AuthService {
           signInProvider,
         )
 
-        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined)
+        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined) || this.hasAdminFirestoreRole(userData)
         console.log('User is admin:', this.isAdmin, getTokenResult.claims)
 
         // Save user data to the subject
@@ -265,21 +270,22 @@ export class AuthService {
       let phoneVerifiedFromClaims: boolean | null = null
       let emailVerifiedFromClaims: boolean | null = null
       let signInProvider: string | null = null
+
+      // Get fresh user data from Firestore first so admin fallback can safely use it.
+      const userData = await this.fireService.refreshUserFromFirestore(uid) as Users;
+
+      if (!userData) {
+        throw new Error('User data not found in Firestore');
+      }
+
       if (!userId && this.auth.currentUser) {
         await this.auth.currentUser.reload()
         const getTokenResult = await this.auth.currentUser.getIdTokenResult(true)
         phoneVerifiedFromClaims = getTokenResult.claims?.['phoneVerified'] === true; // Capture custom claim
         emailVerifiedFromClaims = getTokenResult.claims?.['email_verified'] === true; // Capture custom claim
         signInProvider = String((getTokenResult.claims as any)?.firebase?.sign_in_provider || '').trim()
-        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined)
+        this.isAdmin = this.hasAdminRoleClaim(getTokenResult.claims as Record<string, unknown> | undefined) || this.hasAdminFirestoreRole(userData)
         console.log('User is admin after refresh:', this.isAdmin, getTokenResult.claims)
-      }
-
-      // Get fresh user data from Firestore
-      const userData = await this.fireService.refreshUserFromFirestore(uid) as Users;
-
-      if (!userData) {
-        throw new Error('User data not found in Firestore');
       }
 
       const authUser = this.auth.currentUser
@@ -383,6 +389,53 @@ export class AuthService {
         return throwError(() => error)
       })
     );
+  }
+
+  async ensureBootstrapAdminAccess(providerId: string): Promise<boolean> {
+    const isBootstrapProvider = providerId === 'google.com' || providerId === 'github.com'
+    const currentUser = this.auth.currentUser
+
+    if (!isBootstrapProvider || !currentUser) {
+      return false
+    }
+
+    try {
+      const response = await this.fireService.callFunction<
+        { providerId: string },
+        { success: boolean; role: string; email?: string | null }
+      >('ensureBootstrapAdminAccess', { providerId })
+
+      if (!response?.success) {
+        return false
+      }
+
+      this.token = await currentUser.getIdToken(true)
+      await this.refreshUserData(currentUser.uid)
+      return response.role === 'admin'
+    } catch (error: any) {
+      const code = String(error?.code || '').toLowerCase()
+      if (
+        code.includes('permission-denied') ||
+        code.includes('unauthenticated') ||
+        code.includes('not-found')
+      ) {
+        return false
+      }
+
+      console.error('Bootstrap admin access sync failed:', error)
+      return false
+    }
+  }
+
+  async createBootstrapAdminPasswordAccount(email: string, password: string, displayName: string): Promise<{ success: boolean; uid: string; email: string }> {
+    return await this.fireService.callFunction<
+      { email: string; password: string; displayName: string },
+      { success: boolean; uid: string; email: string }
+    >('createBootstrapAdminPasswordAccount', {
+      email,
+      password,
+      displayName,
+    })
   }
 
   /**
@@ -498,7 +551,7 @@ export class AuthService {
   }
 
   // Update phone verification status in backend to set custom claims
-  updatePhoneVerificationStatus(uid: string, phoneVerified?: boolean): Observable<{ success: boolean }> {
+  updatePhoneVerificationStatus(uid: string, phoneVerified?: boolean, phoneNumber?: string): Observable<{ success: boolean }> {
     const authHeaderToken = this.token || ''
     const headers = authHeaderToken
       ? new HttpHeaders({ Authorization: `Bearer ${authHeaderToken}` })
@@ -506,7 +559,7 @@ export class AuthService {
 
     return this.http.post<{ success: boolean }>(
       `${API_AUTH_FIREBASE}/phone/update-verification`,
-      { uid, phoneVerified },
+      { uid, phoneVerified, phoneNumber },
       {
         headers,
         withCredentials: true,

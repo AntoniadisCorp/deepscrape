@@ -430,6 +430,8 @@ export class LoginComponent  {
       this.firestoreService.storeUserData(user, providerId, true)
     ]);
 
+    await this.authService.ensureBootstrapAdminAccess(providerId)
+
     this.rememberLastLogin(providerId);
 
     const isVerified = await this.onLoginUpdate({ user }, providerId);

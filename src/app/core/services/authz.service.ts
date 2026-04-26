@@ -275,8 +275,18 @@ export class AuthzService {
           return false;
         }
 
+        if (this.authService.isAdmin) {
+          return true;
+        }
+
         const tokenResult = await user.getIdTokenResult();
-        return tokenResult.claims?.['role'] === 'admin';
+        if (tokenResult.claims?.['role'] === 'admin') {
+          return true;
+        }
+
+        const userData = await this.firestoreService.getUserData(user.uid);
+        const role = String(userData?.role || '').trim().toLowerCase();
+        return role === 'admin';
       }),
     );
   }

@@ -8,7 +8,7 @@ import { authGuard } from './auth.guard';
 import { getTestProviders } from 'src/app/testing';
 
 describe('authGuard', () => {
-  let authServiceMock: jasmine.SpyObj<Pick<AuthService, 'isAuthenticated'>>;
+  let authServiceMock: jasmine.SpyObj<Pick<AuthService, 'isAuthenticated' | 'isAdmin'>>;
   let routerMock: jasmine.SpyObj<Pick<Router, 'navigate' | 'createUrlTree'>>;
 
   const executeGuard: CanActivateFn = (...guardParameters) =>
@@ -27,7 +27,7 @@ describe('authGuard', () => {
   }
 
   beforeEach(() => {
-    authServiceMock = jasmine.createSpyObj<Pick<AuthService, 'isAuthenticated'>>('AuthService', ['isAuthenticated']);
+    authServiceMock = jasmine.createSpyObj<Pick<AuthService, 'isAuthenticated' | 'isAdmin'>>('AuthService', ['isAuthenticated'], { isAdmin: false });
     routerMock = jasmine.createSpyObj<Pick<Router, 'navigate' | 'createUrlTree'>>('Router', ['navigate', 'createUrlTree']);
     routerMock.createUrlTree.and.returnValue({} as any);
 
@@ -80,6 +80,26 @@ describe('authGuard', () => {
           phoneNumber: '+10000000000',
           onboardedAt: '2026-01-01T00:00:00.000Z',
           currProviderData: { providerId: 'password' },
+        } as never,
+      }),
+    );
+
+    const result = await resolveGuardResult(executeGuard({} as never, { url: '/dashboard' } as never));
+
+    expect(result).toBeTrue();
+    expect(routerMock.createUrlTree).not.toHaveBeenCalled();
+  });
+
+  it('allows users with firestore admin role fallback even when onboardedAt is null', async () => {
+    authServiceMock.isAuthenticated.and.returnValue(
+      of({
+        isAuthenticated: true,
+        user: {
+          emailVerified: true,
+          phoneVerified: true,
+          onboardedAt: null,
+          role: 'admin',
+          currProviderData: { providerId: 'google.com' },
         } as never,
       }),
     );

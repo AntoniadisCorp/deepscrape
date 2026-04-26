@@ -10,6 +10,22 @@ import { auth, db } from "../app/config"
 // Phone number validation regex (E.164 format)
 const PHONE_REGEX = /^\+[1-9]\d{1,14}$/
 
+const getErrorCode = (error: unknown): string => {
+    if (typeof error === "object" && error !== null && "code" in error) {
+        return String((error as { code?: unknown }).code || "")
+    }
+
+    return ""
+}
+
+const getErrorMessage = (error: unknown): string => {
+    if (typeof error === "object" && error !== null && "message" in error) {
+        return String((error as { message?: unknown }).message || "")
+    }
+
+    return "Unknown error"
+}
+
 const mergeCustomClaims = async (
     uid: string,
     claims: Record<string, unknown>
@@ -46,9 +62,9 @@ export const verifyPhoneNumber = async (req: Request, res: Response) => {
                     "This phone number is already associated with another " +
                     "account",
             })
-        } catch (error: any) {
+        } catch (error: unknown) {
             // If user not found, that's good - we can proceed
-            if (error.code !== "auth/user-not-found") {
+            if (getErrorCode(error) !== "auth/user-not-found") {
                 throw error
             }
         }
@@ -57,11 +73,11 @@ export const verifyPhoneNumber = async (req: Request, res: Response) => {
             available: true,
             message: "Phone number is available",
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error verifying phone number:", error)
         return res.status(500).send({
             error: "Internal Server Error",
-            message: error.message,
+            message: getErrorMessage(error),
         })
     }
 }
@@ -97,9 +113,9 @@ export const linkPhoneToAccount = async (req: Request, res: Response) => {
                         " another account",
                 })
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             // If user not found, that's fine - we can link it
-            if (error.code !== "auth/user-not-found") {
+            if (getErrorCode(error) !== "auth/user-not-found") {
                 throw error
             }
         }
@@ -113,11 +129,11 @@ export const linkPhoneToAccount = async (req: Request, res: Response) => {
             success: true,
             message: "Phone number linked successfully",
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error linking phone to account:", error)
         return res.status(500).send({
             error: "Internal Server Error",
-            message: error.message,
+            message: getErrorMessage(error),
         })
     }
 }
@@ -126,7 +142,10 @@ export const updatePhoneVerificationStatus = async (
     req: Request,
     res: Response
 ) => {
-    const { uid } = req.body as { uid: string }
+    const { uid, phoneNumber } = req.body as {
+        uid: string,
+        phoneNumber?: string,
+    }
 
     try {
         if (!uid) {
@@ -137,14 +156,40 @@ export const updatePhoneVerificationStatus = async (
         }
 
         const userRecord = await auth.getUser(uid)
-        const hasPhoneNumber =
-            typeof userRecord.phoneNumber === "string" &&
-            userRecord.phoneNumber.length > 0
-        const phoneVerified = hasPhoneNumber
+        const enrolledFactors = userRecord.multiFactor?.enrolledFactors || []
+        const enrolledPhoneFactor = enrolledFactors.find(
+            (factor) => factor.factorId === "phone",
+        )
+        const enrolledPhoneNumber = (() => {
+            if (!enrolledPhoneFactor) {
+                return null
+            }
+
+            const phoneFactor =
+                enrolledPhoneFactor as unknown as Record<string, unknown>
+            const rawPhone = phoneFactor[
+                "phoneNumber"
+            ]
+
+            if (typeof rawPhone === "string" && rawPhone.length > 0) {
+                return rawPhone
+            }
+
+            return null
+        })()
+
+        const resolvedPhoneNumber =
+            userRecord.phoneNumber ||
+            enrolledPhoneNumber ||
+            (typeof phoneNumber === "string" && phoneNumber.length > 0 ?
+                phoneNumber :
+                null)
+
+        const phoneVerified = !!resolvedPhoneNumber
 
         await mergeCustomClaims(uid, { phoneVerified })
         await db.collection("users").doc(uid).set({
-            phoneNumber: userRecord.phoneNumber || null,
+            phoneNumber: resolvedPhoneNumber,
             phoneVerified,
             updated_At: new Date(),
         }, { merge: true })
@@ -154,11 +199,11 @@ export const updatePhoneVerificationStatus = async (
             phoneVerified,
             message: "Phone verification status synced successfully",
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating phone verification status:", error)
         return res.status(500).send({
             error: "Internal Server Error",
-            message: error.message,
+            message: getErrorMessage(error),
         })
     }
 }
@@ -180,17 +225,17 @@ export const checkPhoneNumberExists = async (req: Request, res: Response) => {
             return res.status(200).send({
                 exists: true,
             })
-        } catch (error: any) {
-            if (error.code === "auth/user-not-found") {
+        } catch (error: unknown) {
+            if (getErrorCode(error) === "auth/user-not-found") {
                 return res.status(200).send({ exists: false })
             }
             throw error
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error checking phone number existence:", error)
         return res.status(500).send({
             error: "Internal Server Error",
-            message: error.message,
+            message: getErrorMessage(error),
         })
     }
 }

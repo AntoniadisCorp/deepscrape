@@ -85,6 +85,20 @@ describe('onboardingGuard', () => {
     expect(routerMock.parseUrl).toHaveBeenCalled();
   });
 
+  it('should redirect to dashboard when user role is admin even if isAdmin flag is false', async () => {
+    authServiceMock.isAuthenticated.and.returnValue(
+      of({ isAuthenticated: true, user: { onboardedAt: null, role: 'admin' } } as any)
+    );
+
+    const route = { queryParams: {} } as unknown as ActivatedRouteSnapshot;
+    const state = { url: '/service/onboarding' } as RouterStateSnapshot;
+
+    const result = executeGuard(route, state);
+    await resolveGuardResult(result);
+
+    expect(routerMock.parseUrl).toHaveBeenCalled();
+  });
+
   it('should allow activation for authenticated non-onboarded users', async () => {
     authServiceMock.isAuthenticated.and.returnValue(
       of({ isAuthenticated: true, user: { onboardedAt: null } } as any)
