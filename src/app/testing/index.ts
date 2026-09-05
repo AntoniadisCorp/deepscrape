@@ -117,6 +117,7 @@ const mockAnalyticsService = {
 
 const mockFirestoreService = {
   getInstanceDB: () => ({}),
+  authState: () => of(null),
   getUserData: () => Promise.resolve(null),
   setUserData: () => Promise.resolve(true),
   updateLoginMetrics: () => Promise.resolve(true),
