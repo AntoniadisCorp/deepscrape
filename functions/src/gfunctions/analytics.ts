@@ -582,6 +582,8 @@ export async function lookupGeoByIp(
     return resolvedData
   } catch (error) {
     console.warn("Failed to resolve IP intelligence from geo API:", error)
+    // ponytail: cache the failure so heartbeat-triggered re-enrichment stops hammering a down provider on every write.
+    await writeCachedGeoLookup(ip, null).catch(() => undefined)
     return null
   }
 }
