@@ -23,10 +23,10 @@ describe('PassesComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render placeholder copy', () => {
+  it('should render heading', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('passes works!');
+    expect(text).toContain('Credit Passes');
   });
 
   it('should compile as standalone component', () => {

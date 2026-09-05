@@ -23,10 +23,11 @@ describe('PaymentmethodsComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render placeholder copy', () => {
+  it('should render payment methods heading and empty state', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('paymentmethods works!');
+    expect(text).toContain('Payment Methods');
+    expect(text).toContain('No payment methods saved');
   });
 
   it('should compile as standalone component', () => {
