@@ -331,13 +331,32 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
 
       await this.persistAggregation(options, aggregation)
 
+      this.lastCompletedRunId = this.currentRunId
+      this.progressLabel = 'Recalculating analytics…'
+
+      // Phase 1: Auto-trigger full analytics recalculation after migration
+      // This ensures guest + user + login metrics are consistent
+      // by calling the existing triggerAnalyticsAggregation callable function
+      let recalculatedAt: Timestamp | null = null
+      try {
+        this.pushLog('Migration writes complete. Triggering full analytics recalculation…')
+        const result = await this.firestoreService.callFunction<unknown, { success: boolean; date: string; totalGuests: number }>(
+          'triggerAnalyticsAggregation',
+        )
+        recalculatedAt = Timestamp.now()
+        this.pushLog(`Analytics recalculation complete: ${result.totalGuests} guests aggregated for ${result.date}`)
+      } catch (recalcError) {
+        const recalcMessage = recalcError instanceof Error ? recalcError.message : 'Unknown error'
+        this.pushLog(`Warning: Analytics recalculation failed (non-fatal, will reconcile at next scheduled run): ${recalcMessage}`)
+      }
+
       this.progressPercent = 100
       this.progressLabel = 'Completed'
-      this.lastCompletedRunId = this.currentRunId
       await this.saveRunStatus('completed', options, {
         completedAt: Timestamp.now(),
         processedGuests: this.processedGuests,
         writeTargets: this.writeTargets,
+        recalculatedAt,
       })
 
       this.pushLog('Migration completed successfully.')
@@ -625,7 +644,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
             byBrowser: day.byBrowser,
             byDevice: day.byDevice,
             byOS: day.byOS,
-            byProvider: {},
+            // byProvider omitted — preserved from real-time onLoginEvent
             byTimezone: day.byTimezone,
             topCountries: this.mapToTop(day.byCountry, 'country', 10),
             topBrowsers: this.mapToTop(day.byBrowser, 'browser', 10),
@@ -699,7 +718,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
           topDevices: this.mapToTop(byDevice, 'device', 5),
           topOperatingSystems: this.mapToTop(byOS, 'os', 5),
           byOS,
-          byProvider: {},
+          // byProvider omitted — preserved from real-time onLoginEvent
           byTimezone,
           topProviders: [],
           lastUpdated: Timestamp.now(),
@@ -778,7 +797,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
         byBrowser,
         byDevice,
         byOS,
-        byProvider: {},
+        // byProvider omitted — preserved from real-time onLoginEvent
         byTimezone,
         dailyBreakdown,
         trends: {
@@ -804,7 +823,9 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
         throw new Error('Stopped during write phase')
       }
 
-      batch.set(doc(this.db, write.path), write.data, { merge: false })
+      // Use merge:true to preserve existing real-time fields (byProvider,
+      // totalLogins, totalUsers) that the migration doesn't touch.
+      batch.set(doc(this.db, write.path), write.data, { merge: true })
       opCount += 1
       done += 1
 

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common'
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { RouterLink } from '@angular/router'
+import { RippleDirective } from 'src/app/core/directives'
 import { BillingService } from 'src/app/core/services'
 
 type ObservabilityResponse = {
@@ -15,7 +16,7 @@ type ObservabilityResponse = {
 @Component({
   selector: 'app-admin-billing-observability',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, RippleDirective],
   templateUrl: './admin-billing-observability.component.html',
   styleUrl: './admin-billing-observability.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

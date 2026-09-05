@@ -1,18 +1,19 @@
 <div class="activity-visualization">
   <div class="activity-header">
     <h3>Activity Timeline</h3>
-    <span class="total-activity">{{ getTotalActivity() }} interactions</span>
+    <span class="total-activity">{{ totalActivity() }} interactions</span>
   </div>
 
   <!-- Sparkline chart (simplified bar chart) -->
   <div class="sparkline-container">
-    <div
-      *ngFor="let activity of activityData(); let i = index"
-      class="sparkline-bar"
-      [style.height.%]="getBarHeight(activity)"
-      [matTooltip]="getActivityTooltip(activity, i)"
-      [attr.data-hour]="i"
-    ></div>
+    @for (bar of activityBars(); track bar.index) {
+      <div
+        class="sparkline-bar"
+        [style.height.%]="bar.height"
+        [matTooltip]="bar.tooltip"
+        [attr.data-hour]="bar.index"
+      ></div>
+    }
   </div>
 
   <!-- Activity legend -->
@@ -45,7 +46,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let day of getDailySummary()">
+          @for (day of dailySummary(); track day.date) {
+          <tr>
             <td>{{ day.date | date:'MMM d' }}</td>
             <td>{{ formatDuration(day.duration) }}</td>
             <td>{{ day.requestCount }}</td>
@@ -55,6 +57,7 @@
               </span>
             </td>
           </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -64,15 +67,15 @@
   <div class="activity-metrics">
     <div class="metric">
       <span class="label">Avg Session Duration</span>
-      <span class="value">{{ getAverageSessionDuration() }}</span>
+      <span class="value">{{ averageSessionDuration() }}</span>
     </div>
     <div class="metric">
       <span class="label">Peak Activity Hour</span>
-      <span class="value">{{ getPeakActivityHour() }}</span>
+      <span class="value">{{ peakActivityHour() }}</span>
     </div>
     <div class="metric">
       <span class="label">Total Active Time</span>
-      <span class="value">{{ getTotalActiveTime() }}</span>
+      <span class="value">{{ totalActiveTime() }}</span>
     </div>
   </div>
 </div>

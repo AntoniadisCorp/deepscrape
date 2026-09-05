@@ -1,4 +1,4 @@
-<section class="admin-migration-backups-theme space-y-6">
+<section class="space-y-6">
   <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Migration Backups</h2>
@@ -10,19 +10,25 @@
     <div class="flex flex-wrap gap-2">
       <a
         routerLink="/admin/migration"
-        class="btn btn-sm btn-gray btn-ring btn-ring-blue inline-flex items-center justify-center">
+        appRipple
+        rippleColor="dark"
+        class="btn btn-sm btn-gray btn-ring inline-flex items-center justify-center">
         Back to Migration Tool
       </a>
       <button
         type="button"
         (click)="refreshBackups()"
-        class="btn btn-sm btn-blue btn-ring btn-ring-blue">
+        appRipple
+        rippleColor="light"
+        class="btn btn-sm btn-gray btn-ring">
         Refresh
       </button>
       <button
         type="button"
         (click)="requestDeleteAllBackupsHistory()"
         [disabled]="deletingAll || backups.length === 0"
+        appRipple
+        rippleColor="light"
         class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
         Delete All Backup History
       </button>
@@ -37,20 +43,20 @@
 
   @if (!loading && totalItems > 0) {
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-      <div class="admin-glass-card rounded-xl border border-blue-300/40 dark:border-blue-500/30 bg-blue-50/60 dark:bg-blue-900/10 p-4">
-        <p class="text-xs text-blue-700/80 dark:text-blue-300/80">Page Items</p>
-        <p class="text-xl font-semibold text-blue-800 dark:text-blue-200">{{ backups.length }}</p>
-        <p class="text-xs text-blue-700/70 dark:text-blue-300/70">Runs with backups: {{ pageRunsWithBackups }}</p>
+      <div class="admin-glass-card rounded-xl border border-gray-300/45 dark:border-gray5/40 bg-gray-50/70 dark:bg-gray6/45 p-4">
+        <p class="text-xs text-gray6/80 dark:text-gray-300/80">Page Items</p>
+        <p class="text-xl font-semibold text-gray6 dark:text-gray-200">{{ backups.length }}</p>
+        <p class="text-xs text-gray6/70 dark:text-gray-300/70">Runs with backups: {{ pageRunsWithBackups }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-emerald-300/40 dark:border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
         <p class="text-xs text-emerald-700/80 dark:text-emerald-300/80">Backup Docs (Page)</p>
         <p class="text-xl font-semibold text-emerald-800 dark:text-emerald-200">{{ pageBackupDocuments | number }}</p>
         <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">Completed runs: {{ pageCompletedRuns }}</p>
       </div>
-      <div class="admin-glass-card rounded-xl border border-violet-300/40 dark:border-violet-500/30 bg-violet-50/60 dark:bg-violet-900/10 p-4">
-        <p class="text-xs text-violet-700/80 dark:text-violet-300/80">Current Page</p>
-        <p class="text-xl font-semibold text-violet-800 dark:text-violet-200">{{ currentPage }} / {{ totalPages }}</p>
-        <p class="text-xs text-violet-700/70 dark:text-violet-300/70">10 per page</p>
+      <div class="admin-glass-card rounded-xl border border-teal-300/45 dark:border-teal-500/35 bg-teal-50/65 dark:bg-teal-900/16 p-4">
+        <p class="text-xs text-teal-700/80 dark:text-teal-300/80">Current Page</p>
+        <p class="text-xl font-semibold text-teal-800 dark:text-teal-200">{{ currentPage }} / {{ totalPages }}</p>
+        <p class="text-xs text-teal-700/70 dark:text-teal-300/70">10 per page</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-amber-300/40 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-900/10 p-4">
         <p class="text-xs text-amber-700/80 dark:text-amber-300/80">All Pages Total Runs</p>
@@ -89,11 +95,11 @@
             </span>
           </div>
           <div class="grid grid-cols-2 gap-3 text-sm">
-            <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+            <div class="rounded-lg border border-gray-300/70 dark:border-gray5/65 bg-white/70 dark:bg-gray7/55 p-3">
               <p class="text-gray5/60 dark:text-gray-400">Backup Docs</p>
               <p class="font-semibold">{{ backup.backupCount | number }}</p>
             </div>
-            <div class="rounded-lg bg-gray-50 dark:bg-gray6 p-3">
+            <div class="rounded-lg border border-gray-300/70 dark:border-gray5/65 bg-white/70 dark:bg-gray7/55 p-3">
               <p class="text-gray5/60 dark:text-gray-400">Completed</p>
               <p class="font-semibold">{{ backup.completedAt ? (backup.completedAt | date: 'short') : '-' }}</p>
             </div>
@@ -106,6 +112,8 @@
               type="button"
               (click)="requestDeleteRunBackups(backup.runId)"
               [disabled]="backup.backupCount === 0 || deletingBackupRunIds.has(backup.runId) || deletingRunIds.has(backup.runId)"
+              appRipple
+              rippleColor="light"
               class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
               {{ deletingBackupRunIds.has(backup.runId) ? 'Deleting Backups...' : 'Delete Backup Docs' }}
             </button>
@@ -113,7 +121,9 @@
               type="button"
               (click)="requestDeleteMigrationRun(backup.runId)"
               [disabled]="deletingRunIds.has(backup.runId) || deletingBackupRunIds.has(backup.runId)"
-              class="btn btn-sm btn-gray btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed ml-2">
+              appRipple
+              rippleColor="dark"
+              class="btn btn-sm btn-gray btn-ring disabled:opacity-50 disabled:cursor-not-allowed ml-2">
               {{ deletingRunIds.has(backup.runId) ? 'Deleting Run...' : 'Delete Run' }}
             </button>
           </div>
@@ -129,51 +139,63 @@
           Showing {{ backups.length }} of {{ totalItems }} runs · Page {{ currentPage }} / {{ totalPages }}
         </p>
         @if (totalPages > 1) {
-          <div class="flex items-center gap-2">
+          <div class="admin-pagination flex items-center gap-2">
             <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
               <button
                 [disabled]="currentPage === 1"
                 type="button"
                 (click)="onPageChanged(currentPage - 1)"
-                class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+                appRipple
+                rippleColor="dark"
+                class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-gray6/20 dark:hover:bg-gray6/40 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray6/80 dark:text-gray-300 dark:hover:text-gray-100 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
                 Previous
               </button>
             </div>
             <div class="flex justify-center gap-1">
               @if (totalPages > 7) {
                 <button
-                  [class]="currentPage === 1 ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]' : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  [class]="currentPage === 1 ? 'bg-gray6 text-white dark:hover:text-white hover:bg-gray6/70' : ' text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85'"
+                  appRipple
+                  rippleColor="light"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
                   (click)="onPageChanged(1)">
                   1
                 </button>
               }
               @if (totalPages > 7 && currentPage > 4) {
                 <button
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]"
+                  appRipple
+                  rippleColor="dark"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85"
                   (click)="onPageChanged(currentPage - 3)">
                   &hellip;
                 </button>
               }
               @for (page of getVisiblePageNumbers(); track page) {
                 <button
-                  [class]="currentPage === page ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]' : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  [class]="currentPage === page ? 'bg-gray6 text-white dark:hover:text-white hover:bg-gray6/70' : ' text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85'"
+                  appRipple
+                  rippleColor="light"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
                   (click)="onPageChanged(page)">
                   {{ page }}
                 </button>
               }
               @if (totalPages > 7 && currentPage < totalPages - 3) {
                 <button
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]"
+                  appRipple
+                  rippleColor="dark"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85"
                   (click)="onPageChanged(currentPage + 3)">
                   &hellip;
                 </button>
               }
               @if (totalPages > 7) {
                 <button
-                  [class]="currentPage === totalPages ? 'bg-blue-600 text-white dark:hover:text-white hover:bg-blue-600/[0.6]' : ' text-blue-600/[.8] dark:text-white hover:text-white dark:hover:text-white hover:bg-blue-600/[0.8]'"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-blue-600/70 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  [class]="currentPage === totalPages ? 'bg-gray6 text-white dark:hover:text-white hover:bg-gray6/70' : ' text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85'"
+                  appRipple
+                  rippleColor="light"
+                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
                   (click)="onPageChanged(totalPages)">
                   {{ totalPages }}
                 </button>
@@ -184,7 +206,9 @@
                 [disabled]="currentPage === totalPages"
                 type="button"
                 (click)="onPageChanged(currentPage + 1)"
-                class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-blue-600/[0.2] dark:hover:gray-600/50 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-blue-600/[.8] dark:text-blue-600 dark:hover:text-blue-300 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+                appRipple
+                rippleColor="dark"
+                class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-gray6/20 dark:hover:bg-gray6/40 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray6/80 dark:text-gray-300 dark:hover:text-gray-100 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
                 Next
               </button>
             </div>
@@ -210,13 +234,17 @@
         type="button"
         (click)="closeConfirmModal()"
         [disabled]="confirmModalLoading"
-        class="btn btn-sm btn-gray btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
+        appRipple
+        rippleColor="dark"
+        class="btn btn-sm btn-gray btn-ring disabled:opacity-50 disabled:cursor-not-allowed">
         Cancel
       </button>
       <button
         type="button"
         (click)="confirmDeletion()"
         [disabled]="confirmModalLoading"
+        appRipple
+        rippleColor="light"
         class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
         {{ confirmModalActionLabel }}
       </button>

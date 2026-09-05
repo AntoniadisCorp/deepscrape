@@ -21,6 +21,7 @@ import { CommonModule, JsonPipe, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Observable, Subject, takeUntil } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import {
   Auth,
@@ -58,7 +59,7 @@ import { HttpClient } from '@angular/common/http';
 
 import { I18nService } from 'src/app/core/i18n';
 import { getBrowser, getErrorMessage, resolveSafeReturnUrl } from 'src/app/core/functions';
-import { AnalyticsService, AuthService, FirestoreService, GuestTrackingService, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
+import { AnalyticsService, AuthService, DeviceVerificationService, FirestoreService, GuestTrackingService, SnackbarService, ThemeService, WindowToken } from 'src/app/core/services';
 import { SnackBarType } from 'src/app/core/components';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { NAVIGATOR } from 'src/app/core/providers';
@@ -102,6 +103,7 @@ export class LoginComponent  {
 
   private themePicker = inject(ThemeService)
   private guestTrackingService = inject(GuestTrackingService)
+  private deviceVerificationService = inject(DeviceVerificationService)
   protected isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$; 
 
   // Component properties
@@ -136,6 +138,7 @@ export class LoginComponent  {
   public mfaPhoneDisplay = '';
   private mfaProviderId = 'password';
   public mfaDisplayName = 'Authenticator app';
+  public mfaAvailableFactors: Array<'totp' | 'phone'> = [];
 
   // Subscriptions to manage memory leaks
   /** Subject for unsubscribing all subscriptions. */
@@ -299,14 +302,27 @@ export class LoginComponent  {
       this.mfaResolver = resolver;
       this.mfaProviderId = providerId;
       this.mfaCode = '';
+      this.mfaAvailableFactors = [];
 
-      if (phoneFactor) {
+      const hasPhoneFactor = !!phoneFactor;
+      const hasTotpFactor = !!totpFactor;
+      if (hasTotpFactor) this.mfaAvailableFactors.push('totp');
+      if (hasPhoneFactor) this.mfaAvailableFactors.push('phone');
+
+      const cachedPreferences = this.authService.readCachedMfaSecurityPreferences();
+      const preferredFactor: 'totp' | 'phone' = cachedPreferences?.primaryMethod === 'sms' ? 'phone' : 'totp';
+
+      const initialFactor: 'totp' | 'phone' = hasTotpFactor && preferredFactor === 'totp' ?
+        'totp' :
+        (hasPhoneFactor ? 'phone' : 'totp');
+
+      if (initialFactor === 'phone' && phoneFactor) {
         this.mfaFactorType = 'phone';
         this.mfaEnrollmentUid = '';
         this.mfaDisplayName = phoneFactor.displayName || 'Phone number';
         this.mfaPhoneDisplay = (phoneFactor as any)?.phoneNumber || 'your phone';
         await this.sendMfaSmsCode();
-      } else {
+      } else if (totpFactor) {
         this.mfaFactorType = 'totp';
         this.mfaEnrollmentUid = totpFactor!.uid;
         this.mfaDisplayName = totpFactor!.displayName || 'Authenticator app';
@@ -338,6 +354,42 @@ export class LoginComponent  {
     this.mfaProviderId = 'password';
     this.mfaDisplayName = 'Authenticator app';
     this.mfaCode = '';
+    this.mfaAvailableFactors = [];
+  }
+
+  public async switchMfaFactor(target: 'totp' | 'phone'): Promise<void> {
+    if (!this.mfaResolver || !this.showMfaChallenge || this.mfaFactorType === target) {
+      return;
+    }
+
+    const totpHint = this.mfaResolver.hints.find((hint: { factorId?: string }) =>
+      hint?.factorId === TotpMultiFactorGenerator.FACTOR_ID || hint?.factorId === 'totp'
+    );
+    const phoneHint = this.mfaResolver.hints.find((hint: { factorId?: string; phoneNumber?: string }) =>
+      hint?.factorId === PhoneMultiFactorGenerator.FACTOR_ID || !!hint?.phoneNumber
+    );
+
+    if (target === 'totp' && totpHint) {
+      this.mfaFactorType = 'totp';
+      this.mfaEnrollmentUid = totpHint.uid;
+      this.mfaDisplayName = totpHint.displayName || 'Authenticator app';
+      this.mfaPhoneDisplay = '';
+      this.mfaCode = '';
+      this.errorMessage = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (target === 'phone' && phoneHint) {
+      this.mfaFactorType = 'phone';
+      this.mfaEnrollmentUid = '';
+      this.mfaDisplayName = phoneHint.displayName || 'Phone number';
+      this.mfaPhoneDisplay = (phoneHint as any)?.phoneNumber || 'your phone';
+      this.mfaCode = '';
+      this.errorMessage = '';
+      await this.sendMfaSmsCode();
+      this.cdr.detectChanges();
+    }
   }
 
   public async resendMfaSmsCode(): Promise<void> {
@@ -432,14 +484,23 @@ export class LoginComponent  {
 
     await this.authService.ensureBootstrapAdminAccess(providerId)
 
-    this.rememberLastLogin(providerId);
-
     const isVerified = await this.onLoginUpdate({ user }, providerId);
     if (!isVerified) {
       return;
     }
 
     await this.ensurePostLoginTracking(user.uid, providerId);
+
+    const fingerprint = this.deviceVerificationService.getDeviceFingerprint();
+    const deviceVerified = await this.deviceVerificationService.isDeviceTrusted(user.uid, fingerprint);
+    if (!deviceVerified) {
+      this.showSnackbar('Device verification is required to complete sign in.', SnackBarType.info, '', 5000);
+      const returnUrl = this.getReturnUrl();
+      await this.router.navigate(['/service/device-verification'], { queryParams: { returnUrl } });
+      return;
+    }
+
+    this.rememberLastLogin(providerId);
 
     this.firestoreService.setAnalyticsUserId(this.analytics, user.uid);
     this.showSnackbar(this.translate.instant('LOGIN.SIGN_IN_SUCCESS'), SnackBarType.success, '', 3000);

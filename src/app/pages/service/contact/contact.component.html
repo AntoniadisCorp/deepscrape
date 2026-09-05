@@ -1,0 +1,219 @@
+<!-- Header — matches service layout (logo, lang picker, theme toggle) -->
+<header class="fixed w-full z-[60] bg-transparent dark:bg-gray-900 dark:border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]">
+  <div class="flex h-20 items-center justify-between px-4 md:px-8 lg:px-32 py-2">
+    <a [routerLink]="['/']" routerLinkActive="active" class="flex items-center justify-between space-x-2">
+      <h1 class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit">
+        <img src="" alt=""
+          [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
+          class="mt-4 h-20 border-none max-h-[80%] xs:max-h-max" />
+      </h1>
+      <h1 class="hidden text-2xl xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
+        DeepScrape
+      </h1>
+    </a>
+    <div class="flex items-center justify-end gap-2 w-full">
+      <app-lang-picker></app-lang-picker>
+      <app-theme-toggle [color]="{ dark: '#373737f0', light: '#fff' }"></app-theme-toggle>
+    </div>
+  </div>
+</header>
+
+<section class="relative min-h-screen pt-24 md:pt-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-cyan-50 dark:from-[#060606] dark:via-[#060606] dark:to-[#060606]">
+  <!-- Decorative grid lines -->
+  <div class="absolute inset-0 grid-lines-strong pointer-events-none opacity-30 dark:opacity-100"></div>
+
+  <!-- Animated background orbs -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-96 h-96 orb-cyan-lg rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute -bottom-32 -left-32 w-80 h-80 orb-rose-lg rounded-full blur-3xl animate-pulse orb-delay-1"></div>
+    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] orb-cyan-md rounded-full blur-3xl animate-pulse orb-delay-3"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-64 h-64 orb-rose-md rounded-full blur-3xl animate-pulse orb-delay-2"></div>
+  </div>
+
+  <div class="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 w-full">
+
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <div class="flex flex-wrap justify-center gap-2 mb-6">
+        <span class="glass-pill inline-flex items-center px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300 rounded-full">
+          <lucide-angular [img]="icons['send']" class="mr-1 h-3 w-3 fill-none"></lucide-angular>
+          {{ 'CONTACT.TITLE' | translate }}
+        </span>
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-display font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+        {{ 'CONTACT.TITLE' | translate }}
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-400 max-w-lg mx-auto">
+        {{ 'CONTACT.SUBTITLE' | translate }}
+      </p>
+    </div>
+
+    <!-- Success State -->
+    @if (success()) {
+      <div class="glass rounded-2xl p-10 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 mb-4 glass-hover">
+          <lucide-angular [img]="icons['check-circle']" class="h-8 w-8 text-emerald-600 dark:text-emerald-300 fill-none"></lucide-angular>
+        </div>
+        <h2 class="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2">
+          {{ 'CONTACT.SUCCESS_TITLE' | translate }}
+        </h2>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+          {{ 'CONTACT.SUCCESS_MESSAGE' | translate }}
+        </p>
+        <button
+          type="button"
+          (click)="success.set(false); errorMessage.set(''); fieldErrors.set([])"
+          class="group inline-flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 glass hover:bg-cyan-600/90 dark:hover:bg-cyan-600/90 border-cyan-500/30 dark:border-cyan-500/40"
+        >
+          <lucide-angular [img]="icons['message-circle']" class="h-4 w-4 group-hover:scale-110 transition-transform fill-none"></lucide-angular>
+          {{ 'CONTACT.SEND_ANOTHER' | translate }}
+        </button>
+      </div>
+    } @else {
+      <!-- Glass Form Card -->
+      <div class="glass rounded-2xl p-6 md:p-8">
+
+        <!-- Error Banner -->
+        @if (errorMessage()) {
+          <div class="mb-6 glass rounded-xl p-4 flex items-start gap-3 border-red-200/60 dark:border-red-700/40" role="alert">
+            <lucide-angular [img]="icons['shield']" class="h-5 w-5 text-red-500 dark:text-red-300 mt-0.5 shrink-0 fill-none"></lucide-angular>
+            <div>
+              <p class="text-sm font-semibold text-red-700 dark:text-red-200">{{ errorMessage() }}</p>
+              @if (fieldErrors().length > 0) {
+                <div class="mt-1 text-xs text-red-600 dark:text-red-300">@for (err of fieldErrors(); track err){<div class="ml-3 list-item">• {{ err }}</div>}</div>
+              }
+            </div>
+          </div>
+        }
+
+        <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" autocomplete="off" novalidate class="flex flex-col gap-5">
+
+          <!-- Name & Email Row -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Name -->
+            <div class="flex flex-col gap-1.5">
+              <label for="contact-name" class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                {{ 'CONTACT.NAME_LABEL' | translate }}
+              </label>
+              <div class="relative">
+                <lucide-angular [img]="icons['user-round']" class="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none fill-none"></lucide-angular>
+                <input
+                  id="contact-name"
+                  type="text"
+                  formControlName="name"
+                  placeholder="{{ 'CONTACT.NAME_PLACEHOLDER' | translate }}"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-[1px] border text-sm transition-all duration-200 outline-none
+                  text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500
+                  border-gray-200/70 dark:border-gray-700/50
+                  focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-2 focus:ring-cyan-400/20 dark:focus:ring-cyan-500/20"
+                  [class.border-red-300]="contactForm.get('name')?.invalid && contactForm.get('name')?.touched"
+                />
+              </div>
+              @if (contactForm.get('name')?.invalid && contactForm.get('name')?.touched) {
+                <p class="text-xs text-red-500 dark:text-red-400 ml-1">{{ 'CONTACT.NAME_ERROR' | translate }}</p>
+              }
+            </div>
+
+            <!-- Email -->
+            <div class="flex flex-col gap-1.5">
+              <label for="contact-email" class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                {{ 'CONTACT.EMAIL_LABEL' | translate }}
+              </label>
+              <div class="relative">
+                <lucide-angular [img]="icons['mail']" class="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none fill-none"></lucide-angular>
+                <input
+                  id="contact-email"
+                  type="email"
+                  formControlName="email"
+                  placeholder="{{ 'CONTACT.EMAIL_PLACEHOLDER' | translate }}"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-[1px] border text-sm transition-all duration-200 outline-none
+                  text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500
+                  border-gray-200/70 dark:border-gray-700/50
+                  focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-2 focus:ring-cyan-400/20 dark:focus:ring-cyan-500/20"
+                  [class.border-red-300]="contactForm.get('email')?.invalid && contactForm.get('email')?.touched"
+                />
+              </div>
+              @if (contactForm.get('email')?.invalid && contactForm.get('email')?.touched) {
+                <p class="text-xs text-red-500 dark:text-red-400 ml-1">{{ 'CONTACT.EMAIL_ERROR' | translate }}</p>
+              }
+            </div>
+          </div>
+
+          <!-- Subject -->
+          <div class="flex flex-col gap-1.5">
+            <label for="contact-subject" class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+              {{ 'CONTACT.SUBJECT_LABEL' | translate }}
+            </label>
+            <div class="relative">
+              <lucide-angular [img]="icons['pen-line']" class="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none fill-none"></lucide-angular>
+              <input
+                id="contact-subject"
+                type="text"
+                formControlName="subject"
+                placeholder="{{ 'CONTACT.SUBJECT_PLACEHOLDER' | translate }}"
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-[1px] border text-sm transition-all duration-200 outline-none
+                text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500
+                border-gray-200/70 dark:border-gray-700/50
+                focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-2 focus:ring-cyan-400/20 dark:focus:ring-cyan-500/20"
+                [class.border-red-300]="contactForm.get('subject')?.invalid && contactForm.get('subject')?.touched"
+              />
+            </div>
+            @if (contactForm.get('subject')?.invalid && contactForm.get('subject')?.touched) {
+              <p class="text-xs text-red-500 dark:text-red-400 ml-1">{{ 'CONTACT.SUBJECT_ERROR' | translate }}</p>
+            }
+          </div>
+
+          <!-- Message -->
+          <div class="flex flex-col gap-1.5">
+            <label for="contact-message" class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+              {{ 'CONTACT.MESSAGE_LABEL' | translate }}
+            </label>
+            <div class="relative">
+              <lucide-angular [img]="icons['message-circle']" class="absolute left-2 top-[6px] h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none fill-none"></lucide-angular>
+              <textarea
+                id="contact-message"
+                formControlName="message"
+                rows="5"
+                placeholder="{{ 'CONTACT.MESSAGE_PLACEHOLDER' | translate }}"
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-[1px] border text-sm transition-all duration-200 outline-none resize-y min-h-[120px]
+                text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500
+                border-gray-200/70 dark:border-gray-700/50
+                focus:border-cyan-400 dark:focus:border-cyan-500 focus:ring-2 focus:ring-cyan-400/20 dark:focus:ring-cyan-500/20"
+                [class.border-red-300]="contactForm.get('message')?.invalid && contactForm.get('message')?.touched"
+              ></textarea>
+            </div>
+            @if (contactForm.get('message')?.invalid && contactForm.get('message')?.touched) {
+              <p class="text-xs text-red-500 dark:text-red-400 ml-1">{{ 'CONTACT.MESSAGE_ERROR' | translate }}</p>
+            }
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            [disabled]="submitting()"
+            class="group w-full mt-2 inline-flex items-center justify-center gap-2 px-8 py-3.5 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0
+            glass hover:bg-cyan-600/90 dark:hover:bg-cyan-600/90 text-cyan-700 dark:text-cyan-300 hover:text-white border-cyan-500/30 dark:border-cyan-500/40"
+          >
+            @if (submitting()) {
+              <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+              </svg>
+              {{ 'CONTACT.SENDING' | translate }}
+            } @else {
+              <lucide-angular [img]="icons['send']" class="h-4 w-4 group-hover:translate-x-0.5 transition-transform fill-none"></lucide-angular>
+              {{ 'CONTACT.SEND' | translate }}
+            }
+          </button>
+        </form>
+      </div>
+    }
+
+    <!-- Footer note -->
+    <div class="mt-8 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-500">
+        <lucide-angular [img]="icons['mail']" class="inline h-3 w-3 mr-1 fill-none"></lucide-angular>
+        {{ 'CONTACT.FOOTER' | translate }}
+      </p>
+    </div>
+  </div>
+</section>

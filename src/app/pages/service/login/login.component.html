@@ -38,6 +38,28 @@
                 Enter the current 6-digit code from {{ mfaDisplayName }} to finish signing in.
               }
             </p>
+            @if (mfaAvailableFactors.length > 1) {
+              <div class="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  (click)="switchMfaFactor('totp')"
+                  [disabled]="loading.mfa || mfaFactorType === 'totp'"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition dark:border-gray-700"
+                  [ngClass]="mfaFactorType === 'totp' ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'border-slate-200 bg-white text-gray-700 hover:bg-slate-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'"
+                >
+                  Use authenticator app
+                </button>
+                <button
+                  type="button"
+                  (click)="switchMfaFactor('phone')"
+                  [disabled]="loading.mfa || mfaFactorType === 'phone'"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition dark:border-gray-700"
+                  [ngClass]="mfaFactorType === 'phone' ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'border-slate-200 bg-white text-gray-700 hover:bg-slate-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'"
+                >
+                  Use SMS / text message
+                </button>
+              </div>
+            }
             <input
               type="text"
               inputmode="numeric"

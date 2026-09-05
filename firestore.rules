@@ -158,6 +158,13 @@ service cloud.firestore {
       }
     }
 
+    match /contacts/{contactId} {
+      // Contact form submissions are created server-side via Cloud Functions (Admin SDK).
+      // Only platform admins can read submissions.
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /guests/{guestId} {
       allow read: if isAdmin();
       allow create: if false;

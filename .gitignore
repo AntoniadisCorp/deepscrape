@@ -70,3 +70,7 @@ tmp-test-output*.txt
 .github/skills/angular-bun-elysia-migrator/SKILL.md
 .github/skills/angular-bun-elysia-migrator/examples/firebase-functions-to-elysia.md
 .github/skills/angular-bun-elysia-migrator/references/migration-checklist.md
+
+# Generated analysis artifacts (local only)
+graphify-out/
+.codebase-memory/

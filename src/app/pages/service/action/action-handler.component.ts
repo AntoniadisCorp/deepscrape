@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { timer } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-reset-password-handler',
@@ -18,7 +19,8 @@ import { firstValueFrom } from 'rxjs';
     CommonModule,
     RouterModule,
     FormsModule,
-    TranslateModule
+    TranslateModule,
+    MatIconModule,
   ],
   templateUrl: './action-handler.component.html',
   styleUrl: './action-handler.component.scss'

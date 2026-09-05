@@ -1,107 +1,73 @@
 <section
   id="features"
-  class="relative py-20 bg-gradient-to-b from-white via-blue-200 to-indigo-400 dark:from-gray-900 dark:to-[#1a1a25]">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  class="relative py-20 md:py-28 section-dark scroll-mt-24 motion-safe:animate-fade-in">
+  <div class="absolute inset-0 grid-lines pointer-events-none opacity-20 dark:opacity-60"></div>
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-20 right-10 w-72 h-72 orb-cyan-md rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-20 left-10 w-72 h-72 orb-rose-md rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-16">
+      <span class="glass-pill inline-flex items-center px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300 rounded-full mb-4">
+        Features
+      </span>
       <h2
-        class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 dark:text-gray-50">
-        Powerful Features for
+        class="text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-white mb-4">
+        Everything You Need for
         <span
-          class="bg-gradient-to-r from-deep-orange-600 to-amber-700 bg-clip-text text-transparent">
-          Next-Gen Scraping
+          class="bg-gradient-to-r from-cyan-600 to-rose-500 dark:from-cyan-400 dark:to-rose-400 bg-clip-text text-transparent">
+          Modern Scraping
         </span>
       </h2>
-      <p class="text-xl text-gray-600 max-w-3xl mx-auto dark:text-gray-400">
-        Everything you need for deep web scraping, crawling, and intelligent
-        data extraction at enterprise scale—without wasting money on excessive
-        LLM tokens. Forget pointless LLM costs and enjoy blazing-fast, efficient
-        performance.
+      <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        Backed by an enterprise-grade extraction engine — resilient, fast, and AI-ready.
+        From AI-powered parsing to anti-detection, deepscrape handles the complexity
+        so you can focus on your data.
       </p>
     </div>
 
-    <!-- Features Content Wrapper with background -->
-    <div class="relative z-10">
-      <div class="mb-16">
-        <h3
-          class="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center">
-          Core Features
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          @for(feature of coreFeatures; track $index) {
-            <with-gradient-border
-              class="rounded-lg group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg"
-              [color]="['#fb8c00', '#8b5cf6', '#3b82f6']"
-              border-width="1.5px">
-              <div
-                class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:bg-gray-900/90 dark:bg-none w-full h-full rounded-[4px]">
-                <div class="text-center pb-4 flex flex-col space-y-1.5 p-6">
-                  <div
-                    class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-deep-orange-600 to-orange-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <lucide-angular
-                      [img]="feature.icon"
-                    class="h-8 w-8 text-white dark:stroke-white fill-none"></lucide-angular>
-                  </div>
-                  <h4
-                    class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                    {{ feature.title }}
-                  </h4>
-                </div>
-                <div class="p-6 pt-0">
-                  <p
-                    class="text-gray-600 text-center leading-relaxed dark:text-gray-500">
-                    {{ feature.description }}
-                  </p>
-                </div>
+    <div class="mb-14">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-8 text-center flex items-center justify-center gap-2">
+        <span class="w-2 h-2 bg-cyan-500 rounded-full"></span> Core Capabilities
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (feature of coreFeatures; track feature.title) {
+          <with-gradient-border
+            class="rounded-2xl group transition-all duration-300 hover:-translate-y-2"
+            [color]="['#3B83F6AF', '#8A5CF685', '#FB8A008F']"
+            border-width="1.5px">
+            <div class="glass rounded p-6 h-full shadow-sm group-hover:shadow-xl transition-all duration-300">
+              <div class="w-11 h-11 mb-4 glass rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-cyan-500/20 transition-all duration-300">
+                <lucide-angular [img]="feature.icon" class="h-5 w-5 text-cyan-600 dark:text-cyan-400 fill-none"></lucide-angular>
               </div>
-            </with-gradient-border>
-          }
-        </div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-cyan-700 dark:group-hover:text-cyan-300 transition-colors duration-200">{{ feature.title }}</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{{ feature.description }}</p>
+            </div>
+          </with-gradient-border>
+        }
       </div>
+    </div>
 
-      <div>
-        <h3
-          class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-8 text-center">
-          Advanced Capabilities
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          @for (feature of advancedFeatures; track feature) {
-            <with-gradient-border
-              class="rounded-lg group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg"
-              [color]="['#00bcd4', 'rgb(59, 130, 246)']"
-              border-width="1.5px">
-              <div
-                class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:bg-gray-900 dark:bg-none w-full h-full rounded-[4px]">
-                <div class="text-center pb-4 flex flex-col space-y-1.5 p-6">
-                  <div
-                    class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <lucide-angular
-                      [img]="feature.icon"
-                    class="h-8 w-8 text-white dark:stroke-white fill-none"></lucide-angular>
-                  </div>
-                  <h4
-                    class="text-xl font-semibold text-gray-900 dark:text-gray-300">
-                    {{ feature.title }}
-                  </h4>
-                </div>
-                <div class="p-6 pt-0">
-                  <p
-                    class="text-gray-600 text-center leading-relaxed dark:text-gray-500">
-                    {{ feature.description }}
-                  </p>
-                </div>
+    <div>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-8 text-center flex items-center justify-center gap-2">
+        <span class="w-2 h-2 bg-rose-500 rounded-full"></span> Advanced Capabilities
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (feature of advancedFeatures; track feature.title) {
+          <with-gradient-border
+            class="rounded-2xl group transition-all duration-300 hover:-translate-y-2"
+            [color]="['#3B83F6AF', '#8A5CF685', '#FB8A008F']"
+            border-width="1.5px">
+            <div class="glass rounded p-6 h-full shadow-sm group-hover:shadow-xl transition-all duration-300">
+              <div class="w-11 h-11 mb-4 glass rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-rose-500/20 transition-all duration-300">
+                <lucide-angular [img]="feature.icon" class="h-5 w-5 text-rose-500 dark:text-rose-400 fill-none"></lucide-angular>
               </div>
-            </with-gradient-border>
-          }
-        </div>
-      </div>
-      <!-- Blurred Background Effects -->
-      <div class="absolute inset-0 pointer-events-none -z-10">
-        <div
-        class="absolute top-1/4 left-[10%] sm:left-1/4 w-48 sm:w-72 h-48 sm:h-72 bg-purple-500 dark:bg-purple-500/50 rounded-full filter blur-3xl animate-pulse"></div>
-        <div
-        class="absolute top-1/4 right-[5%] sm:right-1/2 w-56 sm:w-96 h-56 sm:h-96 bg-blue-500 dark:bg-blue-500/50 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
-        <div
-        class="absolute bottom-[10%] left-[5%] sm:left-1/3 w-52 sm:w-80 h-52 sm:h-80 bg-cyan-500 dark:bg-sky-500/50 rounded-full filter blur-3xl animate-pulse delay-2000"></div>
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors duration-200">{{ feature.title }}</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{{ feature.description }}</p>
+            </div>
+          </with-gradient-border>
+        }
       </div>
     </div>
   </div>

@@ -34,10 +34,10 @@ export function onListening() {
     // Warm up once at startup. initializeGeoDatabase is promise-cached and idempotent.
     void initializeGeoDatabase()
         .then(() => {
-            console.log("IP2Location database initialized successfully.")
+            console.log("Geo lookup API initialized successfully.")
         })
         .catch((error) => {
-            console.error("Error initializing IP2Location database:!", error)
+            console.error("Error initializing geo lookup API:", error)
         })
     // debug('Listening on ' + bind);
 }

@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <lucide-angular [img]="icons['BarChart3']" class="w-6 h-6 text-blue-500"></lucide-angular> Analytics
+            <lucide-angular [img]="icons['BarChart3']" class="w-6 h-6 text-teal-500"></lucide-angular> Analytics
             Dashboard
           </h1>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1"> Real-time insights and user behavior analytics </p>
@@ -48,7 +48,7 @@
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Period: </label>
           <select title="Period" [(ngModel)]="filters.period" (ngModelChange)="onPeriodChange()"
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
             @for (option of periodOptions; track option) {
               <option [value]="option.value"> {{ option.label }} </option>
             }
@@ -58,7 +58,7 @@
         <div class="flex items-center gap-2">
           <label for="device-select" class="text-sm font-medium text-gray-700 dark:text-gray-300"> Device: </label>
           <select id="device-select" title="Device" [(ngModel)]="filters.device" (ngModelChange)="onDeviceChange()"
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
             @for (option of deviceOptions; track option) {
               <option [value]="option.value"> {{ option.label }} </option>
             }
@@ -68,7 +68,7 @@
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Provider: </label>
           <select title="Provider" [(ngModel)]="filters.provider" (ngModelChange)="onProviderChange()"
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
             @for (option of providerOptions; track option) {
               <option [value]="option.value"> {{ option.label }} </option>
             }
@@ -83,7 +83,7 @@
         <div class="flex items-center justify-center py-12">
           <div class="text-center">
             <lucide-angular [img]="icons['Loader2']"
-            class="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4"></lucide-angular>
+            class="w-8 h-8 text-teal-500 animate-spin mx-auto mb-4"></lucide-angular>
             <p class="text-gray-500 dark:text-gray-400"> Loading analytics data... </p>
           </div>
         </div>
@@ -122,8 +122,8 @@
                     </div>
                   }
                 </div>
-                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <lucide-angular [img]="icons['Users']" class="w-6 h-6 text-blue-600 dark:text-blue-400"></lucide-angular>
+                <div class="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <lucide-angular [img]="icons['Users']" class="w-6 h-6 text-emerald-600 dark:text-emerald-400"></lucide-angular>
                 </div>
               </div>
             </div>

@@ -1,30 +1,75 @@
-<div class="admin-workspace-shell mt-8 min-h-screen rounded-md bg-gray-100 dark:bg-gray-900">
-  <header class="mb-6">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray6 dark:text-gray3">Admin Console</h1>
-    <p class="text-sm text-gray6/70 dark:text-gray-300 mt-1">Analytics and migration tools</p>
+<div class="admin-workspace-shell relative mt-6 min-h-screen overflow-hidden rounded-[1.7rem] border border-gray3/45 p-4 shadow-[0_24px_58px_-34px_rgba(42,46,53,0.45)] sm:p-6 dark:border-gray5/55">
+  <div class="admin-ambient-orb admin-ambient-orb-soft pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full bg-gray2/40 blur-3xl dark:bg-gray5/35"></div>
+  <div class="admin-ambient-orb admin-ambient-orb-deep pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-gray3/30 blur-3xl dark:bg-gray6/35"></div>
+
+  <header class="relative mb-6 overflow-hidden rounded-2xl border border-gray3/65 bg-white/82 px-5 py-5 shadow-[0_16px_40px_-28px_rgba(42,46,53,0.45)] backdrop-blur-xl dark:border-gray5/60 dark:bg-gray7/78 sm:px-6 sm:py-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-gray5 dark:text-gray3">Operations Console</p>
+        <h1 class="mt-2 text-2xl font-extrabold tracking-tight text-gray6 dark:text-white sm:text-3xl">Admin Dashboard</h1>
+        <p class="mt-1 text-sm text-gray5/80 dark:text-gray3">Analytics, billing, migration and project controls in one place.</p>
+      </div>
+
+      <div class="admin-status-chip inline-flex items-center gap-2 rounded-full border border-gray3/70 bg-gray1/90 px-3 py-1.5 text-xs font-semibold text-gray6 shadow-sm dark:border-gray5/70 dark:bg-gray6/45 dark:text-gray2">
+        <span class="h-2 w-2 rounded-full bg-gray4 motion-safe:animate-pulse dark:bg-gray2"></span>
+        System Ready
+      </div>
+    </div>
+
+   
   </header>
 
-  <div
-    class="sticky top-20 scrollbar-hidden snap-x overflow-auto z-50 flex h-16 flex-nowrap items-center justify-start gap-1 border-b bg-gray-200 text-base text-gray-800 dark:border-b-[#64b5f633] dark:bg-gray-900 mb-6"
-    >
-    @for (tab of tabs; track tab) {
-      <a
-        [routerLink]="tab.route"
-        routerLinkActive="active"
-        #rla="routerLinkActive"
-        [ngClass]="rla.isActive ? 'bg-gray-300/70 transition dark:border-blue-300 dark:bg-gray5/40' : ''"
-        class="flex just snap-normal h-full w-full max-w-[10rem] flex-shrink-0 items-center justify-start rounded-sm rounded-tl-lg rounded-tr-lg border-b-2 border-transparent px-3 py-3 text-gray-900 transition-all hover:border-blue-300 hover:bg-cyan-100 hover:duration-100 hover:ease-in-out dark:text-gray-400 dark:hover:bg-cyan-300/10 dark:hover:text-gray-200"
-        [routerLinkActiveOptions]="{ exact: true }">
-        <lucide-angular
-          [img]="icons[tab.icon]"
-          class="mr-2 h-4 w-4 flex-shrink-0 fill-none"
-        [attr.aria-label]="tab.label + ' icon'"></lucide-angular>
-        <span>{{ tab.label }}</span>
-      </a>
+  <div class="tab-scroll-shell sticky top-20 z-40 mb-6">
+    @if (showPreviousButton) {
+      <button
+        type="button"
+        appRipple
+        rippleColor="dark"
+        class="tab-scroll-button !absolute left-0 top-1/2 -translate-y-1/2"
+        (click)="scrollTabs('previous')"
+        aria-label="Scroll tabs left">
+        <span aria-hidden="true">&#8249;</span>
+      </button>
+    }
+
+    <div
+      #tabScrollStrip
+      class="tab-scroll-strip flex h-14 snap-x flex-nowrap items-stretch justify-start gap-2 overflow-x-auto overflow-y-hidden rounded-xl border border-gray3/70 bg-white/88 p-1 shadow-[0_14px_32px_-24px_rgba(42,46,53,0.42)] backdrop-blur-xl dark:border-gray5/65 dark:bg-gray7/82"
+      (scroll)="onTabStripScroll()">
+      @for (tab of tabs; track tab.route) {
+        <a
+          [routerLink]="tab.route"
+          appRipple
+          rippleColor="dark"
+          routerLinkActive="active"
+          #rla="routerLinkActive"
+          [ngClass]="rla.isActive ? 'active-tab' : ''"
+          class="group tab-pill justify-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 relative flex h-full w-full max-w-[11.5rem] flex-shrink-0 snap-normal items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-gray5 transition-all duration-300 hover:-translate-y-[1px] hover:border-gray3 hover:bg-gray1/80 hover:text-gray6 hover:shadow-sm dark:text-gray2 dark:hover:border-gray4 dark:hover:bg-gray6/45 dark:hover:text-white"
+          [routerLinkActiveOptions]="{ exact: true }">
+          <lucide-angular
+            [img]="icons[tab.icon]"
+            class="h-4 w-4 flex-shrink-0 fill-none transition-transform duration-300 group-hover:scale-110"
+            [attr.aria-label]="tab.label + ' icon'"></lucide-angular>
+          <span class="truncate">{{ tab.label }}</span>
+        </a>
+      }
+    </div>
+
+    @if (showNextButton) {
+      <button
+        type="button"
+        appRipple
+        rippleColor="dark"
+        class="tab-scroll-button !absolute right-0 top-1/2 -translate-y-1/2"
+        (click)="scrollTabs('next')"
+        aria-label="Scroll tabs right">
+        <span aria-hidden="true">&#8250;</span>
+      </button>
     }
   </div>
 
-  <div [@routeChildAnimation]="getRouteAnimationData(outlet)" class="relative min-h-[12rem] overflow-hidden">
+  <div [@routeChildAnimation]="getRouteAnimationData(outlet)" class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray3/75 to-transparent dark:via-gray4/70"></div>
     <router-outlet #outlet="outlet"></router-outlet>
   </div>
 </div>

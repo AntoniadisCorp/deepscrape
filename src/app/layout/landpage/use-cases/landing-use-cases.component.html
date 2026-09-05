@@ -1,0 +1,114 @@
+<section id="use-cases" class="relative py-20 md:py-28 section-dark-alt scroll-mt-24 motion-safe:animate-fade-in">
+  <div class="absolute inset-0 grid-lines pointer-events-none opacity-15 dark:opacity-50"></div>
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-1/3 left-0 w-96 h-96 orb-cyan-sm rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-0 w-80 h-80 orb-rose-sm rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-16">
+      <span class="glass-pill inline-flex items-center px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300 rounded-full mb-4">
+        Use Cases
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-white mb-4">
+        Built for
+        <span class="bg-gradient-to-r from-cyan-600 to-rose-500 dark:from-cyan-400 dark:to-rose-400 bg-clip-text text-transparent">
+          Every Data Need
+        </span>
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+        From e-commerce monitoring to AI training pipelines — deepscrape's managed
+        extraction infrastructure handles any web data extraction challenge at scale.
+      </p>
+    </div>
+
+    <!-- Featured image banner — glass card style -->
+    <div class="relative mb-12 rounded-2xl overflow-hidden group glass border-white/5 dark:border-white/10">
+      <img
+        src="assets/images/landing/hero-mermaid-graph-animated.svg"
+        alt="deepscrape data flow architecture diagram"
+        class="w-full h-48 md:h-64 object-cover transition-transform duration-700 group-hover:scale-105"
+        loading="lazy"
+      />
+      <div class="absolute inset-0 bg-gradient-to-r from-cyan-900/70 via-gray-900/50 to-rose-900/70"></div>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span class="text-white/90 text-lg md:text-2xl font-display font-bold tracking-wide drop-shadow-lg">
+          Enterprise-Grade Web Data Extraction
+        </span>
+      </div>
+    </div>
+
+    <!-- Use case cards — glass grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      @for (usecase of useCases; track usecase.title; let i = $index) {
+        <div class="group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-xl glass border-white/5 dark:border-white/10 hover:border-cyan-500/30 dark:hover:border-cyan-400/20">
+          <!-- Hover glow ring behind card -->
+          <div
+            class="absolute -inset-2 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+            [style.background]="'radial-gradient(circle, ' + borderGlowColor(i) + ' 0%, transparent 70%)'"
+          ></div>
+
+          <!-- SVG image background — visible through glass -->
+          @if (i < 4) {
+            <img
+              [src]="useCaseImages[i]"
+              alt=""
+              class="absolute inset-0 w-full h-full object-cover opacity-40 dark:opacity-30 group-hover:opacity-50 dark:group-hover:opacity-40 transition-opacity duration-700"
+              loading="lazy"
+            />
+          }
+          <!-- Glass overlay — subtle, lets SVG show through -->
+          <div class="absolute inset-0 bg-white/70 dark:bg-[#080808]/65 backdrop-blur-[1px] group-hover:bg-white/60 dark:group-hover:bg-[#080808]/55 transition-colors duration-500"></div>
+
+          <div class="relative z-10 p-8">
+            <!-- Icon container — glass circle with colored glow halo -->
+            <div class="flex items-center gap-3 mb-5">
+              <div class="relative">
+                <div
+                  class="absolute -inset-2 rounded-xl blur-xl opacity-60"
+                  [style.background]="'radial-gradient(circle, ' + borderGlowColor(i) + ' 0%, transparent 70%)'"
+                ></div>
+                <div class="relative w-12 h-12 rounded-xl glass flex items-center justify-center border-white/30 dark:border-white/10 group-hover:scale-110 transition-transform duration-300">
+                  <lucide-angular [img]="icons[usecase.icon]" class="h-6 w-6 fill-none" [class]="iconColorClass(i)"></lucide-angular>
+                </div>
+              </div>
+              <span class="text-xs font-semibold tracking-widest uppercase" [class]="labelColorClass(i)">{{ usecase.title }}</span>
+            </div>
+
+            <!-- Headline -->
+            <h3 class="text-xl font-display font-bold text-gray-900 dark:text-white mb-3 leading-snug">
+              {{ usecase.headline }}
+            </h3>
+
+            <!-- Description -->
+            <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
+              {{ usecase.description }}
+            </p>
+
+            <!-- Features with glass checkmark circles -->
+            <ul class="space-y-2.5">@for (feature of usecase.features; track feature) {
+                <li class="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
+                  <span class="flex-shrink-0 w-5 h-5 rounded-full glass flex items-center justify-center mt-0.5 border-white/30 dark:border-white/10">
+                    <lucide-angular [img]="icons['check']" class="w-3 h-3 fill-none" [class]="iconColorClass(i)"></lucide-angular>
+                  </span>
+                  {{ feature }}
+                </li>}</ul>
+          </div>
+
+          <!-- Bottom accent bar — gradient matching use case theme -->
+          <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r opacity-60 group-hover:opacity-100 transition-opacity duration-500" [ngClass]="accentBarClass(i)"></div>
+        </div>
+      }
+    </div>
+
+    <!-- Bottom CTA -->
+    <div class="text-center mt-14">
+      <a routerLink="/service/signup" class="group inline-flex items-center gap-2 px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
+        Start Your First Crawl — Free
+        <lucide-angular [img]="icons['arrowright']" class="h-5 w-5 group-hover:translate-x-1 transition-transform fill-none"></lucide-angular>
+      </a>
+      <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">5,000 free pages/month · No credit card · Cancel anytime</p>
+    </div>
+  </div>
+</section>

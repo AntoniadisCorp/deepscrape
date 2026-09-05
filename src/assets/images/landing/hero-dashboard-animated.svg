@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400" width="500" height="400">
+  <defs>
+    <linearGradient id="g-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#176ab1"/><stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="g-rose" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#be123c"/><stop offset="100%" style="stop-color:#f43f5e"/>
+    </linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Glass dashboard background -->
+  <rect x="0" y="0" width="500" height="400" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <rect x="0" y="0" width="500" height="400" rx="16" fill="url(#g-cyan)" opacity="0.03"/>
+
+  <!-- Top bar -->
+  <rect x="0" y="0" width="500" height="40" rx="16" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="20" cy="20" r="4" fill="#ff5f57"/>
+  <circle cx="34" cy="20" r="4" fill="#febc2e"/>
+  <circle cx="48" cy="20" r="4" fill="#28c840"/>
+  <text x="250" y="25" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="11" font-family="sans-serif" font-weight="600">deepscrape · Dashboard</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="40" width="100" height="360" fill="rgba(255,255,255,0.02)"/>
+  <rect x="8" y="55" width="84" height="22" rx="6" fill="rgba(6,182,212,0.15)"/>
+  <text x="50" y="70" text-anchor="middle" fill="#06b6d4" font-size="9" font-family="sans-serif">Crawl Jobs</text>
+  <rect x="8" y="82" width="84" height="22" rx="6" fill="rgba(255,255,255,0.04)"/>
+  <text x="50" y="97" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="9" font-family="sans-serif">Analytics</text>
+  <rect x="8" y="109" width="84" height="22" rx="6" fill="rgba(255,255,255,0.04)"/>
+  <text x="50" y="124" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="9" font-family="sans-serif">Profiles</text>
+  <rect x="8" y="136" width="84" height="22" rx="6" fill="rgba(255,255,255,0.04)"/>
+  <text x="50" y="151" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="9" font-family="sans-serif">Settings</text>
+
+  <!-- Stats row -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="2s" fill="freeze"/>
+    <rect x="112" y="52" width="120" height="60" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.2)" stroke-width="0.5"/>
+    <text x="122" y="72" fill="rgba(255,255,255,0.4)" font-size="8" font-family="sans-serif">Pages Today</text>
+    <text x="122" y="96" fill="white" font-size="18" font-family="sans-serif" font-weight="700">
+      12.4K
+      <animate attributeName="opacity" values="0;1" dur="1s" fill="freeze"/>
+    </text>
+
+    <rect x="242" y="52" width="120" height="60" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5">
+      <animate attributeName="y" values="60;52;52" dur="2s" fill="freeze"/>
+    </rect>
+    <text x="252" y="72" fill="rgba(255,255,255,0.4)" font-size="8" font-family="sans-serif">Success Rate</text>
+    <text x="252" y="96" fill="#22c55e" font-size="18" font-family="sans-serif" font-weight="700">99.7%</text>
+
+    <rect x="372" y="52" width="116" height="60" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(34,197,94,0.2)" stroke-width="0.5">
+      <animate attributeName="y" values="65;52;52" dur="2.5s" fill="freeze"/>
+    </rect>
+    <text x="382" y="72" fill="rgba(255,255,255,0.4)" font-size="8" font-family="sans-serif">Avg Response</text>
+    <text x="382" y="96" fill="white" font-size="18" font-family="sans-serif" font-weight="700">187ms</text>
+  </g>
+
+  <!-- Mini chart area -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="3s" fill="freeze"/>
+    <rect x="112" y="120" width="376" height="100" rx="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    <text x="122" y="138" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">Crawl Volume (Last 7 Days)</text>
+
+    <!-- Animated line chart -->
+    <polyline points="122,200 160,180 198,190 236,160 274,170 312,140 350,150 388,120 426,130 464,110"
+      fill="none" stroke="url(#g-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      stroke-dasharray="500" stroke-dashoffset="500">
+      <animate attributeName="stroke-dashoffset" values="500;0" dur="3s" fill="freeze"/>
+    </polyline>
+
+    <!-- Area fill under chart -->
+    <polygon points="122,200 122,200 160,180 198,190 236,160 274,170 312,140 350,150 388,120 426,130 464,110 464,200"
+      fill="url(#g-cyan)" opacity="0.06"/>
+
+    <!-- Data dots -->
+    <circle cx="160" cy="180" r="3" fill="#06b6d4" opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="3.5s" fill="freeze"/>
+    </circle>
+    <circle cx="236" cy="160" r="3" fill="#06b6d4" opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="4s" fill="freeze"/>
+    </circle>
+    <circle cx="312" cy="140" r="3" fill="#06b6d4" opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="4.5s" fill="freeze"/>
+    </circle>
+    <circle cx="388" cy="120" r="3" fill="#06b6d4" opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="5s" fill="freeze"/>
+    </circle>
+    <circle cx="464" cy="110" r="4" fill="#f43f5e" opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="5.5s" fill="freeze"/>
+    </circle>
+  </g>
+
+  <!-- Data table row -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="4s" fill="freeze"/>
+    <rect x="112" y="230" width="376" height="24" rx="4" fill="rgba(255,255,255,0.03)"/>
+    <rect x="118" y="234" width="40" height="16" rx="3" fill="rgba(6,182,212,0.15)"/>
+    <text x="138" y="245" text-anchor="middle" fill="#06b6d4" font-size="7" font-family="sans-serif">200</text>
+    <text x="164" y="245" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">GET example.com/products</text>
+    <text x="380" y="245" fill="#22c55e" font-size="8" font-family="sans-serif" font-weight="600">✓ Success</text>
+
+    <rect x="112" y="258" width="376" height="24" rx="4" fill="rgba(255,255,255,0.02)">
+      <animate attributeName="fill" values="rgba(255,255,255,0.02);rgba(255,255,255,0.04);rgba(255,255,255,0.02)" dur="3s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="118" y="262" width="40" height="16" rx="3" fill="rgba(34,197,94,0.15)"/>
+    <text x="138" y="273" text-anchor="middle" fill="#22c55e" font-size="7" font-family="sans-serif">200</text>
+    <text x="164" y="273" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">GET api.store.com/search?q=...</text>
+    <text x="380" y="273" fill="#22c55e" font-size="8" font-family="sans-serif" font-weight="600">✓ Success</text>
+
+    <rect x="112" y="286" width="376" height="24" rx="4" fill="rgba(255,255,255,0.02)"/>
+    <rect x="118" y="290" width="40" height="16" rx="3" fill="rgba(244,63,94,0.15)"/>
+    <text x="138" y="301" text-anchor="middle" fill="#f43f5e" font-size="7" font-family="sans-serif">429</text>
+    <text x="164" y="301" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">GET target.com/blocked-page</text>
+    <text x="380" y="301" fill="#f43f5e" font-size="8" font-family="sans-serif">⏳ Retrying...</text>
+  </g>
+
+  <!-- Bottom status bar -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="5s" fill="freeze"/>
+    <rect x="112" y="325" width="376" height="35" rx="8" fill="rgba(6,182,212,0.06)" stroke="rgba(6,182,212,0.1)" stroke-width="0.5"/>
+    <circle cx="126" cy="342" r="4" fill="#22c55e">
+      <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="138" y="347" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">All systems operational · 12 active crawlers</text>
+    <text x="440" y="347" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="8" font-family="sans-serif">⚡ 187ms avg</text>
+  </g>
+</svg>

@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ChangeDetectorRef } from '@angular/core';
+import { of } from 'rxjs';
 
 import { AppSidebarNavComponent } from './app-sidebar-nav.component';
 import { getTestProviders } from 'src/app/testing';
@@ -9,10 +11,12 @@ describe('AppSidebarNavComponent', () => {
   let fixture: ComponentFixture<AppSidebarNavComponent>;
   let loadingServiceMock: jasmine.SpyObj<LoadingService>;
   let authServiceMock: jasmine.SpyObj<AuthService>;
+  let cdrMock: jasmine.SpyObj<ChangeDetectorRef>;
 
   beforeEach(async () => {
     loadingServiceMock = jasmine.createSpyObj('LoadingService', ['startLoading', 'stopLoading']);
-    authServiceMock = jasmine.createSpyObj('AuthService', [], { isAdmin: false });
+    authServiceMock = jasmine.createSpyObj('AuthService', [], { isAdmin: false, user$: of(null) });
+    cdrMock = jasmine.createSpyObj('ChangeDetectorRef', ['markForCheck']);
 
     await TestBed.configureTestingModule({
       imports: [AppSidebarNavComponent],
@@ -44,7 +48,7 @@ describe('AppSidebarNavComponent', () => {
 
   it('should hide admin navigation when user is not admin', () => {
     Object.defineProperty(authServiceMock, 'isAdmin', { value: false, configurable: true });
-    component = new AppSidebarNavComponent(loadingServiceMock, authServiceMock);
+    component = new AppSidebarNavComponent(loadingServiceMock, authServiceMock, cdrMock);
 
     const hasAdmin = (component as any).filteredNavigation.some((item: any) => item?.name === 'Admin');
     expect(hasAdmin).toBe(false);
@@ -52,7 +56,7 @@ describe('AppSidebarNavComponent', () => {
 
   it('should show admin navigation when user is admin', () => {
     Object.defineProperty(authServiceMock, 'isAdmin', { value: true, configurable: true });
-    component = new AppSidebarNavComponent(loadingServiceMock, authServiceMock);
+    component = new AppSidebarNavComponent(loadingServiceMock, authServiceMock, cdrMock);
 
     const hasAdmin = (component as any).filteredNavigation.some((item: any) => item?.name === 'Admin');
     expect(hasAdmin).toBe(true);

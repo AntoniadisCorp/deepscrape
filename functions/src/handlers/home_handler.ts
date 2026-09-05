@@ -19,6 +19,68 @@ export const statusCheck = async (req: Request, res: Response) => {
     }
 }
 
+const computeDeviceFingerprint = (userAgent: string, ipAddress: string): string =>
+    `${userAgent}|${ipAddress}`
+
+const logSuspiciousDeviceMismatch = async (params: {
+    userId: string
+    loginId: string
+    currentFingerprint: string
+    storedFingerprint: string
+    ipAddress: string
+    userAgent: string
+    browser: string
+    os: string
+    providerId: string
+}) => {
+    const dedupeKey = `security:device-mismatch:${params.loginId}:${params.currentFingerprint}`
+    const alreadyLogged = await redis.get(dedupeKey)
+    if (alreadyLogged) {
+        return
+    }
+
+    await redis.setex(dedupeKey, 10 * 60, "1")
+    const now = Timestamp.now()
+
+    await Promise.all([
+        db.collection("audit_logs").add({
+            action: "device_mismatch_detected",
+            admin_uid: "system:heartbeat",
+            target_loginId: params.loginId,
+            target_userId: params.userId,
+            reason: "Session heartbeat fingerprint mismatch",
+            timestamp: now,
+            isAdmin: false,
+            metadata: {
+                currentFingerprint: params.currentFingerprint,
+                storedFingerprint: params.storedFingerprint,
+                ipAddress: params.ipAddress,
+            },
+        }),
+        db.collection("login_metrics")
+            .doc(params.userId)
+            .collection("login_history_events")
+            .doc()
+            .set({
+                uid: params.userId,
+                eventType: "device_mismatch",
+                eventSessionId: params.loginId,
+                providerId: params.providerId,
+                browser: params.browser,
+                os: params.os,
+                userAgent: params.userAgent,
+                ipAddress: params.ipAddress,
+                location: "",
+                connected: true,
+                createdAt: now,
+                metadata: {
+                    currentFingerprint: params.currentFingerprint,
+                    storedFingerprint: params.storedFingerprint,
+                },
+            }),
+    ])
+}
+
 export const heartbeat = async (req: Request, res: Response) => {
     try {
         const parsedData = req.cookies["aid"] ? JSON.parse(req.cookies["aid"]) :
@@ -30,6 +92,7 @@ export const heartbeat = async (req: Request, res: Response) => {
         const nowMs = now.getTime()
         const windowMs = 5 * 60 * 1000
         const cutoffMs = nowMs - windowMs
+        let requiresReauth = false
         let key
         let firestoreCollection
         let id
@@ -51,19 +114,31 @@ export const heartbeat = async (req: Request, res: Response) => {
                     try {
                         const sessionData = JSON.parse(cachedSession)
                         if (sessionData.userId === userId && sessionData.active) {
-                            // PHASE 3.1: Device fingerprint verification (optional)
-                            // Check if device fingerprint matches (if available)
+                            // PHASE 3.1: Device fingerprint verification and suspicious activity logging.
                             if (sessionData.deviceFingerprint) {
                                 const currentUserAgent = req.get("user-agent") || ""
                                 const ipAddress = req.ip || req.connection.remoteAddress || ""
-                                // Simple fingerprint check: UA + IP
-                                const expectedFingerprint = `${currentUserAgent}|${ipAddress}`
+                                const expectedFingerprint = computeDeviceFingerprint(currentUserAgent, ipAddress)
                                 const storedFingerprint = sessionData.deviceFingerprint
 
                                 if (expectedFingerprint !== storedFingerprint) {
-                                    // Device mismatch - log suspicious activity but don't block (optional enforcement)
+                                    requiresReauth = true
                                     console.warn(`⚠️ Device fingerprint mismatch for session ${loginId}: IP or UA changed`)
-                                    // Future: Could require re-auth or 2FA here
+                                    try {
+                                        await logSuspiciousDeviceMismatch({
+                                            userId,
+                                            loginId,
+                                            currentFingerprint: expectedFingerprint,
+                                            storedFingerprint,
+                                            ipAddress,
+                                            userAgent: currentUserAgent,
+                                            browser: sessionData.browser || "",
+                                            os: sessionData.os || "",
+                                            providerId: sessionData.providerId || "firebase",
+                                        })
+                                    } catch (logError) {
+                                        console.warn("Failed to log suspicious device mismatch", logError)
+                                    }
                                 }
                             }
 
@@ -91,10 +166,40 @@ export const heartbeat = async (req: Request, res: Response) => {
                             userId?: string
                             active?: boolean
                             revokedAt?: Timestamp | null
+                            deviceFingerprint?: string
+                            browser?: string
+                            os?: string
+                            providerId?: string
+                            userAgent?: string
+                            ipAddress?: string
                         }
 
                         if (sessionData?.userId === userId && sessionData?.active === true && !sessionData?.revokedAt) {
-                            // Valid session - continue
+                            if (sessionData.deviceFingerprint) {
+                                const currentUserAgent = req.get("user-agent") || ""
+                                const ipAddress = req.ip || req.connection.remoteAddress || ""
+                                const expectedFingerprint = computeDeviceFingerprint(currentUserAgent, ipAddress)
+                                const storedFingerprint = sessionData.deviceFingerprint
+
+                                if (expectedFingerprint !== storedFingerprint) {
+                                    requiresReauth = true
+                                    try {
+                                        await logSuspiciousDeviceMismatch({
+                                            userId,
+                                            loginId,
+                                            currentFingerprint: expectedFingerprint,
+                                            storedFingerprint,
+                                            ipAddress,
+                                            userAgent: currentUserAgent,
+                                            browser: sessionData.browser || "",
+                                            os: sessionData.os || "",
+                                            providerId: sessionData.providerId || "firebase",
+                                        })
+                                    } catch (logError) {
+                                        console.warn("Failed to log suspicious device mismatch", logError)
+                                    }
+                                }
+                            }
                         } else {
                             // Revoked or invalid
                             return res.status(401).json({
@@ -213,7 +318,7 @@ export const heartbeat = async (req: Request, res: Response) => {
         if (!lastSeen || (now.getTime() - lastSeen.getTime() > 300000)) {
             await docRef.set({ lastSeen: now }, { merge: true })
         }
-        return res.json({ success: true, lastSeen: now })
+        return res.json({ success: true, lastSeen: now, requiresReauth })
     } catch (error) {
         console.error("Heartbeat error:", error)
         return res.status(500).json({

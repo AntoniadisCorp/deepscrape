@@ -7,4 +7,9 @@ export const MainRoutes: Routes = [
         path: '', data: { title: 'Home', animation: 'home' }, pathMatch: 'full',
         loadComponent: () => import('../pages').then(m => m.HomeComponent),
     },
+    {
+        path: 'contact',
+        loadComponent: () => import('../pages').then(m => m.ContactComponent),
+        data: { title: 'contact', animation: 'contact' },
+    },
 ]

@@ -11,7 +11,7 @@ $my-theme: mat.define-theme(
     (
         color: (
             theme-type: light,
-            primary: mat.$blue-palette,
+            primary: mat.$cyan-palette,
             tertiary: mat.$rose-palette
         ),
         density: (
@@ -24,7 +24,7 @@ $my-theme-dark: mat.define-theme(
     (
         color: (
             theme-type: dark,
-            primary: mat.$blue-palette,
+            primary: mat.$cyan-palette,
             tertiary: mat.$rose-palette
         ),
         density: (

@@ -147,7 +147,7 @@ html {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         @include core.scrollbar;
-        @apply bg-gray-100 dark:bg-gray-900;
+        @apply bg-gray-100 dark:bg-[#060606];
     }
 }
 // add the code bellow
@@ -240,6 +240,163 @@ markdown > .toolbar {
         span.table {
             display: inline !important;
         }
+    }
+}
+
+/* ========================================
+   Glassmorphism Design Tokens (Figma-inspired)
+   ======================================== */
+
+:root {
+    /* Glass surface — light mode (subtle) */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-hover: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-border-hover: rgba(0, 0, 0, 0.15);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.10);
+
+    /* Glass surface — dark mode (deep) */
+    --glass-bg-dark: rgba(22, 22, 22, 0.83);
+    --glass-bg-hover-dark: rgba(255, 255, 255, 0.08);
+    --glass-border-dark: rgba(255, 255, 255, 0.08);
+    --glass-border-hover-dark: rgba(255, 255, 255, 0.15);
+    --glass-shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --glass-shadow-hover-dark: 0 12px 48px rgba(0, 0, 0, 0.5);
+
+    /* Glass pill / badge */
+    --glass-pill-bg: rgba(255, 255, 255, 0.06);
+    --glass-pill-border: rgba(255, 255, 255, 0.12);
+
+    /* Orb glow colors — Figma-inspired */
+    --orb-cyan: rgba(23, 106, 177, 0.25);
+    --orb-cyan-light: rgba(203, 216, 241, 0.15);
+    --orb-rose: rgba(190, 18, 60, 0.18);
+    --orb-rose-light: rgba(244, 114, 182, 0.10);
+
+    /* Decorative grid lines */
+    --grid-line: rgba(217, 217, 217, 0.06);
+    --grid-line-strong: rgba(217, 217, 217, 0.12);
+}
+
+/* Glass utility classes */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+.dark .glass {
+    background: var(--glass-bg-dark);
+    border-color: var(--glass-border-dark);
+    box-shadow: var(--glass-shadow-dark);
+}
+
+.glass-hover {
+    transition: all 0.3s ease;
+}
+
+.glass-hover:hover {
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-hover);
+    box-shadow: var(--glass-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.dark .glass-hover:hover {
+    background: var(--glass-bg-hover-dark);
+    border-color: var(--glass-border-hover-dark);
+    box-shadow: var(--glass-shadow-hover-dark);
+}
+
+/* Glass pill (badge) */
+.glass-pill {
+    background: var(--glass-pill-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-pill-border);
+}
+
+/* Light mode glass-pill override — visible on white/light backgrounds */
+:root .glass-pill {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+.dark .glass-pill {
+    background: var(--glass-pill-bg);
+    border-color: var(--glass-pill-border);
+}
+
+/* Light mode glass section backgrounds — subtle warm off-white */
+:root .section-dark {
+    @apply bg-gray-50;
+}
+.dark .section-dark {
+    @apply bg-[#060606];
+}
+:root .section-dark-alt {
+    @apply bg-white;
+}
+.dark .section-dark-alt {
+    @apply bg-[#080808];
+}
+
+/* Light mode grid lines — very subtle */
+:root .grid-lines { opacity: 0.15; }
+:root .grid-lines-strong { opacity: 0.08; }
+
+/* Section dark backgrounds — Figma-style near-black */
+.section-dark {
+    @apply bg-[#060606];
+}
+
+.section-dark-alt {
+    @apply bg-[#080808];
+}
+
+/* Decorative grid lines pattern */
+.grid-lines {
+    background-image:
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(180deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 80px 80px;
+}
+
+.grid-lines-strong {
+    background-image:
+        linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px),
+        linear-gradient(180deg, var(--grid-line-strong) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+/* Orb glow utility classes (replaces inline radial-gradient styles) */
+.orb-cyan-lg { background: radial-gradient(circle, rgba(23,106,177,0.35) 0%, rgba(203,216,241,0.12) 70%, transparent 100%); }
+.orb-rose-lg { background: radial-gradient(circle, rgba(190,18,60,0.25) 0%, rgba(244,114,182,0.08) 70%, transparent 100%); }
+.orb-cyan-md { background: radial-gradient(circle, rgba(23,106,177,0.20) 0%, rgba(203,216,241,0.06) 70%, transparent 100%); }
+.orb-rose-md { background: radial-gradient(circle, rgba(190,18,60,0.15) 0%, rgba(244,114,182,0.05) 70%, transparent 100%); }
+.orb-cyan-sm { background: radial-gradient(circle, rgba(23,106,177,0.18) 0%, rgba(203,216,241,0.05) 70%, transparent 100%); }
+.orb-rose-sm { background: radial-gradient(circle, rgba(190,18,60,0.12) 0%, rgba(244,114,182,0.03) 70%, transparent 100%); }
+.orb-cyan-cta { background: radial-gradient(circle, rgba(23,106,177,0.10) 0%, transparent 70%); }
+.orb-rose-cta { background: radial-gradient(circle, rgba(190,18,60,0.12) 0%, transparent 70%); }
+
+/* Glass gradient CTA background */
+.glass-cta-bg { background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(190,18,60,0.06) 100%); }
+
+/* Glass managed card bg */
+.glass-managed-bg { background: linear-gradient(135deg, rgba(6,182,212,0.06) 0%, transparent 50%); }
+
+/* @supports backdrop-filter fallback */
+@supports not (backdrop-filter: blur()) {
+    .glass {
+        background: rgba(255, 255, 255, 0.95);
+    }
+    .dark .glass {
+        background: rgba(18, 24, 27, 0.98);
+    }
+    .glass-pill {
+        background: rgba(255, 255, 255, 0.12);
     }
 }
 

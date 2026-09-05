@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+  <defs>
+    <linearGradient id="gr" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#be123c"/><stop offset="100%" style="stop-color:#f43f5e"/></linearGradient>
+  </defs>
+  <rect width="200" height="150" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(244,63,94,0.2)" stroke-width="1"/>
+  <!-- Brain/AI icon -->
+  <circle cx="50" cy="45" r="20" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.2)" stroke-width="1.5">
+    <animate attributeName="r" values="20;22;20" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <path d="M42,40 Q50,32 58,40 Q62,48 50,55 Q38,48 42,40Z" fill="rgba(244,63,94,0.2)" stroke="rgba(244,63,94,0.3)" stroke-width="1"/>
+  <circle cx="48" cy="42" r="2" fill="#f43f5e"/>
+  <circle cx="52" cy="42" r="2" fill="#f43f5e"/>
+  <path d="M45,37 Q50,34 55,37" fill="none" stroke="rgba(244,63,94,0.3)" stroke-width="1"/>
+  <text x="50" y="90" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="13" font-family="sans-serif" font-weight="600">AI Extraction</text>
+  <text x="50" y="108" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">Multi-provider</text>
+  <text x="50" y="122" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">LLM parsing</text>
+</svg>

@@ -480,26 +480,62 @@ export class FirestoreService {
     return this.getMyLoginSessions(limit).pipe(
       catchError(() => of([])),
       switchMap((sessions) => {
-        if (sessions.length > 0) {
-          return of(sessions)
-        }
+        const newSessions = Array.isArray(sessions) ? sessions : []
 
         return of(this.afAuth.currentUser).pipe(
           switchMap((user) => {
             if (!user?.uid) {
-              return of([])
+              return of(newSessions.slice(0, limit))
             }
 
-            // PHASE 2.3: Implement merge+deduplicate for backwards compat
+            // Merge enterprise + legacy login session sources for backwards compatibility.
             return from(this.getLoginHistoryNew(user.uid, undefined, undefined, limit)).pipe(
               map((legacySessions) => {
-                // Mark these as legacy for debugging
-                return (legacySessions as loginHistoryInfo[]).slice(0, limit)
+                const merged = new Map<string, loginHistoryInfo>()
+
+                const resolveSessionKey = (session: loginHistoryInfo): string =>
+                  String(session?.sessionKey || session?.id || '')
+
+                for (const session of newSessions) {
+                  const key = resolveSessionKey(session)
+                  if (key) {
+                    merged.set(key, session)
+                  }
+                }
+
+                for (const session of (legacySessions || []) as loginHistoryInfo[]) {
+                  const key = resolveSessionKey(session)
+                  if (key && !merged.has(key)) {
+                    merged.set(key, session)
+                  }
+                }
+
+                const parseTime = (value: unknown): number => {
+                  if (!value) return 0
+                  if (value instanceof Date) return value.getTime()
+                  const timestamp = value as { toDate?: () => Date; seconds?: number }
+                  if (typeof timestamp?.toDate === 'function') {
+                    return timestamp.toDate().getTime()
+                  }
+                  if (typeof timestamp?.seconds === 'number') {
+                    return timestamp.seconds * 1000
+                  }
+                  const parsed = new Date(value as string | number)
+                  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime()
+                }
+
+                return Array.from(merged.values())
+                  .sort((a, b) => {
+                    const left = parseTime((a as any).timestamp || (a as any).createdAt || (a as any).lastSignInTime)
+                    const right = parseTime((b as any).timestamp || (b as any).createdAt || (b as any).lastSignInTime)
+                    return right - left
+                  })
+                  .slice(0, limit)
               }),
-              catchError(() => of([])),
+              catchError(() => of(newSessions.slice(0, limit))),
             )
           }),
-          catchError(() => of([])),
+          catchError(() => of(newSessions.slice(0, limit))),
         )
       }),
     )

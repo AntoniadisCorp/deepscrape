@@ -517,6 +517,88 @@
           (onConfirm)="confirmDialogAction()"></app-dialog>
       }
 
+      <div class="rounded-2xl border border-gray-200/70 bg-white/85 px-4 py-4 shadow-sm dark:border-gray-700/60 dark:bg-gray-900/35">
+        <div class="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">MFA challenge preferences</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Default order for challenge methods. Security-first default follows GitHub guidance: authenticator app before SMS.
+            </p>
+          </div>
+          @if (mfaPreferencesLoading()) {
+            <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
+          }
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-2">
+          <label class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            Primary method
+            <select
+              [formControl]="mfaPrimaryControl"
+              class="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100">
+              @if (isMethodAvailable('totp')) {
+                <option value="totp">Authenticator app (TOTP)</option>
+              }
+              @if (isMethodAvailable('sms')) {
+                <option value="sms">SMS / Text message</option>
+              }
+              @if (isMethodAvailable('email')) {
+                <option value="email">Email code</option>
+              }
+            </select>
+          </label>
+
+          <label class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            Secondary method
+            <select
+              [formControl]="mfaSecondaryControl"
+              class="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100">
+              <option value="none">None</option>
+              @if (isMethodAvailable('totp')) {
+                <option value="totp">Authenticator app (TOTP)</option>
+              }
+              @if (isMethodAvailable('sms')) {
+                <option value="sms">SMS / Text message</option>
+              }
+              @if (isMethodAvailable('email')) {
+                <option value="email">Email code</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <label class="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+          <input type="checkbox" [formControl]="riskEmailNotificationsControl" />
+          Notify me by email when MFA is disabled or security risk is detected
+        </label>
+
+        @if (mfaPreferencesError()) {
+          <p class="mt-2 text-xs text-red-600 dark:text-red-400">{{ mfaPreferencesError() }}</p>
+        }
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            appRipple
+            rippleColor="dark"
+            (click)="saveMfaPreferences()"
+            [disabled]="mfaPreferencesSaving()"
+            class="inline-flex items-center justify-center rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-600 dark:hover:bg-sky-500">
+            @if (mfaPreferencesSaving()) {
+              <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+            } @else {
+              Save preferences
+            }
+          </button>
+          <button
+            type="button"
+            (click)="loadMfaPreferences()"
+            class="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+            Reload
+          </button>
+        </div>
+      </div>
+
       <div
         class="mt-4 flex h-12 items-center rounded-t-2xl bg-gray-900 px-4 shadow-sm dark:bg-gray6">
         <h4 class="text-base font-normal text-white dark:text-gray-100">
@@ -592,6 +674,9 @@
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
                       {{ factor.displayName || 'Authenticator app' }}
+                      @if (isPrimaryMethod('totp')) {
+                        <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">Primary</span>
+                      }
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
                       Enrolled {{ factor.enrollmentTime || 'recently' }}
@@ -600,10 +685,10 @@
                   <button
                     type="button"
                     appRipple
-                    (click)="removeTotpFactor(factor.uid)"
+                    (click)="openTotpDisableDialog(factor)"
                     [disabled]="loading.mfa"
                     class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                    Remove
+                    Disable app
                   </button>
                 </div>
               }
@@ -613,65 +698,129 @@
 
         @if (totpStep() === 'verify') {
           <div class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
-            <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-              <div class="space-y-3">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Step 1: add this secret to your authenticator app.
+            <div class="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-4 shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-gray-900/70 dark:to-cyan-950/20">
+              <div class="mb-4 flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  Setup in 3 steps
+                </span>
+                <p class="text-xs text-gray-600 dark:text-gray-300">
+                  Scan the QR code or enter the secret manually, then verify with a fresh 6-digit code.
                 </p>
-                <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
-                  <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    Secret key
-                  </p>
-                  <p class="break-all font-mono text-sm text-gray-800 dark:text-gray-100">
-                    {{ totpSecretKey() }}
-                  </p>
-                </div>
-                <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 dark:border-gray-600 dark:bg-gray-900/30">
-                  <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    OTP URI
-                  </p>
-                  <p class="break-all font-mono text-xs text-gray-600 dark:text-gray-300">
-                    {{ totpQrUrl() }}
-                  </p>
-                </div>
               </div>
 
-              <div class="space-y-3 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Step 2: enter the current 6-digit code to finish enrollment.
-                </p>
-                <input
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="6"
-                  [formControl]="totpCode"
-                  placeholder="123456"
-                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
-                <input
-                  type="text"
-                  [formControl]="totpDisplayName"
-                  placeholder="Authenticator app"
-                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    appRipple
-                    rippleColor="light"
-                    (click)="completeTotpSetup()"
-                    [disabled]="totpCode.invalid || totpDisplayName.invalid || loading.mfa"
-                    class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
-                    @if (loading.mfa) {
-                      <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
-                    } @else {
-                      Verify and enable
-                    }
-                  </button>
-                  <button
-                    type="button"
-                    (click)="cancelTotpSetup()"
-                    class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    Cancel
-                  </button>
+              <div class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+                <div class="space-y-4">
+                  <div class="rounded-2xl border border-gray-200 bg-white/90 p-4 dark:border-gray-700 dark:bg-gray-900/60">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      Step 1: scan the QR code
+                    </p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Open Google Authenticator, 1Password, Authy, or another TOTP app and scan this code.
+                    </p>
+
+                    <div class="mt-4 flex justify-center rounded-2xl border border-dashed border-emerald-200 bg-white p-4 dark:border-emerald-800/60 dark:bg-gray-950/60">
+                      @if (totpQrCodeDataUrl()) {
+                        <img
+                          [src]="totpQrCodeDataUrl()"
+                          alt="Authenticator app QR code"
+                          class="h-[220px] w-[220px] rounded-xl bg-white p-2 shadow-sm" />
+                      }
+                    </div>
+                  </div>
+
+                  <div class="rounded-2xl border border-gray-200 bg-white/90 p-4 dark:border-gray-700 dark:bg-gray-900/60">
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                          Step 2: or enter the setup code manually
+                        </p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Use this if your app cannot scan QR codes.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        appRipple
+                        rippleColor="dark"
+                        (click)="copyTotpValue(totpSecretKey(), 'Secret key')"
+                        class="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800">
+                        Copy key
+                      </button>
+                    </div>
+
+                    <div class="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950/50">
+                      <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                        Secret key
+                      </p>
+                      <p class="break-all font-mono text-sm text-gray-800 dark:text-gray-100">
+                        {{ totpSecretKey() }}
+                      </p>
+                    </div>
+
+                    <div class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 dark:border-gray-600 dark:bg-gray-900/30">
+                      <div class="min-w-0">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                          OTP URI
+                        </p>
+                        <p class="mt-1 break-all font-mono text-xs text-gray-600 dark:text-gray-300">
+                          {{ totpQrUrl() }}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        appRipple
+                        rippleColor="dark"
+                        (click)="copyTotpValue(totpQrUrl(), 'OTP URI')"
+                        class="inline-flex shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800">
+                        Copy URI
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-3 rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/60">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Step 3: verify and enable the app
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Enter the current 6-digit code shown in your authenticator app, then save a display label so you can identify this app later.
+                  </p>
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    [formControl]="totpCode"
+                    placeholder="123456"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
+                  <input
+                    type="text"
+                    [formControl]="totpDisplayName"
+                    placeholder="Authenticator app"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
+                  <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-xs text-cyan-800 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-200">
+                    Keep at least one working sign-in method before disabling an authenticator app later.
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      appRipple
+                      rippleColor="light"
+                      (click)="completeTotpSetup()"
+                      [disabled]="totpCode.invalid || totpDisplayName.invalid || loading.mfa"
+                      class="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:text-white/70 dark:bg-green-600 dark:hover:bg-green-500 dark:disabled:bg-green-900/40 dark:disabled:text-green-300/50">
+                      @if (loading.mfa) {
+                        <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+                      } @else {
+                        Verify and enable
+                      }
+                    </button>
+                    <button
+                      type="button"
+                      (click)="cancelTotpSetup()"
+                      class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -788,7 +937,7 @@
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
                       {{ factor.displayName || 'SMS / Text message' }}
-                      @if (i === 0) {
+                      @if (i === 0 && isPrimaryMethod('sms')) {
                         <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">Primary</span>
                       }
                     </p>
@@ -984,12 +1133,28 @@
                         Ended
                       </span>
                     }
+                    <span
+                      [ngClass]="getSessionRiskTone(session)"
+                      class="rounded-full px-2 py-0.5 text-xs font-semibold">
+                      {{ getSessionRiskLabel(session) }}
+                    </span>
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     {{ getDisplayOS(session) }} • {{ session.location || 'Unknown location' }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     Last sign-in: {{ formatSessionTimestamp(session) }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Network: {{ getSessionNetworkSummary(session) }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Proxy: {{ getSessionProxySummary(session) }}
+                  </p>
+                  <p
+                    [ngClass]="getSessionRiskLevel(session) === 'high' ? 'text-red-600 dark:text-red-300' : 'text-gray-500 dark:text-gray-400'"
+                    class="text-xs">
+                    {{ getSessionRiskReason(session) }}
                   </p>
                 </div>
 
@@ -1014,6 +1179,173 @@
       @if (sessionsError()) {
         <p class="mt-2 text-xs text-red-600 dark:text-red-400">
           {{ sessionsError() }}
+        </p>
+      }
+    </div>
+
+    <!-- Trusted devices -->
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Trusted Devices
+    </h2>
+
+    <div
+      class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
+        Devices that are trusted without requiring verification. Trust expires after 90 days.
+      </h3>
+
+      @if (trustedDevicesLoading()) {
+        <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
+          <span>Loading trusted devices…</span>
+        </div>
+      } @else {
+        @if (trustedDevices().length === 0) {
+          <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            No trusted devices found.
+          </p>
+        } @else {
+          <div class="mt-3 flex flex-col gap-3">
+            @for (device of trustedDevices(); track device.deviceId) {
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {{ getDeviceDisplayName(device) }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ getDeviceBrowser(device) }}
+                    @if (getDeviceOs(device)) {
+                      • {{ getDeviceOs(device) }}
+                    }
+                    • {{ getDeviceLocation(device) }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Trusted: {{ formatTrustedDate(device.trustedAt) }}
+                    @if (device.lastUsedAt) {
+                      • Last used: {{ formatTrustedDate(device.lastUsedAt) }}
+                    }
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  appRipple
+                  (click)="removeTrustedDevice(device.deviceId)"
+                  [disabled]="revokingDeviceId() === device.deviceId"
+                  class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                  @if (revokingDeviceId() === device.deviceId) {
+                    <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
+                  } @else {
+                    Revoke
+                  }
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (trustedDevices().length > 1) {
+            <button
+              type="button"
+              appRipple
+              (click)="revokeAllTrustedDevices()"
+              class="mt-2 inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+              Revoke all trusted devices
+            </button>
+          }
+        }
+      }
+
+      @if (trustedDevicesError()) {
+        <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+          {{ trustedDevicesError() }}
+        </p>
+      }
+    </div>
+
+    <!-- Passkeys / WebAuthn -->
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Passkeys (Fingerprint & Face ID)
+    </h2>
+
+    <div
+      class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
+        Use your device&rsquo;s fingerprint, Face ID, or platform authenticator as a passwordless sign-in method.
+      </h3>
+
+      @if (passkeysLoading()) {
+        <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
+          <span>Loading passkeys&hellip;</span>
+        </div>
+      } @else {
+        <div class="mt-3 flex flex-col gap-3">
+          @if (passkeys().length > 0) {
+            @for (key of passkeys(); track key.id) {
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {{ key.deviceName || 'Passkey' }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Created: {{ formatTrustedDate(key.createdAt) }}
+                    @if (key.lastUsedAt) {
+                      &bull; Last used: {{ formatTrustedDate(key.lastUsedAt) }}
+                    }
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  appRipple
+                  (click)="removePasskey(key.id)"
+                  class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
+                  Remove
+                </button>
+              </div>
+            }
+          }
+        </div>
+
+        <button
+          type="button"
+          appRipple
+          (click)="registerPasskey()"
+          [disabled]="isRegisteringPasskey()"
+          class="mt-2 inline-flex items-center justify-center rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60">
+          @if (!isRegisteringPasskey()) {
+            Register New Passkey
+          } @else {
+            <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
+          }
+        </button>
+      }
+
+      @if (passkeyError()) {
+        <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+          {{ passkeyError() }}
+        </p>
+      }
+    </div>
+
+    <h2
+      class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
+      Session Activity Visualization
+    </h2>
+
+    <div
+      class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
+      <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
+        Hourly activity pattern for your current session, including active time and request volume.
+      </h3>
+
+      @if (getSessionForVisualization(); as activitySession) {
+        <app-session-activity [session]="activitySession"></app-session-activity>
+      } @else {
+        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          Session activity will appear after a login session is available.
         </p>
       }
     </div>

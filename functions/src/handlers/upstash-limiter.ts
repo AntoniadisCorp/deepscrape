@@ -34,6 +34,18 @@ const sanitizeUpstashRestUrl = (value: string): string => {
   }
 }
 
+const isEncryptedPlaceholder = (value: string): boolean =>
+  /^encrypted:/i.test((value || "").trim())
+
+const isHttpUrl = (value: string): boolean => {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 // const isFunctionsEmulator =
 //   process.env["FUNCTIONS_EMULATOR"] === "true" ||
 //   !!process.env["FIREBASE_EMULATOR_HUB"]
@@ -42,12 +54,13 @@ const upstashUrl = sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL)
 const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_REDIS_REST_PASSWORD
 const shouldEnableUpstashRateLimit =
   !!upstashUrl &&
-  !!upstashToken
+  !!upstashToken &&
+  isHttpUrl(upstashUrl) &&
+  !isEncryptedPlaceholder(upstashUrl) &&
+  !isEncryptedPlaceholder(upstashToken)
   /* ( !isFunctionsEmulator ||  ) */
 if (!shouldEnableUpstashRateLimit) {
-  console.warn(
-    "Upstash rate limiter disabled (emulator mode or missing credentials)."
-  )
+  // Intentionally silent: missing Upstash credentials disables distributed limiting.
 }
 
 // Initialize Upstash Redis and Ratelimit

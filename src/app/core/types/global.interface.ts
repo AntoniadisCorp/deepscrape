@@ -60,6 +60,24 @@ export interface DockerImageInfo {
     fullName: string;
 }
 
+export type IpNetworkIntel = {
+    asn: string | null;
+    as: string | null;
+    isp: string | null;
+    domain: string | null;
+    usageType: string | null;
+}
+
+export type IpProxyIntel = {
+    isProxy: boolean;
+    proxyType: string | null;
+    threat: string | null;
+    lastSeenDays: number | null;
+    provider: string | null;
+    fraudScore: number | null;
+    confidence: 'none' | 'open-proxy-detected' | 'unknown' | string;
+}
+
 /**
  * Enterprise login session - tracks authenticated user sessions per device
  * @since 2026-04-06 Enterprise SaaS architecture
@@ -79,6 +97,9 @@ export interface LoginSession {
     os: string;
     location: string;
     providerId: string;
+    intelligenceStatus?: 'pending' | 'resolved' | 'no-match' | 'skipped' | string;
+    network?: IpNetworkIntel;
+    proxy?: IpProxyIntel;
 }
 
 /**

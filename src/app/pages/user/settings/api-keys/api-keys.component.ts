@@ -5,7 +5,7 @@ import { NAVIGATOR } from 'src/app/core/providers';
 import { CheckboxComponent, ClipboardbuttonComponent, DialogComponent, PopupMenuComponent, SlideInModalComponent } from 'src/app/core/components';
 import { MatIcon } from '@angular/material/icon';
 import { ApiKey, ApiKeyLoader, ApiKeyType } from 'src/app/core/types';
-import { ApiKeyService, AuthService, LocalStorage } from 'src/app/core/services';
+import { ApiKeyService, AuthService, HighRiskActionService, LocalStorage } from 'src/app/core/services';
 import { Outsideclick, RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -48,6 +48,7 @@ export class ApiKeysComponent implements OnInit {
   protected revealSecurityMode = signal<'password' | 'mfa-required' | 'mfa-enroll-required'>('password')
   protected revealSecurityLoading = false
   private cdr = inject(ChangeDetectorRef)
+  private highRiskActionService = inject(HighRiskActionService)
 
   constructor(
     private apiKeyService: ApiKeyService,
@@ -124,9 +125,17 @@ export class ApiKeysComponent implements OnInit {
       console.error('Failed to copy API key: ', err);
     });
   }
-  toggleKeyVisibility(key: ApiKey) {
+  async toggleKeyVisibility(key: ApiKey) {
     if (!key || !key.id) {
       return
+    }
+
+    if (!key.visibility) {
+      const verified = await this.highRiskActionService.ensureVerified('api_key_reveal')
+      if (!verified) {
+        this.cdr.detectChanges()
+        return
+      }
     }
 
     if (!key.visibility) {

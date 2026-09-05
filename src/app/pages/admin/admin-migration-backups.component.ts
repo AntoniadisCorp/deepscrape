@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, OnInit, inject, ChangeDetectionStrategy }
 import { FormControl } from '@angular/forms'
 import { RouterLink } from '@angular/router'
 import { SlideInModalComponent } from 'src/app/core/components/slide-in-modal/slide-in-modal.component'
+import { RippleDirective } from 'src/app/core/directives'
 import {
   DocumentData,
   Firestore,
@@ -45,7 +46,7 @@ interface BackupRunItem {
 
 @Component({
   selector: 'app-admin-migration-backups',
-  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent],
+  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent, RippleDirective],
   templateUrl: './admin-migration-backups.component.html',
   styleUrl: './admin-migration-backups.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

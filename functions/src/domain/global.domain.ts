@@ -131,6 +131,22 @@ export type Guest = {
   latitude: number
   longitude: number
   location: string
+    network?: {
+        asn: string | null
+        as: string | null
+        isp: string | null
+        domain: string | null
+        usageType: string | null
+    }
+    proxy?: {
+        isProxy: boolean
+        proxyType: string | null
+        threat: string | null
+        lastSeenDays: number | null
+        provider: string | null
+        fraudScore: number | null
+        confidence: "none" | "open-proxy-detected" | "unknown"
+    }
   fingerprint: string // Unique fingerprint for guest tracking
   createdAt: Date
   lastSeen: Date

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+  <rect width="200" height="150" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.2)" stroke-width="1"/>
+  <!-- Browser window icon -->
+  <rect x="28" y="30" width="44" height="36" rx="4" fill="rgba(6,182,212,0.06)" stroke="rgba(6,182,212,0.2)" stroke-width="1"/>
+  <rect x="28" y="30" width="44" height="10" rx="4" fill="rgba(6,182,212,0.1)"/>
+  <circle cx="34" cy="35" r="2" fill="#ff5f57"/>
+  <circle cx="40" cy="35" r="2" fill="#febc2e"/>
+  <circle cx="46" cy="35" r="2" fill="#28c840"/>
+  <rect x="32" y="44" width="36" height="4" rx="1" fill="rgba(6,182,212,0.12)"/>
+  <rect x="32" y="52" width="24" height="4" rx="1" fill="rgba(6,182,212,0.08)"/>
+  <rect x="32" y="58" width="16" height="4" rx="1" fill="rgba(6,182,212,0.06)"/>
+  <text x="50" y="90" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="13" font-family="sans-serif" font-weight="600">Browser Profiles</text>
+  <text x="50" y="108" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">Fingerprint</text>
+  <text x="50" y="122" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">rotation</text>
+</svg>

@@ -1,0 +1,19 @@
+// Contact component styles
+// Glass morphism uses .glass/.glass-pill/.glass-hover classes from global styles.scss
+// Orb animations and grid lines are also defined globally.
+// This file is intentionally minimal — all styling is utility-first + global tokens.
+
+/* Orb animation delay variants — matches hero component */
+.orb-delay-1 { animation-delay: 1.5s; }
+.orb-delay-2 { animation-delay: 2s; }
+.orb-delay-3 { animation-delay: 3s; }
+
+/* Smooth page entrance */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.motion-safe\:animate-fade-in {
+  animation: fade-in-up 0.6s ease-out both;
+}

@@ -197,6 +197,30 @@
     },
     {
       "collectionGroup": "trusted_devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trustedUntil", "order": "ASCENDING" },
+        { "fieldPath": "lastUsedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trusted_devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lastUsedAt", "order": "DESCENDING" },
+        { "fieldPath": "trustedUntil", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trusted_devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trustedUntil", "order": "DESCENDING" },
+        { "fieldPath": "lastUsedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trusted_devices",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "trustedUntil", "order": "DESCENDING" },
@@ -245,5 +269,16 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "billing",
+      "fieldPath": "status",
+      "indexes": [
+        { "order": "ASCENDING" },
+        { "order": "DESCENDING" },
+        { "arrayConfig": "CONTAINS" },
+        { "order": "ASCENDING" }
+      ]
+    }
+  ]
 }

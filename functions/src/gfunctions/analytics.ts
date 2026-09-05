@@ -2,129 +2,42 @@
 /* eslint-disable require-jsdoc */
 /* eslint-disable max-len */
 /* eslint-disable linebreak-style */
-import IP2Location from "ip2location-nodejs"
 import { Request, Response, NextFunction } from "express"
 import { getClientIp } from "request-ip"
 import useragent from "useragent"
-import { Guest, UserDetails } from "../domain"
+import { Guest } from "../domain"
 import { redis } from "../app/cacheConfig"
 import { db } from "../app/config"
-import path from "node:path"
 import net from "node:net"
 import crypto from "crypto"
-import { existsSync, createReadStream } from "node:fs"
-import { mkdir } from "node:fs/promises"
 import { env } from "../config/env"
-import * as admin from "firebase-admin"
 
 // Determine if running in production based on environment variable
 const isProduction = env.IS_PRODUCTION
 
-// Class to manage IP2Location database connection
-// https://github.com/onramper/fast-geoip is a faster alternative but less detailed
-// https://www.npmjs.com/package/geoip-lite is another alternative but less accurate
-// https://www.npmjs.com/package/maxmind is a commercial alternative but more accurate
-// https://www.npmjs.com/package/ip2location-nodejs is a good balance between accuracy and performance
-// https://www.ip2location.com/developers/nodejs
-// https://www.ip2location.com/databases/db11-ip-country-region-city
-// https://www.ip2location.com/databases/db11-ip-country
-// https://www.ip2location.com/databases/db11-ip-country-region-city-isp-domain
-// https://www.ip2location.com/databases/db11-ip-country-region-city-isp-domain-netspeed
-// https://www.ip2location.com/databases/db11-ip-country-region-city-isp-domain-netspeed-usage
-// https://www.ip2location.com/databases/db11-ip-country-region-city-isp-domain-netspeed-usage-elevation
-// The LITE version is free and updated monthly, the commercial version is updated weekly and has more data fields
-// The BIN database file should be placed in the 'databases' folder at the root of the project
-
-export type IP2LocationRecord = {
-  ip: string,
-  ipNo: string,
-  countryShort: string,
-  countryLong: string,
-  region: string,
-  city: string,
-  isp: string,
-  domain: string,
-  zipCode: string,
-  latitude: string | number,
-  longitude: string | number,
-  timeZone: string,
-  netSpeed: string,
-  iddCode: string,
-  areaCode: string,
-  weatherStationCode: string,
-  weatherStationName: string,
-  mcc: string,
-  mnc: string,
-  mobileBrand: string,
-  elevation: string,
-  usageType: string,
-  addressType: string,
-  category: string,
-  district: string,
-  asn: string,
-  as: string,
-}
-export class IP2LocationManager {
-  private ip2location: IP2Location.IP2Location | null = null
-  private databasePath: string
-
-  constructor(databasePath: string) {
-    this.databasePath = databasePath
-  }
-
-  setDatabasePath(databasePath: string): void {
-    this.databasePath = databasePath
-  }
-
-  // Initialize and open the database
-  async open(): Promise<void> {
-    try {
-      if (this.ip2location) {
-        console.log("Database already open")
-        return
-      }
-
-      this.ip2location = new IP2Location.IP2Location()
-      this.ip2location.open(this.databasePath)
-      console.log(`Successfully opened IP2Location database: ${this.databasePath}`)
-    } catch (error) {
-      console.error("Failed to open IP2Location database:", error)
-      throw new Error("Database initialization failed")
-    }
-  }
-
-  // Get the IP2Location instance (throws if not initialized)
-  getInstance(): IP2Location.IP2Location {
-    if (!this.ip2location) {
-      throw new Error("IP2Location database not initialized")
-    }
-    return this.ip2location
-  }
-
-  // Close the database
-  close(): void {
-    try {
-      if (this.ip2location) {
-        this.ip2location.close()
-        console.log("Successfully closed IP2Location database")
-        this.ip2location = null // Clear instance
-      }
-    } catch (error) {
-      console.error("Error closing IP2Location database:", error)
-    }
-  }
+export type ResolvedNetworkData = {
+  asn: string | null
+  as: string | null
+  isp: string | null
+  domain: string | null
+  usageType: string | null
 }
 
-// Initialize IP2Location Manager with the database path
-const databaseFile = "IP2LOCATION-LITE-DB11.BIN"
-const databaseCandidates = [
-  path.join(__dirname, "../../databases", databaseFile),
-  path.join(__dirname, "../../../databases", databaseFile),
-]
-const resolvedDatabasePath = databaseCandidates.find((candidate) => existsSync(candidate)) || databaseCandidates[0]
-export const geoDBManager = new IP2LocationManager(resolvedDatabasePath)
-const tmpDatabaseDir = path.join("/tmp", "ip2location")
-const tmpDatabasePath = path.join(tmpDatabaseDir, databaseFile)
+export type ResolvedProxyData = {
+  isProxy: boolean
+  proxyType: string | null
+  threat: string | null
+  lastSeenDays: number | null
+  provider: string | null
+  fraudScore: number | null
+  confidence: "none" | "open-proxy-detected" | "unknown"
+}
+
+const geoApiBaseUrl = (env.IP_GEO_API_URL || "https://ip.deepscrape.dev/api/geo/lookup").trim().replace(/\/+$/, "")
+// When IPREGISTRY_API_KEY is set, lookups go to ipregistry instead of the custom geo API.
+const ipregistryApiKey = env.IPREGISTRY_API_KEY.trim()
+const geoCacheTtlSeconds = 60 * 60 * 6
+const GEO_CACHE_PREFIX = "ipintel:v2:"
 
 let geoInitializationPromise: Promise<void> | null = null
 
@@ -137,6 +50,161 @@ export type ResolvedGeoData = {
   latitude: number | null
   longitude: number | null
   timeZone: string
+  asn: string | null
+  as: string | null
+  isp: string | null
+  domain: string | null
+  usageType: string | null
+  network: ResolvedNetworkData
+  proxy: ResolvedProxyData
+}
+
+type CachedGeoLookup = {
+  hit: boolean
+  data: ResolvedGeoData | null
+}
+
+type GeoLookupApiLocation = {
+  countryCode?: string | null
+  countryName?: string | null
+  region?: string | null
+  city?: string | null
+  postalCode?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
+  timeZoneOffset?: string | null
+  timeZoneName?: string | null
+}
+
+type GeoLookupApiNetwork = {
+  asn?: string | number | null
+  asName?: string | null
+  isp?: string | null
+  domain?: string | null
+  usageType?: string | null
+}
+
+type GeoLookupApiProxy = {
+  isProxy?: boolean | number | string | null
+  proxyType?: string | null
+  threat?: string | null
+  lastSeenDays?: number | string | null
+  provider?: string | null
+  fraudScore?: number | string | null
+}
+
+type GeoLookupApiCoverage = {
+  geo?: boolean
+  asn?: boolean
+  proxy?: boolean
+}
+
+type GeoLookupApiEnvelope = {
+  lookup?: GeoLookupApiResponse | null
+}
+
+type GeoLookupApiResponse = {
+  ip?: string | null
+  requestedAt?: string | null
+  expectedProxy?: boolean | null
+  location?: GeoLookupApiLocation | null
+  network?: GeoLookupApiNetwork | null
+  proxy?: GeoLookupApiProxy | null
+  coverage?: GeoLookupApiCoverage | null
+  data?: GeoLookupApiEnvelope | null
+  countryCode?: string | null
+  countryName?: string | null
+  countryShort?: string | null
+  countryLong?: string | null
+  region?: string | null
+  city?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
+  timeZoneOffset?: string | null
+  timeZoneName?: string | null
+  timezone?: string | null
+  asn?: string | number | null
+  asName?: string | null
+  as?: string | null
+  isp?: string | null
+  domain?: string | null
+  usageType?: string | null
+  isProxy?: boolean | number | string | null
+  proxyType?: string | null
+  threat?: string | null
+  lastSeenDays?: number | string | null
+  provider?: string | null
+  fraudScore?: number | string | null
+}
+
+export type GeoLookupRequestContext = {
+  firebaseUid?: string | null
+  userRoles?: string | string[] | null
+  requestId?: string | null
+  forwardedFor?: string | null
+}
+
+export function normalizeGeoLookupRoles(...values: unknown[]): string[] {
+  const roles: string[] = []
+
+  const appendRoleValue = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        appendRoleValue(entry)
+      }
+      return
+    }
+
+    const text = String(value ?? "").trim()
+    if (!text) {
+      return
+    }
+
+    for (const part of text.split(",")) {
+      const role = part.trim().toLowerCase()
+      if (role) {
+        roles.push(role)
+      }
+    }
+  }
+
+  for (const value of values) {
+    appendRoleValue(value)
+  }
+
+  return Array.from(new Set(roles))
+}
+
+function compactRoleHeader(value: GeoLookupRequestContext["userRoles"]): string {
+  return normalizeGeoLookupRoles(value).join(",")
+}
+
+function createGeoRequestId(input: string | null | undefined): string {
+  const requestId = String(input || "").trim()
+  if (requestId) {
+    return requestId
+  }
+
+  return `geo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function buildGeoLookupHeaders(
+  ip: string,
+  context?: GeoLookupRequestContext
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    "x-firebase-uid": String(context?.firebaseUid || "functions-system").trim() || "functions-system",
+    "x-user-roles": compactRoleHeader(context?.userRoles) || "guest",
+    "x-request-id": createGeoRequestId(context?.requestId),
+  }
+
+  const normalizedForwarded = normalizePublicIp(context?.forwardedFor || ip)
+  if (normalizedForwarded) {
+    headers["x-forwarded-for"] = normalizedForwarded
+  }
+
+  return headers
 }
 
 export function normalizePublicIp(value: string | null | undefined): string {
@@ -153,96 +221,334 @@ export function normalizePublicIp(value: string | null | undefined): string {
   return first
 }
 
-type ParsedGcsPath = {
-  bucket: string,
-  objectPath: string,
+function buildGeoLookupUrl(ip: string): string {
+  const url = new URL(geoApiBaseUrl)
+  if (ip) {
+    url.searchParams.set("ip", ip)
+  }
+  return url.toString()
 }
 
-function parseGcsPath(input: string): ParsedGcsPath | null {
-  const trimmed = input.trim()
-  if (!trimmed) {
+function sanitizeText(value: unknown): string | null {
+  const text = String(value || "").trim()
+  if (!text || text === "-") {
     return null
   }
 
-  if (trimmed.startsWith("gs://")) {
-    const withoutScheme = trimmed.replace(/^gs:\/\//, "")
-    const slashIndex = withoutScheme.indexOf("/")
-    if (slashIndex <= 0) {
-      return null
-    }
-
-    const bucket = withoutScheme.slice(0, slashIndex)
-    const objectPath = withoutScheme.slice(slashIndex + 1)
-    if (!bucket || !objectPath) {
-      return null
-    }
-
-    return { bucket, objectPath }
-  }
-
-  const slashIndex = trimmed.indexOf("/")
-  if (slashIndex <= 0) {
+  const normalized = text.toLowerCase()
+  if (normalized === "null" || normalized === "undefined" || normalized === "n/a") {
     return null
   }
 
-  const bucket = trimmed.slice(0, slashIndex)
-  const objectPath = trimmed.slice(slashIndex + 1)
-  if (!bucket || !objectPath) {
+  return text
+}
+
+function parseNullableNumber(value: unknown): number | null {
+  const text = sanitizeText(value)
+  if (!text) {
     return null
   }
 
-  return { bucket, objectPath }
+  const num = Number(text)
+  return Number.isFinite(num) ? num : null
 }
 
-async function computeSha256(filePath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const hash = crypto.createHash("sha256")
-    const stream = createReadStream(filePath)
+function resolveProxyConfidence(args: {
+  isProxy: boolean
+  coverage: GeoLookupApiCoverage | null | undefined
+}): ResolvedProxyData["confidence"] {
+  if (args.isProxy) {
+    return "open-proxy-detected"
+  }
 
-    stream.on("error", reject)
-    stream.on("data", (chunk) => hash.update(chunk))
-    stream.on("end", () => resolve(hash.digest("hex")))
-  })
+  return args.coverage?.proxy === true ? "none" : "unknown"
 }
 
-async function resolveDatabasePath(): Promise<string> {
-  const expectedChecksum = env.IP2LOCATION_SHA256.trim().toLowerCase()
-  const gcsPath = env.IP2LOCATION_GCS_PATH.trim()
+function mapGeoLookupResponse(payload: GeoLookupApiResponse, fallbackIp: string): ResolvedGeoData | null {
+  const lookupPayload = payload.data?.lookup && typeof payload.data.lookup === "object" ? payload.data.lookup : payload
 
-  if (!gcsPath) {
-    return resolvedDatabasePath
+  const location = lookupPayload.location || {
+    countryCode: lookupPayload.countryCode || lookupPayload.countryShort || null,
+    countryName: lookupPayload.countryName || lookupPayload.countryLong || null,
+    region: lookupPayload.region || null,
+    city: lookupPayload.city || null,
+    latitude: lookupPayload.latitude ?? null,
+    longitude: lookupPayload.longitude ?? null,
+    timeZoneOffset: lookupPayload.timeZoneOffset || lookupPayload.timezone || null,
+    timeZoneName: lookupPayload.timeZoneName || lookupPayload.timezone || null,
   }
 
-  const parsed = parseGcsPath(gcsPath)
-  if (!parsed) {
-    throw new Error(`Invalid IP2LOCATION_GCS_PATH value: ${gcsPath}`)
+  const network = lookupPayload.network || {
+    asn: lookupPayload.asn ?? null,
+    asName: lookupPayload.asName || lookupPayload.as || null,
+    isp: lookupPayload.isp || null,
+    domain: lookupPayload.domain || null,
+    usageType: lookupPayload.usageType || null,
   }
 
-  await mkdir(tmpDatabaseDir, { recursive: true })
-
-  const localTmpExists = existsSync(tmpDatabasePath)
-  if (localTmpExists && !expectedChecksum) {
-    return tmpDatabasePath
+  const proxy = lookupPayload.proxy || {
+    isProxy: lookupPayload.isProxy ?? null,
+    proxyType: lookupPayload.proxyType || null,
+    threat: lookupPayload.threat || null,
+    lastSeenDays: lookupPayload.lastSeenDays ?? null,
+    provider: lookupPayload.provider || null,
+    fraudScore: lookupPayload.fraudScore ?? null,
   }
 
-  if (localTmpExists && expectedChecksum) {
-    const currentChecksum = (await computeSha256(tmpDatabasePath)).toLowerCase()
-    if (currentChecksum === expectedChecksum) {
-      return tmpDatabasePath
+  const coverage = lookupPayload.coverage || payload.coverage
+
+  const countryShort = sanitizeText(location.countryCode)
+  if (!countryShort) {
+    return null
+  }
+
+  const countryLong = sanitizeText(location.countryName) || "Unknown"
+  const region = sanitizeText(location.region) || "Unknown"
+  const city = sanitizeText(location.city) || "Unknown"
+  const latitude = parseNullableNumber(location.latitude)
+  const longitude = parseNullableNumber(location.longitude)
+  const timeZone = sanitizeText(location.timeZoneName) || sanitizeText(location.timeZoneOffset) || "UTC"
+
+  const asn = sanitizeText(network.asn)
+  const asName = sanitizeText(network.asName)
+  const isp = sanitizeText(network.isp)
+  const domain = sanitizeText(network.domain)
+  const usageType = sanitizeText(network.usageType)
+  const isProxy = proxy.isProxy === true || proxy.isProxy === 1 || proxy.isProxy === "1" || proxy.isProxy === "true"
+
+  const proxyData: ResolvedProxyData = {
+    isProxy,
+    proxyType: sanitizeText(proxy.proxyType),
+    threat: sanitizeText(proxy.threat),
+    lastSeenDays: parseNullableNumber(proxy.lastSeenDays),
+    provider: sanitizeText(proxy.provider),
+    fraudScore: parseNullableNumber(proxy.fraudScore),
+    confidence: resolveProxyConfidence({ isProxy, coverage }),
+  }
+
+  const resolvedIp = sanitizeText(lookupPayload.ip) || sanitizeText(payload.ip) || fallbackIp
+  if (!resolvedIp) {
+    return null
+  }
+
+  const networkData: ResolvedNetworkData = {
+    asn,
+    as: asName,
+    isp,
+    domain,
+    usageType,
+  }
+
+  return {
+    ip: resolvedIp,
+    countryShort,
+    countryLong,
+    region,
+    city,
+    latitude,
+    longitude,
+    timeZone,
+    asn,
+    as: asName,
+    isp,
+    domain,
+    usageType,
+    network: networkData,
+    proxy: proxyData,
+  }
+}
+
+type IpregistryPayload = {
+  ip?: unknown
+  location?: {
+    country?: { code?: unknown; name?: unknown }
+    region?: { name?: unknown }
+    city?: unknown
+    latitude?: unknown
+    longitude?: unknown
+  }
+  connection?: {
+    asn?: unknown
+    domain?: unknown
+    organization?: unknown
+    type?: unknown
+  }
+  company?: {
+    domain?: unknown
+    type?: unknown
+  }
+  time_zone?: {
+    id?: unknown
+  }
+  security?: {
+    is_proxy?: unknown
+    is_vpn?: unknown
+    is_tor?: unknown
+    is_threat?: unknown
+    is_abuser?: unknown
+    is_attacker?: unknown
+  }
+}
+
+export function mapIpregistryResponse(
+  payload: IpregistryPayload,
+  fallbackIp: string
+): ResolvedGeoData | null {
+  const location = payload.location || {}
+  const connection = payload.connection || {}
+  const company = payload.company || {}
+  const security = payload.security || {}
+
+  const countryShort = sanitizeText(location.country?.code)
+  if (!countryShort) {
+    return null
+  }
+
+  const countryLong = sanitizeText(location.country?.name) || "Unknown"
+  const region = sanitizeText(location.region?.name) || "Unknown"
+  const city = sanitizeText(location.city) || "Unknown"
+  const latitude = parseNullableNumber(location.latitude)
+  const longitude = parseNullableNumber(location.longitude)
+  const timeZone = sanitizeText(payload.time_zone?.id) || "UTC"
+
+  const asn = sanitizeText(connection.asn)
+  // ponytail: ipregistry has no isp/proxy_type/fraud fields. isp=AS org, proxyType derived from flags.
+  const asName = sanitizeText(connection.organization)
+  const domain = sanitizeText(connection.domain) || sanitizeText(company.domain)
+  const usageType = sanitizeText(connection.type) || sanitizeText(company.type)
+
+  const isProxy = security.is_proxy === true || security.is_vpn === true || security.is_tor === true
+  const proxyType = security.is_tor === true ? "tor" : security.is_vpn === true ? "vpn" : security.is_proxy === true ? "proxy" : null
+  const threat = security.is_threat === true ? "is_threat" :
+    security.is_abuser === true ? "is_abuser" :
+      security.is_attacker === true ? "is_attacker" : null
+
+  const proxyData: ResolvedProxyData = {
+    isProxy,
+    proxyType,
+    threat,
+    lastSeenDays: null,
+    provider: null,
+    fraudScore: null,
+    confidence: isProxy ? "open-proxy-detected" : "none",
+  }
+
+  const networkData: ResolvedNetworkData = {
+    asn,
+    as: asName,
+    isp: asName,
+    domain,
+    usageType,
+  }
+
+  return {
+    ip: sanitizeText(payload.ip) || fallbackIp,
+    countryShort,
+    countryLong,
+    region,
+    city,
+    latitude,
+    longitude,
+    timeZone,
+    asn,
+    as: asName,
+    isp: asName,
+    domain,
+    usageType,
+    network: networkData,
+    proxy: proxyData,
+  }
+}
+
+async function fetchIpregistryLookup(ip: string): Promise<ResolvedGeoData | null> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+
+  try {
+    const url = `https://api.ipregistry.co/${encodeURIComponent(ip)}?key=${encodeURIComponent(ipregistryApiKey)}`
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+      },
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+
+      throw new Error(`Ipregistry lookup returned ${response.status}`)
     }
+
+    const payload = await response.json() as IpregistryPayload
+    return mapIpregistryResponse(payload, ip)
+  } finally {
+    clearTimeout(timeout)
   }
+}
 
-  const bucket = admin.storage().bucket(parsed.bucket)
-  await bucket.file(parsed.objectPath).download({ destination: tmpDatabasePath })
+async function fetchGeoLookup(
+  ip: string,
+  context?: GeoLookupRequestContext
+): Promise<ResolvedGeoData | null> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
 
-  if (expectedChecksum) {
-    const downloadedChecksum = (await computeSha256(tmpDatabasePath)).toLowerCase()
-    if (downloadedChecksum !== expectedChecksum) {
-      throw new Error("Downloaded IP2Location BIN checksum mismatch")
+  try {
+    const response = await fetch(buildGeoLookupUrl(ip), {
+      method: "GET",
+      headers: buildGeoLookupHeaders(ip, context),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 204) {
+        return null
+      }
+
+      throw new Error(`Geo lookup API returned ${response.status}`)
     }
-  }
 
-  return tmpDatabasePath
+    const payload = await response.json() as GeoLookupApiResponse
+    return mapGeoLookupResponse(payload, ip)
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function buildGeoCacheKey(ip: string): string {
+  const digest = crypto.createHash("sha256").update(ip).digest("hex")
+  return `${GEO_CACHE_PREFIX}${digest}`
+}
+
+async function readCachedGeoLookup(ip: string): Promise<CachedGeoLookup> {
+  try {
+    const cached = await redis.get(buildGeoCacheKey(ip))
+    if (typeof cached !== "string" || !cached) {
+      return { hit: false, data: null }
+    }
+
+    const parsed = JSON.parse(cached) as { miss?: boolean; data?: ResolvedGeoData | null }
+    if (parsed?.miss) {
+      return { hit: true, data: null }
+    }
+
+    return { hit: true, data: parsed?.data || null }
+  } catch (error) {
+    console.warn("Failed to read IP intelligence cache:", error)
+    return { hit: false, data: null }
+  }
+}
+
+async function writeCachedGeoLookup(ip: string, data: ResolvedGeoData | null): Promise<void> {
+  try {
+    const payload = data ? { data } : { miss: true }
+    await redis.setex(buildGeoCacheKey(ip), geoCacheTtlSeconds, JSON.stringify(payload))
+  } catch (error) {
+    console.warn("Failed to write IP intelligence cache:", error)
+  }
 }
 
 export async function initializeGeoDatabase(): Promise<void> {
@@ -250,62 +556,37 @@ export async function initializeGeoDatabase(): Promise<void> {
     return geoInitializationPromise
   }
 
-  geoInitializationPromise = (async () => {
-    const databasePath = await resolveDatabasePath()
-    geoDBManager.setDatabasePath(databasePath)
-    await geoDBManager.open()
-  })().catch((error) => {
-    geoInitializationPromise = null
-    throw error
-  })
+  geoInitializationPromise = Promise.resolve().then(() => undefined)
 
   return geoInitializationPromise
 }
 
-export async function lookupGeoByIp(ipInput: string | null | undefined): Promise<ResolvedGeoData | null> {
+export async function lookupGeoByIp(
+  ipInput: string | null | undefined,
+  context?: GeoLookupRequestContext
+): Promise<ResolvedGeoData | null> {
   const ip = normalizePublicIp(ipInput)
   if (!ip) {
     return null
   }
 
-  await initializeGeoDatabase()
-  const ip2location = geoDBManager.getInstance()
-  const result = ip2location.getAll(ip) as Record<string, unknown>
+  const cachedLookup = await readCachedGeoLookup(ip)
+  if (cachedLookup.hit) {
+    return cachedLookup.data
+  }
 
-  if (String(result?.["countryShort"] || "") === "INVALID IP ADDRESS") {
+  await initializeGeoDatabase()
+  try {
+    const resolvedData = ipregistryApiKey ? await fetchIpregistryLookup(ip) : await fetchGeoLookup(ip, context)
+    await writeCachedGeoLookup(ip, resolvedData)
+    return resolvedData
+  } catch (error) {
+    console.warn("Failed to resolve IP intelligence from geo API:", error)
     return null
   }
-
-  const latitudeRaw = Number(result?.["latitude"])
-  const longitudeRaw = Number(result?.["longitude"])
-
-  return {
-    ip,
-    countryShort: String(result?.["countryShort"] || "Unknown"),
-    countryLong: String(result?.["countryLong"] || "Unknown"),
-    region: String(result?.["region"] || "Unknown"),
-    city: String(result?.["city"] || "Unknown"),
-    latitude: Number.isFinite(latitudeRaw) ? latitudeRaw : null,
-    longitude: Number.isFinite(longitudeRaw) ? longitudeRaw : null,
-    timeZone: String(result?.["timeZone"] || "UTC"),
-  }
 }
 
-
-// Helper function to map timezone to continent
-function getContinentFromTimezone(timezone: string): string {
-  if (!timezone) return "Unknown"
-  if (timezone.startsWith("Europe/")) return "Europe"
-  if (timezone.startsWith("Asia/")) return "Asia"
-  if (timezone.startsWith("America/")) return "North America"
-  if (timezone.startsWith("Africa/")) return "Africa"
-  if (timezone.startsWith("Australia/") || timezone.startsWith("Pacific/")) return "Oceania"
-  if (timezone.startsWith("Antarctica/")) return "Antarctica"
-  return "Unknown"
-}
-
-
-// IP2LOCATION-LITE-DB11.BIN
+// Geo lookup uses the remote ip.deepscrape.dev API.
 /* eslint-disable @typescript-eslint/ban-types */
 // Guest tracking middleware for Express
 // Ensures unique guest analytics using fingerprinting and Redis/Firestore
@@ -365,7 +646,6 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
     const { ipv4, ipv6, raw } = await getClientIps(req) // Prefer IPv6 if available
     const ip = raw as string // Fallback to IPv4 if IPv6 is not available
     const agent = useragent.parse(req.headers["user-agent"] || "")
-    const geo = await getGeolocation(ip)
     const guestData: Guest = {
       id: guestId,
       uid: "", // Will be set when linked to a user
@@ -374,24 +654,29 @@ export async function guestTracker(req: Request, res: Response, next: NextFuncti
       browser: agent.family,
       os: agent.os.family,
       device: agent.device.family,
-      language: geo.language || req.headers["accept-language"]?.split(",")[0] || "en",
-      timezone: geo.timezone || "UTC", // Use timezone from geo if available
-      country: geo.country || "Unknown",
-      geo: geo.geo || { continent: "Unknown", region: "Unknown" },
-      region: geo.region || "Unknown",
-      latitude: geo.latitude || 0,
-      longitude: geo.longitude || 0,
-      location: geo.location || "Unknown",
+      language: req.headers["accept-language"]?.split(",")[0] || "en",
+      timezone: "UTC",
+      country: "Unknown",
+      geo: { continent: "Unknown", region: "Unknown" },
+      region: "Unknown",
+      latitude: 0,
+      longitude: 0,
+      location: "Unknown",
       createdAt: new Date(),
       lastSeen: new Date(),
       fingerprint,
     }
+    const guestIntelligenceSeed = {
+      intelligenceSourceIp: normalizePublicIp(ip),
+      intelligenceStatus: "pending",
+      intelligenceUpdatedAt: null,
+    }
     req.clientIp = ip
     try {
       await Promise.allSettled([
-        redis.setex(`guest:${guestId}`, 3600, JSON.stringify(guestData)),
+        redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ ...guestData, ...guestIntelligenceSeed })),
         redis.set(`guestfp:${fingerprint}`, guestId),
-        db.collection("guests").doc(guestId).set(guestData, { merge: true }),
+        db.collection("guests").doc(guestId).set({ ...guestData, ...guestIntelligenceSeed }, { merge: true }),
       ])
     } catch (error) {
       console.error("Error storing guest data:", error)
@@ -506,38 +791,3 @@ async function getClientIps(req: Request): Promise<{ ipv4: string | null, ipv6: 
   return { ipv4, ipv6, raw: getClientIp(req) }
 }
 
-// Refactored getGeolocation function
-async function getGeolocation(ip: string) {
-  try {
-    const geoData = await lookupGeoByIp(ip)
-    if (!geoData) {
-      return {}
-    }
-
-    // Emulate browser language and timezone (Node.js context)
-    // In a browser, use navigator.language and Intl.DateTimeFormat directly
-    const language = typeof navigator !== "undefined" ? navigator.language || "en" : "en"
-    const timezone =
-      typeof Intl !== "undefined" ?
-        new Intl.DateTimeFormat().resolvedOptions().timeZone :
-        "UTC"
-
-    // Map country code to continent (fallback to 'Unknown' if not found)
-    const continent = { continent: getContinentFromTimezone(geoData.timeZone) || "Unknown", region: geoData.countryShort || "Unknown" }
-
-    return {
-      ip: geoData.ip,
-      geo: { ...continent },
-      country: geoData.countryLong || "Unknown",
-      location: geoData.city || "Unknown",
-      region: geoData.region || "Unknown",
-      latitude: geoData.latitude ?? 0,
-      longitude: geoData.longitude ?? 0,
-      language,
-      timezone,
-    } as Pick<UserDetails, "geo" | "country" | "location" | "region" | "latitude" | "longitude" | "language" | "timezone">
-  } catch (error) {
-    console.error("Error fetching geolocation details:", error)
-    return {}
-  }
-}

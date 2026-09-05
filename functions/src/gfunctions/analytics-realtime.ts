@@ -48,6 +48,8 @@ type MetricsDailyExtended = MetricsDaily & {
   byGeoCell?: Record<string, number>
   byLatitudeBand?: Record<string, number>
   byLongitudeBand?: Record<string, number>
+  byLanguage?: Record<string, number>
+  byIP?: Record<string, number>
 }
 
 // ============================================================================
@@ -100,6 +102,8 @@ export const onGuestCreated = onDocumentCreated(
         [`byDevice.${guest.device}`]: FieldValue.increment(1),
         [`byOS.${guest.os}`]: FieldValue.increment(1),
         [`byTimezone.${guest.timezone}`]: FieldValue.increment(1),
+        [`byLanguage.${guest.language || "Unknown"}`]: FieldValue.increment(1),
+        [`byIP.${guest.ip?.raw || guest.ip?.ipv4 || "Unknown"}`]: FieldValue.increment(1),
         [`guestsByHour.${hour}`]: FieldValue.increment(1),
         updatedAt: Timestamp.now(),
       }, { merge: true })
@@ -127,6 +131,7 @@ export const onGuestCreated = onDocumentCreated(
         [`byDevice.${guest.device || "Unknown"}`]: FieldValue.increment(1),
         [`byOS.${guest.os || "Unknown"}`]: FieldValue.increment(1),
         [`byTimezone.${guest.timezone || "Unknown"}`]: FieldValue.increment(1),
+        [`byLanguage.${guest.language || "Unknown"}`]: FieldValue.increment(1),
         lastUpdated: Timestamp.now(),
         computedAt: Timestamp.now(),
       }, { merge: true })
@@ -512,6 +517,8 @@ async function computeRangeMetric(rangeId: string, days: number) {
   const byDevice: { [key: string]: number } = {}
   const byOS: { [key: string]: number } = {}
   const byProvider: { [key: string]: number } = {}
+  const byLanguage: { [key: string]: number } = {}
+  const byIP: { [key: string]: number } = {}
   const byTimezone: { [key: string]: number } = {}
   const dailyBreakdown: Array<{
     date: string
@@ -648,6 +655,14 @@ async function computeRangeMetric(rangeId: string, days: number) {
         byProvider[provider] = (byProvider[provider] || 0) + count
       })
 
+      Object.entries(dataExt.byLanguage || {}).forEach(([lang, count]) => {
+        byLanguage[lang] = (byLanguage[lang] || 0) + (count as number)
+      })
+
+      Object.entries(dataExt.byIP || {}).forEach(([ip, count]) => {
+        byIP[ip] = (byIP[ip] || 0) + (count as number)
+      })
+
       dailyBreakdown.push({
         date: date,
         newGuests: finalNewGuests,
@@ -742,6 +757,8 @@ async function computeRangeMetric(rangeId: string, days: number) {
     byDevice: byDevice,
     byOS: byOS,
     byProvider: byProvider,
+    byLanguage: byLanguage,
+    byIP: byIP,
     byTimezone: byTimezone,
     dailyBreakdown: dailyBreakdown,
     trends: {

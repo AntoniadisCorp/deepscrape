@@ -1,3 +1,24 @@
+/* Light / Dark mode color variables */
+:host {
+  --anim-bot-fill: rgba(8, 145, 178, 0.4);
+  --anim-bot-stroke: rgba(8, 145, 178, 0.55);
+  --anim-bot-accent: rgba(8, 145, 178, 0.7);
+  --anim-node-bg: rgba(8, 145, 178, 0.55);
+  --anim-line-bg: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.45), transparent);
+  --anim-server-fill: rgba(8, 145, 178, 0.7);
+  --anim-data-bright: rgba(255, 255, 255, 0.8);
+}
+
+:host-context(.dark) {
+  --anim-bot-fill: rgba(34, 211, 238, 0.2);
+  --anim-bot-stroke: rgba(34, 211, 238, 0.35);
+  --anim-bot-accent: rgba(34, 211, 238, 0.5);
+  --anim-node-bg: rgba(34, 211, 238, 0.35);
+  --anim-line-bg: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.25), transparent);
+  --anim-server-fill: rgba(34, 211, 238, 0.45);
+  --anim-data-bright: rgba(255, 255, 255, 0.6);
+}
+
 .bg-illustration {
   pointer-events: none;
   position: absolute;
@@ -19,7 +40,7 @@
   position: absolute;
   width: 8px;
   height: 8px;
-  background: rgba(99, 102, 241, 0.4);
+  background: var(--anim-node-bg);
   border-radius: 50%;
   animation: pulse 3s ease-in-out infinite;
 }
@@ -32,7 +53,7 @@
 .connection-line {
   position: absolute;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+  background: var(--anim-line-bg);
   transform-origin: left center;
   animation: scan 4s linear infinite;
 }

@@ -21,13 +21,41 @@ const sanitizeUpstashRestUrl = (value: string): string => {
     return /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`
 }
 
+const isEncryptedPlaceholder = (value: string): boolean =>
+    /^encrypted:/i.test((value || "").trim())
+
+const isHttpUrl = (value: string): boolean => {
+    try {
+        const parsed = new URL(value)
+        return parsed.protocol === "http:" || parsed.protocol === "https:"
+    } catch {
+        return false
+    }
+}
+
 // Initialize Upstash Redis client
 const upstashUrl = sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL)
 const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_REDIS_REST_PASSWORD
-const redis = new Redis({
-    url: upstashUrl || "",
-    token: upstashToken || "",
-})
+const upstashRestEnabled =
+    !!upstashUrl &&
+    !!upstashToken &&
+    isHttpUrl(upstashUrl) &&
+    !isEncryptedPlaceholder(upstashUrl) &&
+    !isEncryptedPlaceholder(upstashToken)
+const redis = upstashRestEnabled ? new Redis({
+    url: upstashUrl,
+    token: upstashToken,
+}) : {
+    get: async () => null,
+    set: async () => "OK",
+    setex: async () => "OK",
+    del: async () => 0,
+    zadd: async () => 0,
+    zremrangebyscore: async () => 0,
+    zcount: async () => 0,
+    lpush: async () => 0,
+    lrange: async () => [],
+} as unknown as Redis
 
 
 // Configure your Redis client.  IMPORTANT: Use environment variables
@@ -64,17 +92,23 @@ const tcpRedisEnabled = env.UPSTASH_REDIS_TCP_ENABLED ?
     env.UPSTASH_REDIS_TCP_ENABLED === "true" :
     env.PRODUCTION === "true"
 
+const tcpPort = parseInt(tcpPortRaw || "6379", 10)
+const tcpConfigLooksValid =
+    !!tcpHostRaw?.length &&
+    Number.isFinite(tcpPort) &&
+    !!tcpPassword?.length &&
+    !isEncryptedPlaceholder(tcpHostRaw) &&
+    !isEncryptedPlaceholder(tcpPassword)
+
 
 if (tcpRedisEnabled &&
     // !isFunctionsEmulator &&
-    tcpHostRaw?.length &&
-    tcpPortRaw?.length &&
-    tcpPassword?.length) {
+    tcpConfigLooksValid) {
     // Configure your Redis client.  IMPORTANT: Use environment variables
     // for sensitive information like host, port, password.
     const host = parseRedisHost(tcpHostRaw)
     const user = `${tcpUsernameRaw}_ro`
-    const port = parseInt(tcpPortRaw || "6379", 10)
+    const port = tcpPort
     const REDIS_URL = `rediss://:${encodeURIComponent(tcpPassword)}@${host}:${port}`
 
     // Define Redis options
@@ -123,9 +157,9 @@ if (tcpRedisEnabled &&
         console.log("Redis client quit")
     })
 } else if (/* isFunctionsEmulator || */ !tcpRedisEnabled) {
-    console.warn("Redis TCP client disabled (emulator or UPSTASH_REDIS_TCP_ENABLED=false); using non-TCP fallback")
+    console.log("Redis TCP client disabled (UPSTASH_REDIS_TCP_ENABLED=false); using non-TCP fallback")
 } else {
-    console.warn("Redis client not connected: Missing TCP environment variables (UPSTASH_REDIS_REST_HOST/PORT/USER/PASSWORD)")
+    // Intentionally silent: missing TCP credentials is a supported fallback scenario.
 }
 
 export {client as redisClient, redis}

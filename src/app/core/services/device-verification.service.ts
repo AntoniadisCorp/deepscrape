@@ -33,9 +33,11 @@ export interface SendVerificationCodeResult {
   success: boolean
   expiresAt?: string
   message?: string
+  method?: 'email' | 'sms'
   deliveryStatus?: 'sent' | 'pending_client_mfa'
   hasPhoneNumber?: boolean
   hasMfaEnabled?: boolean
+  sessionId?: string | null
 }
 
 @Injectable({
@@ -138,14 +140,15 @@ export class DeviceVerificationService {
   /**
    * Send device verification code
    */
-  async sendVerificationCode(userId: string, method: 'email' | 'sms'): Promise<SendVerificationCodeResult> {
+  async sendVerificationCode(userId: string, method: 'email' | 'sms' | 'auto', sessionId?: string): Promise<SendVerificationCodeResult> {
     try {
       const result = await this.firestore.callFunction<
-        { userId: string; method: string },
+        { userId: string; method: string; sessionId?: string },
         SendVerificationCodeResult
       >('sendDeviceVerificationCode', {
         userId,
-        method
+        method,
+        ...(sessionId ? { sessionId } : {}),
       })
 
       if (result.success && result.expiresAt) {
@@ -154,9 +157,14 @@ export class DeviceVerificationService {
       return result
     } catch (error) {
       console.error('Failed to send verification code:', error)
+      // Extract the actual error message from Firebase Functions error wrapper
+      const message =
+        ((error as Record<string, unknown>)?.['message'] as string) ||
+        ((error as Record<string, unknown>)?.toString() as string) ||
+        'Failed to send verification code'
       return {
         success: false,
-        message: 'Failed to send verification code'
+        message,
       }
     }
   }
@@ -164,17 +172,19 @@ export class DeviceVerificationService {
   /**
    * Verify device and add to trusted list
    */
-  async verifyDevice(userId: string, code: string, deviceName: string): Promise<boolean> {
+  async verifyDevice(userId: string, code: string, deviceName: string, sessionId?: string, mfaVerified?: boolean): Promise<boolean> {
     try {
       const fingerprint = this.getDeviceFingerprint()
       const result = await this.firestore.callFunction<
-        { userId: string; code: string; deviceId: string; deviceName: string },
+        { userId: string; code: string; deviceId: string; deviceName: string; sessionId?: string; mfaVerified?: boolean },
         { success: boolean; trustedUntil: string }
       >('verifyAndTrustDevice', {
         userId,
         code,
         deviceId: fingerprint.deviceId,
-        deviceName
+        deviceName,
+        ...(sessionId ? { sessionId } : {}),
+        ...(mfaVerified ? { mfaVerified: true } : {}),
       })
 
       if (result.success) {

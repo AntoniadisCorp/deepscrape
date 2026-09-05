@@ -24,6 +24,8 @@ export type BillingCreditMetadata = {
   interval?: string | null
   idempotencyKey?: string | null
   createdAt?: FirebaseFirestore.FieldValue
+  /** ISO-8601 date after which these credits expire. Null = never expire. */
+  expiresAt?: string | null
   metadata?: Record<string, unknown>
 }
 
@@ -154,6 +156,7 @@ export const applyBillingCreditMutation = async (
       subscriptionId: args.ledger.subscriptionId || null,
       plan: args.ledger.plan || null,
       interval: args.ledger.interval || null,
+      expiresAt: args.ledger.expiresAt || null,
       metadata: args.ledger.metadata || null,
       idempotencyKey: args.ledger.idempotencyKey || null,
       createdAt: args.ledger.createdAt || FieldValue.serverTimestamp(),

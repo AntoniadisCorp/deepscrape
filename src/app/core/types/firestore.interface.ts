@@ -113,6 +113,20 @@ export type loginHistoryInfo = {
     deviceFingerprintHash?: string
     revokedAt?: Date | null
     revokedByUid?: string | null
+    asn?: string | null
+    as?: string | null
+    isp?: string | null
+    domain?: string | null
+    usageType?: string | null
+    proxy?: {
+        isProxy: boolean
+        proxyType?: string | null
+        threat?: string | null
+        lastSeenDays?: number | null
+        provider?: string | null
+        fraudScore?: number | null
+        confidence?: 'none' | 'open-proxy-detected' | 'unknown' | string
+    }
 }
 
 export type loginHistoryEvent = {
@@ -158,6 +172,22 @@ export type Guest = {
   longitude: number
   location: string
   fingerprint?: string // Unique fingerprint for guest tracking
+    network?: {
+        asn: string | null
+        as: string | null
+        isp: string | null
+        domain: string | null
+        usageType: string | null
+    }
+    proxy?: {
+        isProxy: boolean
+        proxyType?: string | null
+        threat?: string | null
+        lastSeenDays?: number | null
+        provider?: string | null
+        fraudScore?: number | null
+        confidence?: 'none' | 'open-proxy-detected' | 'unknown' | string
+    }
   createdAt: Date
   lastSeen: Date
   linkedAt?: Date | null

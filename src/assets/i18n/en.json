@@ -235,5 +235,27 @@
     "NO_CODE_FOUND": "No verification code found in the link.",
     "VERIFYING": "Verifying your email...",
     "REDIRECTING": "Redirecting to login in a few seconds..."
+  },
+  "CONTACT": {
+    "TITLE": "Get in Touch",
+    "SUBTITLE": "Have a question, feedback, or just want to say hello? We'd love to hear from you.",
+    "NAME_LABEL": "Your Name",
+    "NAME_PLACEHOLDER": "John Doe",
+    "NAME_ERROR": "Name is required (min 2 characters).",
+    "EMAIL_LABEL": "Your Email",
+    "EMAIL_PLACEHOLDER": "john@example.com",
+    "EMAIL_ERROR": "A valid email address is required.",
+    "SUBJECT_LABEL": "Subject",
+    "SUBJECT_PLACEHOLDER": "How can we help?",
+    "SUBJECT_ERROR": "Subject is required (min 3 characters).",
+    "MESSAGE_LABEL": "Message",
+    "MESSAGE_PLACEHOLDER": "Tell us more about your inquiry...",
+    "MESSAGE_ERROR": "Message is required (min 10 characters).",
+    "SEND": "Send Message",
+    "SENDING": "Sending...",
+    "SUCCESS_TITLE": "Message Sent!",
+    "SUCCESS_MESSAGE": "Thank you for reaching out. We'll review your message and get back to you as soon as possible.",
+    "SEND_ANOTHER": "Send Another Message",
+    "FOOTER": "We typically respond within 24 hours during business days."
   }
 }

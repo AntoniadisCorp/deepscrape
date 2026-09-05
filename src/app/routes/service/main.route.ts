@@ -37,6 +37,14 @@ export const MainRoutes: Routes = [
         canActivate: [verifyGuard],
     },
     {
+        path: 'device-verification',
+        loadComponent: () => import('../../pages').then(m => m.DeviceVerificationRouteComponent),
+        data: {
+            title: 'device-verification',
+            animation: 'device-verification'
+        },
+    },
+    {
         path: 'action',
         loadComponent: () => import('../../pages').then(m => m.ActionHandlerComponent),
         data: {

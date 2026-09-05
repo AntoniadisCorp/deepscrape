@@ -7,9 +7,9 @@ import { onCall } from "firebase-functions/v2/https"
 import { Timestamp } from "firebase-admin/firestore"
 import { Resend } from "resend"
 import { db, dbName, auth as adminAuth } from "../app/config"
-import { env } from "../config/env"
+import { env, functionsEnvJson } from "../config/env"
 import { redis } from "../app/cacheConfig"
-import { lookupGeoByIp, normalizePublicIp } from "./analytics"
+import { GeoLookupRequestContext, lookupGeoByIp, normalizeGeoLookupRoles, normalizePublicIp } from "./analytics"
 
 const DATABASE_NAME = dbName || "easyscrape"
 
@@ -21,6 +21,321 @@ type ResolvedSessionGeo = {
   latitude: number | null
   longitude: number | null
   timezone: string
+  asn: string | null
+  as: string | null
+  isp: string | null
+  domain: string | null
+  usageType: string | null
+  proxy: {
+    isProxy: boolean
+    proxyType: string | null
+    threat: string | null
+    lastSeenDays: number | null
+    provider: string | null
+    fraudScore: number | null
+    confidence: "none" | "open-proxy-detected" | "unknown"
+  }
+}
+
+type SessionGeoEnrichmentStatus = "pending" | "resolved" | "no-match" | "skipped"
+type GuestGeoEnrichmentStatus = "pending" | "resolved" | "no-match" | "skipped"
+
+const SESSION_CACHE_TTL_SECONDS = 30 * 60
+
+async function updateSessionRedisCache(sessionId: string, patch: Record<string, unknown>): Promise<void> {
+  try {
+    const cacheKey = `session:${sessionId}`
+    const cached = await redis.get(cacheKey)
+    if (typeof cached !== "string" || !cached) {
+      return
+    }
+
+    const parsed = JSON.parse(cached) as Record<string, unknown>
+    const merged = {
+      ...parsed,
+      ...patch,
+    }
+
+    await redis.setex(cacheKey, SESSION_CACHE_TTL_SECONDS, JSON.stringify(merged))
+  } catch (error) {
+    console.warn(`Failed to update Redis session cache for ${sessionId}:`, error)
+  }
+}
+
+type MfaPreferredMethod = "totp" | "sms" | "email"
+
+type MfaSecurityPreferences = {
+  primaryMethod: MfaPreferredMethod
+  secondaryMethod: MfaPreferredMethod | null
+  riskEmailNotifications: boolean
+  updatedAt: string
+}
+
+type AvailableMfaMethods = {
+  totp: boolean
+  sms: boolean
+  email: boolean
+}
+
+type MfaDisabledNotificationEvaluation = {
+  shouldNotify: boolean
+  reason: "notify" | "mfa_still_enabled" | "risk_email_notifications_disabled" | "missing_email"
+}
+
+export const getDefaultPrimaryMethod = (available: AvailableMfaMethods): MfaPreferredMethod => {
+  if (available.totp) return "totp"
+  if (available.sms) return "sms"
+  return "email"
+}
+
+export const getDefaultSecondaryMethod = (
+  available: AvailableMfaMethods,
+  primary: MfaPreferredMethod,
+): MfaPreferredMethod | null => {
+  if (primary !== "sms" && available.sms) return "sms"
+  if (primary !== "email" && available.email) return "email"
+  if (primary !== "totp" && available.totp) return "totp"
+  return null
+}
+
+export const isMethodAvailable = (available: AvailableMfaMethods, method: MfaPreferredMethod): boolean => {
+  if (method === "totp") return available.totp
+  if (method === "sms") return available.sms
+  return available.email
+}
+
+export const normalizePreferredMethod = (
+  value: unknown,
+  fallback: MfaPreferredMethod,
+): MfaPreferredMethod => {
+  const normalized = String(value || "").trim().toLowerCase()
+  if (normalized === "totp" || normalized === "sms" || normalized === "email") {
+    return normalized
+  }
+  return fallback
+}
+
+export const readMfaPreferences = (
+  userData: Record<string, unknown> | undefined,
+  available: AvailableMfaMethods,
+): MfaSecurityPreferences => {
+  const securitySettings = (
+    (userData?.settings as { security?: { mfa?: Partial<MfaSecurityPreferences> } })?.security?.mfa || {}
+  ) as Partial<MfaSecurityPreferences>
+
+  const defaultPrimary = getDefaultPrimaryMethod(available)
+  const primaryCandidate = normalizePreferredMethod(securitySettings.primaryMethod, defaultPrimary)
+  const primaryMethod = isMethodAvailable(available, primaryCandidate) ? primaryCandidate : defaultPrimary
+
+  const secondaryCandidate = securitySettings.secondaryMethod ?
+    normalizePreferredMethod(securitySettings.secondaryMethod, primaryMethod) : null
+  const secondaryMethod = secondaryCandidate && secondaryCandidate !== primaryMethod &&
+    isMethodAvailable(available, secondaryCandidate) ? secondaryCandidate :
+    getDefaultSecondaryMethod(available, primaryMethod)
+
+  return {
+    primaryMethod,
+    secondaryMethod,
+    riskEmailNotifications: securitySettings.riskEmailNotifications !== false,
+    updatedAt: typeof securitySettings.updatedAt === "string" ? securitySettings.updatedAt : new Date().toISOString(),
+  }
+}
+
+export const resolveAvailableMfaMethods = (
+  userRecord: { email?: string | null; phoneNumber?: string | null; multiFactor?: { enrolledFactors?: Array<{ factorId?: string | null }> } },
+): AvailableMfaMethods => {
+  const enrolledFactors = userRecord.multiFactor?.enrolledFactors || []
+  const hasTotpFactor = enrolledFactors.some((factor) => factor.factorId === "totp")
+  const hasPhoneFactor = enrolledFactors.some((factor) => factor.factorId === "phone")
+
+  return {
+    totp: hasTotpFactor,
+    sms: hasPhoneFactor || (typeof userRecord.phoneNumber === "string" && userRecord.phoneNumber.length > 0),
+    email: typeof userRecord.email === "string" && userRecord.email.length > 0,
+  }
+}
+
+export const evaluateMfaDisabledNotification = (args: {
+  hasEnrolledMfa: boolean
+  riskEmailNotifications: boolean
+  hasEmail: boolean
+}): MfaDisabledNotificationEvaluation => {
+  if (args.hasEnrolledMfa) {
+    return { shouldNotify: false, reason: "mfa_still_enabled" }
+  }
+
+  if (!args.riskEmailNotifications) {
+    return { shouldNotify: false, reason: "risk_email_notifications_disabled" }
+  }
+
+  if (!args.hasEmail) {
+    return { shouldNotify: false, reason: "missing_email" }
+  }
+
+  return { shouldNotify: true, reason: "notify" }
+}
+
+const buildMfaDisabledEmailHtml = (): string => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MFA disabled</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:480px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="padding:32px 32px 8px 32px;text-align:center;">
+              <div style="width:48px;height:48px;background-color:#dc2626;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <span style="color:#fff;font-size:24px;line-height:48px;">\\u26A0\\uFE0F</span>
+              </div>
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#111318;letter-spacing:-0.3px;">Security alert</h1>
+              <p style="margin:8px 0 0 0;font-size:14px;color:#5f6b7a;line-height:1.5;">
+                Multi-factor authentication was disabled on your account.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px 24px 32px;">
+              <div style="background:#fef2f2;border-radius:12px;padding:16px;border:1px solid #fecaca;">
+                <p style="margin:0;font-size:14px;color:#991b1b;line-height:1.5;">
+                  Your account is now at higher risk. Re-enable an authenticator app (recommended) or SMS/Text message in Security settings as soon as possible.
+                </p>
+              </div>
+              <hr style="border:none;border-top:1px solid #e9edf2;margin:16px 0;">
+              <p style="margin:0;font-size:12px;color:#8a95a6;text-align:center;">
+                If you didn\\'t make this change, secure your account immediately and contact support.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:12px 0 0 0;font-size:11px;color:#b0b8c4;text-align:center;">
+          Deepscrape \\u2022 Security notice
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+const buildVerificationEmailHtml = (code: string, expiresInMin = 10): string => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification code</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:480px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="padding:32px 32px 8px 32px;text-align:center;">
+              <div style="width:48px;height:48px;background-color:#0891b2;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <span style="color:#fff;font-size:24px;line-height:48px;">\u{1F512}</span>
+              </div>
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#111318;letter-spacing:-0.3px;">Verify your sign-in</h1>
+              <p style="margin:8px 0 0 0;font-size:14px;color:#5f6b7a;line-height:1.5;">
+                Enter this code to complete the verification step.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px;text-align:center;">
+              <div style="background:#f0f4f8;border-radius:12px;padding:20px 16px;letter-spacing:8px;font-size:36px;font-weight:800;color:#0891b2;font-family:ui-monospace,'SF Mono',Monaco,monospace;">
+                ${code}
+              </div>
+              <p style="margin:16px 0 0 0;font-size:13px;color:#8a95a6;">This code expires in ${expiresInMin} minutes.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 24px 32px;">
+              <hr style="border:none;border-top:1px solid #e9edf2;margin:0 0 16px 0;">
+              <p style="margin:0;font-size:12px;color:#8a95a6;text-align:center;">
+                If you didn\\'t request this code, someone else may be trying to access your account.
+                <br>Please secure your account or contact support.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:12px 0 0 0;font-size:11px;color:#b0b8c4;text-align:center;">
+          Deepscrape \u2022 Security notice
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+const sendSecurityNoticeEmail = async (args: {
+  to: string
+  subject: string
+  text: string
+  html?: string
+}): Promise<void> => {
+  const resendApiKey = env.RESEND_API_KEY
+  const resendFromEmail = env.RESEND_FROM_EMAIL || "security@deepscrape.dev"
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY is not configured")
+  }
+
+  const resend = new Resend(resendApiKey)
+  await resend.emails.send({
+    from: resendFromEmail,
+    to: args.to,
+    subject: args.subject,
+    text: args.text,
+    html: args.html,
+  })
+}
+
+const writeSecurityAuditAndTimeline = async (args: {
+  userId: string
+  action: string
+  eventType: string
+  message: string
+  metadata?: Record<string, unknown>
+}): Promise<void> => {
+  const now = Timestamp.now()
+
+  await Promise.all([
+    db.collection("audit_logs").add({
+      action: args.action,
+      admin_uid: args.userId,
+      target_userId: args.userId,
+      reason: args.message,
+      timestamp: now,
+      isAdmin: false,
+      metadata: args.metadata || {},
+    }),
+    db
+      .collection("login_metrics")
+      .doc(args.userId)
+      .collection("login_history_events")
+      .doc()
+      .set({
+        uid: args.userId,
+        eventType: args.eventType,
+        providerId: "security",
+        browser: "",
+        os: "",
+        userAgent: "",
+        ipAddress: "",
+        location: "",
+        connected: false,
+        createdAt: now,
+        metadata: {
+          message: args.message,
+          ...(args.metadata || {}),
+        },
+      }),
+  ])
 }
 
 function getRequestIp(request: unknown): string {
@@ -44,31 +359,218 @@ async function resolveSessionGeo(request: unknown, fallbackIp: string): Promise<
     latitude: null,
     longitude: null,
     timezone: "UTC",
+    asn: null,
+    as: null,
+    isp: null,
+    domain: null,
+    usageType: null,
+    proxy: {
+      isProxy: false,
+      proxyType: null,
+      threat: null,
+      lastSeenDays: null,
+      provider: null,
+      fraudScore: null,
+      confidence: "unknown",
+    },
   }
 
   if (!lookupIp) {
     return fallback
   }
 
-  try {
-    const geoData = await lookupGeoByIp(lookupIp)
-    if (!geoData) {
-      return fallback
+  const normalizedLookupIp = lookupIp.trim().toLowerCase()
+  if (
+    normalizedLookupIp === "0.0.0.0" ||
+    normalizedLookupIp === "::" ||
+    normalizedLookupIp === "::1" ||
+    normalizedLookupIp === "127.0.0.1" ||
+    normalizedLookupIp === "localhost"
+  ) {
+    return fallback
+  }
+
+  return {
+    ...fallback,
+    ip: lookupIp,
+  }
+}
+
+function shouldSkipGeoEnrichment(ipInput: string | null | undefined): boolean {
+  const ip = normalizePublicIp(ipInput).trim().toLowerCase()
+  if (!ip) {
+    return true
+  }
+
+  return ip === "0.0.0.0" || ip === "::" || ip === "::1" || ip === "127.0.0.1" || ip === "localhost"
+}
+
+async function resolveGeoLookupUserRoles(userId: string, token?: Record<string, unknown>): Promise<string[]> {
+  const roleValues: unknown[] = []
+
+  const collectRoleValues = (...values: unknown[]): void => {
+    roleValues.push(...values)
+  }
+
+  if (token) {
+    collectRoleValues(token.role, token.roles)
+
+    const firebase = token.firebase
+    if (firebase && typeof firebase === "object") {
+      const firebaseClaims = firebase as Record<string, unknown>
+      collectRoleValues(firebaseClaims.role, firebaseClaims.roles)
     }
 
-    return {
-      ip: lookupIp,
+    const customClaims = token.customClaims
+    if (customClaims && typeof customClaims === "object") {
+      const claimValues = customClaims as Record<string, unknown>
+      collectRoleValues(claimValues.role, claimValues.roles)
+    }
+  }
+
+  try {
+    const authUser = await adminAuth.getUser(userId)
+    const claims = (authUser.customClaims || {}) as Record<string, unknown>
+    collectRoleValues(claims.role, claims.roles)
+  } catch (error) {
+    console.warn(`Failed to read auth claims for geo lookup roles for ${userId}:`, error)
+  }
+
+  try {
+    const userDoc = await db.collection("users").doc(userId).get()
+    if (userDoc.exists) {
+      const userData = userDoc.data() as Record<string, unknown>
+      collectRoleValues(userData.role, userData.roles)
+    }
+  } catch (error) {
+    console.warn(`Failed to read user document roles for geo lookup for ${userId}:`, error)
+  }
+
+  try {
+    const memberships = await db.collection("memberships").where("userId", "==", userId).limit(100).get()
+    for (const membershipDoc of memberships.docs) {
+      const membership = membershipDoc.data() as { role?: unknown }
+      collectRoleValues(membership.role)
+    }
+  } catch (error) {
+    console.warn(`Failed to read membership roles for geo lookup for ${userId}:`, error)
+  }
+
+  const resolvedRoles = normalizeGeoLookupRoles(...roleValues)
+  return resolvedRoles.length > 0 ? resolvedRoles : ["guest"]
+}
+
+async function enrichSessionGeoIntelligence(args: {
+  sessionId: string
+  userId: string
+  ipAddress: string
+  authToken?: Record<string, unknown>
+  requestId?: string
+  forwardedFor?: string
+}): Promise<void> {
+  const normalizedIp = normalizePublicIp(args.ipAddress)
+  const enrichmentTimestamp = Timestamp.now()
+  const intelligenceUpdatedAtIso = enrichmentTimestamp.toDate().toISOString()
+
+  const sessionRef = db.collection("loginSessions").doc(args.sessionId)
+  const userSessionRef = db.doc(`users/${args.userId}`).collection("sessions").doc(args.sessionId)
+
+  if (shouldSkipGeoEnrichment(normalizedIp)) {
+    const skipPatch = {
+      intelligenceSourceIp: normalizedIp || null,
+      intelligenceUpdatedAt: enrichmentTimestamp,
+      intelligenceStatus: "skipped" as SessionGeoEnrichmentStatus,
+    }
+
+    await Promise.all([
+      sessionRef.set(skipPatch, { merge: true }),
+      userSessionRef.set({
+        ...skipPatch,
+        syncedAt: enrichmentTimestamp,
+      }, { merge: true }),
+      updateSessionRedisCache(args.sessionId, {
+        intelligenceSourceIp: normalizedIp || null,
+        intelligenceUpdatedAt: intelligenceUpdatedAtIso,
+        intelligenceStatus: "skipped",
+      }),
+    ])
+    return
+  }
+
+  const lookupContext: GeoLookupRequestContext = {
+    firebaseUid: args.userId,
+    userRoles: await resolveGeoLookupUserRoles(args.userId, args.authToken),
+    requestId: args.requestId || `session-geo-${args.sessionId}`,
+    forwardedFor: args.forwardedFor || normalizedIp,
+  }
+
+  const geoData = await lookupGeoByIp(normalizedIp, lookupContext)
+  if (!geoData) {
+    const noMatchPatch = {
+      intelligenceSourceIp: normalizedIp,
+      intelligenceUpdatedAt: enrichmentTimestamp,
+      intelligenceStatus: "no-match" as SessionGeoEnrichmentStatus,
+    }
+
+    await Promise.all([
+      sessionRef.set(noMatchPatch, { merge: true }),
+      userSessionRef.set({
+        ...noMatchPatch,
+        syncedAt: enrichmentTimestamp,
+      }, { merge: true }),
+      updateSessionRedisCache(args.sessionId, {
+        intelligenceSourceIp: normalizedIp,
+        intelligenceUpdatedAt: intelligenceUpdatedAtIso,
+        intelligenceStatus: "no-match",
+      }),
+    ])
+    return
+  }
+
+  const intelligencePatch = {
+    ipAddress: geoData.ip,
+    location: geoData.city || "Unknown",
+    region: geoData.region || "Unknown",
+    country: geoData.countryLong || "Unknown",
+    latitude: geoData.latitude,
+    longitude: geoData.longitude,
+    timezone: geoData.timeZone || "UTC",
+    asn: geoData.asn,
+    asName: geoData.as,
+    isp: geoData.isp,
+    domain: geoData.domain,
+    usageType: geoData.usageType,
+    proxy: geoData.proxy,
+    intelligenceSourceIp: normalizedIp,
+    intelligenceUpdatedAt: enrichmentTimestamp,
+    intelligenceStatus: "resolved" as SessionGeoEnrichmentStatus,
+  }
+
+  await Promise.all([
+    sessionRef.set(intelligencePatch, { merge: true }),
+    userSessionRef.set({
+      ...intelligencePatch,
+      syncedAt: enrichmentTimestamp,
+    }, { merge: true }),
+    updateSessionRedisCache(args.sessionId, {
+      ipAddress: geoData.ip,
       location: geoData.city || "Unknown",
       region: geoData.region || "Unknown",
       country: geoData.countryLong || "Unknown",
       latitude: geoData.latitude,
       longitude: geoData.longitude,
       timezone: geoData.timeZone || "UTC",
-    }
-  } catch (error) {
-    console.warn("Session geo lookup fallback due to error:", error)
-    return fallback
-  }
+      asn: geoData.asn,
+      asName: geoData.as,
+      isp: geoData.isp,
+      domain: geoData.domain,
+      usageType: geoData.usageType,
+      proxy: geoData.proxy,
+      intelligenceSourceIp: normalizedIp,
+      intelligenceUpdatedAt: intelligenceUpdatedAtIso,
+      intelligenceStatus: "resolved",
+    }),
+  ])
 }
 
 /**
@@ -83,9 +585,9 @@ async function resolveSessionGeo(request: unknown, fallbackIp: string): Promise<
 export const createLoginSession = onCall(
   {
     cors: true,
-    secrets: [],
     region: "us-central1",
-    memory: "512MiB",
+    memory: "256MiB",
+    secrets: [functionsEnvJson],
   },
   async (request) => {
     const { userId, deviceId, metrics } = request.data as {
@@ -115,6 +617,7 @@ export const createLoginSession = onCall(
       const resolvedGeo = await resolveSessionGeo(request, metrics.ip)
       const resolvedLocation = metrics.location && metrics.location !== "Unknown" ? metrics.location : resolvedGeo.location
       const resolvedIp = resolvedGeo.ip || metrics.ip || "0.0.0.0"
+      const deviceFingerprint = `${metrics.userAgent || ""}|${resolvedIp}`
       const sessionId = `${userId}-${deviceId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
       // Create session record
@@ -131,11 +634,20 @@ export const createLoginSession = onCall(
         browser: metrics.browser,
         os: metrics.os,
         location: resolvedLocation,
+        deviceFingerprint,
         region: resolvedGeo.region,
         country: resolvedGeo.country,
         latitude: resolvedGeo.latitude,
         longitude: resolvedGeo.longitude,
         timezone: resolvedGeo.timezone,
+        asn: resolvedGeo.asn,
+        asName: resolvedGeo.as,
+        isp: resolvedGeo.isp,
+        domain: resolvedGeo.domain,
+        usageType: resolvedGeo.usageType,
+        proxy: resolvedGeo.proxy,
+        intelligenceStatus: "pending" as SessionGeoEnrichmentStatus,
+        intelligenceSourceIp: resolvedIp,
         providerId: metrics.providerId,
         expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days
       }
@@ -194,6 +706,7 @@ export const revokeMyLoginSession = onCall(
   {
     cors: true,
     enforceAppCheck: false,
+    secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
@@ -209,8 +722,16 @@ export const revokeMyLoginSession = onCall(
     }
 
     try {
-      const actorIsAdmin = await resolveActorIsAdmin(auth)
-      const result = await performSessionRevoke(auth.uid, loginId, reason, false, actorIsAdmin)
+      const actorAccess = await resolveActorSessionAccess(auth)
+      const result = await performSessionRevoke(
+        auth.uid,
+        loginId,
+        reason,
+        false,
+        actorAccess.canManageSessions,
+        actorAccess.role,
+        false,
+      )
 
       console.log(`✅ Session ${loginId} revoked for user ${result.targetUserId}`)
 
@@ -230,7 +751,9 @@ async function performSessionRevoke(
   loginId: string,
   reason: string | undefined,
   requireAdmin: boolean,
-  actorIsAdmin = false,
+  actorCanManageSessions = false,
+  actorRole: "admin" | "manager" | "owner" | "superadmin" | "elevated" | "user" = "user",
+  allowCrossUserRevoke = true,
 ) {
   const revokedAt = Timestamp.now()
 
@@ -245,17 +768,23 @@ async function performSessionRevoke(
     throw new Error("Invalid session record: missing userId")
   }
 
-  const isAdmin = actorIsAdmin
+  const isAdmin = actorRole === "admin"
+  const isPrivileged = actorCanManageSessions
 
-  if (requireAdmin && !isAdmin) {
-    throw new Error("Unauthorized: Admin role required")
+  if (requireAdmin && !isPrivileged) {
+    throw new Error("Unauthorized: Elevated role required")
   }
 
-  if (!isAdmin && targetUserId !== actorUid) {
+  const isCrossUserRequest = targetUserId !== actorUid
+  if (isCrossUserRequest && !allowCrossUserRevoke) {
     throw new Error("Unauthorized: You can only revoke your own sessions")
   }
 
-  const revokeReason = reason || (isAdmin ? "admin_initiated_revoke" : "user_initiated_revoke")
+  if (!isPrivileged && isCrossUserRequest) {
+    throw new Error("Unauthorized: You can only revoke your own sessions")
+  }
+
+  const revokeReason = reason || (isPrivileged ? "privileged_initiated_revoke" : "user_initiated_revoke")
 
   const batch = db.batch()
   const sessionRef = db.collection("loginSessions").doc(loginId)
@@ -263,7 +792,7 @@ async function performSessionRevoke(
     revokedAt,
     active: false,
     revokedBy: actorUid,
-    revokedByRole: isAdmin ? "admin" : "user",
+    revokedByRole: actorRole,
     revokeReason,
   })
 
@@ -315,13 +844,14 @@ async function performSessionRevoke(
 
   try {
     await db.collection("audit_logs").add({
-      action: isAdmin ? "admin_revoke_session" : "user_revoke_session",
+      action: isPrivileged ? "privileged_revoke_session" : "user_revoke_session",
       admin_uid: actorUid,
       target_loginId: loginId,
       target_userId: targetUserId,
       reason: revokeReason,
       timestamp: Timestamp.now(),
       isAdmin,
+      actorRole,
     })
   } catch (auditErr) {
     console.warn("Failed to write audit log:", auditErr)
@@ -331,12 +861,53 @@ async function performSessionRevoke(
     revokedAt,
     targetUserId,
     isAdmin,
+    isPrivileged,
+    actorRole,
   }
 }
 
-const isAdminClaim = (token: Record<string, unknown> | undefined): boolean => {
-  const role = token?.role
-  return typeof role === "string" && role.trim().toLowerCase() === "admin"
+const collectRoleValues = (value: unknown, collector: string[]): void => {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase()
+    if (normalized.length > 0) {
+      collector.push(normalized)
+    }
+    return
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectRoleValues(item, collector)
+    }
+  }
+}
+
+const isManagerLikeRole = (role: string): boolean => {
+  return role.includes("manager") || role.endsWith("_mgr") || role.endsWith("-mgr")
+}
+
+const resolveHighestSessionRole = (roles: string[]): "admin" | "superadmin" | "owner" | "manager" | "elevated" | "user" => {
+  if (roles.includes("admin") || roles.includes("platform_admin") || roles.includes("platform-admin")) {
+    return "admin"
+  }
+
+  if (roles.includes("superadmin") || roles.includes("super_admin") || roles.includes("super-admin")) {
+    return "superadmin"
+  }
+
+  if (roles.includes("owner")) {
+    return "owner"
+  }
+
+  if (roles.some((role) => isManagerLikeRole(role))) {
+    return "manager"
+  }
+
+  if (roles.some((role) => role === "lead" || role === "staff" || role === "operator")) {
+    return "elevated"
+  }
+
+  return "user"
 }
 
 const isBootstrapAdminEmail = (email?: string | null): boolean => {
@@ -348,24 +919,67 @@ const isBootstrapAdminEmail = (email?: string | null): boolean => {
   return env.ADMIN_EMAILS.some((adminEmail) => adminEmail === normalizedEmail)
 }
 
-const resolveActorIsAdmin = async (
+const resolveActorSessionAccess = async (
   auth: { uid: string; token?: Record<string, unknown> },
-): Promise<boolean> => {
-  if (isAdminClaim(auth.token)) {
-    return true
+): Promise<{
+  canManageSessions: boolean
+  role: "admin" | "manager" | "owner" | "superadmin" | "elevated" | "user"
+}> => {
+  const collectedRoles: string[] = []
+
+  if (auth.token) {
+    collectRoleValues(auth.token.role, collectedRoles)
+    collectRoleValues(auth.token.roles, collectedRoles)
+
+    const firebase = auth.token.firebase
+    if (firebase && typeof firebase === "object") {
+      const firebaseClaims = firebase as Record<string, unknown>
+      collectRoleValues(firebaseClaims.role, collectedRoles)
+      collectRoleValues(firebaseClaims.roles, collectedRoles)
+    }
+
+    const customClaims = auth.token.customClaims
+    if (customClaims && typeof customClaims === "object") {
+      const claimValues = customClaims as Record<string, unknown>
+      collectRoleValues(claimValues.role, collectedRoles)
+      collectRoleValues(claimValues.roles, collectedRoles)
+    }
   }
 
   const userDoc = await db.collection("users").doc(auth.uid).get()
-  const firestoreRole = userDoc.data()?.role
-  if (typeof firestoreRole === "string" && firestoreRole.trim().toLowerCase() === "admin") {
-    return true
+  if (userDoc.exists) {
+    const userData = userDoc.data() as Record<string, unknown>
+    collectRoleValues(userData.role, collectedRoles)
+    collectRoleValues(userData.roles, collectedRoles)
+  }
+
+  try {
+    const memberships = await db.collection("memberships").where("userId", "==", auth.uid).limit(100).get()
+    for (const membershipDoc of memberships.docs) {
+      const membership = membershipDoc.data() as { role?: unknown }
+      collectRoleValues(membership.role, collectedRoles)
+    }
+  } catch (error) {
+    console.warn(`Failed to read memberships while resolving session access for ${auth.uid}:`, error)
   }
 
   try {
     const authUser = await adminAuth.getUser(auth.uid)
-    return isBootstrapAdminEmail(authUser.email)
+    const claims = (authUser.customClaims || {}) as Record<string, unknown>
+    collectRoleValues(claims.role, collectedRoles)
+    collectRoleValues(claims.roles, collectedRoles)
+
+    if (isBootstrapAdminEmail(authUser.email)) {
+      collectedRoles.push("admin")
+    }
   } catch {
-    return false
+    // no-op, role resolution continues with available sources
+  }
+
+  const resolvedRole = resolveHighestSessionRole(collectedRoles)
+  return {
+    canManageSessions: resolvedRole !== "user",
+    role: resolvedRole,
   }
 }
 
@@ -373,6 +987,7 @@ export const revokeUserLoginSessionByAdmin = onCall(
   {
     cors: true,
     enforceAppCheck: false,
+    secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
@@ -388,8 +1003,15 @@ export const revokeUserLoginSessionByAdmin = onCall(
     }
 
     try {
-      const actorIsAdmin = await resolveActorIsAdmin(auth)
-      const result = await performSessionRevoke(auth.uid, loginId, reason, true, actorIsAdmin)
+      const actorAccess = await resolveActorSessionAccess(auth)
+      const result = await performSessionRevoke(
+        auth.uid,
+        loginId,
+        reason,
+        true,
+        actorAccess.canManageSessions,
+        actorAccess.role,
+      )
 
       console.log(`✅ Admin ${auth.uid} revoked session ${loginId} for user ${result.targetUserId}`)
 
@@ -410,6 +1032,7 @@ export const revokeAllUserSessionsByAdmin = onCall(
   {
     cors: true,
     enforceAppCheck: false,
+    secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
@@ -433,9 +1056,9 @@ export const revokeAllUserSessionsByAdmin = onCall(
       throw new Error("Missing required field: targetUserId")
     }
 
-    const actorIsAdmin = await resolveActorIsAdmin(auth)
-    if (!actorIsAdmin) {
-      throw new Error("Unauthorized: Admin role required")
+    const actorAccess = await resolveActorSessionAccess(auth)
+    if (!actorAccess.canManageSessions) {
+      throw new Error("Unauthorized: Elevated role required")
     }
 
     const queryLimit = Math.max(1, Math.min(200, Number(limit) || 100))
@@ -452,7 +1075,14 @@ export const revokeAllUserSessionsByAdmin = onCall(
 
       for (const sessionDoc of snapshot.docs) {
         const sessionId = sessionDoc.id
-        await performSessionRevoke(auth.uid, sessionId, reason || "admin_bulk_revoke", true, actorIsAdmin)
+        await performSessionRevoke(
+          auth.uid,
+          sessionId,
+          reason || "admin_bulk_revoke",
+          true,
+          actorAccess.canManageSessions,
+          actorAccess.role,
+        )
         revokedSessionIds.push(sessionId)
       }
 
@@ -742,6 +1372,7 @@ export const getUserLoginSessionsByAdmin = onCall(
   {
     cors: true,
     enforceAppCheck: false,
+    secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
@@ -760,9 +1391,9 @@ export const getUserLoginSessionsByAdmin = onCall(
       throw new Error("Unauthorized")
     }
 
-    const actorIsAdmin = await resolveActorIsAdmin(auth)
-    if (!actorIsAdmin) {
-      throw new Error("Unauthorized: Admin role required")
+    const actorAccess = await resolveActorSessionAccess(auth)
+    if (!actorAccess.canManageSessions) {
+      throw new Error("Unauthorized: Elevated role required")
     }
 
     const normalizedTargetUserId = String(targetUserId || "").trim()
@@ -843,9 +1474,17 @@ export const validateSessionCookie = onCall(
         try {
           const sessionData = JSON.parse(cachedSession)
           if (sessionData.userId === userId && sessionData.active) {
+            const cachedIntelligenceStatus = String(sessionData.intelligenceStatus || "").trim().toLowerCase()
+            const shouldRefreshFromFirestore = cachedIntelligenceStatus === "pending"
+
+            if (shouldRefreshFromFirestore) {
+              // Pending intelligence in cache can become stale if geo enrichment completed after session creation.
+              // Fall through to Firestore to refresh cache with authoritative values.
+            } else {
             // Update activity and TTL in cache
-            await redis.setex(`session:${sessionId}`, 30 * 60, cachedSession)
-            return { valid: true, cachedHit: true }
+              await redis.setex(`session:${sessionId}`, 30 * 60, cachedSession)
+              return { valid: true, cachedHit: true }
+            }
           }
         } catch (e) {
           // Fallthrough to Firestore
@@ -1032,6 +1671,157 @@ export const onLoginHistoryCreated = onDocumentWritten(
   },
 )
 
+export const enrichLoginSessionGeo = onDocumentWritten(
+  {
+    document: "loginSessions/{sessionId}",
+    database: DATABASE_NAME,
+    region: "us-central1",
+    memory: "512MiB",
+    secrets: [functionsEnvJson],
+  },
+  async (event) => {
+    const before = event.data?.before.data()
+    const after = event.data?.after.data()
+
+    if (!after) {
+      return
+    }
+
+    const sessionId = String(event.params.sessionId || "").trim()
+    const userId = String(after.userId || "").trim()
+    const ipAddress = normalizePublicIp(String(after.ipAddress || ""))
+    const currentSourceIp = normalizePublicIp(String(after.intelligenceSourceIp || ""))
+    const currentStatus = String(after.intelligenceStatus || "").trim().toLowerCase()
+
+    if (!sessionId || !userId || !ipAddress) {
+      return
+    }
+
+    const ipChanged = normalizePublicIp(String(before?.ipAddress || "")) !== ipAddress
+    const alreadyResolvedForSameIp =
+      currentSourceIp === ipAddress &&
+      typeof after.intelligenceUpdatedAt !== "undefined" &&
+      (currentStatus === "resolved" || currentStatus === "skipped")
+
+    if (!ipChanged && alreadyResolvedForSameIp) {
+      return
+    }
+
+    try {
+      await enrichSessionGeoIntelligence({
+        sessionId,
+        userId,
+        ipAddress,
+        requestId: `enrich-login-session-geo-${sessionId}`,
+        forwardedFor: ipAddress,
+      })
+      console.log(`✅ Session intelligence enriched for ${sessionId}`)
+    } catch (error) {
+      console.error(`❌ Error enriching session intelligence for ${sessionId}:`, error)
+    }
+  },
+)
+
+function getContinentFromTimezone(timezone: string): string {
+  if (!timezone) return "Unknown"
+  if (timezone.startsWith("Europe/")) return "Europe"
+  if (timezone.startsWith("Asia/")) return "Asia"
+  if (timezone.startsWith("America/")) return "North America"
+  if (timezone.startsWith("Africa/")) return "Africa"
+  if (timezone.startsWith("Australia/") || timezone.startsWith("Pacific/")) return "Oceania"
+  if (timezone.startsWith("Antarctica/")) return "Antarctica"
+  return "Unknown"
+}
+
+export const enrichGuestGeo = onDocumentWritten(
+  {
+    document: "guests/{guestId}",
+    database: DATABASE_NAME,
+    region: "us-central1",
+    memory: "256MiB",
+    secrets: [functionsEnvJson],
+  },
+  async (event) => {
+    const before = event.data?.before.data() as { ip?: { raw?: string }; intelligenceStatus?: string; intelligenceSourceIp?: string; intelligenceUpdatedAt?: unknown } | undefined
+    const after = event.data?.after.data() as { ip?: { raw?: string }; intelligenceStatus?: string; intelligenceSourceIp?: string; intelligenceUpdatedAt?: unknown } | undefined
+
+    if (!after) {
+      return
+    }
+
+    const guestId = String(event.params.guestId || "").trim()
+    const ipAddress = normalizePublicIp(String(after.ip?.raw || ""))
+    const currentSourceIp = normalizePublicIp(String(after.intelligenceSourceIp || ""))
+    const currentStatus = String(after.intelligenceStatus || "").trim().toLowerCase()
+
+    if (!guestId || !ipAddress) {
+      return
+    }
+
+    const ipChanged = normalizePublicIp(String(before?.ip?.raw || "")) !== ipAddress
+    const alreadyResolvedForSameIp =
+      currentSourceIp === ipAddress &&
+      typeof after.intelligenceUpdatedAt !== "undefined" &&
+      (currentStatus === "resolved" || currentStatus === "skipped")
+
+    if (!ipChanged && alreadyResolvedForSameIp) {
+      return
+    }
+
+    const guestRef = db.collection("guests").doc(guestId)
+    const enrichmentTimestamp = Timestamp.now()
+
+    if (shouldSkipGeoEnrichment(ipAddress)) {
+      await guestRef.set({
+        intelligenceSourceIp: ipAddress,
+        intelligenceUpdatedAt: enrichmentTimestamp,
+        intelligenceStatus: "skipped" as GuestGeoEnrichmentStatus,
+      }, { merge: true })
+      return
+    }
+
+    try {
+      const geoData = await lookupGeoByIp(ipAddress, {
+        firebaseUid: `guest:${guestId}`,
+        userRoles: ["guest"],
+        requestId: `enrich-guest-geo-${guestId}`,
+        forwardedFor: ipAddress,
+      })
+      if (!geoData) {
+        await guestRef.set({
+          intelligenceSourceIp: ipAddress,
+          intelligenceUpdatedAt: enrichmentTimestamp,
+          intelligenceStatus: "no-match" as GuestGeoEnrichmentStatus,
+        }, { merge: true })
+        return
+      }
+
+      const timezone = geoData.timeZone || "UTC"
+      await guestRef.set({
+        country: geoData.countryLong || "Unknown",
+        region: geoData.region || "Unknown",
+        location: geoData.city || "Unknown",
+        latitude: geoData.latitude ?? 0,
+        longitude: geoData.longitude ?? 0,
+        timezone,
+        geo: {
+          continent: getContinentFromTimezone(timezone),
+          region: geoData.countryShort || "Unknown",
+        },
+        network: geoData.network,
+        proxy: geoData.proxy,
+        intelligenceSourceIp: ipAddress,
+        intelligenceUpdatedAt: enrichmentTimestamp,
+        intelligenceStatus: "resolved" as GuestGeoEnrichmentStatus,
+      }, { merge: true })
+
+      console.log(`✅ Guest intelligence enriched for ${guestId}`)
+    } catch (error) {
+      console.error(`❌ Error enriching guest intelligence for ${guestId}:`, error)
+    }
+  },
+)
+
 /**
        * PHASE 4.2: Cloud Function: Send device verification code
        * Generates a 6-digit code and sends via email or SMS
@@ -1039,10 +1829,11 @@ export const onLoginHistoryCreated = onDocumentWritten(
        */
 export const sendDeviceVerificationCode = onCall(
   {
+    secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
-    const { userId, method } = request.data as { userId: string; method: "email" | "sms" }
+    const { userId, method, sessionId } = request.data as { userId: string; method: "email" | "sms" | "auto"; sessionId?: string }
     const auth = request.auth
 
     if (!auth || auth.uid !== userId) {
@@ -1053,23 +1844,48 @@ export const sendDeviceVerificationCode = onCall(
       throw new Error("Missing required fields: userId, method")
     }
 
-    if (!["email", "sms"].includes(method)) {
-      throw new Error("Invalid method: must be 'email' or 'sms'")
+    if (!["email", "sms", "auto"].includes(method)) {
+      throw new Error("Invalid method: must be 'email', 'sms' or 'auto'")
     }
+
+    // Rate limit: max 3 verification code requests per 10 minutes per user
+    const rateLimitKey = `rate_verification:${userId}`
+    const currentCount = await redis.get(rateLimitKey)
+    if (currentCount && Number(currentCount) >= 3) {
+      throw new Error(
+        "Too many verification code requests. Please wait before requesting a new code."
+      )
+    }
+
+    // Increment or set the counter with 10-minute expiry
+    const newCount = currentCount ? Number(currentCount) + 1 : 1
+    await redis.setex(rateLimitKey, 600, newCount.toString())
 
     try {
       const userRecord = await adminAuth.getUser(userId)
+      const userSnap = await db.doc(`users/${userId}`).get()
+      const userData = userSnap.data() as Record<string, unknown> | undefined
       const enrolledFactors = userRecord.multiFactor?.enrolledFactors || []
       const phoneMfaFactor = enrolledFactors.find((factor) => factor.factorId === "phone")
       const hasMfaEnabled = enrolledFactors.length > 0
       const hasPhoneNumber = typeof userRecord.phoneNumber === "string" && userRecord.phoneNumber.length > 0
       const hasPhoneMfa = !!phoneMfaFactor
+      const availableMethods = resolveAvailableMfaMethods(userRecord)
+      const preferences = readMfaPreferences(userData, availableMethods)
 
-      if (method === "email" && !userRecord.email) {
+      const selectedMethod = method === "auto" ?
+        preferences.primaryMethod :
+        (method === "sms" ? "sms" : "email")
+
+      const effectiveMethod = isMethodAvailable(availableMethods, selectedMethod) ?
+        selectedMethod :
+        getDefaultPrimaryMethod(availableMethods)
+
+      if (effectiveMethod === "email" && !userRecord.email) {
         throw new Error("No email found on account. Add an email first.")
       }
 
-      if (method === "sms" && !hasPhoneNumber && !hasPhoneMfa) {
+      if (effectiveMethod === "sms" && !hasPhoneNumber && !hasPhoneMfa) {
         throw new Error("No phone number or phone MFA factor found. Add phone number or enable MFA first.")
       }
 
@@ -1080,41 +1896,41 @@ export const sendDeviceVerificationCode = onCall(
 
       // Store verification attempt in Firestore
       const verificationRef = db.collection("device_verifications").doc()
-      await verificationRef.set({
+      const verificationData: Record<string, unknown> = {
         userId,
         code: verificationCode,
-        method,
+        method: effectiveMethod,
         expiresAt: expiresAtTs,
         createdAt: Timestamp.now(),
         verified: false,
         attempts: 0,
-      })
+      }
+      if (sessionId) {
+        verificationData.sessionId = sessionId
+      }
+      await verificationRef.set(verificationData)
 
       // Store in Redis for fast lookup (expires in 10 minutes)
-      const verificationCacheKey = `verification:${userId}:${method}`
-      await redis.setex(verificationCacheKey, 600, JSON.stringify({
+      const verificationCacheKey = `verification:${userId}:${effectiveMethod}`
+      const redisData: Record<string, string> = {
         code: verificationCode,
         expiresAt: expiresAt.toISOString(),
         createdAt: new Date().toISOString(),
-      }))
+      }
+      if (sessionId) {
+        redisData.sessionId = sessionId
+      }
+      await redis.setex(verificationCacheKey, 600, JSON.stringify(redisData))
 
       let deliveryStatus: "sent" | "pending_client_mfa"
       let deliveryMessage = ""
 
-      if (method === "email") {
-        const resendApiKey = env.RESEND_API_KEY
-        const resendFromEmail = env.RESEND_FROM_EMAIL || "onboarding@resend.dev"
-
-        if (!resendApiKey) {
-          throw new Error("RESEND_API_KEY is not configured")
-        }
-
-        const resend = new Resend(resendApiKey)
-        await resend.emails.send({
-          from: resendFromEmail,
+      if (effectiveMethod === "email") {
+        await sendSecurityNoticeEmail({
           to: userRecord.email as string,
           subject: "Your device verification code",
           text: `Your verification code is ${verificationCode}. It expires in 10 minutes.`,
+          html: buildVerificationEmailHtml(verificationCode),
         })
 
         deliveryStatus = "sent"
@@ -1134,9 +1950,11 @@ export const sendDeviceVerificationCode = onCall(
         success: true,
         expiresAt: expiresAt.toISOString(),
         message: deliveryMessage,
+        method: effectiveMethod,
         deliveryStatus,
         hasPhoneNumber,
         hasMfaEnabled,
+        sessionId: sessionId || null,
       }
     } catch (error) {
       console.error("❌ Error sending verification code:", error)
@@ -1144,6 +1962,195 @@ export const sendDeviceVerificationCode = onCall(
         `Failed to send verification code: ${error instanceof Error ? error.message : "Unknown error"}`
       )
     }
+  },
+)
+
+export const getMfaSecurityPreferences = onCall(
+  {
+    cors: true,
+    enforceAppCheck: false,
+    region: "us-central1",
+    secrets: [functionsEnvJson],
+  },
+  async (request) => {
+    const auth = request.auth
+    if (!auth) {
+      throw new Error("Unauthorized")
+    }
+
+    const userId = auth.uid
+    const [userRecord, userSnap] = await Promise.all([
+      adminAuth.getUser(userId),
+      db.doc(`users/${userId}`).get(),
+    ])
+
+    const availableMethods = resolveAvailableMfaMethods(userRecord)
+    const userData = userSnap.data() as Record<string, unknown> | undefined
+    const preferences = readMfaPreferences(userData, availableMethods)
+
+    return {
+      success: true,
+      preferences,
+      availableMethods,
+      hasEnrolledMfa: (userRecord.multiFactor?.enrolledFactors || []).length > 0,
+    }
+  },
+)
+
+export const updateMfaSecurityPreferences = onCall(
+  {
+    cors: true,
+    enforceAppCheck: false,
+    region: "us-central1",
+    secrets: [functionsEnvJson],
+  },
+  async (request) => {
+    const auth = request.auth
+    if (!auth) {
+      throw new Error("Unauthorized")
+    }
+
+    const userId = auth.uid
+    const { primaryMethod, secondaryMethod, riskEmailNotifications } =
+      (request.data || {}) as {
+        primaryMethod?: MfaPreferredMethod
+        secondaryMethod?: MfaPreferredMethod | null
+        riskEmailNotifications?: boolean
+      }
+
+    const [userRecord, userSnap] = await Promise.all([
+      adminAuth.getUser(userId),
+      db.doc(`users/${userId}`).get(),
+    ])
+
+    const availableMethods = resolveAvailableMfaMethods(userRecord)
+    const userData = userSnap.data() as Record<string, unknown> | undefined
+    const existingPreferences = readMfaPreferences(userData, availableMethods)
+
+    const desiredPrimary = normalizePreferredMethod(primaryMethod, existingPreferences.primaryMethod)
+    const normalizedPrimary = isMethodAvailable(availableMethods, desiredPrimary) ?
+      desiredPrimary : getDefaultPrimaryMethod(availableMethods)
+
+    const desiredSecondary = secondaryMethod ? normalizePreferredMethod(secondaryMethod, normalizedPrimary) : null
+    const normalizedSecondary = desiredSecondary && desiredSecondary !== normalizedPrimary &&
+      isMethodAvailable(availableMethods, desiredSecondary) ? desiredSecondary :
+      getDefaultSecondaryMethod(availableMethods, normalizedPrimary)
+
+    const preferences: MfaSecurityPreferences = {
+      primaryMethod: normalizedPrimary,
+      secondaryMethod: normalizedSecondary,
+      riskEmailNotifications: typeof riskEmailNotifications === "boolean" ?
+        riskEmailNotifications : existingPreferences.riskEmailNotifications,
+      updatedAt: new Date().toISOString(),
+    }
+
+    await db.doc(`users/${userId}`).set({
+      settings: {
+        security: {
+          mfa: preferences,
+        },
+      },
+      updated_At: new Date(),
+    }, { merge: true })
+
+    await writeSecurityAuditAndTimeline({
+      userId,
+      action: "mfa_preferences_updated",
+      eventType: "mfa_preference_updated",
+      message: "MFA challenge preference was updated",
+      metadata: {
+        previous: existingPreferences,
+        updated: preferences,
+        availableMethods,
+      },
+    })
+
+    return {
+      success: true,
+      preferences,
+      availableMethods,
+    }
+  },
+)
+
+export const notifyMfaRiskEvent = onCall(
+  {
+    cors: true,
+    enforceAppCheck: false,
+    region: "us-central1",
+    secrets: [functionsEnvJson],
+  },
+  async (request) => {
+    const auth = request.auth
+    if (!auth) {
+      throw new Error("Unauthorized")
+    }
+
+    const eventType = String((request.data as { eventType?: string })?.eventType || "").trim().toLowerCase()
+    if (eventType !== "mfa_disabled") {
+      throw new Error("Unsupported event type")
+    }
+
+    const userId = auth.uid
+    const [userRecord, userSnap] = await Promise.all([
+      adminAuth.getUser(userId),
+      db.doc(`users/${userId}`).get(),
+    ])
+
+    const availableMethods = resolveAvailableMfaMethods(userRecord)
+    const userData = userSnap.data() as Record<string, unknown> | undefined
+    const preferences = readMfaPreferences(userData, availableMethods)
+
+    const hasEnrolledMfa = (userRecord.multiFactor?.enrolledFactors || []).length > 0
+    const evaluation = evaluateMfaDisabledNotification({
+      hasEnrolledMfa,
+      riskEmailNotifications: preferences.riskEmailNotifications,
+      hasEmail: Boolean(userRecord.email),
+    })
+
+    if (evaluation.shouldNotify) {
+      await sendSecurityNoticeEmail({
+        to: userRecord.email as string,
+        subject: "Security alert: Multi-factor authentication is disabled",
+        text: "Multi-factor authentication was disabled on your account. Your account is now at higher risk. Re-enable an authenticator app (recommended) or SMS/Text message in Security settings as soon as possible.",
+        html: buildMfaDisabledEmailHtml(),
+      })
+    }
+
+    if (!hasEnrolledMfa) {
+      await db.collection("users").doc(userId).collection("alerts").add({
+        type: "warning",
+        title: "MFA disabled",
+        message: "Your account currently has no enrolled second factor. Re-enable MFA to reduce account takeover risk.",
+        createdAt: Timestamp.now(),
+        read: false,
+        metadata: {
+          source: "notifyMfaRiskEvent",
+          eventType,
+          notificationReason: evaluation.reason,
+        },
+      })
+    }
+
+    await writeSecurityAuditAndTimeline({
+      userId,
+      action: "mfa_disabled_risk_event",
+      eventType: "mfa_disabled",
+      message: "MFA disabled risk event processed",
+      metadata: {
+        eventType,
+        hasEnrolledMfa,
+        riskEmailNotifications: preferences.riskEmailNotifications,
+        notificationReason: evaluation.reason,
+        notificationSent: evaluation.shouldNotify,
+      },
+    })
+
+    if (!evaluation.shouldNotify) {
+      return { success: true, skipped: true, reason: evaluation.reason }
+    }
+
+    return { success: true }
   },
 )
 
@@ -1162,11 +2169,13 @@ export const verifyAndTrustDevice = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { userId, code, deviceId, deviceName } = request.data as {
+    const { userId, code, deviceId, deviceName, sessionId, mfaVerified } = request.data as {
                         userId: string
                         code: string
                         deviceId: string
                         deviceName: string
+                        sessionId?: string
+                        mfaVerified?: boolean
                     }
     const auth = request.auth
 
@@ -1200,20 +2209,30 @@ export const verifyAndTrustDevice = onCall(
         throw new Error("Verification code expired")
       }
 
-      // Verify code
-      if (verificationData.code !== code) {
-        // Increment attempts
-        await verificationDoc.ref.update({
-          attempts: (verificationData.attempts || 0) + 1,
-        })
+      // If the verification was bound to a session, validate the session matches
+      if (verificationData.sessionId && sessionId && verificationData.sessionId !== sessionId) {
+        throw new Error("Verification code was generated for a different session. Please request a new code.")
+      }
 
-        // Lock after 5 wrong attempts
-        if ((verificationData.attempts || 0) >= 4) {
-          await verificationDoc.ref.update({ verified: false })
-          throw new Error("Too many failed attempts. Please request a new code.")
+      // If MFA was verified on the client (SMS path), skip code check
+      const isMfaVerified = mfaVerified === true && verificationData.method === "sms"
+
+      if (!isMfaVerified) {
+        // Verify code
+        if (verificationData.code !== code) {
+          // Increment attempts
+          await verificationDoc.ref.update({
+            attempts: (verificationData.attempts || 0) + 1,
+          })
+
+          // Lock after 5 wrong attempts
+          if ((verificationData.attempts || 0) >= 4) {
+            await verificationDoc.ref.update({ verified: false })
+            throw new Error("Too many failed attempts. Please request a new code.")
+          }
+
+          throw new Error("Invalid verification code")
         }
-
-        throw new Error("Invalid verification code")
       }
 
       // Mark verification as complete

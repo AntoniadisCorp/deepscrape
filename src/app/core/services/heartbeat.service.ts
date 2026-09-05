@@ -1,13 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { interval, Subscription, merge, fromEvent, timer, Subject, throwError, Observable } from 'rxjs';
+import { interval, Subscription, merge, fromEvent, timer, Subject, throwError, Observable, of } from 'rxjs';
 import { takeUntil, switchMap, filter, startWith, tap, catchError } from 'rxjs/operators';
 import { WindowToken } from './window.service';
+import { GuestTrackingService } from './guest-tracking.service';
 
 @Injectable({ providedIn: 'root' })
 export class HeartbeatService {
 
     private window = inject(WindowToken);
+    private guestTrackingService = inject(GuestTrackingService, { optional: true });
     private intervalSub: Subscription | null = null;
     private inactivitySub: Subscription | null = null;
     private isPaused = false;
@@ -46,12 +48,22 @@ export class HeartbeatService {
         this.intervalSub = interval(intervalMs).pipe(
             filter(() => !this.isPaused && navigator.onLine),
             takeUntil(this.stop$),
-            switchMap(() => this.http.post('/event/heartbeat', {}, { headers }).pipe(
-                catchError((error) => this.handleHeartbeatError(error))
-            )),
+            switchMap(() => {
+                // Heartbeat requires either a user or guest identifier from cookies/session context.
+                // During device-verification gated sign-in, auth can be true before IDs are established.
+                if (!this.hasTrackingIdentity()) {
+                    return of({ success: false, skipped: true, reason: 'missing-id' });
+                }
+
+                return this.http.post('/event/heartbeat', {}, { headers }).pipe(
+                    catchError((error) => this.handleHeartbeatError(error))
+                );
+            }),
         ).subscribe({
-            next() {
-                console.log('Heartbeat successful')
+            next(result: any) {
+                if (!result?.skipped) {
+                    console.log('Heartbeat successful')
+                }
             },
             error(err) {
                 console.error('Heartbeat error:', err);
@@ -75,9 +87,21 @@ export class HeartbeatService {
         });
     }
 
+    private hasTrackingIdentity(): boolean {
+        const state = this.guestTrackingService?.getSessionContext();
+        return Boolean(state?.userId || state?.guestId);
+    }
+
     private handleHeartbeatError(error: any) {
         if (error?.status === 401 && error?.error?.code === 'session_revoked') {
             this.sessionRevokedSubject.next();
+            return throwError(() => error);
+        }
+
+        // Guest/user identifiers can be temporarily unavailable during gated sign-in flows
+        // (e.g., device verification required). Treat this as a no-op rather than a hard error.
+        if (error?.status === 400 && error?.error?.message === 'No guest or user ID found') {
+            return of({ success: false, skipped: true, reason: 'missing-id' });
         }
 
         return throwError(() => error);

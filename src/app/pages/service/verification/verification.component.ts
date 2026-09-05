@@ -157,10 +157,17 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loading.phone = true;
     this.errorMessage = '';
     try {
+      if (!this.recaptchaVerifier) {
+        this.initializeRecaptcha();
+      }
+
       const phoneNumber = this.phoneVerificationForm.get('phoneNumber')?.value;
       if (!phoneNumber) {
         throw new Error('Phone number is required.');
       }
+
+      this.pendingPhoneNumber = phoneNumber;
+
       if (this.user) {
         this.pendingVerificationId = await this.authService.startPhoneMfaEnrollment(phoneNumber, this.recaptchaVerifier);
       } else {
@@ -207,6 +214,7 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
         await this.ensureCurrentSessionMetrics('phone', true);
 
         this.pendingVerificationId = null;
+        this.confirmationResult = null as any;
         const message = this.translate.instant('VERIFICATION.PHONE_VERIFIED_SUCCESS');
         this.showSnackbar(message, SnackBarType.success);
         this.router.navigateByUrl(this.getReturnUrl());
@@ -238,7 +246,18 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
     this.loading.email = true;
     try {
       if (this.auth.currentUser) {
-        await sendEmailVerification(this.auth.currentUser);
+        this.auth.useDeviceLanguage();
+        const continueUrl = this.getAbsoluteContinueUrl(this.getReturnUrl());
+
+        await sendEmailVerification(
+          this.auth.currentUser,
+          continueUrl
+            ? {
+                url: continueUrl,
+                handleCodeInApp: false,
+              }
+            : undefined,
+        );
         const message = this.translate.instant('VERIFICATION.EMAIL_SENT_SUCCESS');
         this.showSnackbar(message, SnackBarType.info, '', 5000);
       } else {
@@ -312,6 +331,27 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private getReturnUrl(): string {
     return resolveSafeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))
+  }
+
+  public hasPendingPhoneCode(): boolean {
+    return !!this.pendingVerificationId;
+  }
+
+  private getAbsoluteContinueUrl(returnUrl: string): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+
+    const origin = this.window?.location?.origin;
+    if (!origin) {
+      return null;
+    }
+
+    try {
+      return new URL(returnUrl, origin).toString();
+    } catch {
+      return null;
+    }
   }
 }
 

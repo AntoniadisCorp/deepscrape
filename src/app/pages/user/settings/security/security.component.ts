@@ -9,12 +9,25 @@ import { ActivatedRoute } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { from } from 'rxjs/internal/observable/from';
 import { firstValueFrom } from 'rxjs';
-import { DialogComponent, RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
+import qrcodeGenerator from 'qrcode-generator';
+import { DialogComponent, RadioToggleComponent, SessionActivityComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
 import { createPasswordStrengthValidator, RippleDirective } from 'src/app/core/directives';
 import { checkPasswordStrength, getErrorLabel, getErrorMessage } from 'src/app/core/functions';
+import {
+  mapSessionRecordToDisplaySession,
+  resolveSessionIdFromRecord,
+  getSessionNetworkSummary,
+  getSessionProxySummary,
+  getSessionRiskLabel,
+  getSessionRiskLevel,
+  getSessionRiskReason,
+  getSessionRiskTone,
+} from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
-import { AuthService, FirestoreService, LocalStorage, SnackbarService } from 'src/app/core/services';
+import { AuthService, DeviceVerificationService, FirestoreService, HighRiskActionService, LocalStorage, MfaSecurityMethod, SnackbarService, WebAuthnService } from 'src/app/core/services';
 import { Loading, loginHistoryEvent, loginHistoryInfo, Users, SessionDisplayInfo } from 'src/app/core/types';
+import { TrustedDevice } from 'src/app/core/services/device-verification.service';
+import { WebAuthnCredential } from 'src/app/core/services/webauthn.service';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { myIcons, OtpInputComponent, themeStorageKey } from 'src/app/shared';
 import { TranslateService } from '@ngx-translate/core';
@@ -29,7 +42,7 @@ type SecurityTimelineEvent = loginHistoryEvent & {
 
 @Component({
   selector: 'app-security-tab',
-  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass, OtpInputComponent, RadioToggleComponent, DialogComponent],
+  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass, OtpInputComponent, RadioToggleComponent, DialogComponent, SessionActivityComponent],
   templateUrl: './security.component.html',
   styleUrl: './security.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +73,7 @@ export class SecurityTabComponent {
 
   private authService = inject(AuthService)
   private firestoreService = inject(FirestoreService)
+  private highRiskActionService = inject(HighRiskActionService)
   private snackbarService = inject(SnackbarService)
   private translate = inject(TranslateService)
 
@@ -77,6 +91,9 @@ export class SecurityTabComponent {
   readonly accountPhoneNumber = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\+[1-9]\d{7,14}$/)] })
   readonly accountPhoneCode = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] })
   readonly mfaStatusControl = new FormControl(false, { nonNullable: true })
+  readonly mfaPrimaryControl = new FormControl<MfaSecurityMethod>('email', { nonNullable: true })
+  readonly mfaSecondaryControl = new FormControl<MfaSecurityMethod | 'none'>('none', { nonNullable: true })
+  readonly riskEmailNotificationsControl = new FormControl(true, { nonNullable: true })
   readonly totpCode = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] })
   readonly totpDisplayName = new FormControl('Authenticator app', { nonNullable: true, validators: [Validators.required, Validators.maxLength(40)] })
   private recaptchaVerifier!: RecaptchaVerifier
@@ -86,10 +103,13 @@ export class SecurityTabComponent {
   private readonly platformId = inject(PLATFORM_ID)
   private readonly document = inject(DOCUMENT)
   private readonly fireAuth = inject(Auth)
+  private readonly deviceVerificationService = inject(DeviceVerificationService)
+  private readonly webAuthnService = inject(WebAuthnService)
   readonly totpStep = signal<'idle' | 'verify'>('idle')
   readonly totpError = signal('')
   readonly totpSecretKey = signal('')
   readonly totpQrUrl = signal('')
+  readonly totpQrCodeDataUrl = signal('')
   readonly totpFactors = signal<readonly MultiFactorInfo[]>([])
   readonly phoneMfaFactors = signal<readonly MultiFactorInfo[]>([])
   // PHASE 2.2: Updated type to SessionDisplayInfo for enterprise sessions
@@ -100,9 +120,29 @@ export class SecurityTabComponent {
   readonly activityLoading = signal(false)
   readonly activityError = signal('')
   readonly revokingSessionId = signal('')
+  readonly trustedDevices = signal<TrustedDevice[]>([])
+  readonly trustedDevicesLoading = signal(false)
+  readonly trustedDevicesError = signal('')
+  readonly revokingDeviceId = signal('')
+  readonly passkeys = signal<WebAuthnCredential[]>([])
+  readonly passkeysLoading = signal(false)
+  readonly isRegisteringPasskey = signal(false)
+  readonly passkeyError = signal('')
   readonly currentSessionId = signal('')
-  readonly confirmationDialog = signal<'disable-mfa' | 'revoke-current-session' | null>(null)
+  readonly confirmationDialog = signal<'disable-mfa' | 'disable-totp-factor' | 'revoke-current-session' | null>(null)
   readonly pendingSessionToRevoke = signal<(SessionDisplayInfo & { id?: string }) | null>(null)
+  readonly pendingTotpFactorToRemove = signal<MultiFactorInfo | null>(null)
+  readonly mfaPreferencesLoading = signal(false)
+  readonly mfaPreferencesSaving = signal(false)
+  readonly mfaPreferencesError = signal('')
+  readonly availableMfaMethods = signal<{ totp: boolean; sms: boolean; email: boolean }>({
+    totp: false,
+    sms: false,
+    email: true,
+  })
+  private pendingEnrichmentRefreshTimer: ReturnType<typeof setTimeout> | null = null
+  private pendingEnrichmentRefreshAttempts = 0
+  private readonly maxPendingEnrichmentRefreshAttempts = 2
 
   // ── MFA challenge state for provider linking (when user has MFA enabled) ──
   readonly mfaLinkResolver = signal<MultiFactorResolver | null>(null)
@@ -136,6 +176,16 @@ export class SecurityTabComponent {
     //Add 'implements OnInit' to the class.
     this.initSecurityForm()
     this.initProviders()
+    void this.loadMfaPreferences()
+    void this.loadTrustedDevices()
+    void this.loadPasskeys()
+
+    this.destroyRef.onDestroy(() => {
+      if (this.pendingEnrichmentRefreshTimer) {
+        clearTimeout(this.pendingEnrichmentRefreshTimer)
+        this.pendingEnrichmentRefreshTimer = null
+      }
+    })
   }
 
 
@@ -176,6 +226,205 @@ export class SecurityTabComponent {
       .subscribe((value) => {
         void this.onMfaStatusSelected(value)
       })
+
+    this.mfaPrimaryControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        const secondary = this.mfaSecondaryControl.value
+        if (secondary === value) {
+          this.mfaSecondaryControl.setValue('none', { emitEvent: false })
+        }
+      })
+  }
+
+  private getPreferredMfaMethod(): MfaSecurityMethod {
+    return this.mfaPrimaryControl.value
+  }
+
+  isMethodAvailable(method: MfaSecurityMethod): boolean {
+    return this.availableMfaMethods()[method]
+  }
+
+  isPrimaryMethod(method: MfaSecurityMethod): boolean {
+    return this.mfaPrimaryControl.value === method
+  }
+
+  private async loadTrustedDevices(): Promise<void> {
+    if (!this.user?.uid) return
+
+    this.trustedDevicesLoading.set(true)
+    this.trustedDevicesError.set('')
+
+    try {
+      const devices = await firstValueFrom(this.deviceVerificationService.getTrustedDevices(this.user.uid))
+      this.trustedDevices.set(devices)
+    } catch (error) {
+      console.error('Failed to load trusted devices:', error)
+      this.trustedDevicesError.set('Failed to load trusted devices.')
+    } finally {
+      this.trustedDevicesLoading.set(false)
+    }
+  }
+
+  async removeTrustedDevice(deviceId: string): Promise<void> {
+    if (!this.user?.uid) return
+
+    this.revokingDeviceId.set(deviceId)
+
+    try {
+      const success = await this.deviceVerificationService.removeTrustedDevice(this.user.uid, deviceId)
+      if (success) {
+        this.trustedDevices.update((devices) => devices.filter((d) => d.deviceId !== deviceId))
+        this.showSnackbar('Device trust revoked.', SnackBarType.success, '', 3000)
+      } else {
+        this.showSnackbar('Failed to revoke device trust.', SnackBarType.error, '', 5000)
+      }
+    } catch (error) {
+      console.error('Failed to remove trusted device:', error)
+      this.showSnackbar('Failed to revoke device trust.', SnackBarType.error, '', 5000)
+    } finally {
+      this.revokingDeviceId.set('')
+    }
+  }
+
+  async revokeAllTrustedDevices(): Promise<void> {
+    if (!this.user?.uid) return
+
+    const devices = this.trustedDevices()
+    for (const device of devices) {
+      await this.removeTrustedDevice(device.deviceId)
+    }
+  }
+
+  getDeviceDisplayName(device: TrustedDevice): string {
+    return device.deviceName || 'Unknown device'
+  }
+
+  getDeviceBrowser(device: TrustedDevice): string {
+    return device.browser || device.fingerprint?.userAgent?.slice(0, 50) || 'Unknown'
+  }
+
+  getDeviceOs(device: TrustedDevice): string {
+    return device.os || ''
+  }
+
+  getDeviceLocation(device: TrustedDevice): string {
+    return device.location || 'Unknown location'
+  }
+
+  formatTrustedDate(date: Date | undefined): string {
+    if (!date) return 'N/A'
+    try {
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  private async loadPasskeys(): Promise<void> {
+    if (!this.user?.uid) return
+
+    this.passkeysLoading.set(true)
+    try {
+      await this.webAuthnService.loadPasskeys()
+      this.passkeys.set(this.webAuthnService.passkeys())
+      this.passkeyError.set('')
+    } catch (error) {
+      console.error('Failed to load passkeys:', error)
+      this.passkeyError.set('Failed to load passkeys.')
+    } finally {
+      this.passkeysLoading.set(false)
+    }
+  }
+
+  async registerPasskey(): Promise<void> {
+    this.isRegisteringPasskey.set(true)
+    this.passkeyError.set('')
+    try {
+      const success = await this.webAuthnService.registerPasskey()
+      if (success) {
+        this.passkeys.set(this.webAuthnService.passkeys())
+        this.showSnackbar('Passkey registered successfully.', SnackBarType.success, '', 3000)
+      } else {
+        this.passkeyError.set(this.webAuthnService.error() || 'Failed to register passkey.')
+      }
+    } catch (error) {
+      console.error('Passkey registration error:', error)
+      this.passkeyError.set('Failed to register passkey.')
+    } finally {
+      this.isRegisteringPasskey.set(false)
+    }
+  }
+
+  async removePasskey(credentialDocId: string): Promise<void> {
+    try {
+      const success = await this.webAuthnService.removePasskey(credentialDocId)
+      if (success) {
+        this.passkeys.set(this.webAuthnService.passkeys())
+        this.showSnackbar('Passkey removed.', SnackBarType.success, '', 3000)
+      } else {
+        this.showSnackbar('Failed to remove passkey.', SnackBarType.error, '', 5000)
+      }
+    } catch (error) {
+      console.error('Failed to remove passkey:', error)
+      this.showSnackbar('Failed to remove passkey.', SnackBarType.error, '', 5000)
+    }
+  }
+
+  async loadMfaPreferences(): Promise<void> {
+    this.mfaPreferencesLoading.set(true)
+    this.mfaPreferencesError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      const result = await this.authService.getMfaSecurityPreferences()
+      this.availableMfaMethods.set(result.availableMethods)
+      this.mfaPrimaryControl.setValue(result.preferences.primaryMethod, { emitEvent: false })
+      this.mfaSecondaryControl.setValue(result.preferences.secondaryMethod || 'none', { emitEvent: false })
+      this.riskEmailNotificationsControl.setValue(result.preferences.riskEmailNotifications, { emitEvent: false })
+    } catch (error: any) {
+      this.mfaPreferencesError.set(this.getMfaErrorMessage(error))
+    } finally {
+      this.mfaPreferencesLoading.set(false)
+      this.cdr.detectChanges()
+    }
+  }
+
+  async saveMfaPreferences(): Promise<void> {
+    if (this.mfaPreferencesSaving()) {
+      return
+    }
+
+    this.mfaPreferencesSaving.set(true)
+    this.mfaPreferencesError.set('')
+    this.cdr.detectChanges()
+
+    try {
+      const secondary = this.mfaSecondaryControl.value === 'none' ? null : this.mfaSecondaryControl.value
+      const result = await this.authService.updateMfaSecurityPreferences({
+        primaryMethod: this.mfaPrimaryControl.value,
+        secondaryMethod: secondary,
+        riskEmailNotifications: this.riskEmailNotificationsControl.value,
+      })
+
+      this.availableMfaMethods.set(result.availableMethods)
+      this.mfaPrimaryControl.setValue(result.preferences.primaryMethod, { emitEvent: false })
+      this.mfaSecondaryControl.setValue(result.preferences.secondaryMethod || 'none', { emitEvent: false })
+      this.riskEmailNotificationsControl.setValue(result.preferences.riskEmailNotifications, { emitEvent: false })
+      this.showSnackbar('Security MFA preferences saved', SnackBarType.success, '', 2500)
+    } catch (error: any) {
+      this.mfaPreferencesError.set(this.getMfaErrorMessage(error))
+      this.showSnackbar(this.mfaPreferencesError(), SnackBarType.error, '', 4500)
+    } finally {
+      this.mfaPreferencesSaving.set(false)
+      this.cdr.detectChanges()
+    }
   }
 
   initUser() {
@@ -209,70 +458,70 @@ export class SecurityTabComponent {
     }
   }
 
-  loadActiveSessions(): void {
+  loadActiveSessions(options: { silent?: boolean } = {}): void {
+    const { silent = false } = options
+
     if (!this.user?.uid) {
       this.activeSessions.set([])
       return
     }
 
-    this.sessionsLoading.set(true)
-    this.sessionsError.set('')
+    if (!silent) {
+      this.sessionsLoading.set(true)
+      this.sessionsError.set('')
+    }
 
     this.firestoreService.getMyLoginSessionsWithFallback(25)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (sessions) => {
           // PHASE 2.2: Transform sessions to SessionDisplayInfo format
-          const displaySessions: SessionDisplayInfo[] = (sessions || []).map((s: any) => {
-            const createdDate = this.resolveSessionDate(s, [
-              'createdAt',
-              'timestamp',
-              'lastSignInTime',
-              'signInTime',
-              'created_At',
-              'updated_At',
-            ])
-            const lastActivityDate = this.resolveSessionDate(s, [
-              'lastActivityAt',
-              'updated_At',
-              'timestamp',
-              'lastSignInTime',
-            ])
-            const expiresDate = this.resolveSessionDate(s, ['expiresAt'])
-            const location = this.resolveSessionLocation(s)
-            const sessionId = this.resolveSessionId(s)
-            return {
-              sessionId,
-              userId: s.userId || this.user?.uid || '',
-              deviceId: s.deviceId || '',
-              createdAt: createdDate || new Date(),
-              lastActivityAt: lastActivityDate || createdDate || new Date(),
-              expiresAt: expiresDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-              revokedAt: s.revokedAt || null,
-              active: s.active !== false && !s.revokedAt,
-              ipAddress: s.ipAddress || '',
-              userAgent: s.userAgent || '',
-              browser: s.browser || '',
-              os: s.os || '',
-              location,
-              providerId: s.providerId || 'firebase',
-              isCurrent: this.isCurrentSession({ ...s, sessionId } as SessionDisplayInfo & { id?: string }),
-              isRevoked: !!((s as any).revokedAt),
-              isSignedOut: !!((s as any).signOutTime),
-              deviceFingerprintMatch: false, // TODO: implement device fingerprint check
-              humanReadableTime: createdDate ? createdDate.toLocaleString() : 'Unknown time'
-            } as SessionDisplayInfo
-          })
+          const displaySessions: SessionDisplayInfo[] = (sessions || []).map((s: any) =>
+            mapSessionRecordToDisplaySession(s, {
+              defaultUserId: this.user?.uid || '',
+              currentSessionId: this.currentSessionId(),
+            }),
+          )
           this.activeSessions.set(displaySessions)
-          this.sessionsLoading.set(false)
+
+          if (!silent) {
+            this.sessionsLoading.set(false)
+          }
+
+          if (displaySessions.some((session) => String(session.intelligenceStatus || '').toLowerCase() === 'pending')) {
+            this.schedulePendingEnrichmentRefresh()
+          } else {
+            this.pendingEnrichmentRefreshAttempts = 0
+          }
+
           this.cdr.detectChanges()
         },
         error: (error) => {
-          this.sessionsLoading.set(false)
-          this.sessionsError.set(getErrorMessage(error, this.translate))
+          if (!silent) {
+            this.sessionsLoading.set(false)
+            this.sessionsError.set(getErrorMessage(error, this.translate))
+          } else {
+            console.warn('Silent active session refresh failed:', error)
+          }
           this.cdr.detectChanges()
         }
       })
+  }
+
+  private schedulePendingEnrichmentRefresh(): void {
+    if (this.pendingEnrichmentRefreshTimer) {
+      return
+    }
+
+    if (this.pendingEnrichmentRefreshAttempts >= this.maxPendingEnrichmentRefreshAttempts) {
+      return
+    }
+
+    this.pendingEnrichmentRefreshAttempts += 1
+    this.pendingEnrichmentRefreshTimer = setTimeout(() => {
+      this.pendingEnrichmentRefreshTimer = null
+      this.loadActiveSessions({ silent: true })
+    }, 3000)
   }
 
   loadActivityTimeline(): void {
@@ -321,8 +570,18 @@ export class SecurityTabComponent {
   }
 
   isCurrentSession(session: SessionDisplayInfo & { id?: string }): boolean {
-    const sessionId = this.resolveSessionId(session)
+    const sessionId = resolveSessionIdFromRecord(session)
     return !!sessionId && sessionId === this.currentSessionId()
+  }
+
+  getSessionForVisualization(): SessionDisplayInfo | null {
+    const sessions = this.activeSessions()
+    if (!sessions.length) {
+      return null
+    }
+
+    const currentSession = sessions.find((session) => this.isCurrentSession(session))
+    return currentSession || sessions[0]
   }
 
   canRevokeSession(session: SessionDisplayInfo): boolean {
@@ -365,8 +624,32 @@ export class SecurityTabComponent {
     return this.detectOsFromUserAgent(session.userAgent || '')
   }
 
+  getSessionRiskLevel(session: SessionDisplayInfo): 'pending' | 'low' | 'medium' | 'high' {
+    return getSessionRiskLevel(session)
+  }
+
+  getSessionRiskTone(session: SessionDisplayInfo): string {
+    return getSessionRiskTone(session)
+  }
+
+  getSessionRiskLabel(session: SessionDisplayInfo): string {
+    return getSessionRiskLabel(session)
+  }
+
+  getSessionRiskReason(session: SessionDisplayInfo): string {
+    return getSessionRiskReason(session)
+  }
+
+  getSessionNetworkSummary(session: SessionDisplayInfo): string {
+    return getSessionNetworkSummary(session)
+  }
+
+  getSessionProxySummary(session: SessionDisplayInfo): string {
+    return getSessionProxySummary(session)
+  }
+
   async revokeSession(session: SessionDisplayInfo & { id?: string }): Promise<void> {
-    const loginId = this.resolveSessionId(session)
+    const loginId = resolveSessionIdFromRecord(session)
     if (!loginId || this.revokingSessionId()) return
 
     if (this.isCurrentSession(session)) {
@@ -387,15 +670,6 @@ export class SecurityTabComponent {
       return isNaN(date.getTime()) ? null : date
     }
     return null
-  }
-
-  private resolveSessionId(session: any): string {
-    return (
-      session?.sessionId ||
-      session?.loginId ||
-      session?.id ||
-      ''
-    )
   }
 
   private resolveEventSessionId(event: loginHistoryEvent): string {
@@ -454,12 +728,16 @@ export class SecurityTabComponent {
   }
 
   getActivityEventLabel(event: SecurityTimelineEvent): string {
+    if (event.eventType === 'mfa_preference_updated') return 'MFA preferences updated'
+    if (event.eventType === 'mfa_disabled') return 'MFA disabled risk event'
     if (event.eventType === 'logout') return 'Signed out'
     if (event.eventType === 'revoke') return 'Session revoked'
     return 'Signed in'
   }
 
   getActivityEventTone(event: SecurityTimelineEvent): string {
+    if (event.eventType === 'mfa_preference_updated') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+    if (event.eventType === 'mfa_disabled') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
     if (event.eventType === 'logout') return 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
     if (event.eventType === 'revoke') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
     return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
@@ -606,6 +884,7 @@ export class SecurityTabComponent {
     const dialogType = this.confirmationDialog()
     this.confirmationDialog.set(null)
     this.pendingSessionToRevoke.set(null)
+    this.pendingTotpFactorToRemove.set(null)
 
     if (dialogType === 'disable-mfa') {
       this.syncMfaStatusControl()
@@ -620,6 +899,15 @@ export class SecurityTabComponent {
 
     if (dialogType === 'disable-mfa') {
       await this.disableMfaFactors()
+      return
+    }
+
+    if (dialogType === 'disable-totp-factor') {
+      const factor = this.pendingTotpFactorToRemove()
+      this.pendingTotpFactorToRemove.set(null)
+      if (factor?.uid) {
+        await this.removeTotpFactor(factor.uid)
+      }
       return
     }
 
@@ -641,6 +929,10 @@ export class SecurityTabComponent {
       return 'Disable multi-factor authentication?'
     }
 
+    if (this.confirmationDialog() === 'disable-totp-factor') {
+      return 'Disable authenticator app?'
+    }
+
     if (this.confirmationDialog() === 'revoke-current-session') {
       return 'Revoke current session?'
     }
@@ -653,6 +945,12 @@ export class SecurityTabComponent {
       return 'This will remove <strong class="text-white">all enrolled second factors</strong> from your account.'
     }
 
+    if (this.confirmationDialog() === 'disable-totp-factor') {
+      const factor = this.pendingTotpFactorToRemove()
+      const factorName = factor?.displayName || 'Authenticator app'
+      return `This will disable <strong class="text-white">${factorName}</strong> as a sign-in second factor.`
+    }
+
     if (this.confirmationDialog() === 'revoke-current-session') {
       return 'You are about to revoke your <strong class="text-white">current session</strong>. You will be signed out immediately.'
     }
@@ -663,6 +961,10 @@ export class SecurityTabComponent {
   getConfirmationConfirmLabel(): string {
     if (this.confirmationDialog() === 'disable-mfa') {
       return 'Disable MFA'
+    }
+
+    if (this.confirmationDialog() === 'disable-totp-factor') {
+      return 'Disable app'
     }
 
     if (this.confirmationDialog() === 'revoke-current-session') {
@@ -697,6 +999,11 @@ export class SecurityTabComponent {
       this.phoneMfaVerificationId = ''
       await this.refreshSecurityUser()
       this.showSnackbar('Two-factor authentication disabled', SnackBarType.success, '', 3000)
+      try {
+        await this.authService.notifyMfaDisabledRisk()
+      } catch {
+        // Best-effort security notification.
+      }
     } catch (error: any) {
       const message = this.getMfaErrorMessage(error)
       this.showSnackbar(message, SnackBarType.error, '', 6000)
@@ -709,7 +1016,7 @@ export class SecurityTabComponent {
 
   // PHASE 2.2: Updated runSessionRevoke to work with SessionDisplayInfo
   private runSessionRevoke(session: SessionDisplayInfo & { id?: string }): void {
-    const loginId = this.resolveSessionId(session)
+    const loginId = resolveSessionIdFromRecord(session)
     if (!loginId || this.revokingSessionId()) return
 
     this.revokingSessionId.set(loginId)
@@ -887,7 +1194,7 @@ export class SecurityTabComponent {
       )
   }
 
-  protected disconnectProvider(provider: string) {
+  protected async disconnectProvider(provider: string) {
     if (this.isProviderMutationInProgress()) {
       this.showSnackbar('Another provider operation is in progress. Please wait.', SnackBarType.info, '', 3000)
       return
@@ -900,6 +1207,12 @@ export class SecurityTabComponent {
         `Cannot unlink the currently logged-in provider (${provider}).`,
         SnackBarType.error
       )
+      return
+    }
+
+    const verified = await this.highRiskActionService.ensureVerified('unlink_provider')
+    if (!verified) {
+      this.showSnackbar('Device verification is required before unlinking providers.', SnackBarType.warning, '', 4000)
       return
     }
 
@@ -992,9 +1305,11 @@ export class SecurityTabComponent {
 
     try {
       const enrollment = await this.authService.startTotpEnrollment()
+      const qrCodeDataUrl = this.createTotpQrCodeDataUrl(enrollment.qrCodeUrl)
       this.pendingTotpSecret = enrollment.secret
       this.totpSecretKey.set(enrollment.secretKey)
       this.totpQrUrl.set(enrollment.qrCodeUrl)
+      this.totpQrCodeDataUrl.set(qrCodeDataUrl)
       this.totpCode.reset('')
       this.totpStep.set('verify')
     } catch (error: any) {
@@ -1025,6 +1340,7 @@ export class SecurityTabComponent {
       this.totpCode.reset('')
       this.totpSecretKey.set('')
       this.totpQrUrl.set('')
+      this.totpQrCodeDataUrl.set('')
       this.syncTotpFactors()
       this.showSnackbar('Authenticator app enrolled successfully', SnackBarType.success, '', 3000)
     } catch (error: any) {
@@ -1044,6 +1360,13 @@ export class SecurityTabComponent {
     this.totpCode.reset('')
     this.totpSecretKey.set('')
     this.totpQrUrl.set('')
+    this.totpQrCodeDataUrl.set('')
+    this.cdr.detectChanges()
+  }
+
+  openTotpDisableDialog(factor: MultiFactorInfo): void {
+    this.pendingTotpFactorToRemove.set(factor)
+    this.confirmationDialog.set('disable-totp-factor')
     this.cdr.detectChanges()
   }
 
@@ -1119,6 +1442,37 @@ export class SecurityTabComponent {
     }
 
     return providers.some((provider) => !unsupportedFirstFactors.has(provider.providerId))
+  }
+
+  async copyTotpValue(value: string, label: string): Promise<void> {
+    const normalizedValue = value.trim()
+    if (!normalizedValue) {
+      return
+    }
+
+    if (!isPlatformBrowser(this.platformId) || !navigator?.clipboard?.writeText) {
+      this.showSnackbar(`Copy ${label.toLowerCase()} manually`, SnackBarType.info, '', 3000)
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(normalizedValue)
+      this.showSnackbar(`${label} copied`, SnackBarType.success, '', 2500)
+    } catch {
+      this.showSnackbar(`Failed to copy ${label.toLowerCase()}`, SnackBarType.warning, '', 3000)
+    }
+  }
+
+  private createTotpQrCodeDataUrl(value: string): string {
+    const qrCode = qrcodeGenerator(0, 'M')
+    qrCode.addData(value)
+    qrCode.make()
+
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCode.createSvgTag({
+      cellSize: 6,
+      margin: 1,
+      scalable: true,
+    }))}`
   }
 
   private syncTotpFactors(): void {
@@ -1263,6 +1617,12 @@ export class SecurityTabComponent {
       return
     }
 
+    const verified = await this.highRiskActionService.ensureVerified('unlink_provider')
+    if (!verified) {
+      this.showSnackbar('Device verification is required before unlinking providers.', SnackBarType.warning, '', 4000)
+      return
+    }
+
     this.loading.remove = true
     this.accountPhoneError.set('')
     this.cdr.detectChanges()
@@ -1391,6 +1751,14 @@ export class SecurityTabComponent {
 
     const phoneFactors = resolver.hints.filter(h => h.factorId === 'phone')
     const totpFactor = resolver.hints.find(h => h.factorId === 'totp')
+    const preferredMethod = this.getPreferredMfaMethod()
+
+    if (totpFactor && (preferredMethod === 'totp' || phoneFactors.length === 0)) {
+      this.mfaLinkStep.set('totp-code')
+      this.loading[provider] = false
+      this.cdr.detectChanges()
+      return
+    }
 
     if (phoneFactors.length > 0) {
       this.loading[provider] = true

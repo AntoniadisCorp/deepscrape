@@ -1,5 +1,5 @@
 
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { WithGradientBorderComponent } from 'src/app/core/components';
 import { myIcons } from 'src/app/shared';
@@ -8,7 +8,8 @@ import { myIcons } from 'src/app/shared';
   selector: 'app-features',
   imports: [LucideAngularModule, WithGradientBorderComponent],
   templateUrl: './features.component.html',
-  styleUrl: './features.component.scss'
+  styleUrl: './features.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeaturesComponent {
 
@@ -21,8 +22,8 @@ export class FeaturesComponent {
     },
     {
       icon: myIcons['gauge'], // Replace with actual icon component or path
-      title: "Lightning Fast",
-      description: "Browser pooling with pre-warmed instances and memory-adaptive dispatcher for optimal performance."
+      title: "Lightning-Fast Engine",
+      description: "Browser pooling with pre-warmed instances and a memory-adaptive dispatcher for low-latency crawls."
     },
     {
       icon: myIcons['shield'], // Replace with actual icon component or path
@@ -41,8 +42,8 @@ export class FeaturesComponent {
     },
     {
       icon: myIcons['network'], // Replace with actual icon component or path
-      title: "Deep Crawling",
-      description: "BFS, DFS, and BestFirst strategies with graph-based website traversal algorithms."
+      title: "Deep Crawling Strategies",
+      description: "BFS, DFS, and BestFirst traversal — graph-based algorithms with crash recovery and prefetch mode."
     }
   ];
 
@@ -75,7 +76,7 @@ export class FeaturesComponent {
     {
       icon: myIcons['zap'], // Replace with actual icon component or path
       title: "LXML Speed Mode",
-      description: "Ultra-fast HTML parsing using lxml library with optimized resource efficiency."
+      description: "Ultra-fast HTML parsing with an lxml-backed engine, optimized for large-scale extraction."
     }
   ];
 }

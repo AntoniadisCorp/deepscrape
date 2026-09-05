@@ -1,113 +1,173 @@
-import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { RippleDirective } from 'src/app/core/directives'
 import { AuthService } from 'src/app/core/services/auth.service';
 
 @Component({
   selector: 'app-admin-project-config',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatCardModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RippleDirective],
   template: `
-    <div class="p-6 max-w-4xl">
-      <h1 class="text-3xl font-bold mb-6">Project Configuration</h1>
+    <section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+      <header class="mb-6 rounded-2xl border border-gray2/80 bg-[#212121] p-6 shadow-[0_8px_32px_-20px_rgba(15,23,42,0.35)] dark:border-gray5/70 dark:bg-[#212121]">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-gray5/90 dark:text-gray3/90">Admin Configuration</p>
+        <h1 class="mt-2 text-2xl font-extrabold tracking-tight text-gray6 sm:text-3xl dark:text-white">
+          Project Security Controls
+        </h1>
+        <p class="mt-3 max-w-3xl text-sm leading-relaxed text-gray5 dark:text-gray3">
+          Control project-wide TOTP MFA for authenticator apps. Turning this off prevents new enrollments and can break existing second-factor sign-ins.
+        </p>
+      </header>
 
-      <!-- TOTP MFA Enablement Card -->
-      <mat-card class="mb-6">
-        <mat-card-header>
-          <mat-card-title>Multi-Factor Authentication (MFA)</mat-card-title>
-          <mat-card-subtitle>Enable TOTP authenticator app support</mat-card-subtitle>
-        </mat-card-header>
+      <article class="overflow-hidden rounded-2xl border border-gray2 bg-[#212121] shadow-[0_20px_50px_-32px_rgba(15,23,42,0.45)] dark:border-gray5 dark:bg-[#212121]">
+        <div class="border-b border-gray2 bg-[#212121]/95 px-5 py-4 dark:border-gray5 dark:bg-[#212121]/95 sm:px-6">
+          <h2 class="text-lg font-bold text-gray6 dark:text-white">Authenticator App MFA</h2>
+          <p class="mt-1 text-sm text-gray5 dark:text-gray3">Applies to the full Firebase project.</p>
+        </div>
 
-        <mat-card-content>
-          <p class="text-gray-600 mb-4">
-            Enable TOTP (Time-based One-Time Password) authentication to allow users to enroll
-            authenticator apps like Google Authenticator, Microsoft Authenticator, or Authy.
-          </p>
-
-          <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+        <div class="space-y-5 px-5 py-5 sm:px-6">
+          <div class="flex flex-col gap-4 rounded-xl border border-gray2 bg-[#212121] p-4 shadow-sm dark:border-gray5 dark:bg-[#212121] sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="font-semibold text-blue-900">TOTP Status</p>
-              <p class="text-sm text-blue-700">{{ totpEnabled ? '✅ Enabled' : '⏳ Not Enabled' }}</p>
+              <p class="text-sm font-semibold text-gray6 dark:text-white">Current Status</p>
+              <p class="mt-1 text-sm" [class]="statusToneClass()">{{ statusLabel() }}</p>
             </div>
+
             <button
-              mat-raised-button
-              color="primary"
-              (click)="enableTotp()"
-              [disabled]="isLoading || isStatusLoading || totpEnabled"
-              class="!rounded-lg"
+              type="button"
+              role="switch"
+              [attr.aria-checked]="totpEnabled()"
+              [disabled]="isBusy()"
+              (click)="toggleTotp()"
+              appRipple
+              rippleColor="light"
+              class="group relative inline-flex h-11 w-[86px] items-center rounded-full border-2 border-gray3 bg-[#212121] p-1 transition-all duration-300 ease-out hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray4 dark:bg-[#212121]"
+              [class.!border-cyan-600]="totpEnabled()"
+              [class.ring-2]="isLoading()"
+              [class.ring-cyan-400]="isLoading()"
             >
-              <mat-spinner *ngIf="isLoading" diameter="20" class="mr-2"></mat-spinner>
-              {{ totpEnabled ? 'Already Enabled' : 'Enable TOTP MFA' }}
+              <span
+                class="absolute left-3 right-3 text-right text-[10px] font-bold uppercase tracking-[0.12em] text-gray5 transition-opacity duration-300 dark:text-gray2"
+                [class.opacity-0]="totpEnabled()"
+              >OFF</span>
+              <span
+                class="absolute left-3 right-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity duration-300"
+                [class.opacity-0]="!totpEnabled()"
+              >ON</span>
+              <span
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2a2a] shadow-[0_6px_20px_-10px_rgba(15,23,42,0.75)] transition-transform duration-300 ease-out"
+                [class.translate-x-[48px]]="totpEnabled()"
+              >
+                <span class="h-2.5 w-2.5 rounded-full bg-cyan-500 transition-colors duration-300" [class.!bg-rose-500]="!totpEnabled()"></span>
+              </span>
             </button>
           </div>
 
-          <div *ngIf="successMessage" class="p-3 bg-green-50 border border-green-200 rounded text-green-700 mb-4">
-            ✅ {{ successMessage }}
+          <div class="rounded-xl border border-amber-200/70 bg-[#212121] p-4 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-[#212121] dark:text-amber-200">
+            <p class="font-semibold">Security note</p>
+            <p class="mt-1">Use this only for project-level policy changes. User-level MFA enrollment is managed in each account settings page.</p>
           </div>
 
-          <div *ngIf="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded text-red-700">
-            ❌ {{ errorMessage }}
+          @if (isStatusLoading()) {
+            <div class="rounded-lg border border-gray2 bg-[#212121] px-4 py-3 text-sm text-gray5 dark:border-gray5 dark:bg-[#212121] dark:text-gray2">
+              Reading current project MFA configuration...
+            </div>
+          }
+
+          @if (successMessage()) {
+            <div class="rounded-lg border border-emerald-200 bg-[#212121] px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-900/70 dark:bg-[#212121] dark:text-emerald-200">
+              {{ successMessage() }}
+            </div>
+          }
+
+          @if (errorMessage()) {
+            <div class="rounded-lg border border-rose-200 bg-[#212121] px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-900/70 dark:bg-[#212121] dark:text-rose-200">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <div class="flex items-center justify-end gap-3 border-t border-gray2 pt-5 dark:border-gray5">
+            <button
+              type="button"
+              (click)="loadTotpStatus()"
+              [disabled]="isBusy()"
+              appRipple
+              rippleColor="dark"
+              class="btn btn-sm btn-gray btn-ring disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              (click)="toggleTotp()"
+              [disabled]="isBusy()"
+              appRipple
+              rippleColor="light"
+              class="btn btn-sm btn-blue btn-ring btn-ring-blue !border-cyan-600 !bg-cyan-600 hover:!border-cyan-700 hover:!bg-cyan-700 dark:!border-cyan-500 dark:!bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ isLoading() ? 'Updating...' : (totpEnabled() ? 'Disable TOTP MFA' : 'Enable TOTP MFA') }}
+            </button>
           </div>
-          <div *ngIf="isStatusLoading" class="p-3 bg-gray-50 border border-gray-200 rounded text-gray-700 mb-4">
-            Checking current project MFA status...
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
+        </div>
+      </article>
+    </section>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminProjectConfigComponent implements OnInit {
   private authService = inject(AuthService);
-  private cdr = inject(ChangeDetectorRef);
 
-  isLoading = false;
-  isStatusLoading = false;
-  totpEnabled = false;
-  successMessage = '';
-  errorMessage = '';
+  protected readonly isLoading = signal(false)
+  protected readonly isStatusLoading = signal(false)
+  protected readonly totpEnabled = signal(false)
+  protected readonly successMessage = signal('')
+  protected readonly errorMessage = signal('')
+  protected readonly isBusy = computed(() => this.isLoading() || this.isStatusLoading())
+  protected readonly statusLabel = computed(() => this.totpEnabled() ? 'Enabled for this project' : 'Disabled for this project')
+  protected readonly statusToneClass = computed(() => this.totpEnabled() ?
+    'text-emerald-700 dark:text-emerald-300' :
+    'text-amber-700 dark:text-amber-300')
 
   async ngOnInit(): Promise<void> {
     await this.loadTotpStatus()
   }
 
-  async loadTotpStatus(): Promise<void> {
-    this.isStatusLoading = true
-    this.errorMessage = ''
-    this.successMessage = ''
-    this.cdr.detectChanges()
+  protected async loadTotpStatus(): Promise<void> {
+    this.isStatusLoading.set(true)
+    this.errorMessage.set('')
+    this.successMessage.set('')
 
     try {
       const status = await this.authService.getTotpMfaProjectStatus()
-      this.totpEnabled = status.status === 'enabled' || status.status === 'already-enabled'
-      this.successMessage = status.message
+      const isEnabled = status.config?.state === 'ENABLED' || status.status === 'enabled' || status.status === 'already-enabled'
+      this.totpEnabled.set(isEnabled)
+      this.successMessage.set(status.message)
     } catch (error: any) {
-      this.errorMessage = error?.message || 'Failed to load TOTP MFA project status'
+      this.errorMessage.set(error?.message || 'Failed to load TOTP MFA project status')
     } finally {
-      this.isStatusLoading = false
-      this.cdr.detectChanges()
+      this.isStatusLoading.set(false)
     }
   }
 
-  async enableTotp(): Promise<void> {
-    this.isLoading = true;
-    this.successMessage = '';
-    this.errorMessage = '';
-    this.cdr.detectChanges()
+  protected async toggleTotp(): Promise<void> {
+    if (this.isBusy()) {
+      return
+    }
+
+    const nextEnabledState = !this.totpEnabled()
+    this.isLoading.set(true)
+    this.successMessage.set('')
+    this.errorMessage.set('')
 
     try {
-      const result = await this.authService.enableTotpMfaForProject();
-      this.totpEnabled = result.status === 'enabled' || result.status === 'already-enabled';
-      this.successMessage = result.message || 'TOTP MFA has been enabled successfully!';
-      console.log('TOTP MFA enabled:', result);
+      const result = await this.authService.setTotpMfaProjectEnabled(nextEnabledState)
+      const isEnabled = result.config?.state === 'ENABLED' || result.status === 'enabled' || result.status === 'already-enabled'
+      this.totpEnabled.set(isEnabled)
+      this.successMessage.set(result.message || 'TOTP MFA project configuration updated successfully.')
     } catch (error: any) {
-      this.errorMessage = error?.message || 'Failed to enable TOTP MFA';
-      console.error('TOTP enablement error:', error);
+      this.errorMessage.set(error?.message || 'Failed to update TOTP MFA')
+      console.error('TOTP MFA update error:', error)
     } finally {
-      this.isLoading = false;
-      this.cdr.detectChanges()
+      this.isLoading.set(false)
     }
   }
 }

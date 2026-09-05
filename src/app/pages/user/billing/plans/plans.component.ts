@@ -16,7 +16,7 @@ import {
   PlanPeriod,
   UserBilling,
 } from 'src/app/core/types';
-import { AuthService, BillingService } from 'src/app/core/services';
+import { AuthService, BillingService, HighRiskActionService } from 'src/app/core/services';
 import { catchError, combineLatest, firstValueFrom, map, Observable, of, shareReplay, startWith } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WindowToken } from 'src/app/core/services';
@@ -79,6 +79,7 @@ export class PlansComponent {
   constructor(
     private readonly billingService: BillingService,
     private readonly authService: AuthService,
+    private readonly highRiskActionService: HighRiskActionService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
   ) {
@@ -507,6 +508,11 @@ export class PlansComponent {
     }
 
     try {
+      const verified = await this.highRiskActionService.ensureVerified('billing_change')
+      if (!verified) {
+        return
+      }
+
       await this.billingService.startTrial()
     } catch (error) {
       console.error('Unable to start trial from plans promo', error)
@@ -534,6 +540,10 @@ export class PlansComponent {
       }
 
       try {
+        const verified = await this.highRiskActionService.ensureVerified('billing_change')
+        if (!verified) {
+          return
+        }
         await this.billingService.startTrial()
       } catch (error) {
         console.error('Unable to start trial', error)
@@ -547,6 +557,11 @@ export class PlansComponent {
     }
 
     try {
+      const verified = await this.highRiskActionService.ensureVerified('billing_change')
+      if (!verified) {
+        return
+      }
+
       const successUrl = `${this.window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`
       const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent('oh are you not satisfied with the offer, ask for new offer')}`
 
@@ -571,6 +586,11 @@ export class PlansComponent {
     }
 
     try {
+      const verified = await this.highRiskActionService.ensureVerified('billing_change')
+      if (!verified) {
+        return
+      }
+
       const successUrl = `${this.window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`
       const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent('oh are you not satisfied with the offer, ask for new offer')}`
 
@@ -596,6 +616,11 @@ export class PlansComponent {
     this.clampCustomCredits(config)
 
     try {
+      const verified = await this.highRiskActionService.ensureVerified('billing_change')
+      if (!verified) {
+        return
+      }
+
       const successUrl = `${this.window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`
       const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent('custom credits checkout canceled')}`
 
@@ -619,6 +644,11 @@ export class PlansComponent {
     }
 
     try {
+      const verified = await this.highRiskActionService.ensureVerified('billing_change')
+      if (!verified) {
+        return
+      }
+
       const url = await this.billingService.openBillingPortal(this.window.location.origin + '/billing/plans')
       if (url) {
         this.window.location.assign(url)
@@ -635,6 +665,11 @@ export class PlansComponent {
     }
 
     try {
+      const verified = await this.highRiskActionService.ensureVerified('billing_change')
+      if (!verified) {
+        return
+      }
+
       await this.billingService.resumeSubscriptionCancellation()
     } catch (error) {
       console.error('Unable to resume subscription cancellation', error)

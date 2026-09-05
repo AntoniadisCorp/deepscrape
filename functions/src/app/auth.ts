@@ -6,7 +6,7 @@ import { db, dbName, getSecretFromManager, purgeSecretAndAllRevisions, saveToSec
 import { auth, runWith } from "firebase-functions/v1"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
-import { env } from "../config/env"
+import { env, functionsEnvJson } from "../config/env"
 
 const bootstrapAdminEmails = new Set(
     env.ADMIN_EMAILS
@@ -204,7 +204,11 @@ export const trackGuest = auth
     })
 
 
-export const setDefaultAdminRole = runWith({ memory: "256MB", timeoutSeconds: 60 })
+export const setDefaultAdminRole = runWith({
+    memory: "256MB",
+    timeoutSeconds: 60,
+    secrets: ["FUNCTIONS_ENV_JSON"],
+})
     .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
@@ -218,7 +222,7 @@ export const setDefaultAdminRole = runWith({ memory: "256MB", timeoutSeconds: 60
         }
     })
 
-export const ensureBootstrapAdminAccess = onCallv2(async (req) => {
+export const ensureBootstrapAdminAccess = onCallv2({ secrets: [functionsEnvJson] }, async (req) => {
     const uid = req.auth?.uid
     if (!uid) {
         throw new HttpsError("unauthenticated", "User must be authenticated")
@@ -251,7 +255,7 @@ export const ensureBootstrapAdminAccess = onCallv2(async (req) => {
     }
 })
 
-export const createBootstrapAdminPasswordAccount = onCallv2(async (req) => {
+export const createBootstrapAdminPasswordAccount = onCallv2({ secrets: [functionsEnvJson] }, async (req) => {
     const email = String(req.data?.email || "").trim().toLowerCase()
     const password = String(req.data?.password || "")
     const displayName = String(req.data?.displayName || "").trim()
@@ -317,7 +321,12 @@ export const createBootstrapAdminPasswordAccount = onCallv2(async (req) => {
     }
 })
 
-export const setDefaultRole = auth
+export const setDefaultRole = runWith({
+    memory: "256MB",
+    timeoutSeconds: 60,
+    secrets: ["FUNCTIONS_ENV_JSON"],
+})
+    .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
@@ -394,7 +403,7 @@ export const createDefaultOrganization = auth
  * Admin SDK operation using Identity Platform API.
  * @see https://firebase.google.com/docs/auth/admin/manage-sessions#enable_mfa_for_a_user
  */
-export const enableTotpMfa = onCallv2(async (req) => {
+export const enableTotpMfa = onCallv2({ secrets: [functionsEnvJson] }, async (req) => {
     const DEFAULT_ADJACENT_INTERVALS = 5
     try {
         const authenticatedUid = req.auth?.uid
@@ -403,6 +412,8 @@ export const enableTotpMfa = onCallv2(async (req) => {
         }
 
         const dryRun = req.data?.dryRun === true
+        const enabledRaw = req.data?.enabled
+        const desiredEnabled = typeof enabledRaw === "boolean" ? enabledRaw : true
         const adjacentIntervalsRaw = req.data?.adjacentIntervals
         const adjacentIntervals = Number.isInteger(adjacentIntervalsRaw)?
             Number(adjacentIntervalsRaw) : DEFAULT_ADJACENT_INTERVALS
@@ -421,7 +432,7 @@ export const enableTotpMfa = onCallv2(async (req) => {
         }
 
         if (!hasAdminClaim && (!userEmail || !isBootstrapAdmin(userEmail))) {
-            throw new HttpsError("permission-denied", "Only administrators can enable TOTP MFA for the project")
+            throw new HttpsError("permission-denied", "Only administrators can update TOTP MFA for the project")
         }
 
         const configManager = adminAuth.projectConfigManager()
@@ -445,13 +456,15 @@ export const enableTotpMfa = onCallv2(async (req) => {
             }
         }
 
-        if (isAlreadyEnabled) {
+        if (isAlreadyEnabled === desiredEnabled) {
             return {
                 success: true,
-                status: "already-enabled",
-                message: "TOTP MFA is already enabled for this Firebase project.",
+                status: desiredEnabled ? "already-enabled" : "already-disabled",
+                message: desiredEnabled ?
+                    "TOTP MFA is already enabled for this Firebase project." :
+                    "TOTP MFA is already disabled for this Firebase project.",
                 config: {
-                    state: "ENABLED",
+                    state: desiredEnabled ? "ENABLED" : "DISABLED",
                     adjacentIntervals: currentAdjacentIntervals,
                 },
             }
@@ -459,38 +472,42 @@ export const enableTotpMfa = onCallv2(async (req) => {
 
         const updatedConfig = await configManager.updateProjectConfig({
             multiFactorConfig: {
-                state: "ENABLED" as const,
+                state: desiredEnabled ? "ENABLED" as const : "DISABLED" as const,
                 providerConfigs: [
                     {
-                        state: "ENABLED" as const,
+                        state: desiredEnabled ? "ENABLED" as const : "DISABLED" as const,
                         totpProviderConfig: {
-                            adjacentIntervals,
+                            adjacentIntervals: desiredEnabled ? adjacentIntervals : currentAdjacentIntervals,
                         },
                     },
                 ],
             },
         })
 
-        console.log("✅ TOTP MFA enabled successfully for project", {
+        console.log(`✅ TOTP MFA ${desiredEnabled ? "enabled" : "disabled"} successfully for project`, {
             actorUid: authenticatedUid,
             actorEmail: userEmail,
             hasAdminClaim,
             previousState: mfaConfig?.state || "DISABLED",
             previousAdjacentIntervals: currentAdjacentIntervals,
-            nextAdjacentIntervals: adjacentIntervals,
+            nextState: desiredEnabled ? "ENABLED" : "DISABLED",
+            nextAdjacentIntervals: desiredEnabled ? adjacentIntervals : currentAdjacentIntervals,
         })
 
         return {
             success: true,
-            status: "enabled",
-            message: "TOTP MFA has been enabled for your Firebase project.",
+            status: desiredEnabled ? "enabled" : "disabled",
+            message: desiredEnabled ?
+                "TOTP MFA has been enabled for your Firebase project." :
+                "TOTP MFA has been disabled for your Firebase project.",
             config: {
-                state: "ENABLED",
-                adjacentIntervals: updatedConfig.multiFactorConfig?.providerConfigs?.[0]?.totpProviderConfig?.adjacentIntervals ?? adjacentIntervals,
+                state: desiredEnabled ? "ENABLED" : "DISABLED",
+                adjacentIntervals: updatedConfig.multiFactorConfig?.providerConfigs?.[0]?.totpProviderConfig?.adjacentIntervals ??
+                    (desiredEnabled ? adjacentIntervals : currentAdjacentIntervals),
             },
         }
     } catch (error: unknown) {
-        console.error("Error enabling TOTP MFA:", error)
+        console.error("Error updating TOTP MFA:", error)
         if (error instanceof HttpsError) {
             throw error
         }
@@ -505,7 +522,7 @@ export const enableTotpMfa = onCallv2(async (req) => {
             throw new HttpsError("permission-denied", "Runtime service account lacks permission to update Firebase Auth project config.")
         }
 
-        throw new HttpsError("internal", "Failed to enable TOTP MFA for the project", error)
+        throw new HttpsError("internal", "Failed to update TOTP MFA for the project", error)
     }
 })
 

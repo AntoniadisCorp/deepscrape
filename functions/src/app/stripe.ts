@@ -370,6 +370,45 @@ const toSafeErrorMessage = (error: unknown): string => {
   return "unknown_error"
 }
 
+const isFirestoreFailedPrecondition = (error: unknown): boolean => {
+  const candidate = error as { code?: unknown; message?: unknown }
+  const code = Number(candidate?.code)
+  const message = String(candidate?.message || "").toLowerCase()
+
+  return code === 9 || message.includes("failed_precondition") || message.includes("missing index")
+}
+
+const timestampToMillis = (value: unknown): number => {
+  if (value && typeof value === "object" && "toDate" in (value as Record<string, unknown>)) {
+    const toDate = (value as { toDate: () => Date }).toDate
+    if (typeof toDate === "function") {
+      return toDate.call(value).getTime()
+    }
+  }
+
+  if (typeof value === "string") {
+    const parsed = Date.parse(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value
+  }
+
+  return 0
+}
+
+const sortDocsByTimestampDesc = (
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
+  fieldPath: string,
+): FirebaseFirestore.QueryDocumentSnapshot[] => {
+  return [...docs].sort((a, b) => {
+    const left = timestampToMillis(a.get(fieldPath))
+    const right = timestampToMillis(b.get(fieldPath))
+    return right - left
+  })
+}
+
 const recordBillingIncident = async (args: {
   type: string
   severity: "info" | "warning" | "error"
@@ -987,10 +1026,15 @@ export const createPaymentIntent = onCallv2(
       // if cartId is not in session of the browser storage
       if (!cartId) {
         const listpayment = await stripe.paymentIntents.list({ customer: user?.stripeId })
-        // cancel all previous paymentIntent in parallel
-        await Promise.all(listpayment.data.map(async (item) => {
-          await stripe.paymentIntents.cancel(item.id)
-        }))
+        // Cancel only intents that are cancelable (requires_payment_method) to avoid
+        // cancelling succeeded/processing intents from other browser tabs or sessions.
+        const cancelableStatuses = new Set(["requires_payment_method", "requires_confirmation", "requires_action"])
+        const cancelable = listpayment.data.filter((item) => cancelableStatuses.has(item.status))
+        if (cancelable.length > 0) {
+          await Promise.all(cancelable.map(async (item) => {
+            await stripe.paymentIntents.cancel(item.id)
+          }))
+        }
         const paymentIntent = await stripe.paymentIntents.create({
           receipt_email: userEmail,
           currency,
@@ -1138,22 +1182,12 @@ export const startSubscription = onCallv2(
 
       // 3. Check for existing subscription
       if (user.subscriptionId) {
-        // Option 1: Return existing subscription
-        // return { message: "User already has an active subscription", subscriptionId: user.subscriptionId }
-
-        // Option 2: Update existing subscription
-        const updatedSub = await stripe.subscriptions.update(user.subscriptionId, {
-          items: [{ id: user.itemId, price }],
-          // Add other parameters as needed
-        })
-
-        // Update the user document with new information
-        await db.doc(`users/${userId}`).update({
-          status: updatedSub.status,
-          itemId: updatedSub.items.data[0].id,
-        })
-
-        return { message: "Subscription updated", subscriptionId: updatedSub.id }
+        // Redirect to Stripe Customer Portal for plan changes — never silently update
+        // an existing subscription without the user's explicit intent.
+        throw new HttpsError(
+          "failed-precondition",
+          "User already has an active subscription. Use the Customer Portal to change plans.",
+        )
       }
 
       // 4. Check for existing payment methods (PaymentMethods API)
@@ -1411,6 +1445,13 @@ export const getMyEntitlements = onCallv2(
     if (!userId) {
       throw new HttpsError("unauthenticated", "User must be authenticated")
     }
+
+    // Fire-and-forget entitlement check metric counter.
+    const metricDayKey = new Date().toISOString().slice(0, 10)
+    db.doc(`billing_entitlement_metrics/${metricDayKey}`).set({
+      totalCalls: FieldValue.increment(1),
+      lastCallAt: FieldValue.serverTimestamp(),
+    }, { merge: true }).catch(() => undefined)
 
     const billingRef = db.doc(`users/${userId}/billing/current`)
     const userRef = db.doc(`users/${userId}`)
@@ -2353,18 +2394,15 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
     }
 
     const graceUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString()
+    const pastDueBilling = {
+      status: "past_due",
+      graceUntil,
+      updatedAt: FieldValue.serverTimestamp(),
+    }
     await Promise.all([
-      db.doc(`users/${uid}/billing/current`).set({
-        status: "past_due",
-        graceUntil,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true }),
-      // Sync partial billing change to user doc via field-path update (best-effort)
-      db.doc(`users/${uid}`).update({
-        "billing.status": "past_due",
-        "billing.graceUntil": graceUntil,
-        "billing.updatedAt": FieldValue.serverTimestamp(),
-      }).catch(() => undefined),
+      db.doc(`users/${uid}/billing/current`).set(pastDueBilling, { merge: true }),
+      // Sync billing to embedded user doc field (set replaces the whole billing object for consistency)
+      db.doc(`users/${uid}`).set({ billing: pastDueBilling }, { merge: true }),
     ])
 
     await recordBillingIncident({
@@ -2379,6 +2417,21 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         amountDue: invoice.amount_due,
         currency: invoice.currency,
         customer: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null,
+        graceUntil,
+      },
+    })
+
+    // Emit user-facing alert for the payment failure.
+    await emitUsageAlert({
+      uid,
+      alertId: createAlertId("payment_failed", invoice.id),
+      title: "Payment Failed",
+      message: `Your most recent invoice payment of ${(invoice.amount_due / 100).toFixed(2)} ${invoice.currency.toUpperCase()} could not be processed. Your account will remain active until ${new Date(graceUntil).toLocaleDateString()}. Please update your payment method to avoid service interruption.`,
+      severity: "warning",
+      metadata: {
+        invoiceId: invoice.id,
+        amountDue: invoice.amount_due,
+        currency: invoice.currency,
         graceUntil,
       },
     })
@@ -2476,6 +2529,25 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         updated_At: new Date(),
       }, { merge: true })
     }
+
+    // Emit user-facing receipt alert for the paid invoice.
+    const invoiceLabel = invoice.number || invoice.id
+    const receiptUrl = invoice.hosted_invoice_url || null
+    await emitUsageAlert({
+      uid,
+      alertId: createAlertId("invoice_paid", invoice.id),
+      title: "Payment Received",
+      message: `Invoice ${invoiceLabel} for ${(invoice.amount_paid / 100).toFixed(2)} ${invoice.currency.toUpperCase()} has been paid successfully.${receiptUrl ? ` View receipt: ${receiptUrl}` : ""}`,
+      severity: "info",
+      metadata: {
+        invoiceId: invoice.id,
+        number: invoice.number,
+        amountPaid: invoice.amount_paid,
+        currency: invoice.currency,
+        receiptUrl,
+        billingReason: invoice.billing_reason,
+      },
+    })
     break
   }
   case "payment_intent.succeeded": {
@@ -2558,10 +2630,40 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
       break
     }
 
+    // previous_attributes comes from the Stripe webhook event payload, not the subscription object.
+    const eventWithPrev = event as unknown as { previous_attributes?: { items?: { data?: Array<{ price?: { id?: string } }> } } }
+    const previousPriceId = eventWithPrev.previous_attributes?.items?.data?.[0]?.price?.id
     const recurringPriceId = subscription.items.data[0]?.price?.id
     const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
     if (!recurringMatch) {
       break
+    }
+
+    // Detect plan changes from Stripe Customer Portal (price ID changed).
+    const previousMatch = previousPriceId && previousPriceId !== recurringPriceId ?
+      inferRecurringPlanFromPriceId(previousPriceId) :
+      null
+    const planChanged = previousMatch !== null &&
+      (previousMatch.plan !== recurringMatch.plan || previousMatch.interval !== recurringMatch.interval)
+
+    if (planChanged) {
+      await recordBillingIncident({
+        type: "customer.subscription.plan_changed_via_portal",
+        severity: "info",
+        eventId: event.id,
+        eventType: event.type,
+        uid,
+        message: `Subscription plan changed via Stripe Portal: ${previousMatch?.plan || "unknown"}/${previousMatch?.interval || "unknown"} → ${recurringMatch.plan}/${recurringMatch.interval}`,
+        metadata: {
+          subscriptionId: subscription.id,
+          previousPlan: previousMatch?.plan || null,
+          previousInterval: previousMatch?.interval || null,
+          newPlan: recurringMatch.plan,
+          newInterval: recurringMatch.interval,
+          previousPriceId,
+          newPriceId: recurringPriceId,
+        },
+      })
     }
 
     const effectivePlan: BillingPlanTier = subscription.status === "trialing" ? "trial" : recurringMatch.plan
@@ -2628,8 +2730,277 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
     ])
     break
   }
-  default:
+  case "payment_intent.payment_failed": {
+    const failedPi = event.data.object as Stripe.PaymentIntent
+    const failedUid = failedPi.metadata?.uid || await resolveUidByStripeCustomer(failedPi.customer)
+    if (!failedUid) {
+      break
+    }
+
+    await recordBillingIncident({
+      type: "payment_intent.payment_failed",
+      severity: "warning",
+      eventId: event.id,
+      eventType: event.type,
+      uid: failedUid,
+      message: `Payment intent ${failedPi.id} failed: ${failedPi.last_payment_error?.message || "unknown error"}`,
+      metadata: {
+        paymentIntentId: failedPi.id,
+        amount: failedPi.amount,
+        currency: failedPi.currency,
+        lastPaymentError: failedPi.last_payment_error?.message || null,
+        code: failedPi.last_payment_error?.code || null,
+        declineCode: failedPi.last_payment_error?.decline_code || null,
+      },
+    })
     break
+  }
+  case "charge.dispute.created": {
+    const dispute = event.data.object as Stripe.Dispute
+    const disputeCustomerId = typeof dispute.charge === "string"?
+      dispute.charge : (dispute.charge as Stripe.Charge | null)?.customer || null
+    const disputeUid = dispute.metadata?.uid || await resolveUidByStripeCustomer(disputeCustomerId)
+    if (!disputeUid) {
+      break
+    }
+
+    await recordBillingIncident({
+      type: "charge.dispute.created",
+      severity: "error",
+      eventId: event.id,
+      eventType: event.type,
+      uid: disputeUid,
+      message: `Dispute filed for charge ${dispute.charge}: ${dispute.reason || "no reason given"}`,
+      metadata: {
+        disputeId: dispute.id,
+        chargeId: typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || null,
+        amount: dispute.amount,
+        currency: dispute.currency,
+        reason: dispute.reason,
+        status: dispute.status,
+        evidenceRequiredBy: dispute.evidence_details?.due_by ? new Date(dispute.evidence_details.due_by * 1000).toISOString() : null,
+      },
+    })
+    break
+  }
+  case "charge.refunded": {
+    const charge = event.data.object as Stripe.Charge
+    const refundUid = charge.metadata?.uid || await resolveUidByStripeCustomer(charge.customer)
+    if (!refundUid) {
+      break
+    }
+
+    const refundedAmount = charge.amount_refunded || 0
+    await recordBillingIncident({
+      type: "charge.refunded",
+      severity: refundedAmount >= charge.amount ? "warning" : "info",
+      eventId: event.id,
+      eventType: event.type,
+      uid: refundUid,
+      message: `Charge ${charge.id} refunded ${refundedAmount} ${charge.currency}`,
+      metadata: {
+        chargeId: charge.id,
+        amountRefunded: refundedAmount,
+        amount: charge.amount,
+        currency: charge.currency,
+        refunded: charge.refunded,
+        paymentIntentId: charge.payment_intent || null,
+      },
+    })
+    break
+  }
+  case "payment_method.attached": {
+    const pm = event.data.object as Stripe.PaymentMethod
+    if (pm.type !== "card" || !pm.customer) {
+      break
+    }
+
+    const pmUid = await resolveUidByStripeCustomer(pm.customer)
+    if (!pmUid) {
+      break
+    }
+
+    // Store the payment method reference in user's subcollection for tracking
+    const pmRef = db.doc(`users/${pmUid}/payment_methods/${pm.id}`)
+    await pmRef.set({
+      type: pm.type,
+      brand: pm.card?.brand || null,
+      last4: pm.card?.last4 || null,
+      expMonth: pm.card?.exp_month || null,
+      expYear: pm.card?.exp_year || null,
+      billingDetails: pm.billing_details?.email || null,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    break
+  }
+  case "payment_method.detached": {
+    const detachedPm = event.data.object as Stripe.PaymentMethod
+    if (!detachedPm.customer) {
+      break
+    }
+
+    const detachedUid = await resolveUidByStripeCustomer(detachedPm.customer)
+    if (!detachedUid) {
+      break
+    }
+
+    // Remove the payment method reference
+    const detachedRef = db.doc(`users/${detachedUid}/payment_methods/${detachedPm.id}`)
+    await detachedRef.delete().catch(() => undefined)
+    break
+  }
+  case "setup_intent.succeeded": {
+    const setupIntent = event.data.object as Stripe.SetupIntent
+    const setupUid = setupIntent.metadata?.uid || await resolveUidByStripeCustomer(setupIntent.customer)
+    if (!setupUid) {
+      break
+    }
+
+    // Update any pending setup intent cart references
+    const setupCarts = await db.collection(`users/${setupUid}/paymentcart`)
+      .where("setupIntentId", "==", setupIntent.id)
+      .limit(1)
+      .get()
+
+    if (!setupCarts.empty) {
+      await setupCarts.docs[0].ref.set({
+        status: "succeeded",
+        lastPaymentAttempt: new Date().toISOString(),
+      }, { merge: true })
+    }
+    break
+  }
+  case "setup_intent.canceled": {
+    const canceledSetup = event.data.object as Stripe.SetupIntent
+    const canceledSetupUid = canceledSetup.metadata?.uid || await resolveUidByStripeCustomer(canceledSetup.customer)
+    if (!canceledSetupUid) {
+      break
+    }
+
+    const canceledCarts = await db.collection(`users/${canceledSetupUid}/paymentcart`)
+      .where("setupIntentId", "==", canceledSetup.id)
+      .limit(1)
+      .get()
+
+    if (!canceledCarts.empty) {
+      await canceledCarts.docs[0].ref.set({
+        status: "canceled",
+        lastPaymentAttempt: new Date().toISOString(),
+      }, { merge: true })
+    }
+    break
+  }
+  case "customer.updated": {
+    const customer = event.data.object as Stripe.Customer
+    const custUid = customer.metadata?.firebaseUID || await resolveUidByStripeCustomer(customer.id)
+    if (!custUid) {
+      break
+    }
+
+    // Sync Stripe customer email/name changes to Firestore metadata
+    const syncFields: Record<string, unknown> = {}
+    if (customer.email) {
+      syncFields["stripeEmail"] = customer.email
+    }
+    if (customer.name) {
+      syncFields["stripeName"] = customer.name
+    }
+    if (customer.invoice_settings?.default_payment_method) {
+      const defaultPm = typeof customer.invoice_settings.default_payment_method === "string"?
+       customer.invoice_settings.default_payment_method :
+       customer.invoice_settings.default_payment_method?.id || null
+      if (defaultPm) {
+        syncFields["stripeDefaultPaymentMethod"] = defaultPm
+      }
+    }
+
+    if (Object.keys(syncFields).length > 0) {
+      await db.doc(`users/${custUid}`).set(syncFields, { merge: true })
+    }
+    break
+  }
+  case "invoice.created":
+  case "invoice.finalized": {
+    const invEvent = event.data.object as Stripe.Invoice
+    const invUid = invEvent.metadata?.uid || await resolveUidByStripeCustomer(invEvent.customer)
+    if (!invUid) {
+      break
+    }
+
+    // Store invoice record for observability
+    const invoiceRef = db.doc(`users/${invUid}/invoices/${invEvent.id}`)
+    await invoiceRef.set({
+      id: invEvent.id,
+      number: invEvent.number,
+      status: invEvent.status,
+      total: invEvent.total,
+      amountPaid: invEvent.amount_paid,
+      amountDue: invEvent.amount_due,
+      currency: invEvent.currency,
+      hostedInvoiceUrl: invEvent.hosted_invoice_url,
+      invoicePdf: invEvent.invoice_pdf,
+      periodStart: invEvent.period_start ? new Date(invEvent.period_start * 1000).toISOString() : null,
+      periodEnd: invEvent.period_end ? new Date(invEvent.period_end * 1000).toISOString() : null,
+      billingReason: invEvent.billing_reason,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    break
+  }
+  case "invoice.voided": {
+    const voidedInv = event.data.object as Stripe.Invoice
+    const voidedUid = voidedInv.metadata?.uid || await resolveUidByStripeCustomer(voidedInv.customer)
+    if (!voidedUid) {
+      break
+    }
+
+    const voidedRef = db.doc(`users/${voidedUid}/invoices/${voidedInv.id}`)
+    await voidedRef.set({
+      status: "voided",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    await recordBillingIncident({
+      type: "invoice.voided",
+      severity: "warning",
+      eventId: event.id,
+      eventType: event.type,
+      uid: voidedUid,
+      message: `Invoice ${voidedInv.id} was voided`,
+      metadata: {
+        invoiceId: voidedInv.id,
+        number: voidedInv.number,
+        amount: voidedInv.total,
+        currency: voidedInv.currency,
+      },
+    })
+    break
+  }
+  default: {
+    // Catch billing.meter events that are not in the Stripe SDK type union.
+    const rawType = (event as unknown as { type: string }).type
+    if (rawType === "billing.meter.error_report_triggered") {
+      const rawMeter = event as unknown as { data?: { object?: Record<string, unknown> } }
+      const meterObj = rawMeter?.data?.object || {}
+      const meterCustomer = meterObj["customer"] as string | Stripe.Customer | Stripe.DeletedCustomer | null | undefined
+      const meterUid = await resolveUidByStripeCustomer(meterCustomer)
+      if (meterUid) {
+        const rawMeterEvent = event as unknown as { id: string; type: string }
+        await recordBillingIncident({
+          type: "billing.meter.error_report_triggered",
+          severity: "error",
+          eventId: rawMeterEvent.id,
+          eventType: rawMeterEvent.type,
+          uid: meterUid,
+          message: `Billing meter error reported for meter ${String(meterObj["meter_id"] || "unknown")}`,
+          metadata: {
+            meterId: (meterObj["meter_id"] as string) || null,
+            customer: typeof meterCustomer === "string" ? meterCustomer : (meterCustomer as Stripe.Customer | null)?.id || null,
+          },
+        })
+      }
+    }
+    break
+  }
   }
 }
 
@@ -2656,6 +3027,21 @@ export const stripeWebhook = onRequest({ secrets: stripeSecrets }, async (req, r
     } catch (error) {
       console.error("Webhook signature verification failed", error)
       res.status(400).send("Invalid signature")
+      return
+    }
+
+    // Reject events that don't match the current environment's mode.
+    // In production (IS_PRODUCTION=true), only accept livemode events.
+    // In development/staging, only accept testmode events.
+    if (env.IS_PRODUCTION && !event.livemode) {
+      console.warn(`Ignoring test-mode Stripe event ${event.id} in production environment`)
+      res.status(200).send("Ignored test-mode event in production")
+      return
+    }
+
+    if (!env.IS_PRODUCTION && event.livemode) {
+      console.warn(`Ignoring live-mode Stripe event ${event.id} in non-production environment`)
+      res.status(200).send("Ignored live-mode event in non-production environment")
       return
     }
 
@@ -2904,31 +3290,101 @@ export const getAdminBillingObservability = onCallv2(
     const pendingEventLimit = Math.max(1, Math.min(100, Math.floor(Number(rawPendingEventLimit) || 20)))
     const pastDueLimit = Math.max(1, Math.min(200, Math.floor(Number(rawPastDueLimit) || 30)))
 
-    const incidentsQuery = includeAcknowledged ?
+    const incidentsOrderedQuery = includeAcknowledged ?
       db.collection("billing_incidents").orderBy("createdAt", "desc") :
       db.collection("billing_incidents").where("acknowledged", "==", false).orderBy("createdAt", "desc")
 
-    const [incidentsSnap, failedEventsSnap, pendingEventsRawSnap, pastDueSnap] = await Promise.all([
-      incidentsQuery
-        .limit(incidentLimit)
-        .get(),
-      db.collection("stripe_events")
-        .where("failed", "==", true)
-        .orderBy("failedAt", "desc")
-        .limit(failedEventLimit)
-        .get(),
-      db.collection("stripe_events")
-        .where("processed", "==", false)
-        .orderBy("processingStartedAt", "desc")
-        .limit(Math.max(pendingEventLimit * 3, pendingEventLimit))
-        .get(),
-      db.collectionGroup("billing")
-        .where("status", "==", "past_due")
-        .limit(pastDueLimit)
-        .get(),
-    ])
+    let incidentsDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    let failedEventsDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    let pendingEventsRawDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    let pastDueDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
 
-    const incidents = incidentsSnap.docs.map((doc) => {
+    const fetchPastDueAccountsIndexLight = async (): Promise<FirebaseFirestore.QueryDocumentSnapshot[]> => {
+      try {
+        const usersPastDueSnap = await db.collection("users")
+          .where("billing.status", "==", "past_due")
+          .limit(Math.max(pastDueLimit * 3, pastDueLimit))
+          .get()
+
+        return sortDocsByTimestampDesc(usersPastDueSnap.docs, "billing.updatedAt").slice(0, pastDueLimit)
+      } catch (error) {
+        if (!isFirestoreFailedPrecondition(error)) {
+          throw error
+        }
+
+        const scanLimit = Math.max(pastDueLimit * 25, 500)
+        const usersScanSnap = await db.collection("users")
+          .limit(scanLimit)
+          .get()
+
+        const filteredPastDueDocs = usersScanSnap.docs.filter((doc) => {
+          const data = doc.data() as { billing?: { status?: unknown } }
+          return data.billing?.status === "past_due"
+        })
+
+        return sortDocsByTimestampDesc(filteredPastDueDocs, "billing.updatedAt").slice(0, pastDueLimit)
+      }
+    }
+
+    try {
+      const [incidentsSnap, failedEventsSnap, pendingEventsRawSnap, pastDueSnap] = await Promise.all([
+        incidentsOrderedQuery
+          .limit(incidentLimit)
+          .get(),
+        db.collection("stripe_events")
+          .where("failed", "==", true)
+          .orderBy("failedAt", "desc")
+          .limit(failedEventLimit)
+          .get(),
+        db.collection("stripe_events")
+          .where("processed", "==", false)
+          .orderBy("processingStartedAt", "desc")
+          .limit(Math.max(pendingEventLimit * 3, pendingEventLimit))
+          .get(),
+        db.collectionGroup("billing")
+          .where("status", "==", "past_due")
+          .limit(pastDueLimit)
+          .get(),
+      ])
+
+          incidentsDocs = incidentsSnap.docs
+          failedEventsDocs = failedEventsSnap.docs
+          pendingEventsRawDocs = pendingEventsRawSnap.docs
+          pastDueDocs = pastDueSnap.docs
+    } catch (error) {
+      if (!isFirestoreFailedPrecondition(error)) {
+        throw error
+      }
+
+      console.warn("Falling back to index-light billing observability queries", {
+        dbName,
+        reason: toSafeErrorMessage(error),
+      })
+
+      const [incidentsRawSnap, failedEventsRawSnap, pendingEventsFallbackSnap] = await Promise.all([
+        (includeAcknowledged ?
+          db.collection("billing_incidents") :
+          db.collection("billing_incidents").where("acknowledged", "==", false))
+          .limit(Math.max(incidentLimit * 4, incidentLimit))
+          .get(),
+        db.collection("stripe_events")
+          .where("failed", "==", true)
+          .limit(Math.max(failedEventLimit * 5, failedEventLimit))
+          .get(),
+        db.collection("stripe_events")
+          .where("processed", "==", false)
+          .limit(Math.max(pendingEventLimit * 7, pendingEventLimit))
+          .get(),
+      ])
+
+      incidentsDocs = sortDocsByTimestampDesc(incidentsRawSnap.docs, "createdAt").slice(0, incidentLimit)
+      failedEventsDocs = sortDocsByTimestampDesc(failedEventsRawSnap.docs, "failedAt").slice(0, failedEventLimit)
+      pendingEventsRawDocs = sortDocsByTimestampDesc(pendingEventsFallbackSnap.docs, "processingStartedAt")
+        .slice(0, Math.max(pendingEventLimit * 3, pendingEventLimit))
+      pastDueDocs = await fetchPastDueAccountsIndexLight()
+    }
+
+    const incidents = incidentsDocs.map((doc) => {
       const data = doc.data() as Record<string, unknown>
       return {
         id: doc.id,
@@ -2938,7 +3394,7 @@ export const getAdminBillingObservability = onCallv2(
       }
     })
 
-    const failedEvents = failedEventsSnap.docs.map((doc) => {
+    const failedEvents = failedEventsDocs.map((doc) => {
       const data = doc.data() as Record<string, unknown>
       return {
         id: doc.id,
@@ -2950,7 +3406,7 @@ export const getAdminBillingObservability = onCallv2(
       }
     })
 
-    const pendingEvents = pendingEventsRawSnap.docs
+    const pendingEvents = pendingEventsRawDocs
       .filter((doc) => {
         const data = doc.data() as { failed?: boolean }
         return data.failed !== true
@@ -2967,21 +3423,85 @@ export const getAdminBillingObservability = onCallv2(
         }
       })
 
-    const pastDueAccounts = pastDueSnap.docs.map((doc) => {
+    const pastDueAccounts = pastDueDocs.map((doc) => {
       const data = doc.data() as Record<string, unknown>
+      const billingRecord = (data.billing && typeof data.billing === "object") ?
+        (data.billing as Record<string, unknown>) :
+        null
       const pathSegments = doc.ref.path.split("/")
       const uid = pathSegments.length >= 2 ? pathSegments[1] : null
 
       return {
         uid,
         path: doc.ref.path,
-        graceUntil: typeof data.graceUntil === "string" ? data.graceUntil : null,
-        updatedAt: timestampToIso(data.updatedAt),
-        subscriptionId: data.subscriptionId || null,
-        plan: data.plan || null,
-        status: data.status || null,
+        graceUntil: typeof data.graceUntil === "string" ?
+          data.graceUntil :
+          (typeof billingRecord?.graceUntil === "string" ? billingRecord.graceUntil : null),
+        updatedAt: timestampToIso(data.updatedAt) || timestampToIso(billingRecord?.updatedAt),
+        subscriptionId: data.subscriptionId || billingRecord?.subscriptionId || null,
+        plan: data.plan || billingRecord?.plan || null,
+        status: data.status || billingRecord?.status || null,
       }
     })
+
+    // --- Additional observability signals ---
+
+    // 1. Dispute incidents (charge.dispute.created, etc.)
+    let disputeDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    try {
+      const disputeSnap = await db.collection("billing_incidents")
+        .where("type", ">=", "charge.dispute.")
+        .where("type", "<", "charge.dispute.\uf8ff")
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get()
+      disputeDocs = disputeSnap.docs
+    } catch {
+      // Index not available — skip
+    }
+
+    const disputes = disputeDocs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      return {
+        id: doc.id,
+        type: data.type || null,
+        severity: data.severity || null,
+        uid: data.uid || null,
+        message: data.message || null,
+        createdAt: timestampToIso(data.createdAt),
+        acknowledged: Boolean(data.acknowledged),
+        metadata: (data.metadata && typeof data.metadata === "object") ? data.metadata : null,
+      }
+    })
+
+    // 2. Retry statistics — compute from failed events
+    const totalRetries = failedEventsDocs.reduce((sum, doc) => {
+      const data = doc.data() as { retryCount?: number }
+      return sum + Number(data.retryCount || 0)
+    }, 0)
+    const retryStats = {
+      totalFailedEvents: failedEventsDocs.length,
+      totalRetries,
+      averageRetries: failedEventsDocs.length > 0 ?
+        Math.round((totalRetries / failedEventsDocs.length) * 100) / 100 :
+        0,
+      oldestUnprocessedEvent: pendingEvents.length > 0 ?
+        pendingEvents[pendingEvents.length - 1]?.processingStartedAt || null :
+        null,
+    }
+
+    // 3. Entitlement metrics for the current day
+    let todaysEntitlementCalls = 0
+    try {
+      const todayKey = new Date().toISOString().slice(0, 10)
+      const metricSnap = await db.doc(`billing_entitlement_metrics/${todayKey}`).get()
+      if (metricSnap.exists) {
+        const data = metricSnap.data() as { totalCalls?: number } | undefined
+        todaysEntitlementCalls = Number(data?.totalCalls || 0)
+      }
+    } catch {
+      // Best-effort
+    }
 
     return {
       generatedAt: new Date().toISOString(),
@@ -2989,6 +3509,11 @@ export const getAdminBillingObservability = onCallv2(
       failedEvents,
       pendingEvents,
       pastDueAccounts,
+      disputes,
+      retryStats,
+      entitlementMetrics: {
+        todayCalls: todaysEntitlementCalls,
+      },
     }
   },
 )
@@ -3157,6 +3682,230 @@ export const expireTrialsToFree = onSchedule(
     }
 
     console.log("expireTrialsToFree completed", { checkedAt: nowIso, expiredCount })
+  },
+)
+
+/**
+ * Hourly sweep that downgrades accounts whose payment grace period has expired.
+ * When invoice.payment_failed fires, a 3-day graceUntil is set on the billing doc.
+ * This function detects graceUntil < now and reverts the account to free/inactive,
+ * also voiding the Stripe subscription and recording a billing incident.
+ */
+export const downgradePastDueAccounts = onSchedule(
+  {
+    schedule: "every 1 hours",
+    timeZone: "UTC",
+  },
+  async () => {
+    const now = new Date()
+    const nowIso = now.toISOString()
+
+    // Find billing docs with status=past_due and graceUntil < now.
+    const pastDueDocs = await db.collectionGroup("billing")
+      .where("status", "==", "past_due")
+      .get()
+
+    let downgradedCount = 0
+    for (const doc of pastDueDocs.docs) {
+      const billing = doc.data() as UserBilling
+      if (!billing.graceUntil || billing.graceUntil >= nowIso) {
+        continue
+      }
+
+      const userRef = doc.ref.parent.parent
+      if (!userRef) {
+        continue
+      }
+
+      const uid = userRef.id
+
+      // Cancel the Stripe subscription if one exists.
+      if (billing.subscriptionId) {
+        try {
+          const secret: string | undefined = stripeSecrets.find((s) => s.name === "STRIPE_SECRET_KEY")?.value()
+          const stripe = getStripe(secret)
+          await stripe.subscriptions.cancel(billing.subscriptionId)
+        } catch (error) {
+          console.warn(`Failed to cancel Stripe subscription ${billing.subscriptionId}:`, error)
+        }
+      }
+
+      const downgradedBilling = {
+        ...getDefaultBillingForPlan("free"),
+        plan: "free" as BillingPlanTier,
+        status: "inactive",
+        subscriptionId: null,
+        planInterval: null as BillingInterval | null,
+        cancelAtPeriodEnd: false,
+        graceUntil: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }
+
+      await Promise.all([
+        doc.ref.set(downgradedBilling, { merge: true }),
+        userRef.set({
+          billing: downgradedBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
+
+      await recordBillingIncident({
+        type: "billing.grace_period_expired",
+        severity: "error",
+        uid,
+        message: `Payment grace period ended. Account downgraded from ${billing.plan} to free plan.`,
+        metadata: {
+          previousPlan: billing.plan,
+          previousInterval: billing.planInterval || null,
+          graceUntil: billing.graceUntil,
+          subscriptionId: billing.subscriptionId,
+        },
+      })
+
+      downgradedCount += 1
+    }
+
+    if (downgradedCount > 0) {
+      console.log("downgradePastDueAccounts completed", { checkedAt: nowIso, downgradedCount })
+    }
+  },
+)
+
+/**
+ * Daily sweep that expires purchased & included credits past their expiry date.
+ * Credits granted with an expiresAt field in the past are deducted from the
+ * user's balance and recorded as an "expire" ledger entry for transparency.
+ * Configurable via BILLING_CREDIT_EXPIRY_DAYS env var (default: 365 days).
+ * Runs every 6 hours.
+ */
+export const expireStaleCredits = onSchedule(
+  {
+    schedule: "every 6 hours",
+    timeZone: "UTC",
+  },
+  async () => {
+    const now = new Date()
+    const nowIso = now.toISOString()
+
+    // Find all credit grant ledger entries that have expired.
+    const expiredLedgerSnap = await db.collectionGroup("credits_ledger")
+      .where("operation", "==", "grant")
+      .where("expiresAt", "<=", nowIso)
+      .limit(500)
+      .get()
+
+    // Group expired grants by user and bucket, summing the delta.
+    const expiryMap = new Map<string, { purchased: number; included: number }>()
+
+    for (const doc of expiredLedgerSnap.docs) {
+      const entry = doc.data() as {
+        bucket?: string
+        delta?: number
+        uid?: string
+      }
+
+      // Infer uid from the document path: users/{uid}/credits_ledger/{id}
+      const pathParts = doc.ref.path.split("/")
+      const uid = entry.uid || (pathParts.length >= 3 ? pathParts[1] : null)
+      if (!uid) {
+        continue
+      }
+
+      const bucket = entry.bucket === "included" ? "included" : "purchased"
+      const delta = Math.floor(Number(entry.delta || 0))
+      if (delta <= 0) {
+        continue
+      }
+
+      if (!expiryMap.has(uid)) {
+        expiryMap.set(uid, { purchased: 0, included: 0 })
+      }
+
+      const entryVal = expiryMap.get(uid) as { purchased: number; included: number } | undefined
+      if (!entryVal) {
+        continue
+      }
+      entryVal[bucket] += delta
+    }
+
+    let expiredCount = 0
+    const deletions: Array<Promise<unknown>> = []
+
+    for (const [uid, amounts] of expiryMap) {
+      const total = amounts.purchased + amounts.included
+      if (total <= 0) {
+        continue
+      }
+
+      const userRef = db.doc(`users/${uid}`)
+      const userSnap = await userRef.get()
+      const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
+      const billing = user?.billing as UserBilling | undefined
+
+      if (!billing) {
+        continue
+      }
+
+      // Deduct expired purchased credits via negative mutation.
+      if (amounts.purchased > 0) {
+        const currentPurchased = Number(billing.credits?.purchasedBalance || 0)
+        const nextPurchased = Math.max(0, currentPurchased - amounts.purchased)
+        if (nextPurchased < currentPurchased) {
+          // Deduct expired purchased credits directly from billing doc.
+          const billingRef2 = db.doc(`users/${uid}/billing/current`)
+          await billingRef2.set({
+            credits: {
+              purchasedBalance: nextPurchased,
+              purchasedReserved: Math.min(
+                Number(billing.credits?.purchasedReserved || 0),
+                nextPurchased,
+              ),
+            },
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true })
+        }
+      }
+
+      // Deduct expired included credits.
+      if (amounts.included > 0) {
+        const currentIncluded = Number(billing.credits?.includedBalance || 0)
+        const nextIncluded = Math.max(0, currentIncluded - amounts.included)
+        if (nextIncluded < currentIncluded) {
+          await db.doc(`users/${uid}/billing/current`).set({
+            credits: {
+              includedBalance: nextIncluded,
+              includedReserved: Math.min(
+                Number(billing.credits?.includedReserved || 0),
+                nextIncluded,
+              ),
+            },
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true })
+        }
+      }
+
+      // Mark the original grant ledger entries as expired so they're not re-processed.
+      // We update them rather than delete for audit trail.
+      const userLedgerEntries = expiredLedgerSnap.docs.filter((d) => {
+        const pathParts = d.ref.path.split("/")
+        const docUid = d.data().uid || (pathParts.length >= 3 ? pathParts[1] : null)
+        return docUid === uid
+      })
+
+      for (const entryDoc of userLedgerEntries) {
+        deletions.push(
+          entryDoc.ref.set({ expiredAt: nowIso }, { merge: true }).catch(() => undefined),
+        )
+      }
+
+      expiredCount += 1
+    }
+
+    await Promise.all(deletions)
+    console.log("expireStaleCredits completed", { checkedAt: nowIso, expiredUsers: expiredCount })
   },
 )
 

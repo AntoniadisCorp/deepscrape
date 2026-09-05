@@ -14,7 +14,7 @@
         <div class="loading-key w-10/12"></div>
       </div>
     } @else if (organizations().length) {
-      <div class="mt-3">
+      <div class="relative mt-3">
         <app-dropdown
           [control]="workspaceControl"
           [options]="workspaceOptions()"
@@ -83,7 +83,7 @@
             placeholder="teammate@example.com"
             formControlName="email"
             class="w-full rounded-xl bg-white/80 px-3 py-2 text-sm text-gray-900 shadow-sm outline-none ring-blue-500 focus:ring-2 dark:bg-gray-800/50 dark:text-gray-100" />
-          <div>
+          <div class="relative">
             <app-dropdown
               [control]="inviteRoleControl"
               [options]="inviteRoleOptions"

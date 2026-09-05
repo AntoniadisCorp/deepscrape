@@ -1,0 +1,104 @@
+<section id="pricing" class="relative py-20 md:py-28 section-dark-alt scroll-mt-24 motion-safe:animate-fade-in">
+  <div class="absolute inset-0 grid-lines pointer-events-none opacity-15 dark:opacity-50"></div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <span class="glass-pill inline-flex items-center px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300 rounded-full mb-4">
+        Pricing
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-white mb-4">
+        Simple, Transparent
+        <span class="bg-gradient-to-r from-cyan-600 to-rose-500 dark:from-cyan-400 dark:to-rose-400 bg-clip-text text-transparent"> Pricing</span>
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
+        Start free with 5,000 pages/month. Upgrade when you need more scale.
+        All plans include API access and anti-detection.
+      </p>
+
+      <!-- Toggle -->
+      <div class="flex items-center justify-center gap-3 mb-12">
+        <span [ngClass]="{ 'text-gray-900 dark:text-white': !isYearly, 'text-gray-500 dark:text-gray-400': isYearly }" class="text-sm font-medium">Monthly</span>
+        <app-radiotoggle [showLabel]="false" [control]="billingControl" identity="billing-yearly"></app-radiotoggle>
+        <span [ngClass]="{ 'text-gray-900 dark:text-white': isYearly, 'text-gray-500 dark:text-gray-400': !isYearly }" class="text-sm font-medium">
+          Yearly <span class="ml-1 text-xs text-green-600 dark:text-green-400 font-semibold">Save ~17%</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Pricing grid — inspired by billing/plans beautiful cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+      @for (tier of tiers; track tier.tier) {
+        <div
+          class="relative glass cursor-pointer flex flex-col items-center justify-center border-y-8 w-full rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 p-6 border-white/5 dark:border-white/10"
+          [ngClass]="{
+            '!border-cyan-500/50': tier.tier === 'starter',
+            '!border-violet-500/50': tier.tier === 'pro',
+            '!border-emerald-500/50': tier.tier === 'free',
+            '!border-rose-500/50': tier.tier === 'enterprise'
+          }">
+
+          <!-- "Most Popular" badge -->
+          @if (tier.highlighted) {
+            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+              <span class="glass-pill inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white rounded-full shadow-lg border-white/20">
+                <lucide-angular [img]="icons['check-circle']" class="h-3.5 w-3.5 fill-none text-white"></lucide-angular>
+                Most Popular
+              </span>
+            </div>
+          }
+
+          <!-- Plan name & description -->
+          <div class="text-center mb-6 w-full">
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">{{ tier.name }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ tier.description }}</p>
+          </div>
+
+          <!-- Price -->
+          <div class="mb-6 text-center w-full">
+            @if (tier.priceMonthly === 'Custom') {
+              <span class="text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent from-rose-400 to-cyan-400 dark:from-rose-400 dark:to-cyan-400">Custom</span>
+            } @else {
+              <span class="text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent from-cyan-500 to-rose-500 dark:from-cyan-400 dark:to-rose-400">
+                €{{ isYearly ? tier.priceYearly : tier.priceMonthly }}
+              </span>
+              <span class="text-gray-500 dark:text-gray-400 text-sm">/month</span>
+            }
+            @if (tier.priceMonthly !== 'Custom' && isYearly) {
+              <div class="text-xs text-green-600 dark:text-green-400 mt-1">Billed yearly</div>
+            }
+          </div>
+
+          <!-- Features list -->
+          <ul class="space-y-3 mb-8 w-full text-gray-600 dark:text-gray-300">
+            @for (feature of tier.features; track feature) {
+              <li class="flex items-center text-xs">
+                <lucide-angular [img]="icons['check']" class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 fill-none"></lucide-angular>
+                {{ feature }}
+              </li>
+            }
+          </ul>
+
+          <!-- CTA button -->
+          <div class="w-full mt-auto">
+            <a
+              [routerLink]="tier.ctaLink"
+              class="block w-full text-center py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm"
+              [ngClass]="{
+                'bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg': tier.highlighted,
+                'bg-gray-300 dark:bg-gray-800 hover:bg-gray-400 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100': !tier.highlighted
+              }"
+            >
+              {{ tier.cta }}
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="text-center mt-10">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        All prices in EUR. Need a custom plan?
+        <a routerLink="/service/contact" class="text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 font-medium underline">Contact sales</a>
+      </p>
+    </div>
+  </div>
+</section>

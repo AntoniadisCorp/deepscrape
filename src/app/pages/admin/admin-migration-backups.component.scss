@@ -1,19 +1,82 @@
 :host {
   display: block;
-  --admin-glass-bg: rgb(7 11 14 / 40%);
-  --admin-glass-bg-soft: rgb(7 11 14 / 24%);
-  --admin-glass-border: rgb(148 163 184 / 30%);
 }
 
 .admin-glass-card {
-  @apply transition-all duration-200 dark:text-white;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.admin-glass-card:hover {
+  transform: translateY(-2px);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button,
+a {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+button:hover,
+a:hover {
+  transform: translateY(-1px);
 }
 
 :host-context(.dark) .admin-glass-card {
-  color: white;
-  background: linear-gradient(to bottom right, var(--admin-glass-bg-soft), var(--admin-glass-bg));
-  border-color: var(--admin-glass-border);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgb(2 6 23 / 22%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+:host .btn {
+  @apply rounded-xl border font-sans font-semibold tracking-[0.01em] transition-all duration-200;
+  @apply shadow-[0_12px_24px_-18px_rgba(42,46,53,0.45)] hover:-translate-y-[1px] hover:shadow-[0_18px_32px_-20px_rgba(42,46,53,0.55)];
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-300 dark:focus-visible:ring-cyan-700;
+}
+
+:host .btn-sm {
+  @apply min-h-9 px-4 py-1.5 text-xs uppercase tracking-[0.08em];
+}
+
+:host .btn-gray {
+  @apply border-gray3/80 bg-gray1/95 text-gray6 hover:border-gray4 hover:bg-gray2/90;
+  @apply dark:border-gray5/80 dark:bg-gray6/65 dark:text-gray2 dark:hover:border-gray4 dark:hover:bg-gray6;
+}
+
+:host .btn-red {
+  @apply border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700;
+  @apply dark:border-rose-500 dark:bg-rose-500 dark:hover:border-rose-400 dark:hover:bg-rose-400;
+}
+
+:host .btn-ring-red {
+  @apply focus-visible:ring-rose-300 dark:focus-visible:ring-rose-700;
+}
+
+:host .admin-pagination button {
+  @apply rounded-xl border border-gray3/75 bg-gray1/90 text-gray6 shadow-[0_10px_20px_-16px_rgba(42,46,53,0.45)];
+  @apply dark:border-gray5/75 dark:bg-gray6/70 dark:text-gray2;
+  @apply hover:-translate-y-[1px] hover:border-gray4 hover:bg-gray2/95 dark:hover:border-gray4 dark:hover:bg-gray6;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 dark:focus-visible:ring-cyan-700;
+}
+
+:host .admin-pagination button:disabled {
+  @apply opacity-50 shadow-none hover:translate-y-0;
 }

@@ -336,6 +336,9 @@ export class BillingService {
     failedEvents: Array<Record<string, unknown>>
     pendingEvents: Array<Record<string, unknown>>
     pastDueAccounts: Array<Record<string, unknown>>
+    disputes: Array<Record<string, unknown>>
+    retryStats: { totalFailedEvents: number; totalRetries: number; averageRetries: number; oldestUnprocessedEvent: string | null }
+    entitlementMetrics: { todayCalls: number }
   }> {
     return this.firestoreService.callFunction<typeof args, {
       generatedAt: string
@@ -343,6 +346,9 @@ export class BillingService {
       failedEvents: Array<Record<string, unknown>>
       pendingEvents: Array<Record<string, unknown>>
       pastDueAccounts: Array<Record<string, unknown>>
+      disputes: Array<Record<string, unknown>>
+      retryStats: { totalFailedEvents: number; totalRetries: number; averageRetries: number; oldestUnprocessedEvent: string | null }
+      entitlementMetrics: { todayCalls: number }
     }>('getAdminBillingObservability', args)
   }
 

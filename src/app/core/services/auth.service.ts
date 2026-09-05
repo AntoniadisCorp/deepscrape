@@ -41,6 +41,40 @@ import { HeartbeatService } from './heartbeat.service';
 import { AnalyticsService } from './analytics.service';
 import { GuestTrackingService } from './guest-tracking.service';
 
+type TotpMfaProjectStatus = 'enabled' | 'already-enabled' | 'disabled' | 'already-disabled'
+
+type TotpMfaProjectResponse = {
+  success: boolean
+  status: TotpMfaProjectStatus
+  message: string
+  config: {
+    state: string
+    adjacentIntervals: number
+  }
+}
+
+export type MfaSecurityMethod = 'totp' | 'sms' | 'email'
+
+export type MfaSecurityPreferences = {
+  primaryMethod: MfaSecurityMethod
+  secondaryMethod: MfaSecurityMethod | null
+  riskEmailNotifications: boolean
+  updatedAt: string
+}
+
+export type MfaSecurityPreferencesResult = {
+  success: boolean
+  preferences: MfaSecurityPreferences
+  availableMethods: {
+    totp: boolean
+    sms: boolean
+    email: boolean
+  }
+  hasEnrolledMfa?: boolean
+}
+
+export const MFA_SECURITY_PREFERENCES_KEY = 'mfa-security-preferences'
+
 @Injectable({
   providedIn: 'root'
 })
@@ -763,28 +797,104 @@ export class AuthService {
    * Only administrators can invoke this function.
    * This must be done before users can enroll authenticator apps.
    */
-  async enableTotpMfaForProject(): Promise<{ success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }> {
+  async setTotpMfaProjectEnabled(enabled: boolean): Promise<TotpMfaProjectResponse> {
     try {
       const result = await this.fireService.callFunction<
-        { dryRun?: boolean },
-        { success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }
-      >('enableTotpMfa', { dryRun: false });
+        { dryRun?: boolean; enabled?: boolean },
+        TotpMfaProjectResponse
+      >('enableTotpMfa', { dryRun: false, enabled });
       return result;
     } catch (error: any) {
       this.mapTotpProjectConfigError(error)
     }
   }
 
-  async getTotpMfaProjectStatus(): Promise<{ success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }> {
+  async enableTotpMfaForProject(): Promise<TotpMfaProjectResponse> {
+    return this.setTotpMfaProjectEnabled(true)
+  }
+
+  async getTotpMfaProjectStatus(): Promise<TotpMfaProjectResponse> {
     try {
       const result = await this.fireService.callFunction<
         { dryRun?: boolean },
-        { success: boolean; status: 'enabled' | 'already-enabled' | 'disabled'; message: string; config: { state: string; adjacentIntervals: number } }
+        TotpMfaProjectResponse
       >('enableTotpMfa', { dryRun: true })
       return result
     } catch (error: any) {
       this.mapTotpProjectConfigError(error)
     }
+  }
+
+  async getMfaSecurityPreferences(): Promise<MfaSecurityPreferencesResult> {
+    return await this.fireService.callFunction<
+      Record<string, never>,
+      MfaSecurityPreferencesResult
+    >('getMfaSecurityPreferences', {})
+  }
+
+  async updateMfaSecurityPreferences(input: {
+    primaryMethod: MfaSecurityMethod
+    secondaryMethod: MfaSecurityMethod | null
+    riskEmailNotifications: boolean
+  }): Promise<MfaSecurityPreferencesResult> {
+    const result = await this.fireService.callFunction<
+      {
+        primaryMethod: MfaSecurityMethod
+        secondaryMethod: MfaSecurityMethod | null
+        riskEmailNotifications: boolean
+      },
+      MfaSecurityPreferencesResult
+    >('updateMfaSecurityPreferences', input)
+
+    if (this.isBrowserRuntime()) {
+      localStorage.setItem(MFA_SECURITY_PREFERENCES_KEY, JSON.stringify(result.preferences))
+    }
+
+    return result
+  }
+
+  readCachedMfaSecurityPreferences(): MfaSecurityPreferences | null {
+    if (!this.isBrowserRuntime()) {
+      return null
+    }
+
+    try {
+      const raw = localStorage.getItem(MFA_SECURITY_PREFERENCES_KEY)
+      if (!raw) {
+        return null
+      }
+
+      const parsed = JSON.parse(raw) as Partial<MfaSecurityPreferences>
+      if (!parsed || typeof parsed !== 'object') {
+        return null
+      }
+
+      const primaryMethod = String(parsed.primaryMethod || '').trim().toLowerCase()
+      if (primaryMethod !== 'totp' && primaryMethod !== 'sms' && primaryMethod !== 'email') {
+        return null
+      }
+
+      const secondaryCandidate = String(parsed.secondaryMethod || '').trim().toLowerCase()
+      const secondaryMethod = (secondaryCandidate === 'totp' || secondaryCandidate === 'sms' || secondaryCandidate === 'email') ?
+        secondaryCandidate as MfaSecurityMethod :
+        null
+
+      return {
+        primaryMethod: primaryMethod as MfaSecurityMethod,
+        secondaryMethod,
+        riskEmailNotifications: parsed.riskEmailNotifications !== false,
+        updatedAt: String(parsed.updatedAt || ''),
+      }
+    } catch {
+      return null
+    }
+  }
+
+  async notifyMfaDisabledRisk(): Promise<void> {
+    await this.fireService.callFunction<{ eventType: 'mfa_disabled' }, { success: boolean }>(
+      'notifyMfaRiskEvent',
+      { eventType: 'mfa_disabled' },
+    )
   }
 
   async updatePassword(newPassword: string): Promise<UserCredential | null> {

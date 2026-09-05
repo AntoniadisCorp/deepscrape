@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, inject, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, OnInit, Input, computed, inject, signal } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { MatCardModule } from '@angular/material/card'
 import { MatTooltipModule } from '@angular/material/tooltip'
@@ -24,7 +24,8 @@ interface DailySummary {
   selector: 'app-session-activity',
   imports: [CommonModule, MatCardModule, MatTooltipModule, MatIconModule],
   templateUrl: './session-activity.component.html',
-  styleUrl: './session-activity.component.scss'
+  styleUrl: './session-activity.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SessionActivityComponent implements OnInit {
   @Input() session!: SessionDisplayInfo
@@ -33,6 +34,47 @@ export class SessionActivityComponent implements OnInit {
 
   readonly activityData = signal<ActivityData[]>([])
   readonly dailySummary = signal<DailySummary[]>([])
+  readonly activityBars = computed(() => {
+    const data = this.activityData()
+    const maxActive = Math.max(...data.map((a) => a.activeSeconds), 1)
+
+    return data.map((activity, index) => {
+      const hour = new Date(activity.timestamp).getHours()
+      return {
+        index,
+        activity,
+        height: (activity.activeSeconds / maxActive) * 100,
+        tooltip: `${hour.toString().padStart(2, '0')}:00 - ${activity.activityCount} requests, ${Math.round(activity.activeSeconds)}s active`,
+      }
+    })
+  })
+  readonly totalActivity = computed(() => this.activityData().reduce((sum, a) => sum + a.activityCount, 0))
+  readonly totalActiveTime = computed(() => {
+    const totalSeconds = this.activityData().reduce((sum, a) => sum + a.activeSeconds, 0)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    return `${hours}h ${minutes}m`
+  })
+  readonly averageSessionDuration = computed(() => {
+    const data = this.activityData()
+    const totalSeconds = data.reduce((sum, a) => sum + a.activeSeconds, 0)
+    const avgSeconds = totalSeconds / Math.max(data.length, 1)
+    return `${Math.round(avgSeconds / 60)}m`
+  })
+  readonly peakActivityHour = computed(() => {
+    let maxActivity = 0
+    let peakHour = 0
+
+    this.activityData().forEach((act, i) => {
+      const totalAct = act.activeSeconds + act.activityCount
+      if (totalAct > maxActivity) {
+        maxActivity = totalAct
+        peakHour = i
+      }
+    })
+
+    return `${peakHour.toString().padStart(2, '0')}:00`
+  })
 
   ngOnInit() {
     if (this.session?.sessionId) {
@@ -111,48 +153,6 @@ export class SessionActivityComponent implements OnInit {
     return Array.from(dailyMap.values()).slice(0, 7) // Last 7 days
   }
 
-  getBarHeight(activity: ActivityData): number {
-    const maxActive = Math.max(...this.activityData().map((a) => a.activeSeconds), 1)
-    return (activity.activeSeconds / maxActive) * 100
-  }
-
-  getActivityTooltip(activity: ActivityData, index: number): string {
-    const hour = new Date(activity.timestamp).getHours()
-    return `${hour.toString().padStart(2, '0')}:00 - ${activity.activityCount} requests, ${Math.round(activity.activeSeconds)}s active`
-  }
-
-  getTotalActivity(): number {
-    return this.activityData().reduce((sum, a) => sum + a.activityCount, 0)
-  }
-
-  getTotalActiveTime(): string {
-    const totalSeconds = this.activityData().reduce((sum, a) => sum + a.activeSeconds, 0)
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    return `${hours}h ${minutes}m`
-  }
-
-  getAverageSessionDuration(): string {
-    const totalSeconds = this.activityData().reduce((sum, a) => sum + a.activeSeconds, 0)
-    const avgSeconds = totalSeconds / Math.max(this.activityData().length, 1)
-    return `${Math.round(avgSeconds / 60)}m`
-  }
-
-  getPeakActivityHour(): string {
-    let maxActivity = 0
-    let peakHour = 0
-
-    this.activityData().forEach((act, i) => {
-      const totalAct = act.activeSeconds + act.activityCount
-      if (totalAct > maxActivity) {
-        maxActivity = totalAct
-        peakHour = i
-      }
-    })
-
-    return `${peakHour.toString().padStart(2, '0')}:00`
-  }
-
   formatDuration(seconds: number): string {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
@@ -162,7 +162,4 @@ export class SessionActivityComponent implements OnInit {
     return `${minutes}m`
   }
 
-  getDailySummary(): DailySummary[] {
-    return this.dailySummary()
-  }
 }

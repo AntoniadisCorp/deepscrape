@@ -10,7 +10,7 @@ import { SecretManagerServiceClient } from "@google-cloud/secret-manager"
 import * as crypto from "crypto"
 import * as fs from "fs"
 import * as path from "path"
-import { env } from "../config/env"
+import { env, functionsEnvJson } from "../config/env"
 
 const secretManager = new SecretManagerServiceClient()
 const EMULATOR_SECRET_PREFIX = "emulator-secret://"
@@ -23,8 +23,19 @@ export const stripeWebhookSecretParam =
 // on any Cloud Function that cold-starts a new instance.
 export const serviceAccountKeyParam =
     defineJsonSecret("FIRE_SERVICE_ACCOUNT_KEY")
-export const stripeSecrets = [stripeSecretParam, stripeWebhookSecretParam]
-export const dbName = env.DB_NAME || "(default)"
+export const stripeSecrets = [stripeSecretParam, stripeWebhookSecretParam,
+    functionsEnvJson]
+const configuredDbName = (env.DB_NAME || "").trim()
+const fallbackDbName = env.IS_PRODUCTION ? "easyscrape" : "(default)"
+export const dbName = configuredDbName || fallbackDbName
+
+if (!configuredDbName) {
+    const fallbackMessage =
+        "DB_NAME not configured. Falling back to Firestore database:"
+    console.warn(
+        `${fallbackMessage} ${dbName}`
+    )
+}
 
 const resolveLocalServiceAccount = (): admin.ServiceAccount | null => {
     const candidatePaths = [

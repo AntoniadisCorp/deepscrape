@@ -10,6 +10,7 @@ import * as auth from "./app/auth"
 import * as stripe from "./app/stripe"
 import * as analyticsRealtime from "./gfunctions/analytics-realtime"
 import * as sessions from "./gfunctions/sessions"
+import * as webauthn from "./gfunctions/webauthn"
 // import path, { join } from "node:path"
 // import { fileURLToPath } from "node:url"
 
@@ -64,6 +65,8 @@ export const getAdminBillingObservability = stripe.getAdminBillingObservability
 export const acknowledgeBillingIncident = stripe.acknowledgeBillingIncident
 export const requestStripeEventRetry = stripe.requestStripeEventRetry
 export const expireTrialsToFree = stripe.expireTrialsToFree
+export const expireStaleCredits = stripe.expireStaleCredits
+export const downgradePastDueAccounts = stripe.downgradePastDueAccounts
 
 
 // API SECRET KEYS - Functions
@@ -111,6 +114,8 @@ export const recordLogoutMetrics = sessions.recordLogoutMetrics
 export const validateSessionCookie = sessions.validateSessionCookie
 export const cleanupExpiredSessions = sessions.cleanupExpiredSessions
 export const onLoginHistoryCreated = sessions.onLoginHistoryCreated
+export const enrichLoginSessionGeo = sessions.enrichLoginSessionGeo
+export const enrichGuestGeo = sessions.enrichGuestGeo
 
 // PHASE 4.2: DEVICE VERIFICATION - Functions
 export const sendDeviceVerificationCode = sessions.sendDeviceVerificationCode
@@ -118,3 +123,15 @@ export const verifyAndTrustDevice = sessions.verifyAndTrustDevice
 export const isDeviceTrusted = sessions.isDeviceTrusted
 export const getTrustedDevices = sessions.getTrustedDevices
 export const removeTrustedDevice = sessions.removeTrustedDevice
+
+/* WebAuthn / Passkey - Functions */
+export const generateWebAuthnRegistrationOptions = webauthn.generateWebAuthnRegistrationOptions
+export const verifyWebAuthnRegistration = webauthn.verifyWebAuthnRegistration
+export const generateWebAuthnAuthenticationOptions = webauthn.generateWebAuthnAuthenticationOptions
+export const verifyWebAuthnAuthentication = webauthn.verifyWebAuthnAuthentication
+export const getWebAuthnCredentials = webauthn.getWebAuthnCredentials
+export const removeWebAuthnCredential = webauthn.removeWebAuthnCredential
+
+export const getMfaSecurityPreferences = sessions.getMfaSecurityPreferences
+export const updateMfaSecurityPreferences = sessions.updateMfaSecurityPreferences
+export const notifyMfaRiskEvent = sessions.notifyMfaRiskEvent

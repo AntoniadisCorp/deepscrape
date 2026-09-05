@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import chalk from 'chalk'
 // import { existsSync, readFileSync } from 'node:fs'
 import { SyncAIapis } from 'api'
-import { upstashApiLimiter, upstashGeneralLimiter } from 'api/handlers'
+import { upstashApiLimiter, upstashGeneralLimiter, serveSecurity } from 'api/handlers'
 import { fileURLToPath } from 'node:url'
 import { env } from './src/config/env'
 import cookieParser from 'cookie-parser'
@@ -99,6 +99,9 @@ function serveapp(): express.Application {
     )
     next()
   }, upstashApiLimiter, AI.isJwtAuth, AI.router)
+
+  // Security.txt RFC 9116 endpoint - provides vulnerability reporting information to security researchers
+  server.get('/.well-known/security.txt', serveSecurity)
 
   // *PWA Service Worker (if running in production)
   server.use((req: Request, res: Response, next: NextFunction) => {
