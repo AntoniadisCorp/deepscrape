@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PlansComponent } from './plans.component';
-import { BillingService } from 'src/app/core/services';
+import { BillingService, HighRiskActionService } from 'src/app/core/services';
 import { of } from 'rxjs';
 import { getTestProviders } from 'src/app/testing';
 
@@ -39,7 +39,8 @@ describe('PlansComponent', () => {
       imports: [PlansComponent],
       providers: [
         ...getTestProviders(),
-        { provide: BillingService, useValue: billingServiceMock }
+        { provide: BillingService, useValue: billingServiceMock },
+        { provide: HighRiskActionService, useValue: { ensureVerified: async () => true } },
       ]
     })
       .compileComponents();

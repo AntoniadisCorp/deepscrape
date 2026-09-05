@@ -28,7 +28,8 @@ describe('adminGuard', () => {
 
   beforeEach(() => {
     authzServiceMock = jasmine.createSpyObj('AuthzService', ['hasPlatformAdminAccess$']);
-    routerMock = jasmine.createSpyObj('Router', ['navigate']);
+    routerMock = jasmine.createSpyObj('Router', ['navigate', 'createUrlTree']);
+    (routerMock.createUrlTree as jasmine.Spy).and.callFake((commands: unknown[]) => ({ commands }));
 
     TestBed.configureTestingModule({
       providers: [
@@ -55,7 +56,8 @@ describe('adminGuard', () => {
     const result = executeGuard({} as any, {} as any);
     const resolved = await resolveGuardResult(result);
 
-    expect(resolved).toBe(false);
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
+    expect(resolved).toBeTruthy();
+    expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/']);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 });

@@ -32,6 +32,7 @@ describe('authzGuard', () => {
     });
     routerMock = jasmine.createSpyObj('Router', ['navigate', 'parseUrl', 'createUrlTree']);
     (routerMock.parseUrl as jasmine.Spy).and.callFake((url: string) => ({ toString: () => url }));
+    (routerMock.createUrlTree as jasmine.Spy).and.callFake((commands: unknown[]) => ({ commands }));
 
     TestBed.configureTestingModule({
       providers: [
@@ -69,8 +70,9 @@ describe('authzGuard', () => {
     const result = executeGuard(route, {} as any);
     const resolved = await resolveGuardResult(result);
 
-    expect(resolved).toBe(false);
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
+    expect(resolved).toBeTruthy();
+    expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/']);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
   it('should pass through when no authz data provided', async () => {
