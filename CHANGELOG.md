@@ -1,3 +1,18 @@
+# [0.7.0-beta.9](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.8...v0.7.0-beta.9) (2026-09-05)
+
+
+### Bug Fixes
+
+* **auth:** harden admin fallback and phone verification flows ([a59b11b](https://github.com/deepscrape/deepscrape/commit/a59b11b4e006a3c03d8e7e856164a773c0d7e70d))
+* **ci:** sync root and functions package-lock.json ([e463049](https://github.com/deepscrape/deepscrape/commit/e463049834ae9bc71e43dd715caa3f1284159850))
+
+
+### Features
+
+* **analytics:** add scheduled aggregation and summary-first reads ([d7927ae](https://github.com/deepscrape/deepscrape/commit/d7927aea01d66fad66974cc417ee31b217da9280))
+* **auth:** bootstrap admin and cursor pagination ([f93e26d](https://github.com/deepscrape/deepscrape/commit/f93e26d8384505653441f512642691d58a139cf1))
+* **platform:** pr70 release - authz, enterprise sessions, billing, analytics, landing ([6699e12](https://github.com/deepscrape/deepscrape/commit/6699e121eb3cf328e86c0fe1cb54d40041e10756))
+
 # [0.7.0-beta.7](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-04-16)
 
 
