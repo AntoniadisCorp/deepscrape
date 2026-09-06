@@ -1,3 +1,10 @@
+# [0.7.0-beta.12](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.11...v0.7.0-beta.12) (2026-09-06)
+
+
+### Bug Fixes
+
+* **analytics:** read flat breakdown keys in range charts ([2d7d4e2](https://github.com/deepscrape/deepscrape/commit/2d7d4e2eacf5875cc3fd38bc3bea98616391b31d))
+
 # [0.7.0-beta.11](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.10...v0.7.0-beta.11) (2026-09-06)
 
 
