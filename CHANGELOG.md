@@ -1,3 +1,11 @@
+## [0.7.3-beta.1](https://github.com/deepscrape/deepscrape/compare/v0.7.2...v0.7.3-beta.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **analytics:** read flat breakdown keys in range charts ([2d7d4e2](https://github.com/deepscrape/deepscrape/commit/2d7d4e2eacf5875cc3fd38bc3bea98616391b31d))
+* **geo:** stop no-match re-enrich loop spend ([31a36b6](https://github.com/deepscrape/deepscrape/commit/31a36b692c75f52198d12151db025458ecc44495))
+
 # [0.7.0-beta.12](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.11...v0.7.0-beta.12) (2026-09-06)
 
 
