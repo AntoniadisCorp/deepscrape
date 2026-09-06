@@ -1,3 +1,10 @@
+# [0.7.0-beta.11](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.10...v0.7.0-beta.11) (2026-09-06)
+
+
+### Bug Fixes
+
+* **geo:** stop no-match re-enrich loop spend ([31a36b6](https://github.com/deepscrape/deepscrape/commit/31a36b692c75f52198d12151db025458ecc44495))
+
 # [0.7.0-beta.10](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.9...v0.7.0-beta.10) (2026-09-05)
 
 
