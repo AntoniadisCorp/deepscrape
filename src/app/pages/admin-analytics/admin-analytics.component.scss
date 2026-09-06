@@ -126,45 +126,46 @@
 }
 
 .admin-analytics-theme .btn {
-  @apply rounded-xl border font-sans font-semibold tracking-[0.01em] transition-all duration-200;
-  @apply shadow-[0_12px_24px_-18px_rgba(42,46,53,0.45)] hover:-translate-y-[1px] hover:shadow-[0_18px_32px_-20px_rgba(42,46,53,0.55)];
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-300 dark:focus-visible:ring-cyan-700;
+  @apply relative isolate inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border font-sans font-medium leading-6;
+  @apply transition-colors duration-200;
+  @apply active:scale-[0.96] active:duration-75;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-blue-400/50;
 }
 
 .admin-analytics-theme .btn-sm {
-  @apply min-h-9 px-4 py-1.5 text-xs uppercase tracking-[0.08em];
+  @apply min-h-9 px-4 py-1.5 text-xs font-semibold tracking-[0.03em];
 }
 
 .admin-analytics-theme .btn-gray {
-  @apply border-gray3/80 bg-gray1/95 text-gray6 hover:border-gray4 hover:bg-gray2/90;
-  @apply dark:border-gray5/80 dark:bg-gray6/65 dark:text-gray2 dark:hover:border-gray4 dark:hover:bg-gray6;
+  @apply border-gray3/60 bg-gray1/85 text-gray6 hover:bg-gray2/80 hover:text-gray7;
+  @apply dark:border-gray5/70 dark:bg-gray6/60 dark:text-gray1 dark:hover:bg-gray5/80 dark:hover:text-white;
 }
 
 .admin-analytics-theme .btn-blue,
 .admin-analytics-theme .btn-green {
-  @apply border-cyan-600 bg-cyan-600 text-white hover:border-cyan-700 hover:bg-cyan-700;
-  @apply dark:border-cyan-500 dark:bg-cyan-500 dark:hover:border-cyan-400 dark:hover:bg-cyan-400;
+  @apply border-transparent bg-blue-600/90 text-white hover:bg-blue-600;
+  @apply dark:bg-blue-600/90 dark:text-white dark:hover:bg-blue-500;
 }
 
 .admin-analytics-theme .btn-red {
-  @apply border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700;
-  @apply dark:border-rose-500 dark:bg-rose-500 dark:hover:border-rose-400 dark:hover:bg-rose-400;
+  @apply border-transparent bg-red-600/90 text-white hover:bg-red-600;
+  @apply dark:bg-red-600/90 dark:text-white dark:hover:bg-red-500;
 }
 
 .admin-analytics-theme .btn-orange {
-  @apply border-amber-500 bg-amber-500 text-gray7 hover:border-amber-400 hover:bg-amber-400;
-  @apply dark:border-amber-400 dark:bg-amber-400 dark:text-gray7 dark:hover:border-amber-300 dark:hover:bg-amber-300;
+  @apply border-amber-500/30 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:text-amber-900;
+  @apply dark:border-amber-400/30 dark:bg-amber-400/15 dark:text-amber-200 dark:hover:bg-amber-400/25 dark:hover:text-amber-100;
 }
 
 .admin-analytics-theme .btn-ring-blue,
 .admin-analytics-theme .btn-ring-green {
-  @apply focus-visible:ring-cyan-300 dark:focus-visible:ring-cyan-700;
+  @apply focus-visible:ring-blue-300 dark:focus-visible:ring-blue-500;
 }
 
 .admin-analytics-theme .btn-ring-red {
-  @apply focus-visible:ring-rose-300 dark:focus-visible:ring-rose-700;
+  @apply focus-visible:ring-red-300 dark:focus-visible:ring-red-500;
 }
 
 .admin-analytics-theme .btn-ring-orange {
-  @apply focus-visible:ring-amber-300 dark:focus-visible:ring-amber-700;
+  @apply focus-visible:ring-amber-300 dark:focus-visible:ring-amber-500;
 }

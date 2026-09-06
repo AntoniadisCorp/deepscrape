@@ -2,50 +2,7 @@
   display: block;
 }
 
-.admin-glass-card {
-  position: relative;
-  overflow: hidden;
-  transition:
-    transform 220ms ease,
-    box-shadow 220ms ease,
-    border-color 220ms ease;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-
-.admin-glass-card:hover {
-  transform: translateY(-2px);
-}
-
-.admin-table-wrap {
-  overflow-x: auto;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-button,
-a {
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease;
-}
-
-button:hover,
-a:hover {
-  transform: translateY(-1px);
-}
-
-:host-context(.dark) .admin-glass-card {
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
+/* Match the shared admin pill-button recipe used across the other admin pages. */
 :host .btn {
   @apply relative isolate inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border font-sans font-medium leading-6;
   @apply transition-colors duration-200;
@@ -62,6 +19,22 @@ a:hover {
   @apply dark:border-gray5/70 dark:bg-gray6/60 dark:text-gray1 dark:hover:bg-gray5/80 dark:hover:text-white;
 }
 
-:host .btn-ring {
+:host .btn-blue,
+:host .btn-green {
+  @apply border-transparent bg-blue-600/90 text-white hover:bg-blue-600;
+  @apply dark:bg-blue-600/90 dark:text-white dark:hover:bg-blue-500;
+}
+
+:host .btn-red {
+  @apply border-transparent bg-red-600/90 text-white hover:bg-red-600;
+  @apply dark:bg-red-600/90 dark:text-white dark:hover:bg-red-500;
+}
+
+:host .btn-ring-blue,
+:host .btn-ring-green {
   @apply focus-visible:ring-blue-300 dark:focus-visible:ring-blue-500;
+}
+
+:host .btn-ring-red {
+  @apply focus-visible:ring-red-300 dark:focus-visible:ring-red-500;
 }

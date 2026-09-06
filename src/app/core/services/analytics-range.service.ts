@@ -165,7 +165,8 @@ export class AnalyticsRangeService {
     let totalLogins = 0
     let guestConversions = 0
 
-    for (const row of sortedRows) {
+    for (const rawRow of sortedRows) {
+      const row = this.normalizeDailyBreakdownRow(rawRow)
       totalGuests += Number(row.newGuests || 0)
       totalUsers += Number(row.newUsers || 0)
       totalLogins += Number(row.totalLogins || 0)
@@ -235,7 +236,8 @@ export class AnalyticsRangeService {
     const byLanguage: Record<string, number> = {}
     const byIP: Record<string, number> = {}
 
-    for (const row of rows) {
+    for (const rawRow of rows) {
+      const row = this.normalizeDailyBreakdownRow(rawRow)
       this.mergeDimensionCounts(byOS, row.byOS, 'Unknown OS')
       this.mergeDimensionCounts(byCountry, row.byCountry, 'Unknown Country')
       this.mergeDimensionCounts(byBrowser, row.byBrowser, 'Unknown Browser')
@@ -359,6 +361,53 @@ export class AnalyticsRangeService {
   private normalizeDimensionKey(value: string | undefined, fallback: string = 'Unknown'): string {
     const normalized = String(value || '').trim()
     return normalized || fallback
+  }
+
+  /**
+   * Build a dimension map from a daily/hourly row that may store breakdowns
+   * EITHER as a nested map (byBrowser: { Chrome: n }) OR as flat dotted fields
+   * written by the realtime triggers (byBrowser.Chrome: n).
+   * ponytail: normalizing at read time fixes both existing flat days and future
+   * writes with no migration and no change to the write path.
+   */
+  private extractDimension(doc: Record<string, unknown> | undefined, prefix: string): Record<string, number> {
+    const out: Record<string, number> = {}
+    if (!doc) {
+      return out
+    }
+
+    const nested = doc[prefix]
+    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      for (const [k, v] of Object.entries(nested as Record<string, unknown>)) {
+        const dim = this.normalizeDimensionKey(k)
+        out[dim] = (out[dim] || 0) + Number(v || 0)
+      }
+    }
+
+    for (const k of Object.keys(doc)) {
+      if (k.startsWith(`${prefix}.`)) {
+        const dim = this.normalizeDimensionKey(k.slice(prefix.length + 1))
+        out[dim] = (out[dim] || 0) + Number(doc[k] || 0)
+      }
+    }
+
+    return out
+  }
+
+  private normalizeDailyBreakdownRow(raw: AnalyticsDailyBreakdown): AnalyticsDailyBreakdown {
+    const obj = raw as unknown as Record<string, unknown>
+    return {
+      ...raw,
+      byOS: this.extractDimension(obj, 'byOS'),
+      byCountry: this.extractDimension(obj, 'byCountry'),
+      byBrowser: this.extractDimension(obj, 'byBrowser'),
+      byDevice: this.extractDimension(obj, 'byDevice'),
+      byTimezone: this.extractDimension(obj, 'byTimezone'),
+      byProvider: this.extractDimension(obj, 'byProvider'),
+      byRegion: this.extractDimension(obj, 'byRegion'),
+      byLanguage: this.extractDimension(obj, 'byLanguage'),
+      byIP: this.extractDimension(obj, 'byIP'),
+    }
   }
 
   private toDateTimeKey(date: Date): string {

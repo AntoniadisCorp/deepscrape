@@ -139,25 +139,23 @@
           Showing {{ backups.length }} of {{ totalItems }} runs · Page {{ currentPage }} / {{ totalPages }}
         </p>
         @if (totalPages > 1) {
-          <div class="admin-pagination flex items-center gap-2">
-            <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
-              <button
-                [disabled]="currentPage === 1"
-                type="button"
-                (click)="onPageChanged(currentPage - 1)"
-                appRipple
-                rippleColor="dark"
-                class="flex disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] items-center h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-gray6/20 dark:hover:bg-gray6/40 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray6/80 dark:text-gray-300 dark:hover:text-gray-100 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
-                Previous
-              </button>
-            </div>
-            <div class="flex justify-center gap-1">
+          <div class="admin-pagination flex items-center gap-1.5">
+            <button
+              [disabled]="currentPage === 1"
+              type="button"
+              (click)="onPageChanged(currentPage - 1)"
+              appRipple
+              rippleColor="dark"
+              class="admin-page-nav">
+              Previous
+            </button>
+            <div class="flex items-center justify-center gap-1">
               @if (totalPages > 7) {
                 <button
-                  [class]="currentPage === 1 ? 'bg-gray6 text-white dark:hover:text-white hover:bg-gray6/70' : ' text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85'"
                   appRipple
                   rippleColor="light"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  class="admin-page-num"
+                  [class.admin-page-active]="currentPage === 1"
                   (click)="onPageChanged(1)">
                   1
                 </button>
@@ -166,17 +164,17 @@
                 <button
                   appRipple
                   rippleColor="dark"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85"
+                  class="admin-page-num"
                   (click)="onPageChanged(currentPage - 3)">
                   &hellip;
                 </button>
               }
               @for (page of getVisiblePageNumbers(); track page) {
                 <button
-                  [class]="currentPage === page ? 'bg-gray6 text-white dark:hover:text-white hover:bg-gray6/70' : ' text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85'"
                   appRipple
                   rippleColor="light"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  class="admin-page-num"
+                  [class.admin-page-active]="currentPage === page"
                   (click)="onPageChanged(page)">
                   {{ page }}
                 </button>
@@ -185,33 +183,31 @@
                 <button
                   appRipple
                   rippleColor="dark"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85"
+                  class="admin-page-num"
                   (click)="onPageChanged(currentPage + 3)">
                   &hellip;
                 </button>
               }
               @if (totalPages > 7) {
                 <button
-                  [class]="currentPage === totalPages ? 'bg-gray6 text-white dark:hover:text-white hover:bg-gray6/70' : ' text-gray6/80 dark:text-white hover:text-white dark:hover:text-white hover:bg-gray6/85'"
                   appRipple
                   rippleColor="light"
-                  class="flex items-center h-full px-3 leading-6 flex-row flex-nowrap text-base gap-1 dark:focus:bg-gray6/60 focus:bg-gray-400/[0.8] font-medium py-1 duration-300 rounded-full transition-colors"
+                  class="admin-page-num"
+                  [class.admin-page-active]="currentPage === totalPages"
                   (click)="onPageChanged(totalPages)">
                   {{ totalPages }}
                 </button>
               }
             </div>
-            <div class="sm:static top-5 right-1 inline-flex items-center justify-end">
-              <button
-                [disabled]="currentPage === totalPages"
-                type="button"
-                (click)="onPageChanged(currentPage + 1)"
-                appRipple
-                rippleColor="dark"
-                class="peer flex items-center disabled:text-gray4 disabled:hover:text-gray4 dark:disabled:text-white dark:disabled:hover:bg-gray1/[.08] h-full leading-6 flex-row flex-nowrap text-base gap-1 hover:bg-gray6/20 dark:hover:bg-gray6/40 dark:focus:bg-gray-900/80 focus:bg-gray-400/[0.8] text-gray6/80 dark:text-gray-300 dark:hover:text-gray-100 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
-                Next
-              </button>
-            </div>
+            <button
+              [disabled]="currentPage === totalPages"
+              type="button"
+              (click)="onPageChanged(currentPage + 1)"
+              appRipple
+              rippleColor="dark"
+              class="admin-page-nav">
+              Next
+            </button>
           </div>
         }
       </div>

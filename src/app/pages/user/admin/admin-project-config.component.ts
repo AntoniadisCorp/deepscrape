@@ -7,10 +7,11 @@ import { AuthService } from 'src/app/core/services/auth.service';
   selector: 'app-admin-project-config',
   standalone: true,
   imports: [CommonModule, RippleDirective],
+  styleUrl: './admin-project-config.component.scss',
   template: `
     <section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-      <header class="mb-6 rounded-2xl border border-gray2/80 bg-[#212121] p-6 shadow-[0_8px_32px_-20px_rgba(15,23,42,0.35)] dark:border-gray5/70 dark:bg-[#212121]">
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-gray5/90 dark:text-gray3/90">Admin Configuration</p>
+      <header class="mb-6 rounded-2xl border border-gray-300/70 bg-white p-6 shadow-[0_8px_32px_-20px_rgba(18,24,27,0.28)] dark:border-gray5/60 dark:bg-gray6/50">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-gray5/90 dark:text-gray3/90">Admin Configuration</p>
         <h1 class="mt-2 text-2xl font-extrabold tracking-tight text-gray6 sm:text-3xl dark:text-white">
           Project Security Controls
         </h1>
@@ -19,14 +20,14 @@ import { AuthService } from 'src/app/core/services/auth.service';
         </p>
       </header>
 
-      <article class="overflow-hidden rounded-2xl border border-gray2 bg-[#212121] shadow-[0_20px_50px_-32px_rgba(15,23,42,0.45)] dark:border-gray5 dark:bg-[#212121]">
-        <div class="border-b border-gray2 bg-[#212121]/95 px-5 py-4 dark:border-gray5 dark:bg-[#212121]/95 sm:px-6">
+      <article class="overflow-hidden rounded-2xl border border-gray-300/70 bg-white shadow-[0_20px_50px_-32px_rgba(18,24,27,0.4)] dark:border-gray5/60 dark:bg-gray6/50">
+        <div class="border-b border-gray-300/70 px-5 py-4 dark:border-gray5/70 sm:px-6">
           <h2 class="text-lg font-bold text-gray6 dark:text-white">Authenticator App MFA</h2>
           <p class="mt-1 text-sm text-gray5 dark:text-gray3">Applies to the full Firebase project.</p>
         </div>
 
         <div class="space-y-5 px-5 py-5 sm:px-6">
-          <div class="flex flex-col gap-4 rounded-xl border border-gray2 bg-[#212121] p-4 shadow-sm dark:border-gray5 dark:bg-[#212121] sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col gap-4 rounded-xl border border-gray-300/70 bg-gray-50/70 p-4 dark:border-gray5/70 dark:bg-gray7/40 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="text-sm font-semibold text-gray6 dark:text-white">Current Status</p>
               <p class="mt-1 text-sm" [class]="statusToneClass()">{{ statusLabel() }}</p>
@@ -40,52 +41,41 @@ import { AuthService } from 'src/app/core/services/auth.service';
               (click)="toggleTotp()"
               appRipple
               rippleColor="light"
-              class="group relative inline-flex h-11 w-[86px] items-center rounded-full border-2 border-gray3 bg-[#212121] p-1 transition-all duration-300 ease-out hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray4 dark:bg-[#212121]"
-              [class.!border-cyan-600]="totpEnabled()"
-              [class.ring-2]="isLoading()"
-              [class.ring-cyan-400]="isLoading()"
+              aria-label="Toggle project TOTP MFA"
+              class="relative inline-flex h-8 w-[60px] shrink-0 items-center rounded-full bg-gray2/80 p-1 transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray5/70 dark:focus-visible:ring-blue-400/50"
+              [class.!bg-blue-600]="totpEnabled()"
             >
               <span
-                class="absolute left-3 right-3 text-right text-[10px] font-bold uppercase tracking-[0.12em] text-gray5 transition-opacity duration-300 dark:text-gray2"
-                [class.opacity-0]="totpEnabled()"
-              >OFF</span>
-              <span
-                class="absolute left-3 right-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity duration-300"
-                [class.opacity-0]="!totpEnabled()"
-              >ON</span>
-              <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2a2a] shadow-[0_6px_20px_-10px_rgba(15,23,42,0.75)] transition-transform duration-300 ease-out"
-                [class.translate-x-[48px]]="totpEnabled()"
-              >
-                <span class="h-2.5 w-2.5 rounded-full bg-cyan-500 transition-colors duration-300" [class.!bg-rose-500]="!totpEnabled()"></span>
-              </span>
+                class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(18,24,27,0.3)] transition-transform duration-300 ease-out"
+                [class.translate-x-[28px]]="totpEnabled()"
+              ></span>
             </button>
           </div>
 
-          <div class="rounded-xl border border-amber-200/70 bg-[#212121] p-4 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-[#212121] dark:text-amber-200">
+          <div class="rounded-xl border border-amber-200/70 bg-amber-50/40 p-4 text-sm text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/15 dark:text-amber-200">
             <p class="font-semibold">Security note</p>
             <p class="mt-1">Use this only for project-level policy changes. User-level MFA enrollment is managed in each account settings page.</p>
           </div>
 
           @if (isStatusLoading()) {
-            <div class="rounded-lg border border-gray2 bg-[#212121] px-4 py-3 text-sm text-gray5 dark:border-gray5 dark:bg-[#212121] dark:text-gray2">
+            <div class="rounded-lg border border-gray-300/70 bg-gray-50/70 px-4 py-3 text-sm text-gray5 dark:border-gray5/70 dark:bg-gray7/40 dark:text-gray2">
               Reading current project MFA configuration...
             </div>
           }
 
           @if (successMessage()) {
-            <div class="rounded-lg border border-emerald-200 bg-[#212121] px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-900/70 dark:bg-[#212121] dark:text-emerald-200">
+            <div class="rounded-lg border border-emerald-300/70 bg-emerald-50/50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-900/15 dark:text-emerald-200">
               {{ successMessage() }}
             </div>
           }
 
           @if (errorMessage()) {
-            <div class="rounded-lg border border-rose-200 bg-[#212121] px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-900/70 dark:bg-[#212121] dark:text-rose-200">
+            <div class="rounded-lg border border-rose-300/70 bg-rose-50/50 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-900/60 dark:bg-rose-900/15 dark:text-rose-200">
               {{ errorMessage() }}
             </div>
           }
 
-          <div class="flex items-center justify-end gap-3 border-t border-gray2 pt-5 dark:border-gray5">
+          <div class="flex items-center justify-end gap-3 border-t border-gray-300/70 pt-5 dark:border-gray5/70">
             <button
               type="button"
               (click)="loadTotpStatus()"
@@ -102,7 +92,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
               [disabled]="isBusy()"
               appRipple
               rippleColor="light"
-              class="btn btn-sm btn-blue btn-ring btn-ring-blue !border-cyan-600 !bg-cyan-600 hover:!border-cyan-700 hover:!bg-cyan-700 dark:!border-cyan-500 dark:!bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+              class="btn btn-sm btn-blue btn-ring btn-ring-blue disabled:cursor-not-allowed disabled:opacity-60"
             >
               {{ isLoading() ? 'Updating...' : (totpEnabled() ? 'Disable TOTP MFA' : 'Enable TOTP MFA') }}
             </button>

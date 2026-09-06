@@ -21,6 +21,33 @@ const mapToTop = (source: Record<string, number> | undefined, key: string, limit
     .map(([name, count]) => ({ [key]: name, count }))
 }
 
+// Realtime triggers store breakdowns as flat dotted fields (byBrowser.Chrome)
+// via set({merge}); scheduled readers expect nested maps. Normalize both forms.
+// ponytail: read-time normalization fixes existing flat days without touching the write path.
+const collectBreakdown = (
+  doc: Record<string, unknown> | undefined,
+  prefix: string,
+): Record<string, number> => {
+  const out: Record<string, number> = {}
+  if (!doc) return out
+
+  const nested = doc[prefix]
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    for (const [k, v] of Object.entries(nested as Record<string, unknown>)) {
+      out[k] = (out[k] || 0) + Number(v || 0)
+    }
+  }
+
+  for (const k of Object.keys(doc)) {
+    if (k.startsWith(`${prefix}.`)) {
+      const dim = k.slice(prefix.length + 1)
+      out[dim] = (out[dim] || 0) + Number(doc[k] || 0)
+    }
+  }
+
+  return out
+}
+
 const toLatitudeBand = (latitude?: number) => {
   if (!Number.isFinite(latitude)) return "Unknown"
   const lat = Number(latitude)
@@ -348,6 +375,8 @@ export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
       Math.round((guestConversions / totalGuests) * 100) : 0
 
     const summaryRef = db.doc("metrics_summary/dashboard")
+    const brk = (p: string): Record<string, number> =>
+      collectBreakdown((rangeData ?? latestDaily) as unknown as Record<string, unknown> | undefined, p)
     await summaryRef.set({
       totalGuests: totalGuests,
       activeGuests: latestDaily?.activeGuests || 0,
@@ -356,14 +385,14 @@ export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
       totalLogins: totalLogins,
       guestConversions: guestConversions,
       conversionRate: conversionRate,
-      topCountries: mapToTop(rangeData?.byCountry || latestDaily?.byCountry, "country"),
-      topBrowsers: mapToTop(rangeData?.byBrowser || latestDaily?.byBrowser, "browser"),
-      topDevices: mapToTop(rangeData?.byDevice || latestDaily?.byDevice, "device"),
-      topOperatingSystems: mapToTop(rangeData?.byOS || latestDaily?.byOS, "os"),
-      byOS: rangeData?.byOS || latestDaily?.byOS || {},
-      byProvider: rangeData?.byProvider || latestDaily?.byProvider || {},
-      byTimezone: rangeData?.byTimezone || latestDaily?.byTimezone || {},
-      topProviders: mapToTop(rangeData?.byProvider || latestDaily?.byProvider, "provider"),
+      topCountries: mapToTop(brk("byCountry"), "country"),
+      topBrowsers: mapToTop(brk("byBrowser"), "browser"),
+      topDevices: mapToTop(brk("byDevice"), "device"),
+      topOperatingSystems: mapToTop(brk("byOS"), "os"),
+      byOS: brk("byOS"),
+      byProvider: brk("byProvider"),
+      byTimezone: brk("byTimezone"),
+      topProviders: mapToTop(brk("byProvider"), "provider"),
       lastUpdated: Timestamp.now(),
       computedAt: Timestamp.now(),
     }, { merge: true })
