@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginGuard, verifyGuard } from 'src/app/core/guards';
+import { LoginGuard, onboardingGuard, verifyGuard } from 'src/app/core/guards';
 
 export const MainRoutes: Routes = [
 
@@ -37,12 +37,28 @@ export const MainRoutes: Routes = [
         canActivate: [verifyGuard],
     },
     {
+        path: 'device-verification',
+        loadComponent: () => import('../../pages').then(m => m.DeviceVerificationRouteComponent),
+        data: {
+            title: 'device-verification',
+            animation: 'device-verification'
+        },
+    },
+    {
         path: 'action',
         loadComponent: () => import('../../pages').then(m => m.ActionHandlerComponent),
         data: {
             title: 'action',
             animation: 'action'
+        }
+    },
+    {
+        path: 'onboarding',
+        loadComponent: () => import('../../pages').then(m => m.OnboardingComponent),
+        data: {
+            title: 'onboarding',
+            animation: 'onboarding'
         },
-        canActivate: [verifyGuard]
-    }
+        canActivate: [onboardingGuard],
+    },
 ]

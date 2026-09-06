@@ -1,4 +1,4 @@
-import { Component, HostBinding, inject, OnInit, ViewChild, ElementRef, AfterViewInit, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, inject, OnInit, ViewChild, ElementRef, AfterViewInit, DestroyRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule, NgClass } from '@angular/common';
 import { AppCrawlComponent, AppLLMScrapeComponent, DomainSeederComponent } from 'src/app/core/components';
@@ -15,7 +15,8 @@ import { timer } from 'rxjs';
   animations: [
     fadeinCartItems,
     smoothfadeAnimation
-  ]
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlaygroundComponent implements OnInit, AfterViewInit {
   @HostBinding('class') classes = 'grow';
@@ -30,7 +31,7 @@ export class PlaygroundComponent implements OnInit, AfterViewInit {
   ) {
   }
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const newMode = params['mode'];
       // Only update if the mode actually changed to trigger animation
       if (this.currentMode !== newMode) {

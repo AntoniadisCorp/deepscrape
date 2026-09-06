@@ -1,25 +1,24 @@
-import { AsyncPipe, JsonPipe } from '@angular/common';
-import { Component, DestroyRef, EventEmitter, inject, input, model, Output } from '@angular/core'
+import { JsonPipe } from '@angular/common';
+import { Component, DestroyRef, inject, model } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
 import { FormControlPipe } from '../../pipes'
 import { DropdownComponent } from '../dropdown/dropdown.component'
 import { DockerImageInfo, DropDownOption, MachineResponse } from '../../types'
-import { fileToBase64, isImageParsable, preSetCPUtypes, preSetRegions, setAutoContainerOptions, setDefaultImages, setExistingMachines } from '../../functions'
+import { fileToBase64, isImageParsable, DEFAULT_IMAGES, DEPLOYMENT_REGIONS, CPU_TYPES, AUTO_CONTAINER_OPTIONS } from '../../functions'
 import { cloneMachineValidator, dockerHubUrlValidator } from '../../directives'
 import { CheckboxComponent } from '../checkbox/checkbox.component'
 import { MarkdownModule } from 'ngx-markdown'
 import { RadioToggleComponent } from '../radiotoggle/radiotoggle.component'
 import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component'
 import { DeploymentService } from '../../services'
-import { Subscription } from 'rxjs/internal/Subscription'
 import { debounceTime } from 'rxjs/internal/operators/debounceTime'
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged'
 import { switchMap } from 'rxjs/internal/operators/switchMap'
 import { map } from 'rxjs/internal/operators/map'
 import { filter } from 'rxjs/internal/operators/filter'
-import { Observable, of, tap } from 'rxjs'
+import { tap } from 'rxjs'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
@@ -35,8 +34,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 export class AppDockerStepperComponent {
   private destroyRef = inject(DestroyRef)
   private fb: FormBuilder = inject(FormBuilder)
-
-  private dockerUrlSub: Subscription
+  existingMachines: DropDownOption[] = []
 
   readonly clipboardButton = ClipboardbuttonComponent
   currentStep = model.required<number>()
@@ -52,7 +50,6 @@ export class AppDockerStepperComponent {
 
   // Mock data (replace with API calls in production)
   defaultImages: DropDownOption[] = []
-  existingMachines: DropDownOption[] = []
   regions: DropDownOption[] = []
   CPUTypes: DropDownOption[] = []
   autoContainerOptions: DropDownOption[] = []
@@ -69,27 +66,17 @@ export class AppDockerStepperComponent {
   }
 
   ngOnInit() {
-
-    // preSet default images
-    setDefaultImages(this.defaultImages)
-
-    // preSet existing machines
-    // setExistingMachines(this.existingMachines)
-
-    // preset Regions
-    preSetRegions(this.regions)
-
-    // preset CPUTypes
-    preSetCPUtypes(this.CPUTypes)
-
-    // preSet autoContainerOptions
-    setAutoContainerOptions(this.autoContainerOptions)
+    // Initialize dropdown options with constants (direct assignment avoids array mutations)
+    this.defaultImages = [...DEFAULT_IMAGES];
+    this.regions = [...DEPLOYMENT_REGIONS];
+    this.CPUTypes = [...CPU_TYPES];
+    this.autoContainerOptions = [...AUTO_CONTAINER_OPTIONS];
 
     // Initialize forms
-    this.initForms()
+    this.initForms();
 
     // Emit Step Status to the parent component
-    this.currentStep.set(1)
+    this.currentStep.set(1);
   }
   /**
    * comment initForms
@@ -180,7 +167,8 @@ export class AppDockerStepperComponent {
     })
 
 
-    this.dockerUrlSub = this.dockerHubUrl.valueChanges.pipe(
+    this.dockerHubUrl.valueChanges.pipe(
+      takeUntilDestroyed(this.destroyRef),
       tap(() => this.imageIsChecking = null),
       filter((value): value is string => !!value && !this.dockerHubUrl.invalid),
       distinctUntilChanged(),
@@ -204,8 +192,6 @@ export class AppDockerStepperComponent {
         exists: boolean;
         info: DockerImageInfo;
       }) => {
-        console.log('Image deployability response:', image);
-
         if (image.exists) {
           const { repository, tag } = image.info;
           this.dockerHubUrl.patchValue(`${repository}:${!tag ? 'latest' : tag}`, { emitEvent: false })
@@ -223,7 +209,9 @@ export class AppDockerStepperComponent {
       },
     })
 
-    this.formStep3.get('flyToml')?.valueChanges.subscribe((value) => {
+    this.formStep3.get('flyToml')?.valueChanges.pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((value) => {
       this.flyTomlMarkdown = value
     })
 
@@ -270,8 +258,6 @@ export class AppDockerStepperComponent {
       dockerfile: this.formStep1.get('dockerfile'),
       dockerHubUrl: this.formStep1.get('dockerHubUrl'),
     };
-
-    console.log('Validators updated:', option);
     // Clear all validators
     Object.values(controls).forEach((control) => control?.clearValidators());
     if (option === 'default') controls.defaultImage?.setValidators(Validators.required)
@@ -340,15 +326,7 @@ export class AppDockerStepperComponent {
     if (!resourceType)
       return
 
-    let dockerHubUrl = encodeURIComponent(this.formStep1.value.dockerHubUrl)
-
-    /* const { exists, info } = isImageDeployable(this.formStep1.value.dockerHubUrl)
-    if (info) {
-      const { registry, org, name, tag } = info
-      dockerHubUrl = `${org}/${name}:${!tag ? 'latest' : tag}`
-    }
-
-    console.log(exists, info) */
+    const dockerHubUrl = encodeURIComponent(this.formStep1.value.dockerHubUrl)
 
     return {
       default: this.formStep2.value.default,
@@ -436,35 +414,11 @@ export class AppDockerStepperComponent {
 
   deploy() {
     const config = this.getConfiguration()
-    let formData = new FormData()
-
-    // Loop through the config object and append each key-value pair to the formData object
-    // for (const key in config) {
-    //   if (key === 'dockerfile' && config[key]) {
-    //     // const fileBase64 = await fileToBase64(config[key] as File)
-    //     formData.append('dockerfile', config[key] as File)
-    //   } else if (key === 'environmentVariables') {
-    //     formData.append('environmentVariables', config[key])
-    //   }  else {
-    //     console.log('Appending dockerfile:', String(key))
-    //     // Append all other key-value pairs as strings
-    //     formData.append(key, String(config[key as keyof typeof config]))
-    //   }
-
-      
-    // }
-    console.log('Final FormData:', formData)
     return this.deployService.createMachine(config)
   }
 
   onCheckBoxChange() {
     // console.log(this.formStep2.get("autoStart")?.value)
     // this.this.formStep2.get("autoStart").setValue(!this.this.formStep2.get("autoStart").value)
-  }
-
-  ngOnDestroy(): void {
-    //Called once, before the instance is destroyed.
-    //Add 'implements OnDestroy' to the class.
-    this.dockerUrlSub?.unsubscribe()
   }
 }

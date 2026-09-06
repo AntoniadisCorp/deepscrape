@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+  <defs>
+    <linearGradient id="gc" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#176ab1"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="200" height="150" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.2)" stroke-width="1"/>
+  <!-- Crawler bot icon -->
+  <circle cx="50" cy="50" r="22" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.3)" stroke-width="1.5">
+    <animate attributeName="r" values="22;24;22" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <rect x="38" y="38" width="24" height="24" rx="4" fill="rgba(6,182,212,0.2)">
+    <animate attributeName="y" values="38;35;38" dur="2s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="42" y="42" width="6" height="6" rx="1" fill="#06b6d4"/>
+  <rect x="52" y="42" width="6" height="6" rx="1" fill="#06b6d4"/>
+  <rect x="38" y="55" width="24" height="4" rx="1" fill="rgba(6,182,212,0.3)"/>
+  <text x="50" y="95" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="13" font-family="sans-serif" font-weight="600">CrawlPack</text>
+  <text x="50" y="112" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">Config-driven</text>
+  <text x="50" y="126" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">crawl profiles</text>
+</svg>

@@ -5,7 +5,7 @@ import { ClipboardComponent } from '../clipboard/clipboard.component';
 import { ResolutionComponent } from '../resolution/resolution.component';
 import { ControlComponent } from '../control/control.component';
 import { environment } from 'src/environments/environment';
-import { fromEvent, Subject } from 'rxjs';
+import { fromEvent, merge, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
@@ -63,28 +63,16 @@ export class BrowserComponent implements OnInit, OnDestroy {
    * after the first user gesture on the document
    */
   private setupUserInteractionListeners(): void {
-    // Common user interaction events that browsers accept for media playback
     const interactionEvents = ['click', 'touchstart', 'keydown', 'pointerdown'];
-    
-    const userInteractionHandler = () => {
-      // If autoplay was blocked, try playing again on user interaction
-      if (this.autoplayBlocked && this.connected && this.videoRef?.nativeElement) {
-        console.log('User interaction detected, attempting to play video');
-        this.startPlayback();
-      }
-      
-      // Remove listeners once we've handled the interaction
-      if (!this.autoplayBlocked) {
-        interactionEvents.forEach(eventName => {
-          this.document.removeEventListener(eventName, userInteractionHandler);
-        });
-      }
-    };
-    
-    // Add listeners for user interaction
-    interactionEvents.forEach(eventName => {
-      this.document.addEventListener(eventName, userInteractionHandler, { once: false });
-    });
+
+    merge(...interactionEvents.map(e => fromEvent(this.document, e)))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (this.autoplayBlocked && this.connected && this.videoRef?.nativeElement) {
+          console.log('User interaction detected, attempting to play video');
+          this.startPlayback();
+        }
+      });
   }
   /**
    * Set up subscriptions for WebRTC events

@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="g-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#176ab1"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="g-rose" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#be123c"/>
+      <stop offset="100%" style="stop-color:#f43f5e"/>
+    </linearGradient>
+    <linearGradient id="g-flow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="50%" style="stop-color:#f43f5e"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glow-lg"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1200" height="500" fill="#060606" rx="16"/>
+  <rect x="0" y="0" width="1200" height="500" fill="rgba(255,255,255,0.02)" rx="16"/>
+
+  <!-- Grid overlay -->
+  <g opacity="0.03">
+    <line x1="0" y1="0" x2="1200" y2="0" stroke="white" stroke-width="0.5"/><line x1="0" y1="100" x2="1200" y2="100" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="200" x2="1200" y2="200" stroke="white" stroke-width="0.5"/><line x1="0" y1="300" x2="1200" y2="300" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="400" x2="1200" y2="400" stroke="white" stroke-width="0.5"/>
+  </g>
+
+  <!-- Pipeline horizontal background bar -->
+  <rect x="60" y="190" width="1080" height="120" rx="60" fill="rgba(255,255,255,0.02)"/>
+
+  <!-- Flow arrow base line -->
+  <line x1="240" y1="250" x2="1000" y2="250" stroke="rgba(255,255,255,0.04)" stroke-width="2"/>
+
+  <!-- Animated flow particles -->
+  <g opacity="0.5">
+    <circle cx="300" cy="250" r="3" fill="#06b6d4" filter="url(#glow)">
+      <animate attributeName="cx" values="200;1100;200" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;0" dur="6s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="400" cy="250" r="2" fill="#f43f5e" filter="url(#glow)">
+      <animate attributeName="cx" values="200;1100;200" dur="5s" repeatCount="indefinite" begin="1s"/>
+    </circle>
+    <circle cx="500" cy="250" r="2.5" fill="#06b6d4" filter="url(#glow)">
+      <animate attributeName="cx" values="200;1100;200" dur="7s" repeatCount="indefinite" begin="2s"/>
+    </circle>
+  </g>
+
+  <!-- Stage 1: SDK/API -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="4s" fill="freeze"/>
+    <rect x="65" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
+    <rect x="65" y="180" width="170" height="36" rx="14" fill="rgba(6,182,212,0.08)"/>
+    <text x="150" y="203" text-anchor="middle" fill="#06b6d4" font-size="11" font-family="sans-serif" font-weight="600">SDK / API</text>
+    <text x="150" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Python</text>
+    <text x="150" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Node.js</text>
+    <text x="150" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">REST API</text>
+    <text x="150" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">🔑 Auth: Bearer Token</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="4.5s" fill="freeze"/>
+    <text x="245" y="255" text-anchor="middle" fill="rgba(6,182,212,0.4)" font-size="24" font-family="sans-serif">→</text>
+  </g>
+
+  <!-- Stage 2: Crawl Dispatcher -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="5s" fill="freeze"/>
+    <rect x="270" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(244,63,94,0.25)" stroke-width="1.5">
+      <animate attributeName="stroke" values="rgba(244,63,94,0.25);rgba(6,182,212,0.3);rgba(244,63,94,0.25)" dur="3s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="270" y="180" width="170" height="36" rx="14" fill="rgba(244,63,94,0.08)"/>
+    <text x="355" y="203" text-anchor="middle" fill="#f43f5e" font-size="11" font-family="sans-serif" font-weight="600">Crawl Dispatcher</text>
+    <text x="355" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Load Balancing</text>
+    <text x="355" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Queue Management</text>
+    <text x="355" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Rate Limiting</text>
+    <text x="355" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">⚡ Auto-scale</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="5.5s" fill="freeze"/>
+    <text x="450" y="255" text-anchor="middle" fill="rgba(244,63,94,0.4)" font-size="24" font-family="sans-serif">→</text>
+  </g>
+
+  <!-- Stage 3: Browser Pool -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="6s" fill="freeze"/>
+    <rect x="475" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(34,197,94,0.25)" stroke-width="1.5"/>
+    <rect x="475" y="180" width="170" height="36" rx="14" fill="rgba(34,197,94,0.08)"/>
+    <text x="560" y="203" text-anchor="middle" fill="#22c55e" font-size="11" font-family="sans-serif" font-weight="600">Browser Pool</text>
+    <text x="560" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Chrome Instances</text>
+    <text x="560" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Profile Rotation</text>
+    <text x="560" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Fingerprint Spoofing</text>
+    <text x="560" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">🌍 40+ Geolocations</text>
+  </g>
+
+  <!-- Arrow 3 -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="6.5s" fill="freeze"/>
+    <text x="655" y="255" text-anchor="middle" fill="rgba(34,197,94,0.4)" font-size="24" font-family="sans-serif">→</text>
+  </g>
+
+  <!-- Stage 4: AI Extraction -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="7s" fill="freeze"/>
+    <rect x="680" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
+    <rect x="680" y="180" width="170" height="36" rx="14" fill="rgba(6,182,212,0.08)"/>
+    <text x="765" y="203" text-anchor="middle" fill="#06b6d4" font-size="11" font-family="sans-serif" font-weight="600">AI Extraction</text>
+    <text x="765" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">LLM Strategies</text>
+    <text x="765" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Schema Parsing</text>
+    <text x="765" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Multi-Provider</text>
+    <text x="765" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">🧠 GPT-4o · Claude</text>
+  </g>
+
+  <!-- Arrow 4 -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="7.5s" fill="freeze"/>
+    <text x="860" y="255" text-anchor="middle" fill="rgba(6,182,212,0.4)" font-size="24" font-family="sans-serif">→</text>
+  </g>
+
+  <!-- Stage 5: Structured Data -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="8s" fill="freeze"/>
+    <rect x="885" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
+    <rect x="885" y="180" width="170" height="36" rx="14" fill="rgba(6,182,212,0.08)"/>
+    <text x="970" y="203" text-anchor="middle" fill="#06b6d4" font-size="11" font-family="sans-serif" font-weight="600">Structured Data</text>
+    <text x="970" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">JSON Output</text>
+    <text x="970" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Markdown</text>
+    <text x="970" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Webhook Delivery</text>
+    <text x="970" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">📦 Export Ready</text>
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="200" y="420" width="800" height="36" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" opacity="0">
+    <animate attributeName="opacity" values="0;1;1" dur="9s" fill="freeze"/>
+  </rect>
+  <text x="600" y="443" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="11" font-family="sans-serif">Deepscrape Data Flow Pipeline — From Request to Structured Data in Milliseconds</text>
+
+  <!-- Top title badge -->
+  <rect x="470" y="25" width="260" height="30" rx="8" fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.15)" stroke-width="0.5">
+    <animate attributeName="opacity" values="0;1;1" dur="2s" fill="freeze"/>
+  </rect>
+  <text x="600" y="44" text-anchor="middle" fill="#06b6d4" font-size="12" font-family="sans-serif" font-weight="600">⚡ Full Data Flow Pipeline</text>
+</svg>

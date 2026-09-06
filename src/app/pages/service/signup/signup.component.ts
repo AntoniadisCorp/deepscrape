@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy, inject, DestroyRef, ViewChild, ElementRef, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, DestroyRef, ViewChild, ElementRef, PLATFORM_ID, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, linkWithPhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider, RecaptchaVerifier, ActionCodeSettings } from '@angular/fire/auth';
+import { Auth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup, User, UserCredential, sendEmailVerification, verifyBeforeUpdateEmail, updateProfile, updatePhoneNumber, fetchSignInMethodsForEmail, linkWithCredential, GithubAuthProvider, OAuthProvider, RecaptchaVerifier, ActionCodeSettings } from '@angular/fire/auth';
 import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Users, Loading } from 'src/app/core/types';
 import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
@@ -39,9 +39,10 @@ interface SignupForm {
         TranslateModule,
     ],
     templateUrl: './signup.component.html',
-    styleUrl: './signup.component.scss'
+    styleUrl: './signup.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SignupComponent implements OnInit, OnDestroy {
+export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
     @ViewChild('recaptchaContainer', { static: false }) recaptchaContainer!: ElementRef<HTMLDivElement>;
     /** Instance of Firebase RecaptchaVerifier for phone authentication. */
     public recaptchaVerifier!: RecaptchaVerifier;
@@ -69,6 +70,58 @@ export class SignupComponent implements OnInit, OnDestroy {
     public currentAuthMethod: 'email' | 'phone' | null = null;
     public phoneVerificationSent: boolean = false;
     confirmationResult: any;
+
+    private mapSignupError(error: unknown): string {
+        const errorObj = error as { code?: string; message?: string } | null;
+        const code = String(errorObj?.code || '').toLowerCase();
+        const message = String(errorObj?.message || '').toUpperCase();
+
+        if (code.includes('admin-restricted-operation') || message.includes('ADMIN_ONLY_OPERATION')) {
+            return 'Password sign-up is disabled for public users. Preapproved admin emails can continue through the secure bootstrap flow.';
+        }
+
+        return getErrorMessage(error, this.translate);
+    }
+
+    private isAdminRestrictedSignupError(error: unknown): boolean {
+        const errorObj = error as { code?: string; message?: string } | null;
+        const code = String(errorObj?.code || '').toLowerCase();
+        const message = String(errorObj?.message || '').toUpperCase();
+
+        return code.includes('admin-restricted-operation') || message.includes('ADMIN_ONLY_OPERATION');
+    }
+
+    private async finalizePasswordSignup(userCredential: UserCredential, name: string | null | undefined, phoneNumber: string | null | undefined): Promise<void> {
+        const actionCodeSettings: ActionCodeSettings = {
+            url: `${this.window.location.origin}/service/verification?mode=verifyEmail`,
+        }
+
+        console.log('📧 Sending email verification with actionCodeSettings:', actionCodeSettings);
+        await sendEmailVerification(userCredential.user, actionCodeSettings)
+
+        if (userCredential.user) {
+            await updateProfile(userCredential.user, {
+                displayName: name || userCredential.user.email?.split('@')[0] || '',
+                photoURL: DEFAULT_PROFILE_URL,
+            })
+
+            await this.firestoreService.storeUserData(userCredential.user, 'password', false, null, phoneNumber ? false : null)
+
+            const navigationState: any = { email: userCredential.user.email };
+            if (phoneNumber) {
+                navigationState.phoneNumber = phoneNumber;
+            }
+
+            this.loading.email = false;
+            this.router.navigate(['/service/verification'], { state: navigationState });
+        }
+    }
+
+    private async bootstrapAdminPasswordSignup(email: string, password: string, name: string | null | undefined, phoneNumber: string | null | undefined): Promise<void> {
+        await this.authService.createBootstrapAdminPasswordAccount(email, password, name || '')
+        const userCredential = await this.firestoreService.signInWithEmailAndPassword(email, password)
+        await this.finalizePasswordSignup(userCredential, name, phoneNumber)
+    }
 
     constructor(
         private fb: FormBuilder,
@@ -219,6 +272,7 @@ export class SignupComponent implements OnInit, OnDestroy {
     async signup() {
         this.errorMessage = ''
         if (this.signupForm.valid) {
+            this.loading.email = true
             const { email, confirmPassword, name, phoneNumber } = this.signupForm.value
             // Check if the email already exists
             this.emailCheckSubs = this.authService.checkUserEmailForDifferentProvider(email).subscribe({
@@ -227,54 +281,30 @@ export class SignupComponent implements OnInit, OnDestroy {
                         if (response.exists) {
                             this.errorMessage = this.translate.instant('SIGNUP.EMAIL_ALREADY_EXISTS')
                             this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+                            this.loading.email = false
                             return
                         }
-                        const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential                        // Configure email verification with proper action code settings
-                        const actionCodeSettings: ActionCodeSettings = {
-                            url: `${this.window.location.origin}/service/verification?mode=verifyEmail`,
-                            // linkDomain: this.window.location.host,
-                            // handleCodeInApp: true, // Important: Tells Firebase to handle code in app
-                            // Only add linkDomain if you plan to support Android/iOS appslinkDomain: 'deepscrape.page.link', // Firebase Hosting domain configured in Firebase Console
-                            // iOS: {
-                            //     bundleId: 'com.deepscrape.ios',
-                            // },
-                            // android: {
-                            //     packageName: 'com.deepscrape.android',
-                            //     installApp: true,
-                            //     minimumVersion: '21',
-                            // },
-                        }
+                        try {
+                            const userCredential = await createUserWithEmailAndPassword(this.auth, email, confirmPassword) as UserCredential
+                            await this.finalizePasswordSignup(userCredential, name, phoneNumber)
+                        } catch (signupError) {
+                            if (this.isAdminRestrictedSignupError(signupError)) {
+                                await this.bootstrapAdminPasswordSignup(email, confirmPassword, name, phoneNumber)
+                                return
+                            }
 
-                        console.log('📧 Sending email verification with actionCodeSettings:', actionCodeSettings);
-                        await sendEmailVerification(userCredential.user, actionCodeSettings)
-                        if (userCredential.user) {
-                            await updateProfile(userCredential.user, {
-                                displayName: name || userCredential.user.email?.split('@')[0] || '',
-                                photoURL: DEFAULT_PROFILE_URL,
-                            })
-                            let confirmationResult: any = null;
-                            let phoneLinked = false;
-                            if (phoneNumber) {
-                                confirmationResult = await linkWithPhoneNumber(userCredential.user, phoneNumber, this.recaptchaVerifier)
-                                phoneLinked = true;
-                            }
-                            await this.firestoreService.storeUserData(userCredential.user, "password", false, null, phoneNumber ? false : null)
-                            // Redirect logic: only go to phone verification if phone was entered and linked
-                            const navigationState: any = { email: userCredential.user.email };
-                            if (phoneLinked && confirmationResult?.verificationId) {
-                                navigationState.verificationId = confirmationResult.verificationId;
-                                navigationState.phoneNumber = phoneNumber;
-                            }
-                            this.router.navigate(['/service/verification'], { state: navigationState });
+                            throw signupError
                         }
                     } catch (error: any) {
-                        this.errorMessage = getErrorMessage(error, this.translate)
+                        this.errorMessage = this.mapSignupError(error)
                         this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+                        this.loading.email = false
                     }
                 },
                 error: (error) => {
-                    this.errorMessage = getErrorMessage(error, this.translate)
+                    this.errorMessage = this.mapSignupError(error)
                     this.showSnackbar(this.errorMessage, SnackBarType.error, '', 5000)
+                    this.loading.email = false
                 }
             })
         }
@@ -288,7 +318,9 @@ export class SignupComponent implements OnInit, OnDestroy {
         duration: number = 3000) {
 
         this.snackbarService.showSnackbar(message, type, action, duration)
-    } ngOnDestroy(): void {
+    }
+
+    ngOnDestroy(): void {
         //Called once, before the instance is destroyed.
         //Add 'implements OnDestroy' to the class.
         this.emailCheckSubs?.unsubscribe()

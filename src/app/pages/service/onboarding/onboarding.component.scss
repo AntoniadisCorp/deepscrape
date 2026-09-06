@@ -1,0 +1,18 @@
+:host {
+	display: block;
+	width: 100%;
+	min-height: 100vh;
+}
+
+mat-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+	overflow: visible;
+	vertical-align: middle;
+}
+
+.cc-input {
+	caret-color: rgb(79 70 229);
+}

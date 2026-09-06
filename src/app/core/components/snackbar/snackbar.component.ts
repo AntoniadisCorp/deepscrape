@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { MatIcon } from '@angular/material/icon';
 import { NgClass } from '@angular/common'; // Added NgFor for iterating over icons
@@ -41,7 +41,8 @@ export enum SnackBarPosition {
       transition('void => visible', animate('300ms ease-out')),
       transition('visible => void', animate('200ms ease-in'))
     ])
-  ]
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SnackbarComponent {
   @Input() message: string = ''

@@ -1,5 +1,6 @@
 import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Output, TemplateRef, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { navigation } from 'src/app/_nav';
 import { AppSidebarNavItemComponent } from '../app-sidebar-nav-item/app-sidebar-nav-item.component';
 import { LoadingService } from 'src/app/core/services';
@@ -19,9 +20,16 @@ export class AppSidebarNavComponent {
   private navigation = navigation
   protected isAdmin = false
 
-  constructor(private loadingService: LoadingService, private authService: AuthService) {
+  constructor(private loadingService: LoadingService, private authService: AuthService, private cdr: ChangeDetectorRef) {
     this.loadingService.startLoading()
-    this.isAdmin = this.authService.isAdmin
+
+    this.authService.user$
+      .pipe(takeUntilDestroyed())
+      .subscribe((user) => {
+        const role = String(user?.role || '').trim().toLowerCase()
+        this.isAdmin = this.authService.isAdmin || role === 'admin'
+        this.cdr.markForCheck()
+      })
   }
 
   ngAfterViewInit() {

@@ -1,11 +1,12 @@
 import {Response} from "express"
+import {IncomingMessage, ServerResponse} from "node:http"
 
 const contentSecurityPolicy = {
   directives: {
     defaultSrc: ["'self'"],
     scriptSrc: [
       "'self'",
-      (req: any, res: any) =>
+      (_req: IncomingMessage, res: ServerResponse<IncomingMessage>) =>
         `'nonce-${(res as Response).locals.nonce}'`,
       "'strict-dynamic'",
       "https://www.googletagmanager.com",
@@ -15,7 +16,7 @@ const contentSecurityPolicy = {
     ],
     styleSrc: [
       "'self'",
-      (req: any, res: any) =>
+      (_req: IncomingMessage, res: ServerResponse<IncomingMessage>) =>
         `'nonce-${(res as Response).locals.nonce}'`,
       "https://cdnjs.cloudflare.com",
       "https://fonts.googleapis.com",

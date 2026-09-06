@@ -17,9 +17,19 @@ export const AdminRoutes: Routes = [
     pathMatch: 'full'
   },
   {
+    path: 'config',
+    loadComponent: () => import('../../pages').then(m => m.AdminProjectConfigComponent),
+    data: { title: 'project config', animation: 'admin_config' },
+  },
+  {
     path: 'analytics',
     loadComponent: () => import('../../pages').then(m => m.AdminAnalyticsComponent),
     data: { title: 'analytics', animation: 'admin_analytics' },
+  },
+  {
+    path: 'billing-observability',
+    loadComponent: () => import('../../pages').then(m => m.AdminBillingObservabilityComponent),
+    data: { title: 'billing observability', animation: 'admin_billing_observability' },
   },
   {
     path: 'migration/runs',

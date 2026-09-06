@@ -1,23 +1,30 @@
 import { inject, Injectable } from '@angular/core'
-import { BehaviorSubject, catchError, from, map, Observable, of, shareReplay, switchMap } from 'rxjs'
+import { BehaviorSubject, catchError, combineLatest, from, map, Observable, of, shareReplay, switchMap, tap } from 'rxjs'
 import {
   BillingAccessMode,
   BillingCatalogPayload,
   BillingInterval,
   BillingLoadingState,
   BillingPlanTier,
+  EnterprisePlanRequestPayload,
   BillingUsageRequest,
   BillingUsageResponse,
   CreditPackCatalog,
   UserBilling,
 } from '../types'
+import { AuthService } from './auth.service'
+import { CacheService } from './cache.service'
 import { FirestoreService } from './firestore.service'
 
 @Injectable({
   providedIn: 'root'
 })
 export class BillingService {
+  private readonly authService = inject(AuthService)
+  private readonly cacheService = inject(CacheService)
   private readonly firestoreService = inject(FirestoreService)
+  private readonly billingCacheNamespace = 'billing-entitlements'
+  private readonly billingCacheTtlMs = 5 * 60 * 1000
   private readonly loadingStateSubject = new BehaviorSubject<BillingLoadingState>({
     checkout: false,
     portal: false,
@@ -33,6 +40,14 @@ export class BillingService {
       ...this.loadingStateSubject.value,
       [key]: value,
     })
+  }
+
+  private createCheckoutRequestId(prefix: string): string {
+    const randomPart = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+    return `${prefix}-${Date.now()}-${randomPart}`
   }
 
   private getPurchasedCredits(billing: Partial<UserBilling> | UserBilling | undefined): number {
@@ -59,22 +74,33 @@ export class BillingService {
     return billing.plan && billing.plan !== 'free' ? Number(billing.credits.balance || 0) - Number(billing.credits.reserved || 0) : 0
   }
 
-  readonly billing$: Observable<UserBilling> = this.firestoreService.authState().pipe(
-    switchMap((firebaseUser) => {
+  // FIX #4: one-shot callable read + manual refresh trigger (eliminates real-time listener cost).
+  // Billing is denormalized onto user doc (FIX #3) so getMyEntitlements returns fresh data;
+  // call refreshBilling() after any local mutation to re-fetch.
+  private readonly billingRefreshTrigger$ = new BehaviorSubject<number>(0)
+
+  refreshBilling(): void {
+    this.cacheService.clear(this.billingCacheNamespace)
+    this.billingRefreshTrigger$.next(this.billingRefreshTrigger$.value + 1)
+  }
+
+  readonly billing$: Observable<UserBilling> = combineLatest([
+    this.firestoreService.authState(),
+    this.billingRefreshTrigger$,
+  ]).pipe(
+    switchMap(([firebaseUser]) => {
       if (!firebaseUser) {
         return of(this.defaultBilling())
       }
 
-      const billingRef = this.firestoreService.doc(`users/${firebaseUser.uid}/billing/current`)
+      const cached = this.cacheService.get<string, UserBilling>(this.billingCacheNamespace, firebaseUser.uid)
+      if (cached) {
+        return of(cached)
+      }
+
       return from(this.firestoreService.callFunction<void, { billing?: Partial<UserBilling> }>('getMyEntitlements')).pipe(
-        catchError(() => of({ billing: undefined })),
-        switchMap((entitlements) => this.firestoreService.docData<Partial<UserBilling>>(billingRef).pipe(
-          map((data) => this.mergeWithDefault(data as Partial<UserBilling> | undefined)),
-          catchError(() => {
-            const entitlementBilling = entitlements?.billing as Partial<UserBilling> | undefined
-            return of(this.mergeWithDefault(entitlementBilling))
-          })
-        )),
+        map((entitlements) => this.mergeWithDefault(entitlements?.billing as Partial<UserBilling> | undefined)),
+        tap((billing) => this.cacheService.set(this.billingCacheNamespace, firebaseUser.uid, billing, this.billingCacheTtlMs)),
         catchError(() => of(this.defaultBilling()))
       )
     }),
@@ -86,8 +112,15 @@ export class BillingService {
     shareReplay({ bufferSize: 1, refCount: true })
   )
 
+  readonly isPlatformAdmin$: Observable<boolean> = this.authService.user$.pipe(
+    map(() => this.authService.isAdmin),
+    shareReplay({ bufferSize: 1, refCount: true })
+  )
+
   hasFeature$(featureKey: string): Observable<boolean> {
-    return this.billing$.pipe(map((billing) => Boolean(billing.features?.[featureKey])))
+    return combineLatest([this.billing$, this.isPlatformAdmin$]).pipe(
+      map(([billing, isPlatformAdmin]) => isPlatformAdmin || Boolean(billing.features?.[featureKey]))
+    )
   }
 
   getAccessMode$(): Observable<BillingAccessMode> {
@@ -130,7 +163,9 @@ export class BillingService {
   }
 
   canAccessPaidFeatures$(): Observable<boolean> {
-    return this.getAccessMode$().pipe(map((mode) => mode !== 'free'))
+    return combineLatest([this.getAccessMode$(), this.isPlatformAdmin$]).pipe(
+      map(([mode, isPlatformAdmin]) => isPlatformAdmin || mode !== 'free')
+    )
   }
 
   async openCheckoutForPlan(args: {
@@ -146,7 +181,11 @@ export class BillingService {
         interval: BillingInterval
         successUrl: string
         cancelUrl: string
-      }, { url: string; sessionId: string }>('createCheckoutSession', args)
+        checkoutRequestId: string
+      }, { url: string; sessionId: string }>('createCheckoutSession', {
+        ...args,
+        checkoutRequestId: this.createCheckoutRequestId('plan'),
+      })
     } finally {
       this.setLoading('checkout', false)
     }
@@ -165,7 +204,11 @@ export class BillingService {
         successUrl: string
         cancelUrl: string
         quantity?: number
-      }, { url: string; sessionId: string }>('createCheckoutSession', args)
+        checkoutRequestId: string
+      }, { url: string; sessionId: string }>('createCheckoutSession', {
+        ...args,
+        checkoutRequestId: this.createCheckoutRequestId('credit-pack'),
+      })
     } finally {
       this.setLoading('checkout', false)
     }
@@ -183,11 +226,13 @@ export class BillingService {
         customCredits: number
         successUrl: string
         cancelUrl: string
+        checkoutRequestId: string
       }, { url: string; sessionId: string }>('createCheckoutSession', {
         planId: 'custom_credits',
         customCredits: args.credits,
         successUrl: args.successUrl,
         cancelUrl: args.cancelUrl,
+        checkoutRequestId: this.createCheckoutRequestId('custom-credits'),
       })
     } finally {
       this.setLoading('checkout', false)
@@ -215,12 +260,14 @@ export class BillingService {
   }> {
     this.setLoading('trial', true)
     try {
-      return this.firestoreService.callFunction<void, {
+      const result = await this.firestoreService.callFunction<void, {
         billing?: Partial<UserBilling>
         userId?: string
         trialStartedAt?: string
         trialEndsAt?: string
       }>('startTrial')
+      this.refreshBilling()
+      return result
     } finally {
       this.setLoading('trial', false)
     }
@@ -233,11 +280,13 @@ export class BillingService {
   }> {
     this.setLoading('resumeCancellation', true)
     try {
-      return this.firestoreService.callFunction<void, {
+      const result = await this.firestoreService.callFunction<void, {
         billing?: Partial<UserBilling>
         subscriptionId?: string
         cancelAtPeriodEnd?: boolean
       }>('resumeSubscriptionCancellation')
+      this.refreshBilling()
+      return result
     } finally {
       this.setLoading('resumeCancellation', false)
     }
@@ -259,6 +308,13 @@ export class BillingService {
     }>('verifyCheckoutSession', { sessionId })
   }
 
+  async submitEnterprisePlanRequest(payload: EnterprisePlanRequestPayload): Promise<{ success: boolean }> {
+    return this.firestoreService.callFunction<EnterprisePlanRequestPayload, { success: boolean }>(
+      'submitEnterprisePlanRequest',
+      payload
+    )
+  }
+
   async getUsageReport(args: BillingUsageRequest): Promise<BillingUsageResponse> {
     this.setLoading('usageReport', true)
     try {
@@ -266,6 +322,48 @@ export class BillingService {
     } finally {
       this.setLoading('usageReport', false)
     }
+  }
+
+  async getAdminBillingObservability(args?: {
+    incidentLimit?: number
+    failedEventLimit?: number
+    pendingEventLimit?: number
+    pastDueLimit?: number
+    includeAcknowledged?: boolean
+  }): Promise<{
+    generatedAt: string
+    incidents: Array<Record<string, unknown>>
+    failedEvents: Array<Record<string, unknown>>
+    pendingEvents: Array<Record<string, unknown>>
+    pastDueAccounts: Array<Record<string, unknown>>
+    disputes: Array<Record<string, unknown>>
+    retryStats: { totalFailedEvents: number; totalRetries: number; averageRetries: number; oldestUnprocessedEvent: string | null }
+    entitlementMetrics: { todayCalls: number }
+  }> {
+    return this.firestoreService.callFunction<typeof args, {
+      generatedAt: string
+      incidents: Array<Record<string, unknown>>
+      failedEvents: Array<Record<string, unknown>>
+      pendingEvents: Array<Record<string, unknown>>
+      pastDueAccounts: Array<Record<string, unknown>>
+      disputes: Array<Record<string, unknown>>
+      retryStats: { totalFailedEvents: number; totalRetries: number; averageRetries: number; oldestUnprocessedEvent: string | null }
+      entitlementMetrics: { todayCalls: number }
+    }>('getAdminBillingObservability', args)
+  }
+
+  async acknowledgeBillingIncident(incidentId: string): Promise<{ ok: boolean; incidentId: string }> {
+    return this.firestoreService.callFunction<{ incidentId: string }, { ok: boolean; incidentId: string }>(
+      'acknowledgeBillingIncident',
+      { incidentId }
+    )
+  }
+
+  async requestStripeEventRetry(eventId: string): Promise<{ ok: boolean; eventId: string }> {
+    return this.firestoreService.callFunction<{ eventId: string }, { ok: boolean; eventId: string }>(
+      'requestStripeEventRetry',
+      { eventId }
+    )
   }
 
   getPlans$(includeFree = true): Observable<BillingCatalogPayload['plans']> {

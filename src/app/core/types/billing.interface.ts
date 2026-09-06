@@ -72,6 +72,12 @@ export type BillingCatalogPayload = {
   currency: "eur"
 }
 
+export type EnterprisePlanRequestPayload = {
+  contactEmail: string
+  workspaceName?: string
+  selectedPlan?: BillingPlanTier | null
+}
+
 export type BillingLoadingState = {
   checkout: boolean
   portal: boolean

@@ -14,6 +14,7 @@ import { delay, map, of, Subject, take, takeUntil, tap } from 'rxjs';
   templateUrl: './slide-in-modal.component.html',
   styleUrl: './slide-in-modal.component.scss',
   animations: [slideInModalAnimation],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SlideInModalComponent {
   @ViewChild('modal') modal: ElementRef<any>
@@ -72,6 +73,7 @@ export class SlideInModalComponent {
     }) */
     this.screenSub = this.isOpen.valueChanges.subscribe((value) => {
       this.opened = value
+      this.cdr.detectChanges()
     })    
     
   }
@@ -121,6 +123,7 @@ export class SlideInModalComponent {
     this.destroySubs = of(false).pipe(
       takeUntil(this.destroy$),
       map((value) => this.opened = value),
+      tap(() => this.cdr.detectChanges()),
       // Emit false after a delay of 300ms
       delay(300), // Delay for the animation to finish
       take(1) // Take only the first emission

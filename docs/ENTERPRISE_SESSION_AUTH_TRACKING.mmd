@@ -1,0 +1,96 @@
+flowchart TD
+    subgraph Client[Angular Client]
+        LC[LoginComponent]
+        ATS[AuthService]
+        GTS[GuestTrackingService]
+        HBS[HeartbeatService]
+        SEC[Security Settings UI]
+        TL[Recent Security Activity Timeline]
+    end
+
+    subgraph Firebase[Firebase Auth]
+        FA[Firebase Auth Sign-In]
+        CLAIMS[ID Token Claims]
+    end
+
+    subgraph Functions[Cloud Functions]
+        CLS[createLoginSession]
+        SLS[signOutLoginSession]
+        RLS[revokeMyLoginSession]
+        VSC[validateSessionCookie]
+        DVD[sendDeviceVerificationCode]
+        VTD[verifyAndTrustDevice]
+    end
+
+    subgraph Firestore[Firestore Data]
+        LS[(loginSessions)]
+        USS[(users/uid/sessions)]
+        LM[(login_metrics/uid)]
+        LHI[(login_history_Info)]
+        LHE[(login_history_events)]
+        TDV[(trusted_devices)]
+        DV[(device_verifications)]
+    end
+
+    subgraph Cache[Redis Cache]
+        SC[(session:sessionId)]
+        RC[(revoked:sessionId)]
+        SOC[(signed-out:sessionId)]
+        TVC[(trusted:uid:deviceId)]
+        VRC[(verification:uid:method)]
+    end
+
+    LC --> FA
+    FA --> CLAIMS
+    FA --> ATS
+    ATS --> GTS
+
+    GTS -->|post-login bootstrap| CLS
+    CLS --> LS
+    CLS --> USS
+    CLS --> SC
+
+    GTS -->|canonical sessionId persisted| LM
+    GTS -->|merge current session snapshot| LHI
+    GTS -->|append login event| LHE
+
+    ATS -->|heartbeat start| HBS
+    HBS -->|/event/heartbeat| VSC
+    VSC --> LS
+    VSC --> USS
+    VSC --> SC
+    VSC --> RC
+
+    SEC -->|load active sessions| USS
+    SEC -->|load activity stream| LHE
+    TL --> LHE
+
+    SEC -->|revoke session| RLS
+    RLS --> LS
+    RLS --> USS
+    RLS --> LHE
+    RLS --> RC
+
+    ATS -->|logout| SLS
+    SLS --> LS
+    SLS --> USS
+    SLS --> LHI
+    SLS --> LHE
+    SLS --> SOC
+
+    SEC -->|device verification request| DVD
+    DVD --> DV
+    DVD --> VRC
+    SEC -->|trust verified device| VTD
+    VTD --> TDV
+    VTD --> TVC
+
+    CLAIMS --> SEC
+    CLAIMS --> ATS
+
+    classDef client fill:#e8f1ff,stroke:#3973d6,color:#0f172a;
+    classDef backend fill:#ecfdf3,stroke:#1f8f5f,color:#052e16;
+    classDef data fill:#fff8e6,stroke:#c28a00,color:#4a3200;
+    class LC,ATS,GTS,HBS,SEC,TL client;
+    class FA,CLAIMS,CLS,SLS,RLS,VSC,DVD,VTD backend;
+    class LS,USS,LM,LHI,LHE,TDV,DV,SC,RC,SOC,TVC,VRC data;

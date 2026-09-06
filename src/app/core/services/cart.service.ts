@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable, OnInit } from '@angular/core'
+import { DestroyRef, inject, Injectable, OnDestroy } from '@angular/core'
 import { Firestore, doc, setDoc, getDoc, onSnapshot, deleteDoc, collection, docSnapshots, connectFirestoreEmulator } from '@angular/fire/firestore'
 import { openDB } from 'idb'
 import { BehaviorSubject, catchError, from, map, Observable, of, throwError } from 'rxjs'
@@ -8,11 +8,12 @@ import { BrowserConfig, BrowserProfile, CrawlConfig, CrawlPack, CrawlResult, Cra
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 @Injectable({ providedIn: 'root' })
-export class CartService {
+export class CartService implements OnDestroy {
   private cartItemSubject = new BehaviorSubject<any>(null)
   private dbName = 'PackDB'
   private storeName = 'pack'
-  private userId: string
+  private userId: string = ''
+  private cartUnsubscribe: (() => void) | null = null
 
   private destroyRef = inject(DestroyRef)
 
@@ -23,15 +24,30 @@ export class CartService {
   ) {
 
     this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
-      this.userId = user?.uid ?? '';
+      void this.handleUserChange(user?.uid ?? '')
     })
     
     // set the firestore instance
     // this.firestore = this.firestoreService.getInstanceDB('easyscrape')
 
     this.initDB()
-    this.loadCartFromIndexedDB()
-    this.listenToFirestoreChanges()
+  }
+
+  private async handleUserChange(nextUserId: string): Promise<void> {
+    if (this.userId === nextUserId) {
+      return
+    }
+
+    this.stopFirestoreListener()
+    this.userId = nextUserId
+
+    if (!this.userId) {
+      this.cartItemSubject.next(null)
+      return
+    }
+
+    await this.loadCartFromIndexedDB(this.userId)
+    this.listenToFirestoreChanges(this.userId)
   }
   // Initialize IndexedDB
   private async initDB() {
@@ -106,12 +122,12 @@ export class CartService {
   }
 
   // Listen for Firestore changes and update IndexedDB
-  private listenToFirestoreChanges() {
+  private listenToFirestoreChanges(userId: string) {
     try {
       console.log('Listening to Firestore changes...')
-      if (!this.userId) return
-      const cartRef = this.firestoreService.doc(`users/${this.userId}/cartpack/${this.userId}`)
-      onSnapshot(cartRef, async (docSnap) => {
+      if (!userId) return
+      const cartRef = this.firestoreService.doc(`users/${userId}/cartpack/${userId}`)
+      this.cartUnsubscribe = onSnapshot(cartRef, async (docSnap) => {
         if (docSnap.exists()) {
           const item = docSnap.data();
 
@@ -119,7 +135,7 @@ export class CartService {
           // if (JSON.stringify(item) !== JSON.stringify(this.cartItemSubject.value)) {
           if (Object.keys(item).length === 1 && item?.['uid']) {
             this.cartItemSubject.next(null)
-            this.deletFromIndexedDB(this.userId)
+            await this.deletFromIndexedDB(userId)
             return
           }
           console.log('Firestore data changed:', item)
@@ -131,6 +147,13 @@ export class CartService {
 
     } catch (error) {
       console.log('Listening to Firestore changes error', error)
+    }
+  }
+
+  private stopFirestoreListener(): void {
+    if (this.cartUnsubscribe) {
+      this.cartUnsubscribe()
+      this.cartUnsubscribe = null
     }
   }
 
@@ -198,10 +221,7 @@ export class CartService {
   }
 
   ngOnDestroy(): void {
-    //Called once, before the instance is destroyed.
-    //Add 'implements OnDestroy' to the class.
-
-    this.cartItemSubject?.unsubscribe()
+    this.stopFirestoreListener()
     this.cartItemSubject?.complete()
   }
 }

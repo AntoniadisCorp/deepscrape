@@ -2,7 +2,7 @@
 /* eslint-disable valid-jsdoc */
 /* eslint-disable object-curly-spacing */
 
-import { firestore } from "firebase-admin"
+import * as admin from "firebase-admin"
 import { DimensionFilter, MetricsDaily } from "./analytics-optimized.domain"
 
 /**
@@ -171,7 +171,7 @@ export function aggregateByGranularity(
   return Array.from(groups.entries()).map(([key, metrics]) => {
     const aggregated: MetricsDaily = {
       date: key,
-      timestamp: firestore.Timestamp.now(),
+      timestamp: admin.firestore.Timestamp.now(),
       totalGuests: 0,
       newGuests: 0,
       activeGuests: 0,
@@ -192,7 +192,7 @@ export function aggregateByGranularity(
       byTimezone: {},
       topCountries: [],
       topBrowsers: [],
-      updatedAt: firestore.Timestamp.now(),
+      updatedAt: admin.firestore.Timestamp.now(),
     }
 
     metrics.forEach((m) => {

@@ -7,6 +7,7 @@ import { Users, Loading } from 'src/app/core/types';
 import { SnackBarType } from 'src/app/core/components';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Observable, Subject } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { getErrorMessage } from 'src/app/core/functions';
 
@@ -134,7 +135,7 @@ export class PhoneSecurityComponent implements OnInit {
       const phoneNumber = this.phoneForm.get('phoneNumber')?.value;
 
       // Check if phone number is available
-      const availability = await this.authService.checkPhoneNumberAvailability(phoneNumber).toPromise();
+      const availability = await firstValueFrom(this.authService.checkPhoneNumberAvailability(phoneNumber));
       
       if (!availability?.available) {
         throw new Error(this.translate.instant('PHONE_SECURITY.PHONE_NUMBER_EXISTS'));
@@ -173,16 +174,8 @@ export class PhoneSecurityComponent implements OnInit {
       // Confirm the verification code
       await this.confirmationResult.confirm(verificationCode);
 
-      // Update phone verification status in Firestore
       if (this.currentUser) {
-        await this.firestoreService.updateUserPhoneNumber(
-          this.currentUser.uid,
-          this.phoneForm.get('phoneNumber')?.value,
-          true
-        );
-        
-        // Update backend verification status
-        await this.authService.updatePhoneVerificationStatus(this.currentUser.uid, true).toPromise();
+        await firstValueFrom(this.authService.updatePhoneVerificationStatus(this.currentUser.uid, true));
         
         // Refresh user data
         await this.authService.refreshUserData();
@@ -218,8 +211,8 @@ export class PhoneSecurityComponent implements OnInit {
     this.loading.remove = true;
 
     try {
-      // Update Firestore to remove phone number
-      await this.firestoreService.updateUserPhoneNumber(this.currentUser.uid, '', false);
+      await this.authService.unlinkProvider('phone');
+      await firstValueFrom(this.authService.updatePhoneVerificationStatus(this.currentUser.uid));
       
       // Refresh user data
       await this.authService.refreshUserData();

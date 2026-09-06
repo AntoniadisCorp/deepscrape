@@ -1,8 +1,8 @@
-import { Component, OnInit, HostListener, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, HostListener, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { themeStorageKey, ThemeToggleComponent, AnimatedBgComponent, LangPickerComponent } from 'src/app/shared';
-import { FeaturesComponent, HeroComponent } from 'src/app/layout/landpage';
+import { FeaturesComponent, HeroComponent, LandingArchitectureComponent, LandingCodeDemoComponent, LandingPricingComponent, LandingSocialProofComponent, LandingUseCasesComponent, LandingFaqComponent } from 'src/app/layout/landpage';
 import { LocalStorage, ThemeService, WindowToken } from 'src/app/core/services';
 import { AppFooterComponent } from 'src/app/layout/footer';
 import { Observable } from 'rxjs';
@@ -14,6 +14,12 @@ import { Observable } from 'rxjs';
     ThemeToggleComponent,
     HeroComponent,
     FeaturesComponent,
+    LandingArchitectureComponent,
+    LandingCodeDemoComponent,
+    LandingPricingComponent,
+    LandingSocialProofComponent,
+    LandingUseCasesComponent,
+    LandingFaqComponent,
     AppFooterComponent,
     NgClass,
     AsyncPipe,
@@ -22,6 +28,7 @@ import { Observable } from 'rxjs';
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit {
   private localStorage = inject(LocalStorage);

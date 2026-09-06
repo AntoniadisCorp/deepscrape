@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PaymentMethodsComponent } from './paymentmethods.component';
+import { getTestProviders } from 'src/app/testing';
 
 describe('PaymentmethodsComponent', () => {
   let component: PaymentMethodsComponent;
@@ -8,7 +9,8 @@ describe('PaymentmethodsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PaymentMethodsComponent]
+      imports: [PaymentMethodsComponent],
+      providers: getTestProviders(),
     })
       .compileComponents();
 
@@ -19,5 +21,16 @@ describe('PaymentmethodsComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should render payment methods heading and empty state', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Payment Methods');
+    expect(text).toContain('No payment methods saved');
+  });
+
+  it('should compile as standalone component', () => {
+    expect((PaymentMethodsComponent as any).ɵcmp.standalone).toBeTrue();
   });
 });

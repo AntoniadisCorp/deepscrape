@@ -8,3 +8,4 @@ export * from './removeclass.directive'
 export * from './touchevents.directive'
 export * from './remove-toolbar.directive' 
 export * from './hidden-drag-scroll.directive' // Directive optimized for overflow-x-hidden
+export * from './if-authorized.directive'

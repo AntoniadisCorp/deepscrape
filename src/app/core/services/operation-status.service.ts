@@ -18,7 +18,7 @@ export class OperationStatusService {
       tap((obj) => {
         const status = obj?.status || '';
         const result = obj?.result || null;
-        const resultMessage = result?.status === 'Failed' ? result?.message : 'succesfully';
+        const resultMessage = result?.status === 'Failed' ? result?.message : 'successfully';
         if (
           [CrawlOperationStatus.COMPLETED, CrawlOperationStatus.CANCELED, CrawlOperationStatus.FAILED].includes(
             status as CrawlOperationStatus

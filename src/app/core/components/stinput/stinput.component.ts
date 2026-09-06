@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, Input, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
@@ -12,6 +13,8 @@ import { generateRandomString } from '../../functions';
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StinputComponent {
+
+  private readonly destroyRef = inject(DestroyRef)
 
   inputFocused: boolean
   Placeholder: string
@@ -45,7 +48,7 @@ export class StinputComponent {
     this.Placeholder = ' '
     this.inputFocused = false
 
-    this.control.statusChanges.subscribe(value => {
+    this.control.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
 
       value === 'INVALID' ? this.invalidCount++ : ''
     })

@@ -2,12 +2,11 @@
 /* eslint-disable indent */
 /* eslint-disable object-curly-spacing */
 import { FieldPath, FieldValue } from "firebase-admin/firestore"
-import { db, dbName, getSecretFromManager, saveToSecretManager, auth as adminAuth } from "./config"
-import { auth } from "firebase-functions/v1"
+import { db, dbName, getSecretFromManager, purgeSecretAndAllRevisions, saveToSecretManager, auth as adminAuth } from "./config"
+import { auth, runWith } from "firebase-functions/v1"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2 } from "firebase-functions/v2/https"
-import { env } from "../config/env"
-// import { redis } from "./cacheConfig"
+import { env, functionsEnvJson } from "../config/env"
 
 const bootstrapAdminEmails = new Set(
     env.ADMIN_EMAILS
@@ -20,6 +19,91 @@ const isBootstrapAdmin = (email?: string | null): boolean => {
     }
 
     return bootstrapAdminEmails.has(email.toLowerCase())
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const resolveUserEmail = async (user: { uid: string; email?: string | null }): Promise<string | null> => {
+    if (user.email) {
+        return user.email
+    }
+
+    try {
+        const authUser = await adminAuth.getUser(user.uid)
+        return authUser.email || null
+    } catch {
+        return null
+    }
+}
+
+const setRoleClaim = async (uid: string, role: string): Promise<void> => {
+    const authUser = await adminAuth.getUser(uid)
+    const claims = (authUser.customClaims || {}) as Record<string, unknown>
+    await adminAuth.setCustomUserClaims(uid, {
+        ...claims,
+        role,
+    })
+}
+
+const syncBootstrapAdminRole = async (uid: string, email?: string | null): Promise<boolean> => {
+    const normalizedEmail = email?.trim().toLowerCase() || null
+    if (!isBootstrapAdmin(normalizedEmail)) {
+        return false
+    }
+
+    await setRoleClaim(uid, "admin")
+    await db.collection("users").doc(uid).set({
+        role: "admin",
+        onboardedAt: FieldValue.serverTimestamp(),
+        updated_At: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    return true
+}
+
+const MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS = 60 * 5
+
+type CursorPageResponse<T> = {
+    items: T[]
+    hasMore: boolean
+    nextLastDocId: string | null
+    inTotal: number
+    totalPages: number
+}
+
+const getCursorPage = async <T>(
+    collectionRef: FirebaseFirestore.CollectionReference,
+    baseQuery: FirebaseFirestore.Query,
+    pageSize: number,
+    lastDocId?: string | null,
+): Promise<CursorPageResponse<T>> => {
+    const normalizedPageSize = Math.max(1, pageSize)
+    let pagedQuery = baseQuery.limit(normalizedPageSize + 1)
+
+    if (lastDocId) {
+        const cursorSnapshot = await collectionRef.doc(lastDocId).get()
+        if (!cursorSnapshot.exists) {
+            throw new HttpsError("invalid-argument", "Pagination cursor is no longer valid")
+        }
+
+        pagedQuery = pagedQuery.startAfter(cursorSnapshot)
+    }
+
+    const [snapshot, totalCountSnapshot] = await Promise.all([
+        pagedQuery.get(),
+        baseQuery.count().get(),
+    ])
+
+    const docs = snapshot.docs.slice(0, normalizedPageSize)
+    const hasMore = snapshot.docs.length > normalizedPageSize
+
+    return {
+        items: docs.map((doc) => ({ id: doc.id, ...doc.data() } as T)),
+        hasMore,
+        nextLastDocId: hasMore && docs.length > 0 ? docs[docs.length - 1].id : null,
+        inTotal: totalCountSnapshot.data().count || 0,
+        totalPages: Math.max(1, Math.ceil((totalCountSnapshot.data().count || 0) / normalizedPageSize)),
+    }
 }
 
 
@@ -120,49 +204,327 @@ export const trackGuest = auth
     })
 
 
-export const setDefaultAdminRole = auth
+export const setDefaultAdminRole = runWith({
+    memory: "256MB",
+    timeoutSeconds: 60,
+    secrets: ["FUNCTIONS_ENV_JSON"],
+})
+    .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
-            const role = "admin"
+            const userEmail = await resolveUserEmail(user)
 
-            if (isBootstrapAdmin(user.email)) {
-                await adminAuth.setCustomUserClaims(user.uid, { role })
-                // Only set role in Firestore if defined
-                const userDoc: Record<string, unknown> = {}
-                if (role !== undefined) {
-                    userDoc.role = role
-                }
-                await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
-            }
+            await syncBootstrapAdminRole(user.uid, userEmail)
         } catch (error) {
             console.error("Error setting default admin role:", error)
             throw new HttpsError("internal", "Error setting default admin role", error)
         }
     })
 
-export const setDefaultRole = auth
+export const ensureBootstrapAdminAccess = onCallv2({ secrets: [functionsEnvJson] }, async (req) => {
+    const uid = req.auth?.uid
+    if (!uid) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    try {
+        const userRecord = await adminAuth.getUser(uid)
+        const email = userRecord.email || null
+        const granted = await syncBootstrapAdminRole(uid, email)
+
+        if (!granted) {
+            throw new HttpsError(
+                "permission-denied",
+                "Bootstrap admin access is only available for configured admin emails"
+            )
+        }
+
+        return {
+            success: true,
+            role: "admin",
+            email,
+        }
+    } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error
+        }
+
+        console.error("Error ensuring bootstrap admin access:", error)
+        throw new HttpsError("internal", "Failed to ensure bootstrap admin access", error)
+    }
+})
+
+export const createBootstrapAdminPasswordAccount = onCallv2({ secrets: [functionsEnvJson] }, async (req) => {
+    const email = String(req.data?.email || "").trim().toLowerCase()
+    const password = String(req.data?.password || "")
+    const displayName = String(req.data?.displayName || "").trim()
+
+    if (!email || !EMAIL_REGEX.test(email)) {
+        throw new HttpsError("invalid-argument", "A valid email is required")
+    }
+
+    if (!isBootstrapAdmin(email)) {
+        throw new HttpsError(
+            "permission-denied",
+            "Password bootstrap is only available for configured admin emails"
+        )
+    }
+
+    if (password.length < 8) {
+        throw new HttpsError("invalid-argument", "Password must be at least 8 characters long")
+    }
+
+    try {
+        const existingUser = await adminAuth.getUserByEmail(email).catch((error: unknown) => {
+            if ((error as { code?: string })?.code === "auth/user-not-found") {
+                return null
+            }
+
+            throw error
+        })
+
+        if (existingUser) {
+            throw new HttpsError("already-exists", "An account already exists for this admin email")
+        }
+
+        const userRecord = await adminAuth.createUser({
+            email,
+            password,
+            displayName: displayName || undefined,
+            emailVerified: false,
+        })
+
+        await syncBootstrapAdminRole(userRecord.uid, email)
+
+        return {
+            success: true,
+            uid: userRecord.uid,
+            email,
+        }
+    } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error
+        }
+
+        const code = String((error as { code?: string })?.code || "")
+        if (code === "auth/email-already-exists") {
+            throw new HttpsError("already-exists", "An account already exists for this admin email")
+        }
+
+        if (code === "auth/invalid-password") {
+            throw new HttpsError("invalid-argument", "Password does not meet Firebase requirements")
+        }
+
+        console.error("Error creating bootstrap admin password account:", error)
+        throw new HttpsError("internal", "Failed to create bootstrap admin password account", error)
+    }
+})
+
+export const setDefaultRole = runWith({
+    memory: "256MB",
+    timeoutSeconds: 60,
+    secrets: ["FUNCTIONS_ENV_JSON"],
+})
+    .auth
     .user()
     .onCreate(async (user/* , context: EventContext */) => {
         try {
-            if (isBootstrapAdmin(user.email)) {
-                return
-            }
+            const userEmail = await resolveUserEmail(user)
+            const role = isBootstrapAdmin(userEmail) ? "admin" : "user"
 
-            const role = "user"
-
-            await adminAuth.setCustomUserClaims(user.uid, { role })
+            await setRoleClaim(user.uid, role)
             // Only set role in Firestore if defined
             const userDoc: Record<string, unknown> = {}
             if (role !== undefined) {
                 userDoc.role = role
             }
+
+            if (role === "admin") {
+                userDoc.onboardedAt = FieldValue.serverTimestamp()
+            }
+
             await db.collection("users").doc(user.uid).set(userDoc, { merge: true })
         } catch (error) {
             console.error("Error setting default role:", error)
             throw new HttpsError("internal", "Error setting default role", error)
         }
     })
+
+export const createDefaultOrganization = auth
+    .user()
+    .onCreate(async (user) => {
+        try {
+            const orgId = `org_${user.uid}`
+            const membershipId = `${user.uid}_${orgId}`
+            const orgName = user.displayName ? `${user.displayName} Workspace` : "Personal Workspace"
+
+            const orgRef = db.collection("organizations").doc(orgId)
+            const membershipRef = db.collection("memberships").doc(membershipId)
+            const userRef = db.collection("users").doc(user.uid)
+
+            const batch = db.batch()
+            batch.set(orgRef, {
+                id: orgId,
+                name: orgName,
+                slug: orgId,
+                ownerId: user.uid,
+                billingOwnerUid: user.uid,
+                plan: "free",
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true })
+
+            batch.set(membershipRef, {
+                id: membershipId,
+                orgId,
+                userId: user.uid,
+                role: "owner",
+                addedBy: user.uid,
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true })
+
+            batch.set(userRef, {
+                defaultOrgId: orgId,
+                updated_At: FieldValue.serverTimestamp(),
+            }, { merge: true })
+
+            await batch.commit()
+        } catch (error) {
+            console.error("Error creating default organization:", error)
+            throw new HttpsError("internal", "Error creating default organization", error)
+        }
+    })
+
+/**
+ * Enable TOTP (Time-based One-Time Password) Multi-Factor Authentication for the Firebase project.
+ * This is a project-level configuration required before users can enroll in authenticator apps.
+ * Admin SDK operation using Identity Platform API.
+ * @see https://firebase.google.com/docs/auth/admin/manage-sessions#enable_mfa_for_a_user
+ */
+export const enableTotpMfa = onCallv2({ secrets: [functionsEnvJson] }, async (req) => {
+    const DEFAULT_ADJACENT_INTERVALS = 5
+    try {
+        const authenticatedUid = req.auth?.uid
+        if (!authenticatedUid) {
+            throw new HttpsError("unauthenticated", "User must be authenticated")
+        }
+
+        const dryRun = req.data?.dryRun === true
+        const enabledRaw = req.data?.enabled
+        const desiredEnabled = typeof enabledRaw === "boolean" ? enabledRaw : true
+        const adjacentIntervalsRaw = req.data?.adjacentIntervals
+        const adjacentIntervals = Number.isInteger(adjacentIntervalsRaw)?
+            Number(adjacentIntervalsRaw) : DEFAULT_ADJACENT_INTERVALS
+
+        if (adjacentIntervals < 0 || adjacentIntervals > 10) {
+            throw new HttpsError("invalid-argument", "adjacentIntervals must be an integer between 0 and 10")
+        }
+
+        const tokenRole = typeof req.auth?.token?.["role"] === "string" ? req.auth.token["role"] as string : ""
+        const hasAdminClaim = tokenRole.toLowerCase() === "admin"
+
+        // Allow either role-claim admins or bootstrap admins.
+        let userEmail: string | null = null
+        if (!hasAdminClaim) {
+            userEmail = (await adminAuth.getUser(authenticatedUid)).email || null
+        }
+
+        if (!hasAdminClaim && (!userEmail || !isBootstrapAdmin(userEmail))) {
+            throw new HttpsError("permission-denied", "Only administrators can update TOTP MFA for the project")
+        }
+
+        const configManager = adminAuth.projectConfigManager()
+        const currentConfig = await configManager.getProjectConfig()
+        const mfaConfig = currentConfig.multiFactorConfig
+        const totpProviderConfig = mfaConfig?.providerConfigs?.find((providerConfig) => !!providerConfig.totpProviderConfig)
+        const isAlreadyEnabled = mfaConfig?.state === "ENABLED" && totpProviderConfig?.state === "ENABLED"
+        const currentAdjacentIntervals = typeof totpProviderConfig?.totpProviderConfig?.adjacentIntervals === "number"?
+         totpProviderConfig.totpProviderConfig.adjacentIntervals : DEFAULT_ADJACENT_INTERVALS
+
+        if (dryRun) {
+            return {
+                success: true,
+                status: isAlreadyEnabled ? "enabled" : "disabled",
+                message: isAlreadyEnabled? "TOTP MFA is already enabled for this Firebase project.":
+                 "TOTP MFA is currently disabled for this Firebase project.",
+                config: {
+                    state: isAlreadyEnabled ? "ENABLED" : "DISABLED",
+                    adjacentIntervals: currentAdjacentIntervals,
+                },
+            }
+        }
+
+        if (isAlreadyEnabled === desiredEnabled) {
+            return {
+                success: true,
+                status: desiredEnabled ? "already-enabled" : "already-disabled",
+                message: desiredEnabled ?
+                    "TOTP MFA is already enabled for this Firebase project." :
+                    "TOTP MFA is already disabled for this Firebase project.",
+                config: {
+                    state: desiredEnabled ? "ENABLED" : "DISABLED",
+                    adjacentIntervals: currentAdjacentIntervals,
+                },
+            }
+        }
+
+        const updatedConfig = await configManager.updateProjectConfig({
+            multiFactorConfig: {
+                state: desiredEnabled ? "ENABLED" as const : "DISABLED" as const,
+                providerConfigs: [
+                    {
+                        state: desiredEnabled ? "ENABLED" as const : "DISABLED" as const,
+                        totpProviderConfig: {
+                            adjacentIntervals: desiredEnabled ? adjacentIntervals : currentAdjacentIntervals,
+                        },
+                    },
+                ],
+            },
+        })
+
+        console.log(`✅ TOTP MFA ${desiredEnabled ? "enabled" : "disabled"} successfully for project`, {
+            actorUid: authenticatedUid,
+            actorEmail: userEmail,
+            hasAdminClaim,
+            previousState: mfaConfig?.state || "DISABLED",
+            previousAdjacentIntervals: currentAdjacentIntervals,
+            nextState: desiredEnabled ? "ENABLED" : "DISABLED",
+            nextAdjacentIntervals: desiredEnabled ? adjacentIntervals : currentAdjacentIntervals,
+        })
+
+        return {
+            success: true,
+            status: desiredEnabled ? "enabled" : "disabled",
+            message: desiredEnabled ?
+                "TOTP MFA has been enabled for your Firebase project." :
+                "TOTP MFA has been disabled for your Firebase project.",
+            config: {
+                state: desiredEnabled ? "ENABLED" : "DISABLED",
+                adjacentIntervals: updatedConfig.multiFactorConfig?.providerConfigs?.[0]?.totpProviderConfig?.adjacentIntervals ??
+                    (desiredEnabled ? adjacentIntervals : currentAdjacentIntervals),
+            },
+        }
+    } catch (error: unknown) {
+        console.error("Error updating TOTP MFA:", error)
+        if (error instanceof HttpsError) {
+            throw error
+        }
+
+        const message = String((error as { message?: string })?.message || "")
+        const lowerMessage = message.toLowerCase()
+        if (
+            lowerMessage.includes("permission") ||
+            lowerMessage.includes("insufficient") ||
+            lowerMessage.includes("iam")
+        ) {
+            throw new HttpsError("permission-denied", "Runtime service account lacks permission to update Firebase Auth project config.")
+        }
+
+        throw new HttpsError("internal", "Failed to update TOTP MFA for the project", error)
+    }
+})
 
 export const linkGuestToUser = onCallv2(async (req) => {
     try {
@@ -274,36 +636,111 @@ export const createMyApiKey = onCallv2(async (req) => {
 export const retrieveMyApiKeysPaging = onCallv2(
 
     async (req) => {
-        const { apiKeyPage, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
         try {
             const userId = req?.auth?.uid
-            const page: number = apiKeyPage || 1
-            const limit: number = pageSize
 
             if (!userId) {
                 throw new Error("User must be authenticated")
             }
 
             const apiKeysRef = db.collection(`users/${userId}/apikeys`)
-            const apiKeysQuery = apiKeysRef.orderBy("created_At", "desc").limit(limit)
+            const apiKeysQuery = apiKeysRef.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(apiKeysRef, apiKeysQuery, pageSize, lastDocId)
 
-            if (page > 1) {
-                const previousLimit = limit * (page - 1)
-                const lastDoc = await apiKeysRef.orderBy("created_At", "desc").limit(previousLimit).get()
-                const lastDocument = lastDoc.docs[lastDoc.size - 1]
-                apiKeysQuery.startAfter(lastDocument)
+            return {
+                error: null,
+                apiKeys: pageResult.items,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
+                inTotal: pageResult.inTotal,
+                totalPages: pageResult.totalPages,
+                message: "API keys retrieved successfully",
             }
-
-            const apiKeys = await apiKeysQuery.get()
-            const apiKeysData = apiKeys.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-
-            return { error: null, apiKeys: apiKeysData, message: "API keys retrieved successfully" }
         } catch (error) {
             console.error("Error retrieving API key:", error)
             // throw new Error("Failed to create API key by id " + apiKeyId)
             return { error, apiKeys: null, message: "Failed to retrieve API key by id" }
         }
     })
+
+export const deleteMyApiKey = onCallv2(async (req) => {
+    const apiKeyIdRaw = req.data?.apiKeyId
+    const apiKeyId = typeof apiKeyIdRaw === "string" ? apiKeyIdRaw.trim() : ""
+
+    if (!apiKeyId) {
+        throw new HttpsError("invalid-argument", "apiKeyId is required")
+    }
+
+    const userId = req?.auth?.uid
+    if (!userId) {
+        throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const apiKeyRef = db.doc(`users/${userId}/apikeys/${apiKeyId}`)
+    const apiKeySnap = await apiKeyRef.get()
+
+    if (!apiKeySnap.exists) {
+        throw new HttpsError("not-found", "API key not found")
+    }
+
+    const apiKeyData = apiKeySnap.data() as {
+        name?: string
+        type?: string
+        permissions?: string[]
+        secretPath?: string
+        created_At?: Date
+        created_By?: string
+    } | undefined
+
+    const secretPath = typeof apiKeyData?.secretPath === "string" ? apiKeyData.secretPath : ""
+
+    let secretDeleted = false
+    let versionsDestroyed = 0
+    let secretPurgeError: string | null = null
+
+    if (secretPath) {
+        try {
+            const purgeResult = await purgeSecretAndAllRevisions(secretPath)
+            secretDeleted = purgeResult.secretDeleted
+            versionsDestroyed = purgeResult.versionsDestroyed
+        } catch (error) {
+            console.error("Error purging Secret Manager API key secret:", error)
+            secretPurgeError = error instanceof Error ? error.message : String(error)
+        }
+    }
+
+    const deletedAt = FieldValue.serverTimestamp()
+    const auditRef = db.collection(`users/${userId}/apikey_audit`).doc()
+
+    const batch = db.batch()
+    batch.set(auditRef, {
+        action: "deleted",
+        apiKeyId,
+        apiKeyName: apiKeyData?.name || null,
+        apiKeyType: apiKeyData?.type || null,
+        permissions: apiKeyData?.permissions || [],
+        secretPath: secretPath || null,
+        secretDeleted,
+        versionsDestroyed,
+        secretPurgeError,
+        created_At: apiKeyData?.created_At || null,
+        created_By: apiKeyData?.created_By || null,
+        deleted_At: deletedAt,
+        deleted_By: userId,
+    })
+    batch.delete(apiKeyRef)
+    await batch.commit()
+
+    return {
+        error: null,
+        apiKeyId,
+        auditId: auditRef.id,
+        secretDeleted,
+        versionsDestroyed,
+        message: "API key deleted successfully",
+    }
+})
 
 
 /**
@@ -326,6 +763,35 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
             throw new Error("User must be authenticated")
         }
 
+        const authTime = typeof req.auth?.token?.auth_time === "number" ? req.auth.token.auth_time : 0
+        const nowInSeconds = Math.floor(Date.now() / 1000)
+        const authAgeInSeconds = authTime > 0 ? nowInSeconds - authTime : Number.MAX_SAFE_INTEGER
+        const secondFactorSignIn = (req.auth?.token as { firebase?: { sign_in_second_factor?: string } })?.firebase?.sign_in_second_factor || null
+        const userRecord = await adminAuth.getUser(userId)
+        const enrolledFactors = userRecord.multiFactor?.enrolledFactors || []
+        const hasEnrolledMfa = enrolledFactors.length > 0
+
+        if (!hasEnrolledMfa) {
+            throw new HttpsError(
+                "failed-precondition",
+                "MFA enrollment is required before revealing API keys"
+            )
+        }
+
+        if (!secondFactorSignIn) {
+            throw new HttpsError(
+                "permission-denied",
+                "MFA step-up required before revealing API keys"
+            )
+        }
+
+        if (authAgeInSeconds > MAX_API_KEY_REVEAL_AUTH_AGE_SECONDS) {
+            throw new HttpsError(
+                "failed-precondition",
+                "Recent authentication required before revealing API keys"
+            )
+        }
+
         const apiKeysRef = db.doc(`users/${userId}/apikeys/${apiKey.id}`)
         const key = await apiKeysRef.get()
         const keyData = key.data()
@@ -346,11 +812,40 @@ export const getApiKeyDoVisible = onCallv2(async (req) => {
             key: secretValue,
         }
 
+        await db.collection(`users/${userId}/apikey_audit`).add({
+            action: "revealed",
+            apiKeyId: apiKey.id,
+            apiKeyName: (keyData as { name?: string })?.name || null,
+            revealed_At: FieldValue.serverTimestamp(),
+            revealed_By: userId,
+            authAgeInSeconds,
+            secondFactorSignIn,
+            hasEnrolledMfa,
+        })
+
         return { error: null, apiKey: keyDataWithSecret, message: "API key retrieved successfully" }
     } catch (error) {
         console.error("Error retrieving API key:", error)
-        // throw new Error("Failed to create API key by id " + apiKeyId)
-        return { error, apiKeyId: null, message: "Failed to retrieve API secret" }
+
+        if (error instanceof HttpsError) {
+            return {
+                error: {
+                    code: error.code,
+                    message: error.message,
+                },
+                apiKeyId: null,
+                message: error.message,
+            }
+        }
+
+        return {
+            error: {
+                code: "internal",
+                message: "Failed to retrieve API secret",
+            },
+            apiKeyId: null,
+            message: "Failed to retrieve API secret",
+        }
     }
 })
 
@@ -531,7 +1026,7 @@ export const getOperationsPaging = onCallv2(
 export const getBrowserProfilesPaging = onCallv2(
 
     async (req) => {
-        const { currPage = 1, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -539,53 +1034,29 @@ export const getBrowserProfilesPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const profilesRef = db.collection(`users/${userId}/browser`).orderBy("created_At", "desc")
+            const profilesCollection = db.collection(`users/${userId}/browser`)
+            const profilesRef = profilesCollection.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(profilesCollection, profilesRef, pageSize, lastDocId)
 
-            // Check if collection exists
-            const snapshot = await profilesRef.get()
-            if (snapshot.empty) {
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     profiles: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "Browser Profiles retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalBrowserProfilesQuery = await profilesRef.count().get()
-            const inTotal = totalBrowserProfilesQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-            let query = profilesRef.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await profilesRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const profilesSnapshot = await query.get()
-            const profiles = profilesSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                profiles,
-                totalPages,
-                inTotal,
+                profiles: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "Browser Profiles retrieved successfully",
             }
         } catch (error) {
@@ -597,7 +1068,7 @@ export const getBrowserProfilesPaging = onCallv2(
 export const getCrawlConfigsPaging = onCallv2(
 
     async (req) => {
-        const { currPage = 1, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -605,53 +1076,29 @@ export const getCrawlConfigsPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const configsRef = db.collection(`users/${userId}/crawlconfigs`).orderBy("created_At", "desc")
+            const configsCollection = db.collection(`users/${userId}/crawlconfigs`)
+            const configsRef = configsCollection.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(configsCollection, configsRef, pageSize, lastDocId)
 
-            // Check if collection exists
-            const snapshot = await configsRef.get()
-            if (snapshot.empty) {
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     configs: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "Crawler Configs retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalCrawlConfigsQuery = await configsRef.count().get()
-            const inTotal = totalCrawlConfigsQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-            let query = configsRef.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await configsRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const configsSnapshot = await query.get()
-            const configs = configsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                configs,
-                totalPages,
-                inTotal,
+                configs: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "Crawler Configs retrieved successfully",
             }
         } catch (error) {
@@ -662,7 +1109,7 @@ export const getCrawlConfigsPaging = onCallv2(
 
 export const getCrawlResultConfigsPaging = onCallv2(
     async (req) => {
-        const { currPage = 1, pageSize = 10 } = req.data
+        const { pageSize = 10, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -670,53 +1117,29 @@ export const getCrawlResultConfigsPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const configsRef = db.collection(`users/${userId}/crawlresultsconfig`).orderBy("created_At", "desc")
+            const resultsCollection = db.collection(`users/${userId}/crawlresultsconfig`)
+            const configsRef = resultsCollection.orderBy("created_At", "desc")
+            const pageResult = await getCursorPage<Record<string, unknown>>(resultsCollection, configsRef, pageSize, lastDocId)
 
-            // Check if collection exists
-            const snapshot = await configsRef.get()
-            if (snapshot.empty) {
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     crawlResultConfigs: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "CrawlResult Configs retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalCrawlResultConfigsQuery = await configsRef.count().get()
-            const inTotal = totalCrawlResultConfigsQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-            let query = configsRef.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await configsRef.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const configsSnapshot = await query.get()
-            const crawlResultConfigs = configsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                crawlResultConfigs,
-                totalPages,
-                inTotal,
+                crawlResultConfigs: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "CrawlResult Configs retrieved successfully",
             }
         } catch (error) {
@@ -766,7 +1189,7 @@ export const receiveLogs = onRequest(async (request, response) => {
 
 export const getMachinesPaging = onCallv2(
     async (req) => {
-        const { currPage = 1, pageSize = 10, state = null } = req.data
+        const { pageSize = 10, state = null, lastDocId = null } = req.data
 
         try {
             const userId = req.auth?.uid
@@ -774,54 +1197,30 @@ export const getMachinesPaging = onCallv2(
                 throw new HttpsError("unauthenticated", "User must be authenticated.")
             }
 
-            const machinesRef = db.collection(`users/${userId}/machines`).orderBy("created_at", "desc")
+            const machinesCollection = db.collection(`users/${userId}/machines`)
+            const machinesRef = machinesCollection.orderBy("created_at", "desc")
             const filteredQuery = state && typeof state == "string" ? machinesRef.where("state", "==", state) : machinesRef.where("state", "!=", "destroyed")
-            // Check if collection exists
-            const snapshot = await filteredQuery.get()
-            if (snapshot.empty) {
+            const pageResult = await getCursorPage<Record<string, unknown>>(machinesCollection, filteredQuery, pageSize, lastDocId)
+
+            if (pageResult.inTotal === 0) {
                 return {
                     error: null,
                     machines: [],
                     totalPages: 1,
                     inTotal: 0,
+                    hasMore: false,
+                    nextLastDocId: null,
                     message: "Machines retrieved successfully",
                 }
             }
 
-            // Get total count of operations
-            const totalMachinesQuery = await filteredQuery.count().get()
-            const inTotal = totalMachinesQuery.data().count || 0
-
-            // Calculate total pages
-            const totalPages = Math.ceil(inTotal / pageSize)
-            if (currPage > totalPages && totalPages > 0) {
-                throw new HttpsError("invalid-argument", "Requested page exceeds total pages.")
-            }
-
-
-            let query = filteredQuery.limit(pageSize)
-
-            // Handle pagination using startAfter()
-            if (currPage > 1) {
-                const previousPageSnapshot = await filteredQuery.limit((currPage - 1) * pageSize).get()
-                const lastDocument = previousPageSnapshot.docs[previousPageSnapshot.size - 1]
-                if (lastDocument) {
-                    query = query.startAfter(lastDocument)
-                }
-            }
-
-            // Fetch operations for the current page
-            const machinesSnapshot = await query.get()
-            const machines = machinesSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }))
-
             return {
                 error: null,
-                machines,
-                totalPages,
-                inTotal,
+                machines: pageResult.items,
+                totalPages: pageResult.totalPages,
+                inTotal: pageResult.inTotal,
+                hasMore: pageResult.hasMore,
+                nextLastDocId: pageResult.nextLastDocId,
                 message: "Machines retrieved successfully",
             }
         } catch (error) {

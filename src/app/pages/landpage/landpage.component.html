@@ -165,7 +165,7 @@
       © 2024 Deep Scraper. All rights reserved.
       <div class="mt-4 flex justify-center">
         <span class="inline-flex items-center rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs font-medium text-gray-200">
-          Powered by Crawl4AI
+          Built for Scale
         </span>
       </div>
     </div>
@@ -297,9 +297,7 @@
                           <span class="text-4xl font-bold">${{ plan.price }}</span>
                           <span class="text-gray-600">/month</span>
                         </div>
-                        <ul class="space-y-4 mb-8">
-                          @for (feature of plan.features; track feature) {
-                            <li class="flex items-center">
+                        <ul class="space-y-4 mb-8"><li *ngFor="let feature of plan.features" class="flex items-center">
                               <svg
                                 class="w-5 h-5 text-green-500 mr-2"
                                 fill="none"
@@ -314,9 +312,7 @@
                                   />
                                 </svg>
                                 {{ feature }}
-                              </li>
-                            }
-                          </ul>
+                              </li></ul>
                           <button
                             class="w-full py-3 rounded-lg font-semibold transition-colors"
                             [class.bg-indigo-600]="i === 1"

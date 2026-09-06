@@ -98,6 +98,71 @@
               </button>
             </div>
           </app-slideinmodal>
+          <app-slideinmodal
+            [isOpen]="revealSecurityOpen | formControl"
+            [loading]="revealSecurityLoading"
+            position="center"
+            [hasBlur]="true"
+            [title]="'Security Check Required'">
+            <div class="flex flex-col items-start justify-center gap-4 w-full">
+              @if (revealSecurityMode() === 'password') {
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                  Confirm your password to reveal the full API key.
+                </p>
+                <div class="text-lg relative w-full">
+                  <label
+                    for="revealPassword"
+                    class="text-sm dark:text-gray3 text-gray5">
+                    Password:
+                  </label>
+                  <input
+                    class="relative mt-1 block w-full rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray5 dark:text-gray-300 dark:shadow-inner focus:dark:shadow-gray-800 dark:focus:ring-gray5"
+                    type="password"
+                    id="revealPassword"
+                    [formControl]="revealPassword"
+                    placeholder="Enter your current password" />
+                </div>
+              }
+
+              @if (revealSecurityMode() !== 'password') {
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                  API key reveal requires a session with multi-factor authentication.
+                </p>
+              }
+
+              @if (revealSecurityError()) {
+                <p class="text-sm text-red-600 dark:text-red-400">{{ revealSecurityError() }}</p>
+              }
+
+              <div class="mt-4 flex items-center justify-end gap-3 w-full">
+                <button
+                  type="button"
+                  class="rounded-lg p-2 min-w-fit text-gray-700 dark:text-gray-300 transition-colors duration-200 hover:bg-gray-200/60 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:hover:bg-gray5/60 dark:focus:ring-gray4/60"
+                  (click)="cancelRevealSecurityStep()">
+                  Cancel
+                </button>
+                @if (revealSecurityMode() === 'password') {
+                  <button
+                    class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/[.1] dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60 disabled:opacity-50"
+                    type="button"
+                    [disabled]="revealPassword.invalid || revealSecurityLoading"
+                    (click)="confirmRevealSecurityStep()">
+                    Confirm
+                    <mat-icon class="!h-5 !w-5">check</mat-icon>
+                  </button>
+                }
+                @if (revealSecurityMode() !== 'password') {
+                  <button
+                    class="rounded-lg p-2 min-w-fit text-white transition-colors duration-200 hover:bg-green-100/60 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-100/70 dark:bg-green-600/[.1] dark:text-white dark:hover:bg-green-500/70 dark:hover:text-white dark:focus:ring-green-200/60"
+                    type="button"
+                    (click)="goToSecuritySettings()">
+                    Go To Security
+                    <mat-icon class="!h-5 !w-5">shield</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          </app-slideinmodal>
           <button
             appRipple
             rippleColor="dark"
@@ -236,38 +301,40 @@
                       <mat-icon class="">more_horiz</mat-icon>
                     </button>
                     <app-popup-menu [popupValue]="key">
-                      <li>
-                        <app-clipboard-button
-                          appRipple
-                          rippleColor="dark"
-                          class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-                          (click)="copyToClipboard(key)"
-                        [inline]="false"></app-clipboard-button>
-                      </li>
-                      <li>
-                        <a
-                          appRipple
-                          rippleColor="dark"
-                          class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-                          [id]="'api-key-dis-' + key.id"
-                          (click)="disableApiKey(key)">
-                          <mat-icon>hide_source</mat-icon>
-                          Disable API Key
-                          <span class="flex-grow"></span>
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          appRipple
-                          rippleColor="dark"
-                          (click)="openDialog(key)"
-                          class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] cursor-pointer font-medium duration-300 transition-colors"
-                          [id]="'api-key-del-' + key.id">
-                          <mat-icon>delete</mat-icon>
-                          Delete API Key
-                          <span class="flex-grow"></span>
-                        </a>
-                      </li>
+                      <ul>
+                        <li>
+                          <app-clipboard-button
+                            appRipple
+                            rippleColor="dark"
+                            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-gray3/[0.5] focus:bg-gray3/[0.8] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                            (click)="copyToClipboard(key)"
+                          [inline]="false"></app-clipboard-button>
+                        </li>
+                        <li>
+                          <a
+                            appRipple
+                            rippleColor="dark"
+                            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
+                            [id]="'api-key-dis-' + key.id"
+                            (click)="disableApiKey(key)">
+                            <mat-icon>hide_source</mat-icon>
+                            Disable API Key
+                            <span class="flex-grow"></span>
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            appRipple
+                            rippleColor="dark"
+                            (click)="openDialog(key)"
+                            class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-red-400/[0.2] focus:bg-red-400/[0.08] cursor-pointer font-medium duration-300 transition-colors"
+                            [id]="'api-key-del-' + key.id">
+                            <mat-icon>delete</mat-icon>
+                            Delete API Key
+                            <span class="flex-grow"></span>
+                          </a>
+                        </li>
+                      </ul>
                     </app-popup-menu>
                   </div>
                 </div>

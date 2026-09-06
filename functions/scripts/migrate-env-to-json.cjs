@@ -6,8 +6,24 @@ const { spawnSync } = require("node:child_process")
 const rootDir = path.resolve(__dirname, "..")
 const sourcePath = path.resolve(rootDir, ".env.dev")
 const targetPath = path.resolve(rootDir, ".deploy-secrets.json")
-const ip2locationBinPath = path.resolve(rootDir, "databases", "IP2LOCATION-LITE-DB11.BIN")
-const ip2locationGcsPath = "gs://libnet-d76db.appspot.com/geo/IP2LOCATION-LITE-DB11.BIN"
+
+const IP_INTEL_DATABASES = [
+  // {
+  //   fileName: "IP2LOCATION-LITE-DB11.BIN",
+  //   envPathKey: "IP2LOCATION_GCS_PATH",
+  //   envShaKey: "IP2LOCATION_SHA256",
+  // },
+  // {
+  //   fileName: "IP2LOCATION-LITE-ASN.CSV",
+  //   envPathKey: "IP2LOCATION_ASN_GCS_PATH",
+  //   envShaKey: "IP2LOCATION_ASN_SHA256",
+  // },
+  // {
+  //   fileName: "IP2PROXY-LITE-PX12.CSV",
+  //   envPathKey: "IP2PROXY_GCS_PATH",
+  //   envShaKey: "IP2PROXY_SHA256",
+  // },
+]
 
 const parseEnvFile = (content) => {
   const lines = content.split(/\r?\n/)
@@ -50,6 +66,45 @@ const computeSha256 = (filePath) => {
   return hash.digest("hex").toLowerCase()
 }
 
+const parseGsPath = (value) => {
+  const input = String(value || "").trim()
+  const match = /^gs:\/\/([^/]+)\/(.+)$/.exec(input)
+  if (!match) {
+    return null
+  }
+
+  return {
+    bucket: match[1],
+    objectPath: match[2],
+  }
+}
+
+const deriveStorageTarget = (parsedEnv) => {
+  const explicitBucket = (process.env.IP_INTEL_BUCKET || "").trim()
+  const explicitPrefix = (process.env.IP_INTEL_PREFIX || "").trim().replace(/^\/+|\/+$/g, "")
+
+  if (explicitBucket) {
+    return {
+      bucket: explicitBucket,
+      prefix: explicitPrefix || "geo",
+    }
+  }
+
+  const geoPath = parseGsPath(parsedEnv.IP2LOCATION_GCS_PATH)
+  if (geoPath) {
+    const prefix = path.posix.dirname(geoPath.objectPath)
+    return {
+      bucket: geoPath.bucket,
+      prefix: prefix && prefix !== "." ? prefix : "geo",
+    }
+  }
+
+  return {
+    bucket: "libnet-d76db.appspot.com",
+    prefix: "geo",
+  }
+}
+
 const syncEnvVar = (rawContent, key, value) => {
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   const pattern = new RegExp(`^${escapedKey}=.*$`, "m")
@@ -63,39 +118,49 @@ const syncEnvVar = (rawContent, key, value) => {
   return `${trimmed}\n${newLine}\n`
 }
 
-const uploadIp2locationBinIfChanged = (envContent, parsedEnv) => {
-  if (!fs.existsSync(ip2locationBinPath)) {
-    console.warn(`Skipping IP2Location upload. Missing BIN file: ${ip2locationBinPath}`)
-    return { updatedEnvContent: envContent, checksum: parsedEnv.IP2LOCATION_SHA256 || "" }
+const uploadIpIntelDatabasesAndSyncEnv = (envContent, parsedEnv) => {
+  const target = deriveStorageTarget(parsedEnv)
+  let updatedEnvContent = envContent
+
+  console.log(`Using storage bucket: ${target.bucket}`)
+  console.log(`Using storage prefix: ${target.prefix}`)
+
+  for (const db of IP_INTEL_DATABASES) {
+    const localPath = path.resolve(rootDir, "databases", db.fileName)
+    if (!fs.existsSync(localPath)) {
+      console.error(`Missing required IP intelligence asset: ${localPath}`)
+      process.exit(1)
+    }
+
+    const checksum = computeSha256(localPath)
+    const gsPath = `gs://${target.bucket}/${target.prefix}/${db.fileName}`
+    const currentChecksum = String(parsedEnv[db.envShaKey] || "").trim().toLowerCase()
+    const currentPath = String(parsedEnv[db.envPathKey] || "").trim()
+    const shouldUpload = currentChecksum !== checksum || currentPath !== gsPath
+
+    if (shouldUpload) {
+      console.log(`Uploading ${db.fileName} to ${gsPath}`)
+      const upload = spawnSync("gsutil", ["cp", localPath, gsPath], {
+        cwd: rootDir,
+        stdio: "inherit",
+        shell: true,
+      })
+
+      if (upload.status !== 0) {
+        console.error(`gsutil upload failed for ${db.fileName}`)
+        process.exit(upload.status || 1)
+      }
+    } else {
+      console.log(`${db.fileName} unchanged. Skipping upload.`)
+    }
+
+    parsedEnv[db.envPathKey] = gsPath
+    parsedEnv[db.envShaKey] = checksum
+    updatedEnvContent = syncEnvVar(updatedEnvContent, db.envPathKey, gsPath)
+    updatedEnvContent = syncEnvVar(updatedEnvContent, db.envShaKey, checksum)
   }
 
-  const newChecksum = computeSha256(ip2locationBinPath)
-  const currentChecksum = (parsedEnv.IP2LOCATION_SHA256 || "").trim().toLowerCase()
-
-  if (currentChecksum === newChecksum) {
-    console.log("IP2Location checksum unchanged. Skipping gsutil upload.")
-    return { updatedEnvContent: envContent, checksum: newChecksum }
-  }
-
-  console.log(`IP2Location checksum changed: ${currentChecksum || "<empty>"} -> ${newChecksum}`)
-  console.log(`Uploading BIN to ${ip2locationGcsPath}`)
-
-  const upload = spawnSync("gsutil", ["cp", ip2locationBinPath, ip2locationGcsPath], {
-    cwd: rootDir,
-    stdio: "inherit",
-    shell: true,
-  })
-
-  if (upload.status !== 0) {
-    console.error("gsutil upload failed.")
-    process.exit(upload.status || 1)
-  }
-
-  const updatedEnvContent = syncEnvVar(envContent, "IP2LOCATION_SHA256", newChecksum)
-  fs.writeFileSync(sourcePath, updatedEnvContent, "utf8")
-  console.log("Updated .env.dev with new IP2LOCATION_SHA256")
-
-  return { updatedEnvContent, checksum: newChecksum }
+  return { updatedEnvContent, updatedParsedEnv: parsedEnv }
 }
 
 if (!fs.existsSync(sourcePath)) {
@@ -106,9 +171,10 @@ if (!fs.existsSync(sourcePath)) {
 const envContent = fs.readFileSync(sourcePath, "utf8")
 const parsed = parseEnvFile(envContent)
 
-const { updatedEnvContent } = uploadIp2locationBinIfChanged(envContent, parsed)
-const updatedParsed = parseEnvFile(updatedEnvContent)
+const { updatedEnvContent, updatedParsedEnv } = uploadIpIntelDatabasesAndSyncEnv(envContent, parsed)
+fs.writeFileSync(sourcePath, updatedEnvContent, "utf8")
+console.log("Updated .env.dev with IP intelligence storage paths and checksums")
 
-fs.writeFileSync(targetPath, `${JSON.stringify(updatedParsed, null, 2)}\n`, "utf8")
+fs.writeFileSync(targetPath, `${JSON.stringify(updatedParsedEnv, null, 2)}\n`, "utf8")
 
-console.log(`Wrote ${Object.keys(updatedParsed).length} keys to ${targetPath}`)
+console.log(`Wrote ${Object.keys(updatedParsedEnv).length} keys to ${targetPath}`)

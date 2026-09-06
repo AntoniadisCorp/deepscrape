@@ -8,18 +8,19 @@ on:
 
 jobs:
   release:
+    if: github.event_name == 'push' && github.repository_owner == 'deepscrape'
     permissions:
       contents: write
       issues: write
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22.x"
 
@@ -33,7 +34,7 @@ jobs:
 
       - name: Run Semantic Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
 
       - name: Update package.json version
@@ -54,11 +55,19 @@ jobs:
         run: |
           git push origin --delete "chore/release-assets-${{ github.ref_name }}" || true
 
+      - name: Generate GitHub App token
+        if: steps.update_version.outputs.new_tag != ''
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Create Pull Request for Release Assets
         if: steps.update_version.outputs.new_tag != ''
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           branch: "chore/release-assets-${{ github.ref_name }}"
           base: ${{ github.ref_name }}
           commit-message: "chore: update changelog and package version [skip ci]"

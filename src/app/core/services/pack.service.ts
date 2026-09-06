@@ -29,15 +29,18 @@ export class PackService {
   private userId: string
 
   private fireSaveSub: Subscription
+  private browserPageCursors = new Map<number, string | null>([[1, null]])
   private browserSubject = new BehaviorSubject<BrowserProfile[] | null | undefined>(undefined)
   private totalPagesBrowserSubject = new BehaviorSubject<number>(1)
   private inTotalBrowserSubject = new BehaviorSubject<number>(0)
 
   private configSubject = new BehaviorSubject<CrawlConfig[] | null | undefined>(undefined)
+  private configPageCursors = new Map<number, string | null>([[1, null]])
   private totalPagesConfigSubject = new BehaviorSubject<number>(1)
   private inTotalConfigSubject = new BehaviorSubject<number>(0)
 
   private crawlResultsSubject = new BehaviorSubject<any[] | null | undefined>(undefined)
+  private resultPageCursors = new Map<number, string | null>([[1, null]])
   private totalPagesResultsSubject = new BehaviorSubject<number>(1)
   private inTotalResultsSubject = new BehaviorSubject<number>(0)
 
@@ -252,18 +255,22 @@ export class PackService {
   }
 
   private getBrowserProfilesByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
-    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+    const lastDocId = this.browserPageCursors.get(currPage) ?? null
+
+    return from(this.firestoreService.callFunction<{ pageSize: number; lastDocId: string | null }, any>(
       'getBrowserProfilesPaging',
-      { currPage, pageSize }
+      { pageSize, lastDocId }
     ))
       .pipe(
         map((data: any) => {
-          const { error, profiles, inTotal, totalPages, message } = data as any
+          const { error, profiles, inTotal, totalPages, message, nextLastDocId } = data as any
 
           if (error) {
             console.error('Error retrieving Browser Profiles by pagination:', error, profiles, message)
             throw new Error(message, error)
           }
+
+          this.browserPageCursors.set(currPage + 1, nextLastDocId ?? null)
 
           return { profiles, inTotal, totalPages }
         })
@@ -308,18 +315,21 @@ export class PackService {
 
 
   private getCrawlConfigsByPagination(currPage: number = 1, pageSize: number = 10): Observable<any> {
-    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+    const lastDocId = this.configPageCursors.get(currPage) ?? null
+
+    return from(this.firestoreService.callFunction<{ pageSize: number; lastDocId: string | null }, any>(
       'getCrawlConfigsPaging',
-      { currPage, pageSize }
+      { pageSize, lastDocId }
     ))
       .pipe(
         map((data: any) => {
-          const { error, configs, inTotal, totalPages, message } = data as any
+          const { error, configs, inTotal, totalPages, message, nextLastDocId } = data as any
 
           if (error) {
             console.error('Error retrieving Crawler Configurations by pagination:', error, configs, message)
             throw new Error(message, error)
           }
+          this.configPageCursors.set(currPage + 1, nextLastDocId ?? null)
           return { configs, inTotal, totalPages }
         })
       )
@@ -363,18 +373,21 @@ export class PackService {
   }
 
   private getCrawlResultConfigsByPagination(currPage: number = 1, pageSize: number = 10) {
-    return from(this.firestoreService.callFunction<{ currPage: number; pageSize: number }, any>(
+    const lastDocId = this.resultPageCursors.get(currPage) ?? null
+
+    return from(this.firestoreService.callFunction<{ pageSize: number; lastDocId: string | null }, any>(
       'getCrawlResultConfigsPaging',
-      { currPage, pageSize }
+      { pageSize, lastDocId }
     ))
       .pipe(
         map((data: any) => {
-          const { error, crawlResultConfigs, inTotal, totalPages, message } = data as any
+          const { error, crawlResultConfigs, inTotal, totalPages, message, nextLastDocId } = data as any
 
           if (error) {
             console.error('Error retrieving Crawler Configurations by pagination:', error, crawlResultConfigs, message)
             throw new Error(message, error)
           }
+          this.resultPageCursors.set(currPage + 1, nextLastDocId ?? null)
           return { crawlResultConfigs, inTotal, totalPages }
         })
       )

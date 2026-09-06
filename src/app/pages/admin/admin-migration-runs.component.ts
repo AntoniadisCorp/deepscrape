@@ -1,8 +1,9 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core'
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core'
 import { FormControl } from '@angular/forms'
 import { RouterLink } from '@angular/router'
 import { SlideInModalComponent } from 'src/app/core/components'
+import { RippleDirective } from 'src/app/core/directives'
 import {
   QueryDocumentSnapshot,
   DocumentData,
@@ -53,9 +54,10 @@ interface MigrationRunItem {
 
 @Component({
   selector: 'app-admin-migration-runs',
-  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent],
+  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent, RippleDirective],
   templateUrl: './admin-migration-runs.component.html',
   styleUrl: './admin-migration-runs.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminMigrationRunsComponent implements OnInit {
   private readonly firestoreService = inject(FirestoreService)

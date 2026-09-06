@@ -1,0 +1,19 @@
+# Graphify scope for this repo:
+# keep only the Angular app source and Firebase Functions source.
+
+node_modules/
+dist/
+*.generated.py
+
+# Ignore everything by default.
+*
+
+# Re-include the Angular app source tree.
+!src/
+!src/**
+
+# Re-include the Functions source tree.
+!functions/
+/functions/*
+!functions/src/
+!functions/src/**

@@ -34,10 +34,15 @@ export type Users = {
 
     // User Authorization fieldsrole
     role?: string
+    defaultOrgId?: string
     plan?: 'free' | 'trial' | 'starter' | 'pro' | 'enterprise'
+    planInterval?: 'payAsYouGo' | 'monthly' | 'quarterly' | 'annually'
 
     // Profile status
     profileStatus?: ProfileStatus
+
+    // Onboarding
+    onboardedAt?: any // Firestore Timestamp | null — null means onboarding not yet completed
 }
 
 export type UserDetails = {
@@ -106,6 +111,45 @@ export type loginHistoryInfo = {
     signOutTime?: Date // Optional field to store sign out time
     sessionKey?: string // Optional field to link to a session
     deviceFingerprintHash?: string
+    revokedAt?: Date | null
+    revokedByUid?: string | null
+    asn?: string | null
+    as?: string | null
+    isp?: string | null
+    domain?: string | null
+    usageType?: string | null
+    proxy?: {
+        isProxy: boolean
+        proxyType?: string | null
+        threat?: string | null
+        lastSeenDays?: number | null
+        provider?: string | null
+        fraudScore?: number | null
+        confidence?: 'none' | 'open-proxy-detected' | 'unknown' | string
+    }
+}
+
+export type loginHistoryEvent = {
+    id?: string
+    uid?: string
+    eventType: 'login' | 'logout' | 'revoke' | string
+    eventSessionId?: string
+    providerId?: string
+    timestamp?: Date | string
+    createdAt?: Date | string
+    signOutTime?: Date | string
+    revokedAt?: Date | string | null
+    connected?: boolean
+    os?: string
+    ipAddress?: string
+    browser?: string
+    userAgent?: string
+    location?: string
+    deviceType?: string
+    guestId?: string
+    sessionKey?: string
+    deviceFingerprintHash?: string
+    revokedByUid?: string | null
 }
 
 export type Guest = {
@@ -128,6 +172,22 @@ export type Guest = {
   longitude: number
   location: string
   fingerprint?: string // Unique fingerprint for guest tracking
+    network?: {
+        asn: string | null
+        as: string | null
+        isp: string | null
+        domain: string | null
+        usageType: string | null
+    }
+    proxy?: {
+        isProxy: boolean
+        proxyType?: string | null
+        threat?: string | null
+        lastSeenDays?: number | null
+        provider?: string | null
+        fraudScore?: number | null
+        confidence?: 'none' | 'open-proxy-detected' | 'unknown' | string
+    }
   createdAt: Date
   lastSeen: Date
   linkedAt?: Date | null

@@ -1,0 +1,148 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - next
+  pull_request:
+    branches:
+      - main
+      - next
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Angular unit tests (Karma / ChromeHeadless)
+  # ─────────────────────────────────────────────
+  angular-tests:
+    name: Angular Unit Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+
+      # The Angular project uses Bun as its package manager (bun.lockb present).
+      - name: Install Angular project dependencies
+        run: bun install --frozen-lockfile
+
+      # Install Chromium for ChromeHeadless testing
+      - name: Install Chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y chromium
+
+      # Generate a minimal environment.ts so the build succeeds without secrets.
+      # The generated file only needs to compile – real secrets are not needed
+      # for unit tests because all external services are mocked.
+      # Shape must exactly match prod_gen.ts so TypeScript compilation passes.
+      - name: Generate stub environment.ts
+        run: |
+          mkdir -p src/environments
+          cat > src/environments/environment.ts << 'EOF'
+          export const environment = {
+            production: false,
+            emulators: false,
+            assetsUri: 'https://deepscrape.dev/assets/',
+            wsUrl: '',
+            nekoUrl: '',
+            firebaseConfig: {
+              apiKey: '',
+              authDomain: '',
+              databaseURL: '',
+              projectId: 'test-project',
+              storageBucket: '',
+              messagingSenderId: '',
+              appId: '',
+              measurementId: '',
+            },
+            STRIPE_PUBLIC_KEY: '',
+            RECAPTCHA_KEY: '',
+            OPENAI_API_KEY: '',
+            ANTHROPIC_API_KEY: '',
+            JINAAI_API_KEY: '',
+            GROQ_API_KEY: '',
+            GOOGLE_API_KEY: '',
+            CRAWL4AI_API_KEY: '',
+            API_CRAWL4AI_URL: 'http://localhost:8000',
+            API_ARACHNEFLY_URL: '',
+            API_ANTHROPIC: 'https://api.anthropic.com',
+            API_OPENAI: 'https://api.openai.com',
+            API_GROQ: 'https://api.groq.com',
+            API_JINAAI: 'https://r.jina.ai',
+            agentUrl: 'http://localhost:8000',
+          };
+          EOF
+
+      - name: Run Angular unit tests (ChromeHeadless)
+        run: bun run test:ci
+        env:
+          CHROME_BIN: /usr/bin/chromium
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Upload test coverage report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: angular-coverage
+          path: coverage/
+          retention-days: 14
+
+  # ─────────────────────────────────────────────
+  # Job 2: Firebase Functions unit tests
+  # ─────────────────────────────────────────────
+  functions-tests:
+    name: Firebase Functions Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+
+      # The functions sub-project uses npm (package-lock.json, no bun.lockb).
+      - name: Install functions dependencies
+        working-directory: ./functions
+        run: npm ci
+
+      - name: Run Firebase Functions tests (with reporter)
+        working-directory: ./functions
+        run: npm test -- --test-reporter=spec
+        env:
+          # Provide placeholder values so env parsing doesn't throw at import time.
+          # Tests mock Firebase / Stripe calls so no real secrets are needed.
+          FUNCTIONS_ENV_JSON: '{}'
+          GCLOUD_PROJECT: test-project
+          FIREBASE_CONFIG: '{"projectId":"test-project","storageBucket":"","databaseURL":""}'
+          DB_NAME: undefined
+          AUTHZ_STRICT_ORG_MODE: 'false'

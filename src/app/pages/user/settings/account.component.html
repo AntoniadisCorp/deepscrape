@@ -4,21 +4,21 @@
   }
   <!-- Tab Menu -->
   <div
-    class="sticky scrollbar-hidden snap-x overflow-auto z-50 flex h-16 flex-nowrap items-center justify-start gap-1 border-b bg-gray-200 text-base text-gray-800 dark:border-b-[#64b5f633] dark:bg-gray-900"
+    class="sticky top-20 scrollbar-hidden snap-x overflow-auto z-50 flex h-16 flex-nowrap items-center justify-start gap-1 border-b bg-gray-200 text-base text-gray-800 dark:border-b-[#64b5f633] dark:bg-gray-900"
     >
     @for (gTab of gTabs$ | async; track gTab) {
       <a
         (click)="activeLink = gTab.id"
       [ngClass]="
         activeLink === gTab.id
-          ? 'bg-gray-300/70 transition dark:border-blue-300 dark:bg-gray5/40'
-          : ''
+          ? 'bg-gray-50 border-blue-600 transition dark:border-blue-300 dark:bg-gray5/40'
+          : 'border-transparent'
       "
         [routerLink]="routerLink(gTab.id)"
         routerLinkActive="active"
         appRipple
         rippleColor="dark"
-        class="flex snap-normal h-full w-full max-w-[9rem] flex-shrink-0 items-center justify-start space-x-2 rounded-sm rounded-tl-lg rounded-tr-lg border-b-2 border-transparent px-3 py-3 text-gray-900 transition-all hover:border-blue-300 hover:bg-cyan-100 hover:duration-100 hover:ease-in-out dark:text-gray-400 dark:hover:bg-cyan-300/10 dark:hover:text-gray-200"
+        class="flex snap-normal h-full w-full max-w-[9rem] flex-shrink-0 items-center justify-start space-x-2 rounded-sm rounded-tl-lg rounded-tr-lg border-b-2 px-3 py-3 text-gray-900 transition-all hover:border-blue-300 hover:bg-cyan-100 hover:duration-100 hover:ease-in-out dark:text-gray-400 dark:hover:bg-cyan-300/10 dark:hover:text-gray-200"
         >
         <lucide-angular
           faria-hidden="false"

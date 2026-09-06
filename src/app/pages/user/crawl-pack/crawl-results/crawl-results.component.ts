@@ -15,10 +15,12 @@ import { getErrorLabel, getOffsetTop } from 'src/app/core/functions';
 import { FormControlPipe } from 'src/app/core/pipes';
 import { CartService, PackService, ScrollService, SnackbarService, WindowToken } from 'src/app/core/services';
 import { CrawlResult } from 'src/app/core/types';
+import { listStaggerAnimation } from 'src/app/animations';
 
 @Component({
   selector: 'app-crawl-results',
   imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, MatProgressSpinner, StinputComponent, FormControlPipe, RadioToggleComponent],
+  animations: [listStaggerAnimation],
   templateUrl: './crawl-results.component.html',
   styleUrl: './crawl-results.component.scss'
 })

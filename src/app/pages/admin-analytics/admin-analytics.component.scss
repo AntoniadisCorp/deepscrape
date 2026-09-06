@@ -31,7 +31,7 @@
 }
 
 .toggle-checkbox:checked + span::before {
-  @apply bg-blue-500;
+  @apply bg-emerald-500;
 }
 
 .toggle-checkbox:checked + span::after {
@@ -121,6 +121,50 @@
 }
 
 .admin-analytics-theme .admin-loader {
-  border-top-color: #3b82f6;
-  box-shadow: 0 0 18px rgb(59 130 246 / 28%);
+  border-top-color: #10b981;
+  box-shadow: 0 0 18px rgb(16 185 129 / 28%);
+}
+
+.admin-analytics-theme .btn {
+  @apply rounded-xl border font-sans font-semibold tracking-[0.01em] transition-all duration-200;
+  @apply shadow-[0_12px_24px_-18px_rgba(42,46,53,0.45)] hover:-translate-y-[1px] hover:shadow-[0_18px_32px_-20px_rgba(42,46,53,0.55)];
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-300 dark:focus-visible:ring-cyan-700;
+}
+
+.admin-analytics-theme .btn-sm {
+  @apply min-h-9 px-4 py-1.5 text-xs uppercase tracking-[0.08em];
+}
+
+.admin-analytics-theme .btn-gray {
+  @apply border-gray3/80 bg-gray1/95 text-gray6 hover:border-gray4 hover:bg-gray2/90;
+  @apply dark:border-gray5/80 dark:bg-gray6/65 dark:text-gray2 dark:hover:border-gray4 dark:hover:bg-gray6;
+}
+
+.admin-analytics-theme .btn-blue,
+.admin-analytics-theme .btn-green {
+  @apply border-cyan-600 bg-cyan-600 text-white hover:border-cyan-700 hover:bg-cyan-700;
+  @apply dark:border-cyan-500 dark:bg-cyan-500 dark:hover:border-cyan-400 dark:hover:bg-cyan-400;
+}
+
+.admin-analytics-theme .btn-red {
+  @apply border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700;
+  @apply dark:border-rose-500 dark:bg-rose-500 dark:hover:border-rose-400 dark:hover:bg-rose-400;
+}
+
+.admin-analytics-theme .btn-orange {
+  @apply border-amber-500 bg-amber-500 text-gray7 hover:border-amber-400 hover:bg-amber-400;
+  @apply dark:border-amber-400 dark:bg-amber-400 dark:text-gray7 dark:hover:border-amber-300 dark:hover:bg-amber-300;
+}
+
+.admin-analytics-theme .btn-ring-blue,
+.admin-analytics-theme .btn-ring-green {
+  @apply focus-visible:ring-cyan-300 dark:focus-visible:ring-cyan-700;
+}
+
+.admin-analytics-theme .btn-ring-red {
+  @apply focus-visible:ring-rose-300 dark:focus-visible:ring-rose-700;
+}
+
+.admin-analytics-theme .btn-ring-orange {
+  @apply focus-visible:ring-amber-300 dark:focus-visible:ring-amber-700;
 }

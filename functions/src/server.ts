@@ -10,12 +10,12 @@ import helmet from "helmet"
 import morgan from "morgan"
 import { join, resolve } from "node:path"
 import { onRequest } from "firebase-functions/https"
-import { upstashEventLimiter, upstashFunctionLimiter, statusCheck } from "./handlers"
+import { upstashEventLimiter, upstashFunctionLimiter, statusCheck, serveSecurity, submitContact } from "./handlers"
 // import * as dotenvx from "@dotenvx/dotenvx"
 import { AuthAPIProxy, EventsAPIProxy, ReverseAPIProxy } from "./infrastructure"
 import cookieParser from "cookie-parser"
 import csurf from "csurf"
-import { geoDBManager, guestTracker, IP2LocationManager, onListening } from "./gfunctions"
+import { guestTracker } from "./gfunctions"
 import { existsSync } from "node:fs"
 import crypto from "node:crypto"
 import { env, functionsEnvJson, helmetConfig } from "./config"
@@ -55,7 +55,7 @@ export const corss = cors({
   credentials: true,
 })
 
-const CSRF_IGNORED_PATH_PREFIXES = ["/event", "/status", "/oauth"]
+const CSRF_IGNORED_PATH_PREFIXES = ["/event", "/status", "/oauth", "/services/contact"]
 
 function shouldBypassCsrf(req: Request): boolean {
   return CSRF_IGNORED_PATH_PREFIXES.some((prefix) => req.path.startsWith(prefix))
@@ -86,12 +86,8 @@ function serveapp() {
   // Check if the serverDistFolder exists, if not, use the browserDistFolder
 
   // const browserIndexHtml = existsSync(join(browserDistFolder, "index.html"))? "index.html" : "index"
-  /* const { APP_BASE_HREF } = await import("@angular/common")
-  const { ngExpressEngine } = await import("@nguniversal/express-engine")
-  const { AppServerModule } = await import(join(resolve(process.cwd(), "..", "server"), "main.server.mjs"))
-  server.engine("html", ngExpressEngine({
-      bootstrap: AppServerModule,
-  })) */
+  // Legacy SSR with @nguniversal/express-engine was removed.
+  // Angular SSR now uses @angular/ssr via the server.ts entrypoint in the root project.
   server.set("view engine", "html")
   server.set("views", browserDistFolder)
   server.set("trust proxy", env.TRUST_PROXY)
@@ -165,7 +161,27 @@ function serveapp() {
       return next(error)
     }
 
+    const csrfDebug = {
+      method: req.method,
+      path: req.path,
+      host: req.headers.host || "",
+      origin: req.headers.origin || "",
+      referer: req.headers.referer || "",
+      hasCsrfHeader: !!(req.headers["csrf-token"] || req.headers["x-csrf-token"]),
+      hasCsrfCookie: typeof req.cookies?._csrf === "string" && req.cookies._csrf.length > 0,
+      hasCsrfSecretCookie: typeof req.cookies?._csrf_secret === "string" && req.cookies._csrf_secret.length > 0,
+      hasSignedCsrfSecretCookie: typeof (req as Request & { signedCookies?: Record<string, unknown> }).signedCookies?._csrf_secret === "string",
+    }
+
+    if (env.IS_EMULATOR) {
+      console.warn("CSRF validation failed", csrfDebug)
+    }
+
     if (req.path.startsWith("/api")) {
+      if (env.IS_EMULATOR) {
+        return res.status(403).json({ error: "Invalid CSRF token", debug: csrfDebug })
+      }
+
       return res.status(403).json({ error: "Invalid CSRF token" })
     }
 
@@ -212,11 +228,16 @@ function serveapp() {
   // Track anonymous guests as early as possible so API and event routes are included.
   server.use(guestTracker)
 
+  // Security.txt RFC 9116 endpoint - provides vulnerability reporting information to security researchers
+  server.get("/.well-known/security.txt", serveSecurity)
+
   // Public API status route (no authentication)
   server.get("/status",
-    express.urlencoded({ limit: "3mb", extended: false }),
-    express.json({ limit: "3mb" }),
     upstashFunctionLimiter, statusCheck) // aiProxy.router now contains the /status route
+
+  // Public contact form submission (no authentication required)
+  server.post("/services/contact",
+    upstashFunctionLimiter, submitContact)
 
   // Cloud Functions runtime already parses request bodies.
   // Re-parsing with express.json() can throw "stream is not readable" in production.
@@ -225,8 +246,6 @@ function serveapp() {
 
   // Register the API routes (with authentication)
   server.use("/api",
-    express.urlencoded({ limit: "3mb", extended: false }),
-    express.json({ limit: "3mb" }),
     env.IS_PRODUCTION ? upstashFunctionLimiter : (req: Request, res: Response, next: NextFunction) => next(),
     aiProxy.isJwtAuth,
     aiProxy.router
@@ -235,8 +254,6 @@ function serveapp() {
   // server.use("/upload", uploadProxy.router)
   // OAuth routes (e.g. Google Sign-In) - no JWT auth, but still rate limited
   server.use("/oauth",
-    express.urlencoded({ limit: "3mb", extended: false }),
-    express.json({ limit: "3mb" }),
     upstashFunctionLimiter,
     oauthProxy.router
   )
@@ -267,49 +284,7 @@ function serveapp() {
     return res.status(404).sendFile(resolve(publicDistFolder, "404.html"))
   })
 
-  // Set up graceful shutdown
-  setupGracefulShutdown(geoDBManager)
-
   return server
-}
-
-// Graceful shutdown handler
-function setupGracefulShutdown(geoDBManager: IP2LocationManager) {
-  if (process.listenerCount("SIGINT") > 0 || process.listenerCount("SIGTERM") > 0) {
-    return
-  }
-
-  // Initialization hook
-  onListening()
-
-  // Graceful Shutdown Function
-  const shutdown = async () => {
-    console.log("Shutting down gracefully...")
-
-    // Close the database
-    geoDBManager.close()
-
-    console.log("Shutdown complete")
-    process.exit(0)
-  }
-
-  // Handle SIGINT (Ctrl+C) and SIGTERM
-  process.on("SIGINT", shutdown)
-  process.on("SIGTERM", shutdown)
-
-  // Handle uncaught exceptions
-  process.on("uncaughtException", (error) => {
-    console.error("Uncaught Exception:", error)
-    geoDBManager.close()
-    process.exit(1)
-  })
-
-  // Handle unhandled promise rejections
-  process.on("unhandledRejection", (reason) => {
-    console.error("Unhandled Rejection:", reason)
-    geoDBManager.close()
-    process.exit(1)
-  })
 }
 
 // const app = (req: express.Request, res: express.Response) => {
@@ -325,4 +300,11 @@ function setupGracefulShutdown(geoDBManager: IP2LocationManager) {
     return handler(req, res)
 }; */
 // Export the Firebase HTTPS function for SSR
-export const deepscrape = onRequest({ minInstances: 1, secrets: [functionsEnvJson, serviceAccountKeyParam] }, serveapp())
+export const deepscrape = onRequest(
+  {
+    minInstances: 1,
+    memory: "256MiB",
+    secrets: [functionsEnvJson, serviceAccountKeyParam],
+  },
+  serveapp()
+)

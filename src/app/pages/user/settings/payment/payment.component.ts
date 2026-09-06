@@ -1,11 +1,12 @@
-import { Component } from '@angular/core';
-
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { PaymentComponent } from 'src/app/core/components';
 
 @Component({
   selector: 'app-payment-tab',
-  imports: [],
+  imports: [PaymentComponent],
   templateUrl: './payment.component.html',
-  styleUrls: ['./payment.component.scss']
+  styleUrls: ['./payment.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaymentTabComponent {
 

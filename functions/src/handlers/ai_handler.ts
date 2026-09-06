@@ -13,6 +13,13 @@ import { env } from "../config/env"
 const toSingleParam = (value: string | string[] | undefined): string =>
     Array.isArray(value) ? (value[0] || "") : (value || "")
 
+const toHeaderValue = (value: string | string[] | undefined, fallback = ""): string => {
+    if (Array.isArray(value)) {
+        return value[0] || fallback
+    }
+    return value || fallback
+}
+
 // Utility function to handle API requests and streaming
 /* const handleStreamedApiResponse = async (
     apiUrl: string,
@@ -159,9 +166,9 @@ export const anthropicAICore = async (req: Request, res: Response) => {
             method: "POST",
             headers: {
                 "x-api-key": apiKey,
-                "anthropic-version": req.headers["anthropic-version"],
-                "content-type": req.headers["content-type"],
-            } as any,
+                "anthropic-version": toHeaderValue(req.headers["anthropic-version"]),
+                "content-type": toHeaderValue(req.headers["content-type"], "application/json"),
+            },
             body: JSON.stringify(req.body),
         }
         const apiResponse = await fetch(apiUrl, fetchOptions)

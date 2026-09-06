@@ -1,0 +1,95 @@
+<section id="social" class="relative py-20 md:py-28 section-dark scroll-mt-24 motion-safe:animate-fade-in">
+  <div class="absolute inset-0 grid-lines pointer-events-none opacity-15 dark:opacity-50"></div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Figma-inspired: "Used by top teams" + MASSIVE stat -->
+    <div class="text-center mb-16">
+      <h2 class="text-lg sm:text-xl text-gray-500 dark:text-gray-400 font-medium mb-4">
+        Trusted by developers worldwide
+      </h2>
+      <div class="text-8xl sm:text-9xl lg:text-[140px] font-display font-bold bg-gradient-to-r from-cyan-500 to-rose-500 dark:from-cyan-400 dark:to-rose-400 bg-clip-text text-transparent leading-none mb-3">
+        10M+
+      </div>
+      <p class="text-base text-gray-500 dark:text-gray-400">Pages extracted every month — and growing</p>
+    </div>
+
+    <!-- Company logo bar (Figma-inspired "trusted by" row) -->
+    <div class="flex flex-wrap justify-center items-center gap-x-12 gap-y-4 mb-20">
+      @for (company of companyLogos; track company) {
+        <span class="text-lg sm:text-xl font-display font-bold text-gray-300 dark:text-gray-600 tracking-tight select-none opacity-60 hover:opacity-100 transition-opacity duration-300">
+          {{ company }}
+        </span>
+      }
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20 max-w-3xl mx-auto">
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-1">99.9%</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Platform Uptime</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-1">10M+</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Pages/Month</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-1">40+</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Countries</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-1">&lt;200ms</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Avg Response</div>
+      </div>
+    </div>
+
+    <!-- 4 Testimonials in a grid (Figma-inspired card layout) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-16">
+      @for (t of testimonials; track t.name) {
+        <div class="glass rounded-2xl border-white/5 dark:border-white/10 p-6 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 group">
+          <!-- Stars -->
+          <div class="flex items-center gap-1 mb-4">
+            @for (star of [1,2,3,4,5]; track star) {
+              <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+            }
+          </div>
+          <!-- Quote -->
+          <blockquote class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4 italic">
+            "{{ t.quote }}"
+          </blockquote>
+          <!-- Author -->
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br {{ t.gradient }} rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md group-hover:scale-110 transition-transform duration-300">
+              {{ t.initials }}
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t.name }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t.role }}, {{ t.company }}</div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Final CTA — glass gradient -->
+    <div class="relative overflow-hidden rounded-2xl p-10 md:p-14 text-center glass glass-cta-bg border-white/10 dark:border-white/10">
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 right-0 w-64 h-64 orb-rose-cta rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 orb-cyan-cta rounded-full blur-3xl"></div>
+      </div>
+      <div class="relative z-10">
+        <h2 class="text-2xl sm:text-3xl font-display font-bold text-white mb-4">
+          Ready to Extract the Web?
+        </h2>
+        <p class="text-cyan-100 text-lg mb-8 max-w-xl mx-auto">
+          Start with 5,000 free pages. No credit card required. Cancel anytime.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a routerLink="/service/signup" class="glass-hover inline-flex items-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-cyan-500/30">
+            Get Started Free →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

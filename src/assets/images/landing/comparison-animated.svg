@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 264" width="440" height="264">
+  <defs>
+    <linearGradient id="gc" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#176ab1"/><stop offset="100%" style="stop-color:#06b6d4"/></linearGradient>
+    <linearGradient id="gr" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#be123c"/><stop offset="100%" style="stop-color:#f43f5e"/></linearGradient>
+  </defs>
+  <rect width="440" height="264" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <rect x="0" y="0" width="440" height="264" rx="16" fill="url(#gc)" opacity="0.03"/>
+
+  <!-- Title -->
+  <text x="220" y="30" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="11" font-family="sans-serif" font-weight="600">Self-Hosted vs deepscrape Managed</text>
+
+  <!-- Self-Hosted column -->
+  <rect x="15" y="45" width="195" height="200" rx="10" fill="rgba(244,63,94,0.04)" stroke="rgba(244,63,94,0.15)" stroke-width="1"/>
+  <text x="112" y="65" text-anchor="middle" fill="#f43f5e" font-size="10" font-family="sans-serif" font-weight="600">Self-Hosted</text>
+  
+  <rect x="25" y="75" width="175" height="24" rx="6" fill="rgba(244,63,94,0.06)" opacity="0"><animate attributeName="opacity" values="0;1" dur="1s" fill="freeze"/></rect>
+  <text x="35" y="91" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">Cloud VMs</text>
+  <text x="185" y="91" text-anchor="end" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">€50–500/mo</text>
+
+  <rect x="25" y="103" width="175" height="24" rx="6" fill="rgba(244,63,94,0.06)" opacity="0"><animate attributeName="opacity" values="0;1" dur="1.5s" fill="freeze"/></rect>
+  <text x="35" y="119" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">Rotating proxies</text>
+  <text x="185" y="119" text-anchor="end" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">€30–200/mo</text>
+
+  <rect x="25" y="131" width="175" height="24" rx="6" fill="rgba(244,63,94,0.08)" opacity="0"><animate attributeName="opacity" values="0;1" dur="2s" fill="freeze"/></rect>
+  <text x="35" y="147" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">DevOps time</text>
+  <text x="185" y="147" text-anchor="end" fill="#f43f5e" font-size="9" font-family="sans-serif" font-weight="600">€5k–15k/mo</text>
+
+  <line x1="25" y1="165" x2="200" y2="165" stroke="rgba(244,63,94,0.1)" stroke-width="0.5"/>
+  <text x="35" y="182" fill="rgba(255,255,255,0.6)" font-size="9" font-family="sans-serif" font-weight="600">Total</text>
+  <text x="185" y="182" text-anchor="end" fill="#f43f5e" font-size="14" font-family="sans-serif" font-weight="700" opacity="0"><animate attributeName="opacity" values="0;1" dur="2.5s" fill="freeze"/>€280–1.2k/mo</text>
+
+  <!-- VS badge -->
+  <circle cx="220" cy="145" r="14" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1">
+    <animate attributeName="r" values="14;16;14" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <text x="220" y="150" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="11" font-family="sans-serif" font-weight="700">VS</text>
+
+  <!-- deepscrape column -->
+  <rect x="230" y="45" width="195" height="200" rx="10" fill="rgba(6,182,212,0.04)" stroke="rgba(6,182,212,0.2)" stroke-width="1" opacity="0"><animate attributeName="opacity" values="0;1" dur="1.5s" fill="freeze"/></rect>
+  <text x="327" y="65" text-anchor="middle" fill="#06b6d4" font-size="10" font-family="sans-serif" font-weight="600" opacity="0"><animate attributeName="opacity" values="0;1" dur="1.8s" fill="freeze"/>deepscrape</text>
+
+  <rect x="240" y="75" width="175" height="24" rx="6" fill="rgba(6,182,212,0.06)" opacity="0"><animate attributeName="opacity" values="0;1" dur="2s" fill="freeze"/></rect>
+  <text x="250" y="91" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">Free plan</text>
+  <text x="400" y="91" text-anchor="end" fill="#22c55e" font-size="9" font-family="sans-serif" font-weight="600">€0</text>
+
+  <rect x="240" y="103" width="175" height="24" rx="6" fill="rgba(6,182,212,0.06)" opacity="0"><animate attributeName="opacity" values="0;1" dur="2.3s" fill="freeze"/></rect>
+  <text x="250" y="119" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">Starter</text>
+  <text x="400" y="119" text-anchor="end" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">€9.99/mo</text>
+
+  <rect x="240" y="131" width="175" height="24" rx="6" fill="rgba(6,182,212,0.06)" opacity="0"><animate attributeName="opacity" values="0;1" dur="2.6s" fill="freeze"/></rect>
+  <text x="250" y="147" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">Pro</text>
+  <text x="400" y="147" text-anchor="end" fill="rgba(255,255,255,0.5)" font-size="9" font-family="sans-serif">€19.99/mo</text>
+
+  <line x1="240" y1="165" x2="415" y2="165" stroke="rgba(6,182,212,0.1)" stroke-width="0.5"/>
+
+  <!-- Save badge -->
+  <rect x="260" y="172" width="136" height="22" rx="11" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.2)" stroke-width="0.5" opacity="0"><animate attributeName="opacity" values="0;1" dur="3s" fill="freeze"/></rect>
+  <text x="327" y="187" text-anchor="middle" fill="#22c55e" font-size="9" font-family="sans-serif" font-weight="600">Save 60–80%</text>
+
+  <!-- Checkmark features -->
+  <rect x="240" y="200" width="175" height="16" rx="4" fill="rgba(255,255,255,0.02)" opacity="0"><animate attributeName="opacity" values="0;1" dur="3.3s" fill="freeze"/></rect>
+  <text x="250" y="212" fill="rgba(255,255,255,0.3)" font-size="7" font-family="sans-serif">✓ No DevOps · ✓ Auto-scaling · ✓ Support</text>
+
+  <rect x="240" y="220" width="175" height="16" rx="4" fill="rgba(255,255,255,0.02)" opacity="0"><animate attributeName="opacity" values="0;1" dur="3.6s" fill="freeze"/></rect>
+  <text x="250" y="232" fill="rgba(255,255,255,0.3)" font-size="7" font-family="sans-serif">✓ Anti-detection · ✓ Global pool</text>
+</svg>

@@ -12,10 +12,12 @@ import { getErrorLabel, getOffsetTop, setBrowserTypeList } from 'src/app/core/fu
 import { FormControlPipe } from 'src/app/core/pipes';
 import { CartService, PackService, ScrollService, SnackbarService, WindowToken } from 'src/app/core/services';
 import { BrowserConfig, BrowserProfile, Cookies, Headers, ProxyConfig, DropDownOption } from 'src/app/core/types';
+import { listStaggerAnimation } from 'src/app/animations';
 
 @Component({
   selector: 'app-browser-config',
   imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe, DropdownComponent, MatProgressSpinner],
+  animations: [listStaggerAnimation],
   templateUrl: './browser-config.component.html',
   styleUrl: './browser-config.component.scss'
 })

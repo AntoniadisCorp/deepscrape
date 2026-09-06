@@ -1,13 +1,26 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
-import { FirestoreService } from '../../core/services';
+import { FirestoreService, FirestoreAnalyticsService } from '../../core/services';
+import { AnalyticsRangeService } from '../../core/services/analytics-range.service';
+import {
+    mapSessionRecordToDisplaySession,
+    resolveSessionIdFromRecord,
+    getSessionNetworkSummary,
+    getSessionProxySummary,
+    getSessionRiskLabel,
+    getSessionRiskLevel,
+    getSessionRiskReason,
+    getSessionRiskTone,
+} from 'src/app/core/functions';
 import { LucideAngularModule } from 'lucide-angular';
 import { myIcons } from '../../shared/lucideicons';
 import { RouterLink } from '@angular/router';
 import { DropdownComponent } from 'src/app/core/components/dropdown/dropdown.component';
+import { SessionDisplayInfo } from 'src/app/core/types';
+import { firstValueFrom, Subscription } from 'rxjs';
 
 interface DayActivity {
     date: string;
@@ -16,16 +29,96 @@ interface DayActivity {
     trend: number;
 }
 
+interface DailyBreakdownItem {
+    date: string;
+    totalLogins?: number;
+    newGuests?: number;
+    newUsers?: number;
+    guestConversions?: number;
+    conversionRate?: number;
+    byOS?: Record<string, number>;
+    byCountry?: Record<string, number>;
+    byBrowser?: Record<string, number>;
+    byDevice?: Record<string, number>;
+    byTimezone?: Record<string, number>;
+    byProvider?: Record<string, number>;
+    hour?: number;
+}
+
+interface Dashboard {
+    totalGuests?: number;
+    totalUsers?: number;
+    totalLogins?: number;
+    guestConversions?: number;
+    conversionRate?: number;
+    activeUsersNow?: number;
+    activeUsers?: number;
+    activeGuestsNow?: number;
+    activeGuests?: number;
+    onlineNow?: number;
+    online?: number;
+    topProviders?: Record<string, number>;
+    topCountries?: Record<string, number>;
+    topBrowsers?: Record<string, number>;
+    topDevices?: Record<string, number>;
+    topOperatingSystems?: Record<string, number>;
+    topOS?: Record<string, number>;
+    // Raw dimension breakdowns (written by real-time triggers; top* variants only by backfill)
+    byCountry?: Record<string, number>;
+    byBrowser?: Record<string, number>;
+    byDevice?: Record<string, number>;
+    byOS?: Record<string, number>;
+    byTimezone?: Record<string, number>;
+    byProvider?: Record<string, number>;
+    byRegion?: Record<string, number>;
+    byLanguage?: Record<string, number>;
+    byIP?: Record<string, number>;
+}
+
+interface RangeMetrics {
+    totalGuests?: number;
+    newGuests?: number;
+    totalUsers?: number;
+    newUsers?: number;
+    totalLogins?: number;
+    logins?: number;
+    guestConversions?: number;
+    registeredGuests?: number;
+    conversions?: number;
+    conversionRate?: number;
+    activeUsersNow?: number;
+    activeUsers?: number;
+    activeGuestsNow?: number;
+    activeGuests?: number;
+    onlineNow?: number;
+    online?: number;
+    startDate?: string | Date;
+    endDate?: string | Date;
+    dailyBreakdown?: DailyBreakdownItem[];
+    byOS?: Record<string, number>;
+    byCountry?: Record<string, number>;
+    byBrowser?: Record<string, number>;
+    byDevice?: Record<string, number>;
+    byTimezone?: Record<string, number>;
+    byProvider?: Record<string, number>;
+    byRegion?: Record<string, number>;
+    byLanguage?: Record<string, number>;
+    byIP?: Record<string, number>;
+}
+
 type AnalyticsPeriod = 'last-30m' | 'last-1h' | 'last-24h' | 'last-7d' | 'last-30d' | 'last-90d' | 'custom';
 
 @Component({
     selector: 'app-admin-analytics',
     imports: [BaseChartDirective, DecimalPipe, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent],
     templateUrl: './admin-analytics.component.html',
-    styleUrls: ['./admin-analytics.component.scss']
+    styleUrls: ['./admin-analytics.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AdminAnalyticsComponent implements OnInit {
+export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     private firestoreService = inject(FirestoreService);
+    private analyticsRangeService = inject(AnalyticsRangeService);
+    private firestoreAnalyticsService = inject(FirestoreAnalyticsService);
     private cdr = inject(ChangeDetectorRef);
 
     // Data properties
@@ -45,13 +138,25 @@ export class AdminAnalyticsComponent implements OnInit {
     Math = Math;
     readonly icons = myIcons;
     displayPeriodDays = 7;
+    adminSessionTargetUserId = '';
+    adminSessionsLoading = false;
+    adminSessionsError: string | null = null;
+    adminSessionLimit = 25;
+    adminActiveOnly = true;
+    adminSessions: SessionDisplayInfo[] = [];
+    revokingAdminSessionId = '';
 
     // Caching for performance optimization
     private cacheTimestamp: number | null = null;
     private cachedPeriodKey: string | null = null;
     private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-    private cachedDashboard: any = null;
-    private cachedRangeMetrics: any = null;
+    private cachedDashboard: Dashboard | null = null;
+    private cachedRangeMetrics: RangeMetrics | null = null;
+
+    // Real-time tracking
+    realtimeIndicator = false;
+    showRangeMissingBanner = false;
+    private realtimeSubscriptions: Subscription[] = [];
 
     // Filter state
     selectedPeriod: AnalyticsPeriod = 'last-7d';
@@ -81,8 +186,8 @@ export class AdminAnalyticsComponent implements OnInit {
         datasets: [{
             label: 'Logins',
             data: [],
-            borderColor: '#6366F1',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderColor: '#0F766E',
+            backgroundColor: 'rgba(15, 118, 110, 0.12)',
             fill: true,
             tension: 0.4
         }]
@@ -107,7 +212,7 @@ export class AdminAnalyticsComponent implements OnInit {
             {
                 label: 'Guests',
                 data: [],
-                backgroundColor: '#42A5F5'
+                backgroundColor: '#10B981'
             },
             {
                 label: 'Authenticated',
@@ -131,7 +236,7 @@ export class AdminAnalyticsComponent implements OnInit {
         labels: ['Guests', 'Authenticated Users'],
         datasets: [{
             data: [0, 0],
-            backgroundColor: ['#42A5F5', '#66BB6A'],
+            backgroundColor: ['#10B981', '#66BB6A'],
             borderWidth: 2,
             borderColor: '#fff'
         }]
@@ -147,7 +252,7 @@ export class AdminAnalyticsComponent implements OnInit {
         labels: ['Email/Password', 'Google', 'GitHub', 'Phone'],
         datasets: [{
             data: [45, 30, 20, 5],
-            backgroundColor: ['#6366F1', '#EC4899', '#F59E0B', '#10B981'],
+            backgroundColor: ['#0F766E', '#EC4899', '#F59E0B', '#10B981'],
             borderWidth: 2,
             borderColor: '#fff'
         }]
@@ -164,12 +269,12 @@ export class AdminAnalyticsComponent implements OnInit {
         datasets: [{
             label: 'Activity',
             data: [10, 5, 25, 40, 35, 20],
-            backgroundColor: 'rgba(99, 102, 241, 0.2)',
-            borderColor: '#6366F1',
-            pointBackgroundColor: '#6366F1',
+            backgroundColor: 'rgba(15, 118, 110, 0.2)',
+            borderColor: '#0F766E',
+            pointBackgroundColor: '#0F766E',
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#6366F1'
+            pointHoverBorderColor: '#0F766E'
         }]
     };
     public radarChartOptions: ChartConfiguration<'radar'>['options'] = {
@@ -203,7 +308,7 @@ export class AdminAnalyticsComponent implements OnInit {
                     label: (context) => {
                         const label = context.label || '';
                         const value = context.parsed || 0;
-                        const total = context.dataset.data.reduce((a: any, b: any) => a + b, 0);
+                        const total = context.dataset.data.reduce((a: number | string, b: number | string) => Number(a) + Number(b), 0);
                         const percentage = ((value / total) * 100).toFixed(1);
                         return `${label}: ${value} (${percentage}%)`;
                     }
@@ -219,7 +324,7 @@ export class AdminAnalyticsComponent implements OnInit {
         datasets: [{
             label: 'Guests by Country',
             data: [],
-            backgroundColor: '#3B82F6',
+            backgroundColor: '#14B8A6',
             borderRadius: 6
         }]
     };
@@ -240,7 +345,7 @@ export class AdminAnalyticsComponent implements OnInit {
         labels: [],
         datasets: [{
             data: [],
-            backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
+            backgroundColor: ['#14B8A6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
             borderWidth: 2,
             borderColor: '#fff'
         }]
@@ -257,7 +362,7 @@ export class AdminAnalyticsComponent implements OnInit {
         labels: [],
         datasets: [{
             data: [],
-            backgroundColor: ['#6366F1', '#EC4899', '#10B981', '#F59E0B'],
+            backgroundColor: ['#0F766E', '#EC4899', '#10B981', '#F59E0B'],
             borderWidth: 2,
             borderColor: '#fff'
         }]
@@ -296,7 +401,7 @@ export class AdminAnalyticsComponent implements OnInit {
         datasets: [{
             label: 'Timezones',
             data: [],
-            backgroundColor: '#0EA5E9',
+            backgroundColor: '#22C55E',
             borderRadius: 6
         }]
     };
@@ -311,6 +416,67 @@ export class AdminAnalyticsComponent implements OnInit {
         }
     };
     public guestTimezoneChartType = 'bar' as const;
+
+    // ✨ NEW: Region Distribution (horizontal bar)
+    public regionChartData: ChartData<'bar'> = {
+        labels: [],
+        datasets: [{
+            label: 'Guests by Region',
+            data: [],
+            backgroundColor: '#06B6D4',
+            borderRadius: 6
+        }]
+    };
+    public regionChartOptions: ChartConfiguration<'bar'>['options'] = {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+            y: { grid: { display: false } }
+        }
+    };
+    public regionChartType = 'bar' as const;
+
+    // ✨ NEW: Language Distribution (pie)
+    public languageChartData: ChartData<'pie'> = {
+        labels: [],
+        datasets: [{
+            data: [],
+            backgroundColor: ['#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#3B82F6', '#84CC16'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    };
+    public languageChartOptions: ChartConfiguration<'pie'>['options'] = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'right' } }
+    };
+    public languageChartType = 'pie' as const;
+
+    // ✨ NEW: Top IP Addresses (horizontal bar)
+    public topIPsChartData: ChartData<'bar'> = {
+        labels: [],
+        datasets: [{
+            label: 'Connections',
+            data: [],
+            backgroundColor: '#F43F5E',
+            borderRadius: 6
+        }]
+    };
+    public topIPsChartOptions: ChartConfiguration<'bar'>['options'] = {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+            y: { grid: { display: false } }
+        }
+    };
+    public topIPsChartType = 'bar' as const;
 
     // Guest Activity Over Time
     public guestActivityChartData: ChartData<'line'> = {
@@ -344,6 +510,11 @@ export class AdminAnalyticsComponent implements OnInit {
 
     ngOnInit(): void {
         void this.initializeAnalytics();
+        this.setupRealtimeSubscriptions();
+    }
+
+    ngOnDestroy(): void {
+        this.teardownRealtimeSubscriptions();
     }
 
     private async initializeAnalytics(): Promise<void> {
@@ -372,12 +543,14 @@ export class AdminAnalyticsComponent implements OnInit {
         // Return cached data if still fresh
         if (!forceRefresh && this.isCacheValid(now) && this.cachedPeriodKey === periodKey) {
             console.log('✅ Using cached analytics data');
-            this.updateChartsFromOptimizedData(this.cachedDashboard, this.cachedRangeMetrics);
+            if (this.cachedDashboard && this.cachedRangeMetrics) {
+                this.updateChartsFromOptimizedData(this.cachedDashboard, this.cachedRangeMetrics);
+            }
             return;
         }
 
         // ✅ OPTIMIZED: Fetch pre-aggregated dashboard summary (1 read instead of 3+)
-        const dashboardSummary = await this.firestoreService.getDashboardSummary();
+        const dashboardSummary = await this.analyticsRangeService.getDashboardSummary();
 
         if (!dashboardSummary) {
             console.warn('⚠️ Dashboard summary not available, falling back to legacy queries');
@@ -402,6 +575,10 @@ export class AdminAnalyticsComponent implements OnInit {
 
         // Get time-series data for charts based on selected period
         const rangeMetrics = await this.resolveMetricsForSelectedPeriod();
+
+        // Track whether pre-computed range data was available (for info banner)
+        this.showRangeMissingBanner = !rangeMetrics && this.selectedPeriod !== 'last-7d'
+            && this.selectedPeriod !== 'last-30m' && this.selectedPeriod !== 'last-1h' && this.selectedPeriod !== 'last-24h';
 
         if (rangeMetrics) {
             this.totalLogins = rangeMetrics.totalLogins ?? this.totalLogins;
@@ -437,6 +614,53 @@ export class AdminAnalyticsComponent implements OnInit {
         }
     }
 
+    private setupRealtimeSubscriptions(): void {
+        // Subscribe to real-time dashboard updates from FirestoreAnalyticsService
+        const dashSub = this.firestoreAnalyticsService.watchDashboard().subscribe({
+            next: (summary) => {
+                if (!summary) { return; }
+                // Update live counters without invalidating chart cache
+                this.activeUsersNow = summary.activeUsersNow ?? this.activeUsersNow;
+                this.activeGuestsNow = summary.activeGuestsNow ?? this.activeGuestsNow;
+                this.onlineNow = summary.onlineNow ?? (this.activeUsersNow + this.activeGuestsNow);
+                this.totalLogins = summary.totalLogins ?? this.totalLogins;
+
+                // Flash real-time indicator
+                this.realtimeIndicator = true;
+                setTimeout(() => {
+                    this.realtimeIndicator = false;
+                    this.renderNow();
+                }, 2000);
+
+                this.renderNow();
+            },
+            error: (err) => console.error('Real-time dashboard subscription error:', err),
+        });
+        this.realtimeSubscriptions.push(dashSub);
+
+        // Subscribe to generic real-time updates stream for live indicator
+        const updateSub = this.firestoreAnalyticsService.watchRealtimeUpdates().subscribe({
+            next: (update) => {
+                if (update) {
+                    this.realtimeIndicator = true;
+                    setTimeout(() => {
+                        this.realtimeIndicator = false;
+                        this.renderNow();
+                    }, 2000);
+                }
+            },
+            error: (err) => console.error('Real-time update stream error:', err),
+        });
+        this.realtimeSubscriptions.push(updateSub);
+    }
+
+    private teardownRealtimeSubscriptions(): void {
+        for (const sub of this.realtimeSubscriptions) {
+            sub.unsubscribe();
+        }
+        this.realtimeSubscriptions = [];
+    }
+
     private renderNow(): void {
         this.cdr.detectChanges();
     }
@@ -452,18 +676,140 @@ export class AdminAnalyticsComponent implements OnInit {
         await this.refreshData();
     }
 
+    async loadAdminSessions(): Promise<void> {
+        const targetUserId = this.adminSessionTargetUserId.trim();
+        if (!targetUserId) {
+            this.adminSessionsError = 'Target user ID is required';
+            this.adminSessions = [];
+            this.renderNow();
+            return;
+        }
+
+        this.adminSessionsLoading = true;
+        this.adminSessionsError = null;
+        this.renderNow();
+
+        try {
+            const response = await firstValueFrom(
+                this.analyticsRangeService.getUserLoginSessionsByAdmin(
+                    targetUserId,
+                    this.adminSessionLimit,
+                    this.adminActiveOnly,
+                ),
+            );
+
+            const sessions = Array.isArray(response?.sessions) ? response.sessions : [];
+            this.adminSessions = sessions.map((s: any) =>
+                mapSessionRecordToDisplaySession(s, {
+                    defaultUserId: targetUserId,
+                    currentSessionId: '',
+                }),
+            );
+        } catch (error) {
+            console.error('Failed to load admin sessions:', error);
+            this.adminSessions = [];
+            this.adminSessionsError = 'Failed to load sessions for this user';
+        } finally {
+            this.adminSessionsLoading = false;
+            this.renderNow();
+        }
+    }
+
+    async revokeAdminSession(session: SessionDisplayInfo): Promise<void> {
+        const loginId = resolveSessionIdFromRecord(session);
+        if (!loginId || this.revokingAdminSessionId) {
+            return;
+        }
+
+        this.revokingAdminSessionId = loginId;
+        this.renderNow();
+
+        try {
+            await firstValueFrom(
+                this.analyticsRangeService.revokeUserLoginSessionByAdmin(
+                    loginId,
+                    'admin_security_review',
+                ),
+            );
+
+            await this.loadAdminSessions();
+        } catch (error) {
+            console.error('Failed to revoke admin session:', error);
+            this.adminSessionsError = 'Failed to revoke session';
+        } finally {
+            this.revokingAdminSessionId = '';
+            this.renderNow();
+        }
+    }
+
+    getAdminSessionRiskLevel(session: SessionDisplayInfo): 'pending' | 'low' | 'medium' | 'high' {
+        return getSessionRiskLevel(session);
+    }
+
+    getAdminSessionRiskTone(session: SessionDisplayInfo): string {
+        return getSessionRiskTone(session);
+    }
+
+    getAdminSessionRiskLabel(session: SessionDisplayInfo): string {
+        return getSessionRiskLabel(session);
+    }
+
+    getAdminSessionRiskReason(session: SessionDisplayInfo): string {
+        return getSessionRiskReason(session);
+    }
+
+    getAdminSessionNetworkSummary(session: SessionDisplayInfo): string {
+        return getSessionNetworkSummary(session);
+    }
+
+    getAdminSessionProxySummary(session: SessionDisplayInfo): string {
+        return getSessionProxySummary(session);
+    }
+
+    getAdminDisplayBrowser(session: SessionDisplayInfo): string {
+        const explicit = (session.browser || '').trim();
+        if (explicit && explicit.toLowerCase() !== 'unknown') {
+            return explicit;
+        }
+
+        return this.detectBrowserFromUserAgent(session.userAgent || '');
+    }
+
+    getAdminDisplayOS(session: SessionDisplayInfo): string {
+        const explicit = (session.os || '').trim();
+        if (explicit && explicit.toLowerCase() !== 'unknown') {
+            return explicit;
+        }
+
+        return this.detectOsFromUserAgent(session.userAgent || '');
+    }
+
+    canRevokeAdminSession(session: SessionDisplayInfo): boolean {
+        const connected = (session as any)?.connected ?? session.active;
+        const revokedAt = (session as any)?.revokedAt ?? session.revokedAt;
+        const signOutTime = (session as any)?.signOutTime ?? null;
+        return connected === true && !revokedAt && !signOutTime;
+    }
+
+    formatAdminSessionTimestamp(session: SessionDisplayInfo): string {
+        if (session.humanReadableTime && session.humanReadableTime !== 'Unknown time') {
+            return session.humanReadableTime;
+        }
+        return String(session.createdAt ? new Date(session.createdAt).toLocaleString() : 'Unknown time');
+    }
+
     private isCacheValid(now: number): boolean {
         return this.cacheTimestamp !== null &&
                (now - this.cacheTimestamp) < this.CACHE_TTL_MS &&
                this.cachedDashboard !== null;
     }
 
-    private updateChartsFromOptimizedData(dashboard: any, rangeMetrics: any) {
+    private updateChartsFromOptimizedData(dashboard: Dashboard, rangeMetrics: RangeMetrics) {
         this.applyDisplayMetrics(dashboard, rangeMetrics);
 
         // Extract daily breakdown for time-series charts
         const dailyData = rangeMetrics?.dailyBreakdown || [];
-        const labels = dailyData.map((day: any) => {
+        const labels = dailyData.map((day: DailyBreakdownItem) => {
             const parsed = new Date(day.date);
             if (Number.isNaN(parsed.getTime())) {
                 return String(day.date);
@@ -473,9 +819,9 @@ export class AdminAnalyticsComponent implements OnInit {
                 { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' } :
                 { month: 'short', day: 'numeric' });
         });
-        const loginData = dailyData.map((day: any) => day.totalLogins || 0);
-        const newGuestsData = dailyData.map((day: any) => day.newGuests || 0);
-        const newUsersData = dailyData.map((day: any) => day.newUsers || 0);
+        const loginData = dailyData.map((day: DailyBreakdownItem) => day.totalLogins || 0);
+        const newGuestsData = dailyData.map((day: DailyBreakdownItem) => day.newGuests || 0);
+        const newUsersData = dailyData.map((day: DailyBreakdownItem) => day.newUsers || 0);
 
         // Update Line Chart - Login Trend
         this.lineChartData = {
@@ -483,8 +829,8 @@ export class AdminAnalyticsComponent implements OnInit {
             datasets: [{
                 label: 'Logins',
                 data: loginData,
-                borderColor: '#6366F1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderColor: '#0F766E',
+                backgroundColor: 'rgba(15, 118, 110, 0.12)',
                 fill: true,
                 tension: 0.4
             }]
@@ -497,7 +843,7 @@ export class AdminAnalyticsComponent implements OnInit {
                 {
                     label: 'Guests',
                     data: newGuestsData,
-                    backgroundColor: '#42A5F5'
+                    backgroundColor: '#10B981'
                 },
                 {
                     label: 'Authenticated',
@@ -512,15 +858,24 @@ export class AdminAnalyticsComponent implements OnInit {
             labels: ['Guests', 'Authenticated Users'],
             datasets: [{
                 data: [this.guestCount, this.userCount],
-                backgroundColor: ['#42A5F5', '#66BB6A'],
+                backgroundColor: ['#10B981', '#66BB6A'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
         };
 
         // Login methods (providers)
+        // Range metrics have byProvider from scheduled computeRangeMetrics,
+        // dashboard.topProviders from backfill, dashboard.byProvider from
+        // real-time onLoginEvent trigger. Try each in priority order.
         const providerEntries = this.getTopDimensionEntries(
-            rangeMetrics?.byProvider ?? dashboard.topProviders ?? {},
+            (rangeMetrics?.byProvider && Object.keys(rangeMetrics.byProvider).length > 0)
+                ? rangeMetrics.byProvider
+                : (dashboard.topProviders && Object.keys(dashboard.topProviders).length > 0)
+                ? dashboard.topProviders
+                : (dashboard.byProvider && Object.keys(dashboard.byProvider).length > 0)
+                ? dashboard.byProvider
+                : {},
             8,
             'unknown',
         );
@@ -528,7 +883,7 @@ export class AdminAnalyticsComponent implements OnInit {
             labels: providerEntries.map(([provider]) => provider),
             datasets: [{
                 data: providerEntries.map(([, count]) => count),
-                backgroundColor: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#14B8A6', '#F43F5E'],
+                backgroundColor: ['#0F766E', '#EC4899', '#F59E0B', '#10B981', '#14B8A6', '#8B5CF6', '#14B8A6', '#F43F5E'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
@@ -557,7 +912,7 @@ export class AdminAnalyticsComponent implements OnInit {
             datasets: [{
                 label: 'Guests by Country',
                 data: topCountries.map(([, count]) => count),
-                backgroundColor: '#3B82F6',
+                backgroundColor: '#14B8A6',
                 borderRadius: 6
             }]
         };
@@ -572,7 +927,7 @@ export class AdminAnalyticsComponent implements OnInit {
             labels: topBrowsers.map(([browser]) => browser),
             datasets: [{
                 data: topBrowsers.map(([, count]) => count),
-                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
+                backgroundColor: ['#14B8A6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
@@ -588,7 +943,7 @@ export class AdminAnalyticsComponent implements OnInit {
             labels: topDevices.map(([device]) => device),
             datasets: [{
                 data: topDevices.map(([, count]) => count),
-                backgroundColor: ['#6366F1', '#EC4899', '#10B981', '#F59E0B'],
+                backgroundColor: ['#0F766E', '#EC4899', '#10B981', '#F59E0B'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
@@ -623,7 +978,59 @@ export class AdminAnalyticsComponent implements OnInit {
             datasets: [{
                 label: 'Timezones',
                 data: timezoneEntries.map(([, count]) => count),
-                backgroundColor: '#0EA5E9',
+                backgroundColor: '#22C55E',
+                borderRadius: 6,
+            }],
+        };
+
+        // ✨ NEW: Region Distribution (from range metrics with dashboard fallback)
+        const regionEntries = this.getTopDimensionEntries(
+            rangeMetrics?.byRegion ?? dashboard.byRegion ?? {},
+            10,
+            'Unknown Region',
+        );
+        this.regionChartData = {
+            labels: regionEntries.map(([region]) => region),
+            datasets: [{
+                label: 'Guests by Region',
+                data: regionEntries.map(([, count]) => count),
+                backgroundColor: '#06B6D4',
+                borderRadius: 6,
+            }],
+        };
+
+        // ✨ NEW: Language Distribution (from range metrics with dashboard fallback)
+        const languageEntries = this.getTopDimensionEntries(
+            rangeMetrics?.byLanguage ?? dashboard.byLanguage ?? {},
+            10,
+            'Unknown Language',
+        );
+        this.languageChartData = {
+            labels: languageEntries.map(([lang]) => lang),
+            datasets: [{
+                data: languageEntries.map(([, count]) => count),
+                backgroundColor: ['#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#3B82F6', '#84CC16'],
+                borderWidth: 2,
+                borderColor: '#fff',
+            }],
+        };
+
+        // ✨ NEW: Top IP Addresses (from range metrics with dashboard fallback)
+        const ipEntries = this.getTopDimensionEntries(
+            (rangeMetrics?.byIP && Object.keys(rangeMetrics.byIP).length > 0)
+                ? rangeMetrics.byIP
+                : (dashboard.byIP && Object.keys(dashboard.byIP).length > 0)
+                ? dashboard.byIP
+                : {},
+            15,
+            'Unknown IP',
+        );
+        this.topIPsChartData = {
+            labels: ipEntries.map(([ip]) => ip),
+            datasets: [{
+                label: 'Connections',
+                data: ipEntries.map(([, count]) => count),
+                backgroundColor: '#F43F5E',
                 borderRadius: 6,
             }],
         };
@@ -642,7 +1049,7 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Generate recent activity data
-        this.recentActivity = dailyData.slice(-7).map((day: any) => ({
+        this.recentActivity = dailyData.slice(-7).map((day: DailyBreakdownItem) => ({
             date: new Date(day.date).toLocaleDateString(),
             logins: day.totalLogins || 0,
             newUsers: day.newUsers || 0,
@@ -652,20 +1059,21 @@ export class AdminAnalyticsComponent implements OnInit {
         this.renderNow();
     }
 
-    private applyDisplayMetrics(dashboard: any, rangeMetrics: any): void {
+    private applyDisplayMetrics(dashboard: Dashboard, rangeMetrics: RangeMetrics): void {
         const dailyBreakdown = Array.isArray(rangeMetrics?.dailyBreakdown) ? rangeMetrics.dailyBreakdown : [];
 
-        const getNumber = (value: any): number | null => {
+        const getNumber = (value: unknown): number | null => {
             const parsed = Number(value);
             return Number.isFinite(parsed) ? parsed : null;
         };
 
-        const firstNumber = (source: any, keys: string[]): number | null => {
+        const firstNumber = (source: Dashboard | RangeMetrics | null, keys: string[]): number | null => {
             if (!source) {
                 return null;
             }
+            const sourceAsRecord = source as Record<string, unknown>;
             for (const key of keys) {
-                const value = getNumber(source[key]);
+                const value = getNumber(sourceAsRecord[key]);
                 if (value !== null) {
                     return value;
                 }
@@ -674,7 +1082,7 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         const sumDaily = (key: string): number =>
-            dailyBreakdown.reduce((sum: number, row: any) => sum + Number(row?.[key] || 0), 0);
+            dailyBreakdown.reduce((sum: number, row: DailyBreakdownItem) => sum + Number((row as unknown as Record<string, unknown>)?.[key] || 0), 0);
 
         const periodGuests =
             firstNumber(rangeMetrics, ['totalGuests', 'newGuests'])
@@ -734,7 +1142,7 @@ export class AdminAnalyticsComponent implements OnInit {
         this.displayPeriodDays = this.resolvePeriodDays(rangeMetrics);
     }
 
-    private resolvePeriodDays(rangeMetrics: any): number {
+    private resolvePeriodDays(rangeMetrics: RangeMetrics): number {
         const start = new Date(rangeMetrics?.startDate ?? '');
         const end = new Date(rangeMetrics?.endDate ?? '');
         if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
@@ -759,162 +1167,11 @@ export class AdminAnalyticsComponent implements OnInit {
     }
 
     private async resolveMetricsForSelectedPeriod(): Promise<any> {
-        switch (this.selectedPeriod) {
-            case 'last-7d':
-            case 'last-30d':
-            case 'last-90d':
-                return this.firestoreService.getRangeMetrics(this.selectedPeriod);
-            case 'last-24h':
-                return this.buildHourlyRangeMetrics(24, 'last-24h');
-            case 'last-1h':
-                return this.buildHourlyRangeMetrics(1, 'last-1h');
-            case 'last-30m':
-                return this.buildHourlyRangeMetrics(1, 'last-30m');
-            case 'custom':
-                return this.buildCustomDateRangeMetrics();
-            default:
-                return this.firestoreService.getRangeMetrics('last-7d');
-        }
-    }
-
-    private async buildCustomDateRangeMetrics(): Promise<any> {
-        if (!this.customStartDate || !this.customEndDate) {
-            return this.firestoreService.getRangeMetrics('last-7d');
-        }
-
-        const rows = await this.firestoreService.getMetricsByDateRange(this.customStartDate, this.customEndDate);
-        const sorted = [...rows].sort((a: any, b: any) => String(a.date || '').localeCompare(String(b.date || '')));
-
-        const byOS: Record<string, number> = {};
-        const byCountry: Record<string, number> = {};
-        const byBrowser: Record<string, number> = {};
-        const byDevice: Record<string, number> = {};
-        const byTimezone: Record<string, number> = {};
-        const byProvider: Record<string, number> = {};
-
-        let totalGuests = 0;
-        let totalUsers = 0;
-        let totalLogins = 0;
-        let guestConversions = 0;
-
-        for (const row of sorted) {
-            totalGuests += Number(row.newGuests || 0);
-            totalUsers += Number(row.newUsers || 0);
-            totalLogins += Number(row.totalLogins || 0);
-            guestConversions += Number(row.guestConversions || 0);
-
-            Object.entries((row.byOS || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k);
-                byOS[normalized] = (byOS[normalized] || 0) + Number(v || 0);
-            });
-            Object.entries((row.byCountry || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Country');
-                byCountry[normalized] = (byCountry[normalized] || 0) + Number(v || 0)
-            });
-            Object.entries((row.byBrowser || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Browser');
-                byBrowser[normalized] = (byBrowser[normalized] || 0) + Number(v || 0)
-            });
-            Object.entries((row.byDevice || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Device');
-                byDevice[normalized] = (byDevice[normalized] || 0) + Number(v || 0)
-            });
-            Object.entries((row.byTimezone || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Timezone');
-                byTimezone[normalized] = (byTimezone[normalized] || 0) + Number(v || 0)
-            });
-            Object.entries((row.byProvider || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'unknown');
-                byProvider[normalized] = (byProvider[normalized] || 0) + Number(v || 0)
-            });
-        }
-
-        return {
-            rangeId: 'custom',
-            startDate: this.customStartDate,
-            endDate: this.customEndDate,
-            totalGuests,
-            totalUsers,
-            totalLogins,
-            guestConversions,
-            conversionRate: totalGuests > 0 ? Math.round((guestConversions / totalGuests) * 100) : 0,
-            byOS,
-            byCountry,
-            byBrowser,
-            byDevice,
-            byTimezone,
-            byProvider,
-            dailyBreakdown: sorted.map((row: any) => ({
-                date: row.date,
-                newGuests: Number(row.newGuests || 0),
-                newUsers: Number(row.newUsers || 0),
-                totalLogins: Number(row.totalLogins || 0),
-                guestConversions: Number(row.guestConversions || 0),
-                conversionRate: Number(row.conversionRate || 0),
-            })),
-        };
-    }
-
-    private async buildHourlyRangeMetrics(hours: number, rangeId: string): Promise<any> {
-        const end = new Date();
-        const start = new Date(end.getTime() - (hours * 60 * 60 * 1000));
-
-        const rows = await this.firestoreService.getHourlyMetricsByDateTimeRange(
-            this.toDateTimeKey(start),
-            this.toDateTimeKey(end),
-        );
-
-        const totalGuests = rows.reduce((sum: number, row: any) => sum + Number(row.newGuests || 0), 0);
-        const totalUsers = rows.reduce((sum: number, row: any) => sum + Number(row.newUsers || 0), 0);
-        const totalLogins = rows.reduce((sum: number, row: any) => sum + Number(row.totalLogins || 0), 0);
-        const guestConversions = rows.reduce((sum: number, row: any) => sum + Number(row.guestConversions || 0), 0);
-
-        const byOS: Record<string, number> = {};
-        const byCountry: Record<string, number> = {};
-        const byBrowser: Record<string, number> = {};
-        const byDevice: Record<string, number> = {};
-
-        for (const row of rows) {
-            Object.entries((row.byOS || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown OS');
-                byOS[normalized] = (byOS[normalized] || 0) + Number(v || 0);
-            });
-            Object.entries((row.byCountry || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Country');
-                byCountry[normalized] = (byCountry[normalized] || 0) + Number(v || 0);
-            });
-            Object.entries((row.byBrowser || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Browser');
-                byBrowser[normalized] = (byBrowser[normalized] || 0) + Number(v || 0);
-            });
-            Object.entries((row.byDevice || {}) as Record<string, number>).forEach(([k, v]) => {
-                const normalized = this.normalizeDimensionKey(k, 'Unknown Device');
-                byDevice[normalized] = (byDevice[normalized] || 0) + Number(v || 0);
-            });
-        }
-
-        return {
-            rangeId,
-            startDate: start.toISOString(),
-            endDate: end.toISOString(),
-            totalGuests,
-            totalUsers,
-            totalLogins,
-            guestConversions,
-            conversionRate: totalGuests > 0 ? Math.round((guestConversions / totalGuests) * 100) : 0,
-            byOS,
-            byCountry,
-            byBrowser,
-            byDevice,
-            dailyBreakdown: rows.map((row: any) => ({
-                date: `${row.date}T${String(row.hour ?? 0).padStart(2, '0')}:00:00.000Z`,
-                newGuests: Number(row.newGuests || 0),
-                newUsers: Number(row.newUsers || 0),
-                totalLogins: Number(row.totalLogins || 0),
-                guestConversions: Number(row.guestConversions || 0),
-                conversionRate: Number(row.newGuests || 0) > 0 ? Math.round((Number(row.guestConversions || 0) / Number(row.newGuests || 0)) * 100) : 0,
-            })),
-        };
+        return this.analyticsRangeService.resolveRangeMetrics({
+            period: this.selectedPeriod,
+            customStartDate: this.customStartDate,
+            customEndDate: this.customEndDate,
+        });
     }
 
     private getPeriodCacheKey(): string {
@@ -924,18 +1181,30 @@ export class AdminAnalyticsComponent implements OnInit {
         return `custom:${this.customStartDate}:${this.customEndDate}`;
     }
 
-    private toDateTimeKey(date: Date): string {
-        const y = date.getUTCFullYear();
-        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const d = String(date.getUTCDate()).padStart(2, '0');
-        const h = String(date.getUTCHours()).padStart(2, '0');
-        return `${y}-${m}-${d}-${h}`;
-    }
-
     private getDateOffset(offsetDays: number): string {
         const date = new Date();
         date.setUTCDate(date.getUTCDate() + offsetDays);
         return date.toISOString().slice(0, 10);
+    }
+
+    private detectBrowserFromUserAgent(userAgent: string): string {
+        const ua = (userAgent || '').toLowerCase();
+        if (ua.includes('edg')) return 'Edge';
+        if (ua.includes('opr') || ua.includes('opera')) return 'Opera';
+        if (ua.includes('firefox')) return 'Firefox';
+        if (ua.includes('chrome') && !ua.includes('edg')) return 'Chrome';
+        if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
+        return 'Unknown browser';
+    }
+
+    private detectOsFromUserAgent(userAgent: string): string {
+        const ua = (userAgent || '').toLowerCase();
+        if (ua.includes('windows')) return 'Windows';
+        if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS';
+        if (ua.includes('android')) return 'Android';
+        if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS';
+        if (ua.includes('linux')) return 'Linux';
+        return 'Unknown OS';
     }
 
     /**
@@ -978,7 +1247,7 @@ export class AdminAnalyticsComponent implements OnInit {
     /**
      * Update charts using legacy data structure
      */
-    private updateChartsFromLegacyData(guestAnalytics: any, loginCountsByDay: any) {
+    private updateChartsFromLegacyData(guestAnalytics: Record<string, unknown>, loginCountsByDay: Record<string, unknown>) {
         // Prepare login chart data
         const labels = Object.keys(loginCountsByDay).map(date =>
             new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -991,8 +1260,8 @@ export class AdminAnalyticsComponent implements OnInit {
             datasets: [{
                 label: 'Logins',
                 data: loginData as number[],
-                borderColor: '#6366F1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderColor: '#0F766E',
+                backgroundColor: 'rgba(15, 118, 110, 0.12)',
                 fill: true,
                 tension: 0.4
             }]
@@ -1005,7 +1274,7 @@ export class AdminAnalyticsComponent implements OnInit {
                 {
                     label: 'Guests',
                     data: (loginData as number[]).map(val => Math.floor(val * 0.4)),
-                    backgroundColor: '#42A5F5'
+                    backgroundColor: '#10B981'
                 },
                 {
                     label: 'Authenticated',
@@ -1020,7 +1289,7 @@ export class AdminAnalyticsComponent implements OnInit {
             labels: ['Guests', 'Authenticated Users'],
             datasets: [{
                 data: [this.guestCount, this.userCount],
-                backgroundColor: ['#42A5F5', '#66BB6A'],
+                backgroundColor: ['#10B981', '#66BB6A'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
@@ -1038,64 +1307,65 @@ export class AdminAnalyticsComponent implements OnInit {
         };
 
         // Guest by Country Chart (Top 10)
-        const topCountries = Object.entries(guestAnalytics.byCountry)
-            .sort(([, a], [, b]) => (b as number) - (a as number))
+        const topCountries = Object.entries((guestAnalytics['byCountry'] as Record<string, number>) || {})
+            .sort(([, a], [, b]) => b - a)
             .slice(0, 10);
         this.guestCountryChartData = {
             labels: topCountries.map(([country]) => country),
             datasets: [{
                 label: 'Guests by Country',
-                data: topCountries.map(([, count]) => count as number),
-                backgroundColor: '#3B82F6',
+                data: topCountries.map(([, count]) => count),
+                backgroundColor: '#14B8A6',
                 borderRadius: 6
             }]
         };
 
         // Guest by Browser Chart
-        const browserEntries = Object.entries(guestAnalytics.byBrowser);
+        const browserEntries = Object.entries((guestAnalytics['byBrowser'] as Record<string, number>) || {});
         this.guestBrowserChartData = {
             labels: browserEntries.map(([browser]) => browser),
             datasets: [{
-                data: browserEntries.map(([, count]) => count as number),
-                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
+                data: browserEntries.map(([, count]) => count),
+                backgroundColor: ['#14B8A6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
         };
 
         // Guest by Device Chart
-        const deviceEntries = Object.entries(guestAnalytics.byDevice);
+        const deviceEntries = Object.entries((guestAnalytics['byDevice'] as Record<string, number>) || {});
         this.guestDeviceChartData = {
             labels: deviceEntries.map(([device]) => device),
             datasets: [{
-                data: deviceEntries.map(([, count]) => count as number),
-                backgroundColor: ['#6366F1', '#EC4899', '#10B981', '#F59E0B'],
+                data: deviceEntries.map(([, count]) => count),
+                backgroundColor: ['#0F766E', '#EC4899', '#10B981', '#F59E0B'],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
         };
 
         // Guest by OS Chart
-        const osEntries = this.getTopDimensionEntries(guestAnalytics.byOS, 10);
+        const osEntries = this.getTopDimensionEntries(guestAnalytics['byOS'], 10);
         this.guestOSChartData = {
             labels: osEntries.map(([os]) => os),
             datasets: [{
                 label: 'Operating Systems',
-                data: osEntries.map(([, count]) => count as number),
+                data: osEntries.map(([, count]) => count),
                 backgroundColor: '#8B5CF6',
                 borderRadius: 6
             }]
         };
 
         // Guest Activity Over Time Chart
-        const activityDates = Object.keys(guestAnalytics.byDay).sort().slice(-7);
+        const byDayRecord = (guestAnalytics['byDay'] as Record<string, number>) || {};
+        const activityDates = Object.keys(byDayRecord).sort().slice(-7);
         this.guestActivityChartData = {
             labels: activityDates.map(date =>
                 new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             ),
             datasets: [{
                 label: 'New Guests',
-                data: activityDates.map(date => guestAnalytics.byDay[date]),
+                data: activityDates.map(date => byDayRecord[date]),
                 borderColor: '#10B981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 fill: true,
@@ -1118,11 +1388,34 @@ export class AdminAnalyticsComponent implements OnInit {
         return normalized.length > 0 ? normalized : fallback;
     }
 
+    /**
+     * Aggregates a specific dimension across multiple rows
+     * @param rows Array of daily breakdown items
+     * @param dimensionKey The key to extract from each row (e.g., 'byOS', 'byCountry')
+     * @param fallback Fallback label for missing values
+     * @returns Aggregated Record<string, number>
+     */
+    private aggregateDimension(
+        rows: DailyBreakdownItem[],
+        dimensionKey: keyof DailyBreakdownItem,
+        fallback = 'Unknown'
+    ): Record<string, number> {
+        const result: Record<string, number> = {};
+        for (const row of rows) {
+            const dimensionData = row[dimensionKey] as Record<string, number> || {};
+            Object.entries(dimensionData).forEach(([k, v]) => {
+                const normalized = this.normalizeDimensionKey(k, fallback);
+                result[normalized] = (result[normalized] || 0) + Number(v || 0);
+            });
+        }
+        return result;
+    }
+
     private getTopDimensionEntries(source: unknown, max = 10, fallback = 'Unknown'): Array<[string, number]> {
         const merged: Record<string, number> = {};
 
         if (Array.isArray(source)) {
-            source.forEach((entry: any) => {
+            source.forEach((entry: {country?: string; browser?: string; device?: string; os?: string; provider?: string; timezone?: string; name?: string; label?: string; count?: number; value?: number}) => {
                 const rawKey = entry?.country ?? entry?.browser ?? entry?.device ?? entry?.os ?? entry?.provider ?? entry?.timezone ?? entry?.name ?? entry?.label;
                 const key = this.normalizeDimensionKey(rawKey, fallback);
                 const count = Number(entry?.count ?? entry?.value ?? 0);
@@ -1151,3 +1444,4 @@ export class AdminAnalyticsComponent implements OnInit {
         return [[fallback, 0]];
     }
 }
+

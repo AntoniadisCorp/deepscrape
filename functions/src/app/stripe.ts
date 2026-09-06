@@ -232,8 +232,16 @@ const TRIAL_DEFAULT_CREDIT_CAP_EUR = toPositiveInteger(env.BILLING_TRIAL_DEFAULT
 const CUSTOM_CREDITS_MIN = toPositiveInteger(env.BILLING_CUSTOM_CREDITS_MIN, 50)
 const CUSTOM_CREDITS_MAX = toPositiveInteger(env.BILLING_CUSTOM_CREDITS_MAX, 5000)
 const CUSTOM_CREDIT_UNIT_AMOUNT_EUR = toPositiveInteger(env.BILLING_CUSTOM_CREDIT_UNIT_AMOUNT_EUR, 19)
-const BILLING_RESTRICTED_ROLE_KEYWORDS = ["admin", "manager", "editor"]
-const bootstrapAdminEmails = new Set(env.ADMIN_EMAILS.map((item) => item.toLowerCase()))
+const BILLING_RESTRICTED_ROLE_KEYWORDS = ["manager", "editor"]
+const billingAllowedOrigins = env.IS_PRODUCTION ?
+  ["https://deepscrape.dev", "https://deepscrape.web.app"] :
+  [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "http://127.0.0.1:8081",
+  ]
 
 const customCreditsCatalog: CustomCreditsCatalog = {
   enabled: true,
@@ -257,6 +265,10 @@ const normalizeRole = (role: string | null | undefined): string => {
   return (role || "").trim().toLowerCase()
 }
 
+const isPlatformAdminRole = (role: string | null | undefined): boolean => {
+  return normalizeRole(role) === "admin"
+}
+
 const isBillingRestrictedRole = (role: string | null | undefined): boolean => {
   const normalized = normalizeRole(role)
   if (!normalized) {
@@ -266,25 +278,16 @@ const isBillingRestrictedRole = (role: string | null | undefined): boolean => {
   return BILLING_RESTRICTED_ROLE_KEYWORDS.some((keyword) => normalized === keyword || normalized.includes(keyword))
 }
 
-const isBillingRestrictedEmail = (email: string | null | undefined): boolean => {
-  if (!email) {
+const isBillingRestrictedUser = (user: Users | undefined, tokenRole?: string | null): boolean => {
+  if (isPlatformAdminRole(tokenRole) || isPlatformAdminRole(user?.role)) {
     return false
   }
 
-  return bootstrapAdminEmails.has(email.toLowerCase())
-}
-
-const isBillingRestrictedUser = (user: Users | undefined, tokenRole?: string | null): boolean => {
   if (isBillingRestrictedRole(tokenRole)) {
     return true
   }
 
-  if (isBillingRestrictedRole(user?.role)) {
-    return true
-  }
-
-  const userEmail = user?.email || user?.providerData?.[0]?.email || null
-  return isBillingRestrictedEmail(userEmail)
+  return isBillingRestrictedRole(user?.role)
 }
 
 const getTokenRole = (req: { auth?: { token?: unknown } }): string | null => {
@@ -293,9 +296,28 @@ const getTokenRole = (req: { auth?: { token?: unknown } }): string | null => {
   return typeof role === "string" ? role : null
 }
 
+const assertAllowedReturnUrl = (url: string, fieldName: string): void => {
+  let parsed: URL
+
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new HttpsError("invalid-argument", `${fieldName} must be a valid absolute URL`)
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new HttpsError("invalid-argument", `${fieldName} must use http or https`)
+  }
+
+  const origin = parsed.origin
+  if (!billingAllowedOrigins.includes(origin)) {
+    throw new HttpsError("permission-denied", `${fieldName} origin is not allowed`)
+  }
+}
+
 const assertBillingAllowed = (user: Users | undefined, tokenRole?: string | null): void => {
   if (isBillingRestrictedUser(user, tokenRole)) {
-    throw new HttpsError("permission-denied", "Billing is disabled for administrator, manager, and editor accounts")
+    throw new HttpsError("permission-denied", "Billing is disabled for manager and editor accounts")
   }
 }
 
@@ -329,7 +351,95 @@ const buildFreePlanFromExpiredTrial = (billing: UserBilling | undefined): Partia
   }
 }
 
+// FIX #3: Sync billing snapshot into user doc to eliminate subcollection reads on callable invocations.
+// Full-state writes use set({billing: data}, {merge: true}) so the whole billing field is replaced.
+const syncBillingToUserDoc = (
+  userRef: FirebaseFirestore.DocumentReference,
+  billing: Partial<UserBilling>,
+): Promise<FirebaseFirestore.WriteResult> => {
+  return userRef.set({ billing }, { merge: true })
+}
+
 const createAlertId = (type: string, windowId: string) => `${type}_${windowId}`
+
+const toSafeErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return "unknown_error"
+}
+
+const isFirestoreFailedPrecondition = (error: unknown): boolean => {
+  const candidate = error as { code?: unknown; message?: unknown }
+  const code = Number(candidate?.code)
+  const message = String(candidate?.message || "").toLowerCase()
+
+  return code === 9 || message.includes("failed_precondition") || message.includes("missing index")
+}
+
+const timestampToMillis = (value: unknown): number => {
+  if (value && typeof value === "object" && "toDate" in (value as Record<string, unknown>)) {
+    const toDate = (value as { toDate: () => Date }).toDate
+    if (typeof toDate === "function") {
+      return toDate.call(value).getTime()
+    }
+  }
+
+  if (typeof value === "string") {
+    const parsed = Date.parse(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value
+  }
+
+  return 0
+}
+
+const sortDocsByTimestampDesc = (
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
+  fieldPath: string,
+): FirebaseFirestore.QueryDocumentSnapshot[] => {
+  return [...docs].sort((a, b) => {
+    const left = timestampToMillis(a.get(fieldPath))
+    const right = timestampToMillis(b.get(fieldPath))
+    return right - left
+  })
+}
+
+const recordBillingIncident = async (args: {
+  type: string
+  severity: "info" | "warning" | "error"
+  eventId?: string | null
+  eventType?: string | null
+  uid?: string | null
+  message: string
+  metadata?: Record<string, unknown>
+}): Promise<void> => {
+  await db.collection("billing_incidents").add({
+    type: args.type,
+    severity: args.severity,
+    eventId: args.eventId || null,
+    eventType: args.eventType || null,
+    uid: args.uid || null,
+    message: args.message,
+    metadata: args.metadata || {},
+    createdAt: FieldValue.serverTimestamp(),
+  })
+}
+
+const timestampToIso = (value: unknown): string | null => {
+  if (value && typeof value === "object" && "toDate" in (value as Record<string, unknown>)) {
+    const toDate = (value as { toDate: () => Date }).toDate
+    if (typeof toDate === "function") {
+      return toDate.call(value).toISOString()
+    }
+  }
+
+  return null
+}
 
 const emitUsageAlert = async (args: {
   uid: string
@@ -478,6 +588,47 @@ const getDefaultBillingForPlan = (plan: BillingPlanTier = "free"): UserBilling =
   }
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export const submitEnterprisePlanRequest = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: false },
+  async (req) => {
+    const uid = req.auth?.uid
+    if (!uid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const authUser = await adminAuth.getUser(uid)
+    const fallbackEmail = (authUser.email || "").trim().toLowerCase()
+    const providedEmail = typeof req.data?.contactEmail === "string" ? req.data.contactEmail.trim().toLowerCase() : ""
+    const contactEmail = providedEmail || fallbackEmail
+
+    if (!contactEmail || !EMAIL_REGEX.test(contactEmail)) {
+      throw new HttpsError("invalid-argument", "A valid contact email is required")
+    }
+
+    const workspaceName = typeof req.data?.workspaceName === "string" ? req.data.workspaceName.trim().slice(0, 120) : ""
+    const selectedPlan = typeof req.data?.selectedPlan === "string" ? req.data.selectedPlan : null
+    const adminRecipients = env.ADMIN_EMAILS.map((item) => item.toLowerCase())
+
+    await db.collection("admin_email_requests").add({
+      kind: "enterprise_plan_request",
+      uid,
+      contactEmail,
+      accountEmail: fallbackEmail || null,
+      workspaceName: workspaceName || null,
+      selectedPlan: selectedPlan || null,
+      notifyAdmins: adminRecipients,
+      status: "pending",
+      source: "service_onboarding",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    return { success: true }
+  }
+)
+
 const mapPlanIdToTier = (planId: string): BillingPlanTier => {
   if (planId === "starter" || planId === "pro" || planId === "enterprise" || planId === "free" || planId === "trial") {
     return planId
@@ -622,7 +773,7 @@ const alignToMinuteCeilSeconds = (ms: number): number => {
   return Math.floor(ceilMs / 1000)
 }
 
-const ensureNonEmptyMeterWindow = (startSeconds: number, endSeconds: number): { startSeconds: number; endSeconds: number } => {
+const ensureNonEmptyMeterWindow = (startSeconds: number, endSeconds: number): { startSeconds: number, endSeconds: number } => {
   if (endSeconds > startSeconds) {
     return { startSeconds, endSeconds }
   }
@@ -725,15 +876,15 @@ type StripeCustomerInput = {
 }
 
 export async function createCustomer(firebaseUser: StripeCustomerInput): Promise<Stripe.Response<Stripe.Customer>> {
-  const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
-    const stripe = getStripe(secret)
+  const secret = stripeSecrets.find((s) => s.name === "STRIPE_SECRET_KEY")?.value()
+  const stripe = getStripe(secret)
   const providerData = firebaseUser?.providerData as UserInfo[] | undefined
 
   const email = firebaseUser?.email || providerData?.[0]?.email || undefined
   const name = firebaseUser?.displayName || providerData?.[0]?.displayName || undefined
   const phone = firebaseUser?.phoneNumber || providerData?.[0]?.phoneNumber || undefined
 
-  return await stripe.customers.create({
+  return stripe.customers.create({
     email,
     name,
     phone: phone || undefined,
@@ -769,17 +920,21 @@ export const newStripeCustomer = onDocumentCreated(
     const userPath = `users/${userId}`
 
     try {
-      const userDoc = await db.doc(userPath).get()
+      const [userDoc, fallbackAuthUserResult] = await Promise.all([
+        db.doc(userPath).get(),
+        adminAuth.getUser(userId).then((user) => ({ok: true as const, user})).catch((error) => ({ok: false as const, error})),
+      ])
+
       const firebaseUser = userDoc.data() as Users
       if (!firebaseUser) {
         throw new Error(`User document not found for userId: ${userId}`)
       }
 
       let fallbackAuthUser: Awaited<ReturnType<typeof adminAuth.getUser>> | null = null
-      try {
-        fallbackAuthUser = await adminAuth.getUser(userId)
-      } catch (authError) {
-        console.warn(`Could not load auth profile for user ${userId}:`, authError)
+      if (fallbackAuthUserResult.ok) {
+        fallbackAuthUser = fallbackAuthUserResult.user
+      } else {
+        console.warn(`Could not load auth profile for user ${userId}:`, fallbackAuthUserResult.error)
       }
 
       const userEmail =
@@ -834,7 +989,7 @@ export const newStripeCustomer = onDocumentCreated(
 
 
 export const createPaymentIntent = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -870,11 +1025,16 @@ export const createPaymentIntent = onCallv2(
 
       // if cartId is not in session of the browser storage
       if (!cartId) {
-        /* const listpayment = await stripe.paymentIntents.list({ customer: user?.stripeId })
-        // cancel all previous paymentIntent
-        listpayment.data.forEach(async (item) => {
+        const listpayment = await stripe.paymentIntents.list({ customer: user?.stripeId })
+        // Cancel only intents that are cancelable (requires_payment_method) to avoid
+        // cancelling succeeded/processing intents from other browser tabs or sessions.
+        const cancelableStatuses = new Set(["requires_payment_method", "requires_confirmation", "requires_action"])
+        const cancelable = listpayment.data.filter((item) => cancelableStatuses.has(item.status))
+        if (cancelable.length > 0) {
+          await Promise.all(cancelable.map(async (item) => {
             await stripe.paymentIntents.cancel(item.id)
-        }) */
+          }))
+        }
         const paymentIntent = await stripe.paymentIntents.create({
           receipt_email: userEmail,
           currency,
@@ -917,7 +1077,7 @@ export const createPaymentIntent = onCallv2(
 )
 
 export const createSetupIntent = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -996,7 +1156,7 @@ export const createSetupIntent = onCallv2(
 
 
 export const startSubscription = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1022,22 +1182,12 @@ export const startSubscription = onCallv2(
 
       // 3. Check for existing subscription
       if (user.subscriptionId) {
-        // Option 1: Return existing subscription
-        // return { message: "User already has an active subscription", subscriptionId: user.subscriptionId }
-
-        // Option 2: Update existing subscription
-        const updatedSub = await stripe.subscriptions.update(user.subscriptionId, {
-          items: [{ id: user.itemId, price }],
-          // Add other parameters as needed
-        })
-
-        // Update the user document with new information
-        await db.doc(`users/${userId}`).update({
-          status: updatedSub.status,
-          itemId: updatedSub.items.data[0].id,
-        })
-
-        return { message: "Subscription updated", subscriptionId: updatedSub.id }
+        // Redirect to Stripe Customer Portal for plan changes — never silently update
+        // an existing subscription without the user's explicit intent.
+        throw new HttpsError(
+          "failed-precondition",
+          "User already has an active subscription. Use the Customer Portal to change plans.",
+        )
       }
 
       // 4. Check for existing payment methods (PaymentMethods API)
@@ -1094,7 +1244,7 @@ export const startSubscription = onCallv2(
 )
 
 export const getBillingCatalog = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async () => {
     return {
       plans: billingPlanCatalog,
@@ -1107,7 +1257,7 @@ export const getBillingCatalog = onCallv2(
 )
 
 export const validateStripeCatalog = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1289,22 +1439,38 @@ export const validateStripeCatalog = onCallv2(
 )
 
 export const getMyEntitlements = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
       throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
+    // Fire-and-forget entitlement check metric counter.
+    const metricDayKey = new Date().toISOString().slice(0, 10)
+    db.doc(`billing_entitlement_metrics/${metricDayKey}`).set({
+      totalCalls: FieldValue.increment(1),
+      lastCallAt: FieldValue.serverTimestamp(),
+    }, { merge: true }).catch(() => undefined)
+
     const billingRef = db.doc(`users/${userId}/billing/current`)
     const userRef = db.doc(`users/${userId}`)
-    const [billingSnap, userSnap] = await Promise.all([billingRef.get(), userRef.get()])
+    // FIX #3: single user-doc read; billing cached in user.billing field after first write
+    const userSnap = await userRef.get()
 
-    const user = userSnap.data() as Users | undefined
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
     const tokenRole = getTokenRole(req)
 
+    // Prefer billing snapshot embedded in user doc; fall back to subcollection on first call
+    let existingBilling = user?.billing as UserBilling | undefined
+    let billingDocExists = existingBilling !== undefined
+    if (!existingBilling) {
+      const billingSnap = await billingRef.get()
+      billingDocExists = billingSnap.exists
+      existingBilling = billingSnap.exists ? billingSnap.data() as UserBilling : undefined
+    }
+
     if (isBillingRestrictedUser(user, tokenRole)) {
-      const existingBilling = billingSnap.exists ? billingSnap.data() as UserBilling : undefined
       const restrictedBilling: Partial<UserBilling> = {
         ...getDefaultBillingForPlan("free"),
         plan: "free",
@@ -1321,40 +1487,44 @@ export const getMyEntitlements = onCallv2(
         updatedAt: FieldValue.serverTimestamp(),
       }
 
-      await billingRef.set(restrictedBilling, { merge: true })
-      await userRef.set({
-        plan: "free",
-        status: "inactive",
-        subscriptionId: null,
-        stripeId: FieldValue.delete(),
-        updated_At: new Date(),
-      }, { merge: true })
+      await Promise.all([
+        billingRef.set(restrictedBilling, { merge: true }),
+        userRef.set({
+          billing: restrictedBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          stripeId: FieldValue.delete(),
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
 
-      const refreshed = await billingRef.get()
-      return { billing: refreshed.data(), userId }
+      return { billing: restrictedBilling, userId }
     }
 
-    if (!billingSnap.exists) {
+    if (!billingDocExists) {
       const initialPlan = mapPlanIdToTier(user?.plan || "free")
       const billing = getDefaultBillingForPlan(initialPlan)
-      await billingRef.set(billing, { merge: true })
+      await Promise.all([
+        billingRef.set(billing, { merge: true }),
+        syncBillingToUserDoc(userRef, billing),
+      ])
       return { billing, userId }
     }
 
-    const existingBilling = billingSnap.data() as UserBilling | undefined
-
     if (hasTrialExpired(existingBilling)) {
       const nextBilling = buildFreePlanFromExpiredTrial(existingBilling)
-      await billingRef.set(nextBilling, { merge: true })
-      await userRef.set({
-        plan: "free",
-        status: "inactive",
-        subscriptionId: null,
-        updated_At: new Date(),
-      }, { merge: true })
-
-      const refreshed = await billingRef.get()
-      return { billing: refreshed.data(), userId }
+      await Promise.all([
+        billingRef.set(nextBilling, { merge: true }),
+        userRef.set({
+          billing: nextBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
+      return { billing: nextBilling, userId }
     }
 
     const shouldInferPaygPlan =
@@ -1382,7 +1552,7 @@ export const getMyEntitlements = onCallv2(
 
         if (latestActiveRecurring && recurringMatch) {
           const effectivePlan: BillingPlanTier = latestActiveRecurring.status === "trialing" ? "trial" : recurringMatch.plan
-          await billingRef.set({
+          const inferredBilling = {
             plan: effectivePlan,
             planInterval: recurringMatch.interval,
             status: latestActiveRecurring.status,
@@ -1401,17 +1571,20 @@ export const getMyEntitlements = onCallv2(
               trialEndsAt: null,
             }),
             updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
+          }
 
-          await db.doc(`users/${userId}`).set({
-            plan: effectivePlan,
-            status: latestActiveRecurring.status,
-            subscriptionId: latestActiveRecurring.id,
-            updated_At: new Date(),
-          }, { merge: true })
+          await Promise.all([
+            billingRef.set(inferredBilling, { merge: true }),
+            userRef.set({
+              billing: inferredBilling,
+              plan: effectivePlan,
+              status: latestActiveRecurring.status,
+              subscriptionId: latestActiveRecurring.id,
+              updated_At: new Date(),
+            }, { merge: true }),
+          ])
 
-          const refreshed = await billingRef.get()
-          return { billing: refreshed.data(), userId }
+          return { billing: inferredBilling, userId }
         }
 
         const paymentIntents = await stripe.paymentIntents.list({
@@ -1429,22 +1602,25 @@ export const getMyEntitlements = onCallv2(
         }) : null
 
         if (inferredPlan) {
-          await billingRef.set({
+          const paygBilling = {
             ...getDefaultBillingForPlan(inferredPlan),
             plan: inferredPlan,
-            planInterval: "payAsYouGo",
+            planInterval: "payAsYouGo" as BillingInterval,
             status: "active",
             updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
+          }
 
-          await db.doc(`users/${userId}`).set({
-            plan: inferredPlan,
-            status: "active",
-            updated_At: new Date(),
-          }, { merge: true })
+          await Promise.all([
+            billingRef.set(paygBilling, { merge: true }),
+            userRef.set({
+              billing: paygBilling,
+              plan: inferredPlan,
+              status: "active",
+              updated_At: new Date(),
+            }, { merge: true }),
+          ])
 
-          const refreshed = await billingRef.get()
-          return { billing: refreshed.data(), userId }
+          return { billing: paygBilling, userId }
         }
       } catch (error) {
         console.warn("Entitlement inference from successful pay-as-you-go payments failed:", error)
@@ -1456,7 +1632,7 @@ export const getMyEntitlements = onCallv2(
 )
 
 export const startTrial = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1465,12 +1641,13 @@ export const startTrial = onCallv2(
 
     const userRef = db.doc(`users/${userId}`)
     const billingRef = db.doc(`users/${userId}/billing/current`)
-    const [userSnap, billingSnap] = await Promise.all([userRef.get(), billingRef.get()])
-    const user = userSnap.data() as Users | undefined
+    // FIX #3: single read — billing cached in user.billing after first write
+    const userSnap = await userRef.get()
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
 
     assertBillingAllowed(user, getTokenRole(req))
 
-    const billing = billingSnap.data() as UserBilling | undefined
+    const billing = user?.billing as UserBilling | undefined
     const alreadyUsedTrial = Boolean(billing?.trialUsedAt)
     if (alreadyUsedTrial) {
       throw new HttpsError("failed-precondition", "Trial can only be used once per account")
@@ -1497,17 +1674,19 @@ export const startTrial = onCallv2(
       updatedAt: FieldValue.serverTimestamp(),
     }
 
-    await billingRef.set(trialBilling, { merge: true })
-    await userRef.set({
-      plan: "trial",
-      status: "active",
-      subscriptionId: null,
-      updated_At: now,
-    }, { merge: true })
+    await Promise.all([
+      billingRef.set(trialBilling, { merge: true }),
+      userRef.set({
+        billing: trialBilling,
+        plan: "trial",
+        status: "active",
+        subscriptionId: null,
+        updated_At: now,
+      }, { merge: true }),
+    ])
 
-    const refreshed = await billingRef.get()
     return {
-      billing: refreshed.data(),
+      billing: trialBilling,
       userId,
       trialStartedAt: trialBilling.trialStartedAt,
       trialEndsAt: trialBilling.trialEndsAt,
@@ -1516,7 +1695,7 @@ export const startTrial = onCallv2(
 )
 
 export const getBillingUsage = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const userId = req.auth?.uid
     if (!userId) {
@@ -1536,6 +1715,7 @@ export const getBillingUsage = onCallv2(
 
     const userSnap = await db.doc(`users/${userId}`).get()
     const user = userSnap.data() as Users | undefined
+    assertBillingAllowed(user, getTokenRole(req))
     const stripeCustomerId = user?.stripeId || null
 
     const emptyResponse = {
@@ -1773,7 +1953,7 @@ export const getBillingUsage = onCallv2(
 )
 
 export const createCheckoutSession = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1804,14 +1984,22 @@ export const createCheckoutSession = onCallv2(
       throw new HttpsError("invalid-argument", "Missing required checkout arguments")
     }
 
+    const normalizedCheckoutRequestId = String(checkoutRequestId || "").trim()
+    if (!normalizedCheckoutRequestId) {
+      throw new HttpsError("invalid-argument", "checkoutRequestId is required for idempotent checkout")
+    }
+
+    assertAllowedReturnUrl(successUrl, "successUrl")
+    assertAllowedReturnUrl(cancelUrl, "cancelUrl")
+
     if (!isBillingInterval(interval)) {
       throw new HttpsError("invalid-argument", "Invalid billing interval")
     }
 
     const userSnap = await db.doc(`users/${userId}`).get()
-    const user = userSnap.data() as Users | undefined
-    const billingSnap = await db.doc(`users/${userId}/billing/current`).get()
-    const billing = billingSnap.data() as UserBilling | undefined
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
+    // FIX #3: billing embedded in user doc — no subcollection read needed
+    const billing = user?.billing as UserBilling | undefined
   assertBillingAllowed(user, getTokenRole(req))
     const userEmail = user?.email || user?.providerData?.[0]?.email || ""
 
@@ -1865,10 +2053,6 @@ export const createCheckoutSession = onCallv2(
 
     let trialPeriodDays: number | undefined
     if (checkoutMode === "subscription" && selectedPlan?.id === "pro") {
-      const billingRef = db.doc(`users/${userId}/billing/current`)
-      const billingSnap = await billingRef.get()
-      const billing = billingSnap.data() as UserBilling | undefined
-
       const alreadyUsedTrial = Boolean(
         billing?.trialUsedAt ||
         billing?.plan === "trial" ||
@@ -1926,7 +2110,7 @@ export const createCheckoutSession = onCallv2(
       client_reference_id: userId,
       allow_promotion_codes: true,
     }, {
-      idempotencyKey: `checkout_${userId}_${planId}_${interval}_${isCustomCredits ? normalizedCustomCredits : Math.max(1, quantity)}_${checkoutRequestId || Date.now()}`,
+      idempotencyKey: `checkout_${userId}_${planId}_${interval}_${isCustomCredits ? normalizedCustomCredits : Math.max(1, quantity)}_${normalizedCheckoutRequestId}`,
     })
 
     return {
@@ -1937,7 +2121,7 @@ export const createCheckoutSession = onCallv2(
 )
 
 export const createBillingPortalSession = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1950,6 +2134,7 @@ export const createBillingPortalSession = onCallv2(
     if (!returnUrl) {
       throw new HttpsError("invalid-argument", "Missing returnUrl")
     }
+    assertAllowedReturnUrl(returnUrl, "returnUrl")
 
     const userSnap = await db.doc(`users/${userId}`).get()
     const user = userSnap.data() as Users | undefined
@@ -1968,7 +2153,7 @@ export const createBillingPortalSession = onCallv2(
 )
 
 export const resumeSubscriptionCancellation = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -1980,12 +2165,13 @@ export const resumeSubscriptionCancellation = onCallv2(
 
     const userRef = db.doc(`users/${userId}`)
     const billingRef = db.doc(`users/${userId}/billing/current`)
-    const [userSnap, billingSnap] = await Promise.all([userRef.get(), billingRef.get()])
+    // FIX #3: single read — billing cached in user.billing after first write
+    const userSnap = await userRef.get()
 
-    const user = userSnap.data() as Users | undefined
+    const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
     assertBillingAllowed(user, getTokenRole(req))
 
-    const billing = billingSnap.data() as UserBilling | undefined
+    const billing = user?.billing as UserBilling | undefined
     const subscriptionId = billing?.subscriptionId || user?.subscriptionId || null
     if (!subscriptionId) {
       throw new HttpsError("failed-precondition", "No active subscription found")
@@ -2001,7 +2187,7 @@ export const resumeSubscriptionCancellation = onCallv2(
     const effectivePlan: BillingPlanTier = updatedSubscription.status === "trialing" ?
      "trial" : (recurringMatch?.plan || currentPlan)
 
-    await billingRef.set({
+    const updatedBilling = {
       ...getDefaultBillingForPlan(effectivePlan),
       plan: effectivePlan,
       planInterval: recurringMatch?.interval || billing?.planInterval || null,
@@ -2021,18 +2207,21 @@ export const resumeSubscriptionCancellation = onCallv2(
         trialEndsAt: null,
       }),
       updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true })
+    }
 
-    await userRef.set({
-      plan: effectivePlan,
-      status: updatedSubscription.status,
-      subscriptionId: updatedSubscription.id,
-      updated_At: new Date(),
-    }, { merge: true })
+    await Promise.all([
+      billingRef.set(updatedBilling, { merge: true }),
+      userRef.set({
+        billing: updatedBilling,
+        plan: effectivePlan,
+        status: updatedSubscription.status,
+        subscriptionId: updatedSubscription.id,
+        updated_At: new Date(),
+      }, { merge: true }),
+    ])
 
-    const refreshed = await billingRef.get()
     return {
-      billing: refreshed.data(),
+      billing: updatedBilling,
       subscriptionId: updatedSubscription.id,
       cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
     }
@@ -2040,7 +2229,7 @@ export const resumeSubscriptionCancellation = onCallv2(
 )
 
 export const verifyCheckoutSession = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(secret)
@@ -2083,6 +2272,738 @@ export const verifyCheckoutSession = onCallv2(
   }
 )
 
+const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<void> => {
+  switch (event.type) {
+  case "checkout.session.completed": {
+    const session = event.data.object as Stripe.Checkout.Session
+    const uid = session.metadata?.uid || session.client_reference_id
+    if (!uid) {
+      break
+    }
+
+    const protectedUserSnap = await db.doc(`users/${uid}`).get()
+    const protectedUser = protectedUserSnap.data() as Users | undefined
+    if (isBillingRestrictedUser(protectedUser)) {
+      const restrictedSessionBilling = {
+        ...getDefaultBillingForPlan("free"),
+        plan: "free" as BillingPlanTier,
+        status: "inactive",
+        subscriptionId: null,
+        planInterval: null as BillingInterval | null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }
+      await Promise.all([
+        db.doc(`users/${uid}/billing/current`).set(restrictedSessionBilling, { merge: true }),
+        db.doc(`users/${uid}`).set({
+          billing: restrictedSessionBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          stripeId: FieldValue.delete(),
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
+      break
+    }
+
+    const checkoutType = session.metadata?.checkoutType
+    const selectedPlanId = session.metadata?.planId || "free"
+    const selectedInterval = (session.metadata?.interval as BillingInterval) || "monthly"
+    const billingRef = db.doc(`users/${uid}/billing/current`)
+    const userRef = db.doc(`users/${uid}`)
+
+    if (checkoutType === "credits" || checkoutType === "custom_credits") {
+      const pack = creditPackCatalog.find((item) => item.id === selectedPlanId)
+      const incrementBy = checkoutType === "custom_credits" ? Math.floor(Number(session.metadata?.customCredits || 0)) : (pack?.credits || 0)
+      await addCreditsLedgerEntry({
+        uid,
+        delta: incrementBy,
+        source: checkoutType === "custom_credits" ? "custom_credits_checkout" : "stripe_checkout",
+        bucket: "purchased",
+        reason: checkoutType === "custom_credits" ? "custom_credits" : "credit_pack",
+        sessionId: session.id,
+      })
+    } else {
+      const selectedPlan = mapPlanIdToTier(selectedPlanId)
+      let trialMeta: Partial<UserBilling> = {}
+      let effectivePlan: BillingPlanTier = selectedPlan
+      let subscriptionMeta: Partial<UserBilling> = {}
+      let effectiveStatus = "active"
+      let effectiveSubscriptionId: string | null = typeof session.subscription === "string" ? session.subscription : null
+
+      if (typeof session.subscription === "string") {
+        const subscription = await stripe.subscriptions.retrieve(session.subscription)
+        effectiveStatus = subscription.status
+        effectiveSubscriptionId = subscription.id
+        subscriptionMeta = getSubscriptionCycleFields(subscription)
+
+        if (subscription.status === "trialing") {
+          effectivePlan = "trial"
+          trialMeta = {
+            trialPlanTarget: selectedPlan,
+            trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
+            trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            trialUsedAt: new Date().toISOString(),
+            trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
+          }
+        }
+      }
+
+      const checkoutBilling = {
+        ...getDefaultBillingForPlan(effectivePlan),
+        status: effectiveStatus,
+        subscriptionId: effectiveSubscriptionId,
+        planInterval: selectedInterval,
+        ...subscriptionMeta,
+        ...trialMeta,
+        updatedAt: FieldValue.serverTimestamp(),
+      }
+
+      await Promise.all([
+        billingRef.set(checkoutBilling, { merge: true }),
+        userRef.set({
+          billing: checkoutBilling,
+          plan: effectivePlan,
+          status: effectiveStatus,
+          subscriptionId: effectiveSubscriptionId,
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
+
+      if (checkoutType === "plan_payg") {
+        const includedCredits = getIncludedCreditsForPlanInterval(selectedPlan, "payAsYouGo")
+        await addCreditsLedgerEntry({
+          uid,
+          delta: includedCredits,
+          source: "plan_payg_checkout",
+          bucket: "included",
+          reason: "plan_payg",
+          sessionId: session.id,
+          plan: selectedPlan,
+          interval: "payAsYouGo",
+        })
+      }
+    }
+    break
+  }
+  case "invoice.payment_failed": {
+    const invoice = event.data.object as Stripe.Invoice
+    const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
+    if (!uid) {
+      break
+    }
+
+    const graceUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString()
+    const pastDueBilling = {
+      status: "past_due",
+      graceUntil,
+      updatedAt: FieldValue.serverTimestamp(),
+    }
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(pastDueBilling, { merge: true }),
+      // Sync billing to embedded user doc field (set replaces the whole billing object for consistency)
+      db.doc(`users/${uid}`).set({ billing: pastDueBilling }, { merge: true }),
+    ])
+
+    await recordBillingIncident({
+      type: "invoice.payment_failed",
+      severity: "warning",
+      eventId: event.id,
+      eventType: event.type,
+      uid,
+      message: `Invoice payment failed. Grace period active until ${graceUntil}`,
+      metadata: {
+        invoiceId: invoice.id,
+        amountDue: invoice.amount_due,
+        currency: invoice.currency,
+        customer: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null,
+        graceUntil,
+      },
+    })
+
+    // Emit user-facing alert for the payment failure.
+    await emitUsageAlert({
+      uid,
+      alertId: createAlertId("payment_failed", invoice.id),
+      title: "Payment Failed",
+      message: `Your most recent invoice payment of ${(invoice.amount_due / 100).toFixed(2)} ${invoice.currency.toUpperCase()} could not be processed. Your account will remain active until ${new Date(graceUntil).toLocaleDateString()}. Please update your payment method to avoid service interruption.`,
+      severity: "warning",
+      metadata: {
+        invoiceId: invoice.id,
+        amountDue: invoice.amount_due,
+        currency: invoice.currency,
+        graceUntil,
+      },
+    })
+    break
+  }
+  case "invoice.paid": {
+    const invoice = event.data.object as Stripe.Invoice
+    const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
+    if (!uid) {
+      break
+    }
+
+    const billingRef = db.doc(`users/${uid}/billing/current`)
+    const billingSnap = await billingRef.get()
+    const billing = billingSnap.data() as UserBilling | undefined
+
+    let plan: BillingPlanTier | undefined
+    let planInterval: BillingInterval | undefined
+    let features: Record<string, boolean> | undefined
+    let trialFields: Partial<UserBilling> = {}
+    const recurringPriceId = getInvoiceRecurringPriceId(invoice)
+    const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
+
+    if (recurringMatch) {
+      plan = recurringMatch.plan
+      planInterval = recurringMatch.interval
+      features = getFeaturesFromPlan(plan)
+    }
+
+    if (billing?.plan === "trial" && billing.trialPlanTarget) {
+      plan = billing.trialPlanTarget
+      planInterval =
+        billing.planInterval === "monthly" || billing.planInterval === "quarterly" || billing.planInterval === "annually" ?
+          billing.planInterval :
+          planInterval
+      features = getFeaturesFromPlan(plan)
+      trialFields = {
+        trialPlanTarget: null,
+        trialStartedAt: null,
+        trialEndsAt: null,
+      }
+    }
+
+    const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : billing?.subscriptionId || null
+    const shouldGrantIncludedCredits = Boolean(
+      subscriptionId &&
+      plan &&
+      planInterval &&
+      invoice.amount_paid > 0 &&
+      recurringCreditGrantReasons.has(invoice.billing_reason || ""),
+    )
+
+    const invoicePaidBilling = {
+      ...(billing ?? getDefaultBillingForPlan("free")),
+      status: "active",
+      ...(plan ? { plan } : {}),
+      ...(planInterval ? { planInterval } : {}),
+      ...(features ? { features } : {}),
+      ...trialFields,
+      graceUntil: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }
+
+    await Promise.all([
+      billingRef.set({
+        status: "active",
+        ...(plan ? { plan } : {}),
+        ...(planInterval ? { planInterval } : {}),
+        ...(features ? { features } : {}),
+        ...trialFields,
+        graceUntil: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true }),
+      syncBillingToUserDoc(db.doc(`users/${uid}`), invoicePaidBilling),
+    ])
+
+    if (shouldGrantIncludedCredits && plan && planInterval) {
+      await addCreditsLedgerEntry({
+        uid,
+        delta: getIncludedCreditsForPlanInterval(plan, planInterval),
+        source: "subscription_cycle",
+        bucket: "included",
+        reason: invoice.billing_reason || "subscription_cycle",
+        invoiceId: invoice.id,
+        subscriptionId,
+        plan,
+        interval: planInterval,
+      })
+    }
+
+    if (plan) {
+      await db.doc(`users/${uid}`).set({
+        plan,
+        status: "active",
+        updated_At: new Date(),
+      }, { merge: true })
+    }
+
+    // Emit user-facing receipt alert for the paid invoice.
+    const invoiceLabel = invoice.number || invoice.id
+    const receiptUrl = invoice.hosted_invoice_url || null
+    await emitUsageAlert({
+      uid,
+      alertId: createAlertId("invoice_paid", invoice.id),
+      title: "Payment Received",
+      message: `Invoice ${invoiceLabel} for ${(invoice.amount_paid / 100).toFixed(2)} ${invoice.currency.toUpperCase()} has been paid successfully.${receiptUrl ? ` View receipt: ${receiptUrl}` : ""}`,
+      severity: "info",
+      metadata: {
+        invoiceId: invoice.id,
+        number: invoice.number,
+        amountPaid: invoice.amount_paid,
+        currency: invoice.currency,
+        receiptUrl,
+        billingReason: invoice.billing_reason,
+      },
+    })
+    break
+  }
+  case "payment_intent.succeeded": {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent
+    const uid = paymentIntent.metadata?.uid || await resolveUidByStripeCustomer(paymentIntent.customer)
+    if (!uid) {
+      break
+    }
+
+    const protectedUserSnap = await db.doc(`users/${uid}`).get()
+    const protectedUser = protectedUserSnap.data() as Users | undefined
+    if (isBillingRestrictedUser(protectedUser)) {
+      break
+    }
+
+    const checkoutType = paymentIntent.metadata?.checkoutType
+    const selectedPlanId = paymentIntent.metadata?.planId
+
+    const inferredPlan = selectedPlanId ? mapPlanIdToTier(selectedPlanId) : inferPayAsYouGoPlanFromPayment({
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+    })
+
+    if (checkoutType === "credits") {
+      break
+    }
+
+    if (!inferredPlan || inferredPlan === "free" || inferredPlan === "trial") {
+      break
+    }
+
+    const paymentIntentBilling = {
+      ...getDefaultBillingForPlan(inferredPlan),
+      plan: inferredPlan,
+      planInterval: "payAsYouGo" as BillingInterval,
+      status: "active",
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }
+
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(paymentIntentBilling, { merge: true }),
+      syncBillingToUserDoc(db.doc(`users/${uid}`), paymentIntentBilling),
+    ])
+
+    if (!checkoutType) {
+      await addCreditsLedgerEntry({
+        uid,
+        delta: getIncludedCreditsForPlanInterval(inferredPlan, "payAsYouGo"),
+        source: "plan_payg_payment_intent",
+        bucket: "included",
+        reason: "plan_payg",
+        paymentIntentId: paymentIntent.id,
+        plan: inferredPlan,
+        interval: "payAsYouGo",
+      })
+    }
+
+    await db.doc(`users/${uid}`).set({
+      plan: inferredPlan,
+      status: "active",
+      updated_At: new Date(),
+    }, { merge: true })
+    break
+  }
+  case "customer.subscription.created":
+  case "customer.subscription.updated": {
+    const subscription = event.data.object as Stripe.Subscription
+    const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
+    if (!uid) {
+      break
+    }
+
+    const protectedUserSnap = await db.doc(`users/${uid}`).get()
+    const protectedUser = protectedUserSnap.data() as Users | undefined
+    if (isBillingRestrictedUser(protectedUser)) {
+      break
+    }
+
+    // previous_attributes comes from the Stripe webhook event payload, not the subscription object.
+    const eventWithPrev = event as unknown as { previous_attributes?: { items?: { data?: Array<{ price?: { id?: string } }> } } }
+    const previousPriceId = eventWithPrev.previous_attributes?.items?.data?.[0]?.price?.id
+    const recurringPriceId = subscription.items.data[0]?.price?.id
+    const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
+    if (!recurringMatch) {
+      break
+    }
+
+    // Detect plan changes from Stripe Customer Portal (price ID changed).
+    const previousMatch = previousPriceId && previousPriceId !== recurringPriceId ?
+      inferRecurringPlanFromPriceId(previousPriceId) :
+      null
+    const planChanged = previousMatch !== null &&
+      (previousMatch.plan !== recurringMatch.plan || previousMatch.interval !== recurringMatch.interval)
+
+    if (planChanged) {
+      await recordBillingIncident({
+        type: "customer.subscription.plan_changed_via_portal",
+        severity: "info",
+        eventId: event.id,
+        eventType: event.type,
+        uid,
+        message: `Subscription plan changed via Stripe Portal: ${previousMatch?.plan || "unknown"}/${previousMatch?.interval || "unknown"} → ${recurringMatch.plan}/${recurringMatch.interval}`,
+        metadata: {
+          subscriptionId: subscription.id,
+          previousPlan: previousMatch?.plan || null,
+          previousInterval: previousMatch?.interval || null,
+          newPlan: recurringMatch.plan,
+          newInterval: recurringMatch.interval,
+          previousPriceId,
+          newPriceId: recurringPriceId,
+        },
+      })
+    }
+
+    const effectivePlan: BillingPlanTier = subscription.status === "trialing" ? "trial" : recurringMatch.plan
+
+    const subscriptionBilling = {
+      plan: effectivePlan,
+      planInterval: recurringMatch.interval,
+      status: subscription.status,
+      subscriptionId: subscription.id,
+      features: getFeaturesFromPlan(effectivePlan),
+      ...getSubscriptionCycleFields(subscription),
+      ...(subscription.status === "trialing" ? {
+        trialPlanTarget: recurringMatch.plan,
+        trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
+        trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+        trialUsedAt: new Date().toISOString(),
+        trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
+      } : {
+        trialPlanTarget: null,
+        trialStartedAt: null,
+        trialEndsAt: null,
+      }),
+      updatedAt: FieldValue.serverTimestamp(),
+    }
+
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(subscriptionBilling, { merge: true }),
+      db.doc(`users/${uid}`).set({
+        billing: subscriptionBilling,
+        plan: effectivePlan,
+        status: subscription.status,
+        subscriptionId: subscription.id,
+        updated_At: new Date(),
+      }, { merge: true }),
+    ])
+    break
+  }
+  case "customer.subscription.deleted": {
+    const subscription = event.data.object as Stripe.Subscription
+    const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
+    if (!uid) {
+      break
+    }
+
+    const cancelledBilling = {
+      ...getDefaultBillingForPlan("free"),
+      status: "inactive",
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }
+
+    await Promise.all([
+      db.doc(`users/${uid}/billing/current`).set(cancelledBilling, { merge: true }),
+      db.doc(`users/${uid}`).set({
+        billing: cancelledBilling,
+        plan: "free",
+        status: "inactive",
+        subscriptionId: null,
+        updated_At: new Date(),
+      }, { merge: true }),
+    ])
+    break
+  }
+  case "payment_intent.payment_failed": {
+    const failedPi = event.data.object as Stripe.PaymentIntent
+    const failedUid = failedPi.metadata?.uid || await resolveUidByStripeCustomer(failedPi.customer)
+    if (!failedUid) {
+      break
+    }
+
+    await recordBillingIncident({
+      type: "payment_intent.payment_failed",
+      severity: "warning",
+      eventId: event.id,
+      eventType: event.type,
+      uid: failedUid,
+      message: `Payment intent ${failedPi.id} failed: ${failedPi.last_payment_error?.message || "unknown error"}`,
+      metadata: {
+        paymentIntentId: failedPi.id,
+        amount: failedPi.amount,
+        currency: failedPi.currency,
+        lastPaymentError: failedPi.last_payment_error?.message || null,
+        code: failedPi.last_payment_error?.code || null,
+        declineCode: failedPi.last_payment_error?.decline_code || null,
+      },
+    })
+    break
+  }
+  case "charge.dispute.created": {
+    const dispute = event.data.object as Stripe.Dispute
+    const disputeCustomerId = typeof dispute.charge === "string"?
+      dispute.charge : (dispute.charge as Stripe.Charge | null)?.customer || null
+    const disputeUid = dispute.metadata?.uid || await resolveUidByStripeCustomer(disputeCustomerId)
+    if (!disputeUid) {
+      break
+    }
+
+    await recordBillingIncident({
+      type: "charge.dispute.created",
+      severity: "error",
+      eventId: event.id,
+      eventType: event.type,
+      uid: disputeUid,
+      message: `Dispute filed for charge ${dispute.charge}: ${dispute.reason || "no reason given"}`,
+      metadata: {
+        disputeId: dispute.id,
+        chargeId: typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || null,
+        amount: dispute.amount,
+        currency: dispute.currency,
+        reason: dispute.reason,
+        status: dispute.status,
+        evidenceRequiredBy: dispute.evidence_details?.due_by ? new Date(dispute.evidence_details.due_by * 1000).toISOString() : null,
+      },
+    })
+    break
+  }
+  case "charge.refunded": {
+    const charge = event.data.object as Stripe.Charge
+    const refundUid = charge.metadata?.uid || await resolveUidByStripeCustomer(charge.customer)
+    if (!refundUid) {
+      break
+    }
+
+    const refundedAmount = charge.amount_refunded || 0
+    await recordBillingIncident({
+      type: "charge.refunded",
+      severity: refundedAmount >= charge.amount ? "warning" : "info",
+      eventId: event.id,
+      eventType: event.type,
+      uid: refundUid,
+      message: `Charge ${charge.id} refunded ${refundedAmount} ${charge.currency}`,
+      metadata: {
+        chargeId: charge.id,
+        amountRefunded: refundedAmount,
+        amount: charge.amount,
+        currency: charge.currency,
+        refunded: charge.refunded,
+        paymentIntentId: charge.payment_intent || null,
+      },
+    })
+    break
+  }
+  case "payment_method.attached": {
+    const pm = event.data.object as Stripe.PaymentMethod
+    if (pm.type !== "card" || !pm.customer) {
+      break
+    }
+
+    const pmUid = await resolveUidByStripeCustomer(pm.customer)
+    if (!pmUid) {
+      break
+    }
+
+    // Store the payment method reference in user's subcollection for tracking
+    const pmRef = db.doc(`users/${pmUid}/payment_methods/${pm.id}`)
+    await pmRef.set({
+      type: pm.type,
+      brand: pm.card?.brand || null,
+      last4: pm.card?.last4 || null,
+      expMonth: pm.card?.exp_month || null,
+      expYear: pm.card?.exp_year || null,
+      billingDetails: pm.billing_details?.email || null,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    break
+  }
+  case "payment_method.detached": {
+    const detachedPm = event.data.object as Stripe.PaymentMethod
+    if (!detachedPm.customer) {
+      break
+    }
+
+    const detachedUid = await resolveUidByStripeCustomer(detachedPm.customer)
+    if (!detachedUid) {
+      break
+    }
+
+    // Remove the payment method reference
+    const detachedRef = db.doc(`users/${detachedUid}/payment_methods/${detachedPm.id}`)
+    await detachedRef.delete().catch(() => undefined)
+    break
+  }
+  case "setup_intent.succeeded": {
+    const setupIntent = event.data.object as Stripe.SetupIntent
+    const setupUid = setupIntent.metadata?.uid || await resolveUidByStripeCustomer(setupIntent.customer)
+    if (!setupUid) {
+      break
+    }
+
+    // Update any pending setup intent cart references
+    const setupCarts = await db.collection(`users/${setupUid}/paymentcart`)
+      .where("setupIntentId", "==", setupIntent.id)
+      .limit(1)
+      .get()
+
+    if (!setupCarts.empty) {
+      await setupCarts.docs[0].ref.set({
+        status: "succeeded",
+        lastPaymentAttempt: new Date().toISOString(),
+      }, { merge: true })
+    }
+    break
+  }
+  case "setup_intent.canceled": {
+    const canceledSetup = event.data.object as Stripe.SetupIntent
+    const canceledSetupUid = canceledSetup.metadata?.uid || await resolveUidByStripeCustomer(canceledSetup.customer)
+    if (!canceledSetupUid) {
+      break
+    }
+
+    const canceledCarts = await db.collection(`users/${canceledSetupUid}/paymentcart`)
+      .where("setupIntentId", "==", canceledSetup.id)
+      .limit(1)
+      .get()
+
+    if (!canceledCarts.empty) {
+      await canceledCarts.docs[0].ref.set({
+        status: "canceled",
+        lastPaymentAttempt: new Date().toISOString(),
+      }, { merge: true })
+    }
+    break
+  }
+  case "customer.updated": {
+    const customer = event.data.object as Stripe.Customer
+    const custUid = customer.metadata?.firebaseUID || await resolveUidByStripeCustomer(customer.id)
+    if (!custUid) {
+      break
+    }
+
+    // Sync Stripe customer email/name changes to Firestore metadata
+    const syncFields: Record<string, unknown> = {}
+    if (customer.email) {
+      syncFields["stripeEmail"] = customer.email
+    }
+    if (customer.name) {
+      syncFields["stripeName"] = customer.name
+    }
+    if (customer.invoice_settings?.default_payment_method) {
+      const defaultPm = typeof customer.invoice_settings.default_payment_method === "string"?
+       customer.invoice_settings.default_payment_method :
+       customer.invoice_settings.default_payment_method?.id || null
+      if (defaultPm) {
+        syncFields["stripeDefaultPaymentMethod"] = defaultPm
+      }
+    }
+
+    if (Object.keys(syncFields).length > 0) {
+      await db.doc(`users/${custUid}`).set(syncFields, { merge: true })
+    }
+    break
+  }
+  case "invoice.created":
+  case "invoice.finalized": {
+    const invEvent = event.data.object as Stripe.Invoice
+    const invUid = invEvent.metadata?.uid || await resolveUidByStripeCustomer(invEvent.customer)
+    if (!invUid) {
+      break
+    }
+
+    // Store invoice record for observability
+    const invoiceRef = db.doc(`users/${invUid}/invoices/${invEvent.id}`)
+    await invoiceRef.set({
+      id: invEvent.id,
+      number: invEvent.number,
+      status: invEvent.status,
+      total: invEvent.total,
+      amountPaid: invEvent.amount_paid,
+      amountDue: invEvent.amount_due,
+      currency: invEvent.currency,
+      hostedInvoiceUrl: invEvent.hosted_invoice_url,
+      invoicePdf: invEvent.invoice_pdf,
+      periodStart: invEvent.period_start ? new Date(invEvent.period_start * 1000).toISOString() : null,
+      periodEnd: invEvent.period_end ? new Date(invEvent.period_end * 1000).toISOString() : null,
+      billingReason: invEvent.billing_reason,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+    break
+  }
+  case "invoice.voided": {
+    const voidedInv = event.data.object as Stripe.Invoice
+    const voidedUid = voidedInv.metadata?.uid || await resolveUidByStripeCustomer(voidedInv.customer)
+    if (!voidedUid) {
+      break
+    }
+
+    const voidedRef = db.doc(`users/${voidedUid}/invoices/${voidedInv.id}`)
+    await voidedRef.set({
+      status: "voided",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    await recordBillingIncident({
+      type: "invoice.voided",
+      severity: "warning",
+      eventId: event.id,
+      eventType: event.type,
+      uid: voidedUid,
+      message: `Invoice ${voidedInv.id} was voided`,
+      metadata: {
+        invoiceId: voidedInv.id,
+        number: voidedInv.number,
+        amount: voidedInv.total,
+        currency: voidedInv.currency,
+      },
+    })
+    break
+  }
+  default: {
+    // Catch billing.meter events that are not in the Stripe SDK type union.
+    const rawType = (event as unknown as { type: string }).type
+    if (rawType === "billing.meter.error_report_triggered") {
+      const rawMeter = event as unknown as { data?: { object?: Record<string, unknown> } }
+      const meterObj = rawMeter?.data?.object || {}
+      const meterCustomer = meterObj["customer"] as string | Stripe.Customer | Stripe.DeletedCustomer | null | undefined
+      const meterUid = await resolveUidByStripeCustomer(meterCustomer)
+      if (meterUid) {
+        const rawMeterEvent = event as unknown as { id: string; type: string }
+        await recordBillingIncident({
+          type: "billing.meter.error_report_triggered",
+          severity: "error",
+          eventId: rawMeterEvent.id,
+          eventType: rawMeterEvent.type,
+          uid: meterUid,
+          message: `Billing meter error reported for meter ${String(meterObj["meter_id"] || "unknown")}`,
+          metadata: {
+            meterId: (meterObj["meter_id"] as string) || null,
+            customer: typeof meterCustomer === "string" ? meterCustomer : (meterCustomer as Stripe.Customer | null)?.id || null,
+          },
+        })
+      }
+    }
+    break
+  }
+  }
+}
+
 export const stripeWebhook = onRequest({ secrets: stripeSecrets }, async (req, res) => {
     const stripeSecret: string | undefined = stripeSecrets.find((secret) => secret.name === "STRIPE_SECRET_KEY")?.value()
     const stripe = getStripe(stripeSecret)
@@ -2109,368 +3030,79 @@ export const stripeWebhook = onRequest({ secrets: stripeSecrets }, async (req, r
       return
     }
 
+    // Reject events that don't match the current environment's mode.
+    // In production (IS_PRODUCTION=true), only accept livemode events.
+    // In development/staging, only accept testmode events.
+    if (env.IS_PRODUCTION && !event.livemode) {
+      console.warn(`Ignoring test-mode Stripe event ${event.id} in production environment`)
+      res.status(200).send("Ignored test-mode event in production")
+      return
+    }
+
+    if (!env.IS_PRODUCTION && event.livemode) {
+      console.warn(`Ignoring live-mode Stripe event ${event.id} in non-production environment`)
+      res.status(200).send("Ignored live-mode event in non-production environment")
+      return
+    }
+
     const eventRef = db.doc(`stripe_events/${event.id}`)
     try {
       await eventRef.create({
         type: event.type,
+        processed: false,
+        failed: false,
+        retryCount: 0,
         processingStartedAt: FieldValue.serverTimestamp(),
       })
     } catch {
-      res.status(200).send("Already processed")
-      return
+      const existingEvent = await eventRef.get()
+      const existingData = existingEvent.data() as { processed?: boolean } | undefined
+      if (existingData?.processed === true) {
+        res.status(200).send("Already processed")
+        return
+      }
+
+      await eventRef.set({
+        failed: false,
+        lastRetryAt: FieldValue.serverTimestamp(),
+        retryCount: FieldValue.increment(1),
+        processingStartedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
     }
 
     try {
-      switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session
-        const uid = session.metadata?.uid || session.client_reference_id
-        if (!uid) {
-          break
-        }
-
-        const protectedUserSnap = await db.doc(`users/${uid}`).get()
-        const protectedUser = protectedUserSnap.data() as Users | undefined
-        if (isBillingRestrictedUser(protectedUser)) {
-          await db.doc(`users/${uid}/billing/current`).set({
-            ...getDefaultBillingForPlan("free"),
-            plan: "free",
-            status: "inactive",
-            subscriptionId: null,
-            planInterval: null,
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
-          await db.doc(`users/${uid}`).set({
-            plan: "free",
-            status: "inactive",
-            subscriptionId: null,
-            stripeId: FieldValue.delete(),
-            updated_At: new Date(),
-          }, { merge: true })
-          break
-        }
-
-        const checkoutType = session.metadata?.checkoutType
-        const selectedPlanId = session.metadata?.planId || "free"
-        const selectedInterval = (session.metadata?.interval as BillingInterval) || "monthly"
-        const billingRef = db.doc(`users/${uid}/billing/current`)
-        const userRef = db.doc(`users/${uid}`)
-
-        if (checkoutType === "credits" || checkoutType === "custom_credits") {
-          const pack = creditPackCatalog.find((item) => item.id === selectedPlanId)
-          const incrementBy = checkoutType === "custom_credits" ? Math.floor(Number(session.metadata?.customCredits || 0)) : (pack?.credits || 0)
-          await addCreditsLedgerEntry({
-            uid,
-            delta: incrementBy,
-            source: checkoutType === "custom_credits" ? "custom_credits_checkout" : "stripe_checkout",
-            bucket: "purchased",
-            reason: checkoutType === "custom_credits" ? "custom_credits" : "credit_pack",
-            sessionId: session.id,
-          })
-        } else {
-          const selectedPlan = mapPlanIdToTier(selectedPlanId)
-          let trialMeta: Partial<UserBilling> = {}
-          let effectivePlan: BillingPlanTier = selectedPlan
-          let subscriptionMeta: Partial<UserBilling> = {}
-          let effectiveStatus = "active"
-          let effectiveSubscriptionId: string | null = typeof session.subscription === "string" ? session.subscription : null
-
-          if (typeof session.subscription === "string") {
-            const subscription = await stripe.subscriptions.retrieve(session.subscription)
-            effectiveStatus = subscription.status
-            effectiveSubscriptionId = subscription.id
-            subscriptionMeta = getSubscriptionCycleFields(subscription)
-
-            if (subscription.status === "trialing") {
-              effectivePlan = "trial"
-              trialMeta = {
-                trialPlanTarget: selectedPlan,
-                trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
-                trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-                trialUsedAt: new Date().toISOString(),
-                trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
-              }
-            }
-          }
-
-          await billingRef.set({
-            ...getDefaultBillingForPlan(effectivePlan),
-            status: effectiveStatus,
-            subscriptionId: effectiveSubscriptionId,
-            planInterval: selectedInterval,
-            ...subscriptionMeta,
-            ...trialMeta,
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true })
-
-          await userRef.set({
-            plan: effectivePlan,
-            status: effectiveStatus,
-            subscriptionId: effectiveSubscriptionId,
-            updated_At: new Date(),
-          }, { merge: true })
-
-          if (checkoutType === "plan_payg") {
-            const includedCredits = getIncludedCreditsForPlanInterval(selectedPlan, "payAsYouGo")
-            await addCreditsLedgerEntry({
-              uid,
-              delta: includedCredits,
-              source: "plan_payg_checkout",
-              bucket: "included",
-              reason: "plan_payg",
-              sessionId: session.id,
-              plan: selectedPlan,
-              interval: "payAsYouGo",
-            })
-          }
-        }
-        break
-      }
-      case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice
-        const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
-        if (!uid) {
-          break
-        }
-
-        const graceUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString()
-        await db.doc(`users/${uid}/billing/current`).set({
-          status: "past_due",
-          graceUntil,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-        break
-      }
-      case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice
-        const uid = invoice.metadata?.uid || await resolveUidByStripeCustomer(invoice.customer)
-        if (!uid) {
-          break
-        }
-
-        const billingRef = db.doc(`users/${uid}/billing/current`)
-        const billingSnap = await billingRef.get()
-        const billing = billingSnap.data() as UserBilling | undefined
-
-        let plan: BillingPlanTier | undefined
-        let planInterval: BillingInterval | undefined
-        let features: Record<string, boolean> | undefined
-        let trialFields: Partial<UserBilling> = {}
-        const recurringPriceId = getInvoiceRecurringPriceId(invoice)
-        const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
-
-        if (recurringMatch) {
-          plan = recurringMatch.plan
-          planInterval = recurringMatch.interval
-          features = getFeaturesFromPlan(plan)
-        }
-
-        if (billing?.plan === "trial" && billing.trialPlanTarget) {
-          plan = billing.trialPlanTarget
-          planInterval =
-            billing.planInterval === "monthly" || billing.planInterval === "quarterly" || billing.planInterval === "annually" ?
-              billing.planInterval :
-              planInterval
-          features = getFeaturesFromPlan(plan)
-          trialFields = {
-            trialPlanTarget: null,
-            trialStartedAt: null,
-            trialEndsAt: null,
-          }
-        }
-
-        const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : billing?.subscriptionId || null
-        const shouldGrantIncludedCredits = Boolean(
-          subscriptionId &&
-          plan &&
-          planInterval &&
-          invoice.amount_paid > 0 &&
-          recurringCreditGrantReasons.has(invoice.billing_reason || ""),
-        )
-
-        await billingRef.set({
-          status: "active",
-          ...(plan ? { plan } : {}),
-          ...(planInterval ? { planInterval } : {}),
-          ...(features ? { features } : {}),
-          ...trialFields,
-          graceUntil: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        if (shouldGrantIncludedCredits && plan && planInterval) {
-          await addCreditsLedgerEntry({
-            uid,
-            delta: getIncludedCreditsForPlanInterval(plan, planInterval),
-            source: "subscription_cycle",
-            bucket: "included",
-            reason: invoice.billing_reason || "subscription_cycle",
-            invoiceId: invoice.id,
-            subscriptionId,
-            plan,
-            interval: planInterval,
-          })
-        }
-
-        if (plan) {
-          await db.doc(`users/${uid}`).set({
-            plan,
-            status: "active",
-            updated_At: new Date(),
-          }, { merge: true })
-        }
-        break
-      }
-      case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent
-        const uid = paymentIntent.metadata?.uid || await resolveUidByStripeCustomer(paymentIntent.customer)
-        if (!uid) {
-          break
-        }
-
-        const protectedUserSnap = await db.doc(`users/${uid}`).get()
-        const protectedUser = protectedUserSnap.data() as Users | undefined
-        if (isBillingRestrictedUser(protectedUser)) {
-          break
-        }
-
-        const checkoutType = paymentIntent.metadata?.checkoutType
-        const selectedPlanId = paymentIntent.metadata?.planId
-
-        const inferredPlan = selectedPlanId ? mapPlanIdToTier(selectedPlanId) : inferPayAsYouGoPlanFromPayment({
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-        })
-
-        if (checkoutType === "credits") {
-          break
-        }
-
-        if (!inferredPlan || inferredPlan === "free" || inferredPlan === "trial") {
-          break
-        }
-
-        await db.doc(`users/${uid}/billing/current`).set({
-          ...getDefaultBillingForPlan(inferredPlan),
-          plan: inferredPlan,
-          planInterval: "payAsYouGo",
-          status: "active",
-          cancelAtPeriodEnd: false,
-          cancelAt: null,
-          currentPeriodStart: null,
-          currentPeriodEnd: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        if (!checkoutType) {
-          await addCreditsLedgerEntry({
-            uid,
-            delta: getIncludedCreditsForPlanInterval(inferredPlan, "payAsYouGo"),
-            source: "plan_payg_payment_intent",
-            bucket: "included",
-            reason: "plan_payg",
-            paymentIntentId: paymentIntent.id,
-            plan: inferredPlan,
-            interval: "payAsYouGo",
-          })
-        }
-
-        await db.doc(`users/${uid}`).set({
-          plan: inferredPlan,
-          status: "active",
-          updated_At: new Date(),
-        }, { merge: true })
-        break
-      }
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription
-        const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
-        if (!uid) {
-          break
-        }
-
-        const protectedUserSnap = await db.doc(`users/${uid}`).get()
-        const protectedUser = protectedUserSnap.data() as Users | undefined
-        if (isBillingRestrictedUser(protectedUser)) {
-          break
-        }
-
-        const recurringPriceId = subscription.items.data[0]?.price?.id
-        const recurringMatch = inferRecurringPlanFromPriceId(recurringPriceId)
-        if (!recurringMatch) {
-          break
-        }
-
-        const effectivePlan: BillingPlanTier = subscription.status === "trialing" ? "trial" : recurringMatch.plan
-
-        await db.doc(`users/${uid}/billing/current`).set({
-          plan: effectivePlan,
-          planInterval: recurringMatch.interval,
-          status: subscription.status,
-          subscriptionId: subscription.id,
-          features: getFeaturesFromPlan(effectivePlan),
-          ...getSubscriptionCycleFields(subscription),
-          ...(subscription.status === "trialing" ? {
-            trialPlanTarget: recurringMatch.plan,
-            trialStartedAt: new Date(subscription.current_period_start * 1000).toISOString(),
-            trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-            trialUsedAt: new Date().toISOString(),
-            trialCreditCapEur: TRIAL_DEFAULT_CREDIT_CAP_EUR,
-          } : {
-            trialPlanTarget: null,
-            trialStartedAt: null,
-            trialEndsAt: null,
-          }),
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        await db.doc(`users/${uid}`).set({
-          plan: effectivePlan,
-          status: subscription.status,
-          subscriptionId: subscription.id,
-          updated_At: new Date(),
-        }, { merge: true })
-        break
-      }
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription
-        const uid = subscription.metadata?.uid || await resolveUidByStripeCustomer(subscription.customer)
-        if (!uid) {
-          break
-        }
-
-        await db.doc(`users/${uid}/billing/current`).set({
-          ...getDefaultBillingForPlan("free"),
-          status: "inactive",
-          cancelAtPeriodEnd: false,
-          cancelAt: null,
-          currentPeriodStart: null,
-          currentPeriodEnd: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true })
-
-        await db.doc(`users/${uid}`).set({
-          plan: "free",
-          status: "inactive",
-          subscriptionId: null,
-          updated_At: new Date(),
-        }, { merge: true })
-        break
-      }
-      default:
-        break
-      }
+      await processStripeEvent(stripe, event)
 
       await eventRef.set({
         type: event.type,
         processed: true,
+        failed: false,
+        lastError: null,
         processedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
 
       res.status(200).send("ok")
     } catch (error) {
       console.error("stripeWebhook processing failed", error)
+      const errorMessage = toSafeErrorMessage(error)
+      await eventRef.set({
+        processed: false,
+        failed: true,
+        lastError: errorMessage,
+        failedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await recordBillingIncident({
+        type: "stripe.webhook.processing_failed",
+        severity: "error",
+        eventId: event.id,
+        eventType: event.type,
+        message: errorMessage,
+        metadata: {
+          livemode: event.livemode,
+          pendingWebhooks: event.pending_webhooks,
+        },
+      })
       res.status(500).send("Webhook processing error")
     }
   })
@@ -2534,10 +3166,11 @@ export const updateUsage = onDocumentCreated(
     const usageRatio = usageCap > 0 ? nextUsage / usageCap : 0
     const periodWindow = new Date().toISOString().slice(0, 7)
 
-    for (const threshold of usageThresholds) {
-      if (usageRatio >= threshold) {
+    const alertWrites = usageThresholds
+      .filter((threshold) => usageRatio >= threshold)
+      .map((threshold) => {
         const percent = Math.round(threshold * 100)
-        await emitUsageAlert({
+        return emitUsageAlert({
           uid: userId,
           alertId: createAlertId(`usage_${percent}`, periodWindow),
           title: `Usage at ${percent}%`,
@@ -2550,8 +3183,9 @@ export const updateUsage = onDocumentCreated(
             ratio: usageRatio,
           },
         })
-      }
-    }
+      })
+
+    await Promise.all(alertWrites)
 
     const billingRef = db.doc(`users/${userId}/billing/current`)
     const billingSnap = await billingRef.get()
@@ -2575,16 +3209,15 @@ export const updateUsage = onDocumentCreated(
   })
 
 export const grantPromotionalCredits = onCallv2(
-  { secrets: stripeSecrets },
+  { secrets: stripeSecrets, enforceAppCheck: false },
   async (req) => {
     const actorUid = req.auth?.uid
     if (!actorUid) {
       throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
-    const actorSnap = await db.doc(`users/${actorUid}`).get()
-    const actor = actorSnap.data() as Users | undefined
-    if (actor?.role !== "admin") {
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
       throw new HttpsError("permission-denied", "Only admins can grant promotional credits")
     }
 
@@ -2594,20 +3227,423 @@ export const grantPromotionalCredits = onCallv2(
       reason?: string
     }
 
-    if (!targetUserId || !Number.isFinite(credits) || credits <= 0) {
+    const normalizedTargetUserId = String(targetUserId || "").trim()
+    const normalizedReason = String(reason || "").trim() || "promotional_credit"
+
+    if (!normalizedTargetUserId || !Number.isFinite(credits) || credits <= 0) {
       throw new HttpsError("invalid-argument", "targetUserId and positive credits are required")
     }
 
+    const normalizedCredits = Math.floor(credits)
+
     await addCreditsLedgerEntry({
-      uid: targetUserId,
-      delta: Math.floor(credits),
+      uid: normalizedTargetUserId,
+      delta: normalizedCredits,
       source: "promotional_credit",
       bucket: "purchased",
       grantedBy: actorUid,
-      reason,
+      reason: normalizedReason,
     })
 
-    return { ok: true, targetUserId, grantedCredits: Math.floor(credits) }
+    await db.collection("audit_logs").add({
+      action: "admin_grant_promotional_credits",
+      admin_uid: actorUid,
+      target_userId: normalizedTargetUserId,
+      credits: normalizedCredits,
+      reason: normalizedReason,
+      timestamp: FieldValue.serverTimestamp(),
+    })
+
+    return { ok: true, targetUserId: normalizedTargetUserId, grantedCredits: normalizedCredits }
+  },
+)
+
+export const getAdminBillingObservability = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: false },
+  async (req) => {
+    const actorUid = req.auth?.uid
+    if (!actorUid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
+      throw new HttpsError("permission-denied", "Only admins can access billing observability")
+    }
+
+    const {
+      incidentLimit: rawIncidentLimit = 20,
+      failedEventLimit: rawFailedEventLimit = 20,
+      pendingEventLimit: rawPendingEventLimit = 20,
+      pastDueLimit: rawPastDueLimit = 30,
+      includeAcknowledged = false,
+    } = (req.data || {}) as {
+      incidentLimit?: number
+      failedEventLimit?: number
+      pendingEventLimit?: number
+      pastDueLimit?: number
+      includeAcknowledged?: boolean
+    }
+
+    const incidentLimit = Math.max(1, Math.min(100, Math.floor(Number(rawIncidentLimit) || 20)))
+    const failedEventLimit = Math.max(1, Math.min(100, Math.floor(Number(rawFailedEventLimit) || 20)))
+    const pendingEventLimit = Math.max(1, Math.min(100, Math.floor(Number(rawPendingEventLimit) || 20)))
+    const pastDueLimit = Math.max(1, Math.min(200, Math.floor(Number(rawPastDueLimit) || 30)))
+
+    const incidentsOrderedQuery = includeAcknowledged ?
+      db.collection("billing_incidents").orderBy("createdAt", "desc") :
+      db.collection("billing_incidents").where("acknowledged", "==", false).orderBy("createdAt", "desc")
+
+    let incidentsDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    let failedEventsDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    let pendingEventsRawDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    let pastDueDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+
+    const fetchPastDueAccountsIndexLight = async (): Promise<FirebaseFirestore.QueryDocumentSnapshot[]> => {
+      try {
+        const usersPastDueSnap = await db.collection("users")
+          .where("billing.status", "==", "past_due")
+          .limit(Math.max(pastDueLimit * 3, pastDueLimit))
+          .get()
+
+        return sortDocsByTimestampDesc(usersPastDueSnap.docs, "billing.updatedAt").slice(0, pastDueLimit)
+      } catch (error) {
+        if (!isFirestoreFailedPrecondition(error)) {
+          throw error
+        }
+
+        const scanLimit = Math.max(pastDueLimit * 25, 500)
+        const usersScanSnap = await db.collection("users")
+          .limit(scanLimit)
+          .get()
+
+        const filteredPastDueDocs = usersScanSnap.docs.filter((doc) => {
+          const data = doc.data() as { billing?: { status?: unknown } }
+          return data.billing?.status === "past_due"
+        })
+
+        return sortDocsByTimestampDesc(filteredPastDueDocs, "billing.updatedAt").slice(0, pastDueLimit)
+      }
+    }
+
+    try {
+      const [incidentsSnap, failedEventsSnap, pendingEventsRawSnap, pastDueSnap] = await Promise.all([
+        incidentsOrderedQuery
+          .limit(incidentLimit)
+          .get(),
+        db.collection("stripe_events")
+          .where("failed", "==", true)
+          .orderBy("failedAt", "desc")
+          .limit(failedEventLimit)
+          .get(),
+        db.collection("stripe_events")
+          .where("processed", "==", false)
+          .orderBy("processingStartedAt", "desc")
+          .limit(Math.max(pendingEventLimit * 3, pendingEventLimit))
+          .get(),
+        db.collectionGroup("billing")
+          .where("status", "==", "past_due")
+          .limit(pastDueLimit)
+          .get(),
+      ])
+
+          incidentsDocs = incidentsSnap.docs
+          failedEventsDocs = failedEventsSnap.docs
+          pendingEventsRawDocs = pendingEventsRawSnap.docs
+          pastDueDocs = pastDueSnap.docs
+    } catch (error) {
+      if (!isFirestoreFailedPrecondition(error)) {
+        throw error
+      }
+
+      console.warn("Falling back to index-light billing observability queries", {
+        dbName,
+        reason: toSafeErrorMessage(error),
+      })
+
+      const [incidentsRawSnap, failedEventsRawSnap, pendingEventsFallbackSnap] = await Promise.all([
+        (includeAcknowledged ?
+          db.collection("billing_incidents") :
+          db.collection("billing_incidents").where("acknowledged", "==", false))
+          .limit(Math.max(incidentLimit * 4, incidentLimit))
+          .get(),
+        db.collection("stripe_events")
+          .where("failed", "==", true)
+          .limit(Math.max(failedEventLimit * 5, failedEventLimit))
+          .get(),
+        db.collection("stripe_events")
+          .where("processed", "==", false)
+          .limit(Math.max(pendingEventLimit * 7, pendingEventLimit))
+          .get(),
+      ])
+
+      incidentsDocs = sortDocsByTimestampDesc(incidentsRawSnap.docs, "createdAt").slice(0, incidentLimit)
+      failedEventsDocs = sortDocsByTimestampDesc(failedEventsRawSnap.docs, "failedAt").slice(0, failedEventLimit)
+      pendingEventsRawDocs = sortDocsByTimestampDesc(pendingEventsFallbackSnap.docs, "processingStartedAt")
+        .slice(0, Math.max(pendingEventLimit * 3, pendingEventLimit))
+      pastDueDocs = await fetchPastDueAccountsIndexLight()
+    }
+
+    const incidents = incidentsDocs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: timestampToIso(data.createdAt),
+        acknowledgedAt: timestampToIso(data.acknowledgedAt),
+      }
+    })
+
+    const failedEvents = failedEventsDocs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      return {
+        id: doc.id,
+        type: data.type || null,
+        retryCount: Number(data.retryCount || 0),
+        lastError: data.lastError || null,
+        failedAt: timestampToIso(data.failedAt),
+        lastRetryAt: timestampToIso(data.lastRetryAt),
+      }
+    })
+
+    const pendingEvents = pendingEventsRawDocs
+      .filter((doc) => {
+        const data = doc.data() as { failed?: boolean }
+        return data.failed !== true
+      })
+      .slice(0, pendingEventLimit)
+      .map((doc) => {
+        const data = doc.data() as Record<string, unknown>
+        return {
+          id: doc.id,
+          type: data.type || null,
+          retryCount: Number(data.retryCount || 0),
+          processingStartedAt: timestampToIso(data.processingStartedAt),
+          lastRetryAt: timestampToIso(data.lastRetryAt),
+        }
+      })
+
+    const pastDueAccounts = pastDueDocs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      const billingRecord = (data.billing && typeof data.billing === "object") ?
+        (data.billing as Record<string, unknown>) :
+        null
+      const pathSegments = doc.ref.path.split("/")
+      const uid = pathSegments.length >= 2 ? pathSegments[1] : null
+
+      return {
+        uid,
+        path: doc.ref.path,
+        graceUntil: typeof data.graceUntil === "string" ?
+          data.graceUntil :
+          (typeof billingRecord?.graceUntil === "string" ? billingRecord.graceUntil : null),
+        updatedAt: timestampToIso(data.updatedAt) || timestampToIso(billingRecord?.updatedAt),
+        subscriptionId: data.subscriptionId || billingRecord?.subscriptionId || null,
+        plan: data.plan || billingRecord?.plan || null,
+        status: data.status || billingRecord?.status || null,
+      }
+    })
+
+    // --- Additional observability signals ---
+
+    // 1. Dispute incidents (charge.dispute.created, etc.)
+    let disputeDocs: FirebaseFirestore.QueryDocumentSnapshot[] = []
+    try {
+      const disputeSnap = await db.collection("billing_incidents")
+        .where("type", ">=", "charge.dispute.")
+        .where("type", "<", "charge.dispute.\uf8ff")
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get()
+      disputeDocs = disputeSnap.docs
+    } catch {
+      // Index not available — skip
+    }
+
+    const disputes = disputeDocs.map((doc) => {
+      const data = doc.data() as Record<string, unknown>
+      return {
+        id: doc.id,
+        type: data.type || null,
+        severity: data.severity || null,
+        uid: data.uid || null,
+        message: data.message || null,
+        createdAt: timestampToIso(data.createdAt),
+        acknowledged: Boolean(data.acknowledged),
+        metadata: (data.metadata && typeof data.metadata === "object") ? data.metadata : null,
+      }
+    })
+
+    // 2. Retry statistics — compute from failed events
+    const totalRetries = failedEventsDocs.reduce((sum, doc) => {
+      const data = doc.data() as { retryCount?: number }
+      return sum + Number(data.retryCount || 0)
+    }, 0)
+    const retryStats = {
+      totalFailedEvents: failedEventsDocs.length,
+      totalRetries,
+      averageRetries: failedEventsDocs.length > 0 ?
+        Math.round((totalRetries / failedEventsDocs.length) * 100) / 100 :
+        0,
+      oldestUnprocessedEvent: pendingEvents.length > 0 ?
+        pendingEvents[pendingEvents.length - 1]?.processingStartedAt || null :
+        null,
+    }
+
+    // 3. Entitlement metrics for the current day
+    let todaysEntitlementCalls = 0
+    try {
+      const todayKey = new Date().toISOString().slice(0, 10)
+      const metricSnap = await db.doc(`billing_entitlement_metrics/${todayKey}`).get()
+      if (metricSnap.exists) {
+        const data = metricSnap.data() as { totalCalls?: number } | undefined
+        todaysEntitlementCalls = Number(data?.totalCalls || 0)
+      }
+    } catch {
+      // Best-effort
+    }
+
+    return {
+      generatedAt: new Date().toISOString(),
+      incidents,
+      failedEvents,
+      pendingEvents,
+      pastDueAccounts,
+      disputes,
+      retryStats,
+      entitlementMetrics: {
+        todayCalls: todaysEntitlementCalls,
+      },
+    }
+  },
+)
+
+export const acknowledgeBillingIncident = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: false },
+  async (req) => {
+    const actorUid = req.auth?.uid
+    if (!actorUid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
+      throw new HttpsError("permission-denied", "Only admins can acknowledge incidents")
+    }
+
+    const incidentId = String((req.data as { incidentId?: string })?.incidentId || "").trim()
+    if (!incidentId) {
+      throw new HttpsError("invalid-argument", "incidentId is required")
+    }
+
+    const incidentRef = db.doc(`billing_incidents/${incidentId}`)
+    const incidentSnap = await incidentRef.get()
+    if (!incidentSnap.exists) {
+      throw new HttpsError("not-found", "Incident not found")
+    }
+
+    await incidentRef.set({
+      acknowledged: true,
+      acknowledgedBy: actorUid,
+      acknowledgedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    return { ok: true, incidentId }
+  },
+)
+
+export const requestStripeEventRetry = onCallv2(
+  { secrets: stripeSecrets, enforceAppCheck: false },
+  async (req) => {
+    const actorUid = req.auth?.uid
+    if (!actorUid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    const tokenRole = getTokenRole(req)
+    if (!isPlatformAdminRole(tokenRole)) {
+      throw new HttpsError("permission-denied", "Only admins can request event retries")
+    }
+
+    const eventId = String((req.data as { eventId?: string })?.eventId || "").trim()
+    if (!eventId) {
+      throw new HttpsError("invalid-argument", "eventId is required")
+    }
+
+    const eventRef = db.doc(`stripe_events/${eventId}`)
+    const eventSnap = await eventRef.get()
+    if (!eventSnap.exists) {
+      throw new HttpsError("not-found", "Event not found")
+    }
+
+    const eventData = eventSnap.data() as { processed?: boolean, failed?: boolean } | undefined
+    if (eventData?.processed === true && eventData?.failed !== true) {
+      throw new HttpsError("failed-precondition", "Event already processed successfully")
+    }
+
+    const secret: string | undefined = stripeSecrets.find((entry) => entry.name === "STRIPE_SECRET_KEY")?.value()
+    const stripe = getStripe(secret)
+
+    await eventRef.set({
+      processed: false,
+      failed: false,
+      retryRequestedBy: actorUid,
+      retryRequestedAt: FieldValue.serverTimestamp(),
+      manualRetryRequests: FieldValue.increment(1),
+      processingStartedAt: FieldValue.serverTimestamp(),
+      lastError: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+
+    try {
+      const event = await stripe.events.retrieve(eventId)
+      await processStripeEvent(stripe, event)
+
+      await eventRef.set({
+        processed: true,
+        failed: false,
+        processedAt: FieldValue.serverTimestamp(),
+        replayedBy: actorUid,
+        replayedAt: FieldValue.serverTimestamp(),
+        lastError: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await recordBillingIncident({
+        type: "stripe.event.retry_replayed",
+        severity: "info",
+        eventId,
+        eventType: event.type,
+        message: `Manual replay succeeded for Stripe event ${eventId}`,
+        metadata: {
+          actorUid,
+        },
+      })
+
+      return { ok: true, eventId }
+    } catch (error) {
+      const errorMessage = toSafeErrorMessage(error)
+      await eventRef.set({
+        processed: false,
+        failed: true,
+        failedAt: FieldValue.serverTimestamp(),
+        lastError: errorMessage,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+
+      await recordBillingIncident({
+        type: "stripe.event.retry_failed",
+        severity: "error",
+        eventId,
+        message: `Manual replay failed for Stripe event ${eventId}: ${errorMessage}`,
+        metadata: {
+          actorUid,
+        },
+      })
+
+      throw new HttpsError("internal", `Replay failed: ${errorMessage}`)
+    }
   },
 )
 
@@ -2646,6 +3682,230 @@ export const expireTrialsToFree = onSchedule(
     }
 
     console.log("expireTrialsToFree completed", { checkedAt: nowIso, expiredCount })
+  },
+)
+
+/**
+ * Hourly sweep that downgrades accounts whose payment grace period has expired.
+ * When invoice.payment_failed fires, a 3-day graceUntil is set on the billing doc.
+ * This function detects graceUntil < now and reverts the account to free/inactive,
+ * also voiding the Stripe subscription and recording a billing incident.
+ */
+export const downgradePastDueAccounts = onSchedule(
+  {
+    schedule: "every 1 hours",
+    timeZone: "UTC",
+  },
+  async () => {
+    const now = new Date()
+    const nowIso = now.toISOString()
+
+    // Find billing docs with status=past_due and graceUntil < now.
+    const pastDueDocs = await db.collectionGroup("billing")
+      .where("status", "==", "past_due")
+      .get()
+
+    let downgradedCount = 0
+    for (const doc of pastDueDocs.docs) {
+      const billing = doc.data() as UserBilling
+      if (!billing.graceUntil || billing.graceUntil >= nowIso) {
+        continue
+      }
+
+      const userRef = doc.ref.parent.parent
+      if (!userRef) {
+        continue
+      }
+
+      const uid = userRef.id
+
+      // Cancel the Stripe subscription if one exists.
+      if (billing.subscriptionId) {
+        try {
+          const secret: string | undefined = stripeSecrets.find((s) => s.name === "STRIPE_SECRET_KEY")?.value()
+          const stripe = getStripe(secret)
+          await stripe.subscriptions.cancel(billing.subscriptionId)
+        } catch (error) {
+          console.warn(`Failed to cancel Stripe subscription ${billing.subscriptionId}:`, error)
+        }
+      }
+
+      const downgradedBilling = {
+        ...getDefaultBillingForPlan("free"),
+        plan: "free" as BillingPlanTier,
+        status: "inactive",
+        subscriptionId: null,
+        planInterval: null as BillingInterval | null,
+        cancelAtPeriodEnd: false,
+        graceUntil: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }
+
+      await Promise.all([
+        doc.ref.set(downgradedBilling, { merge: true }),
+        userRef.set({
+          billing: downgradedBilling,
+          plan: "free",
+          status: "inactive",
+          subscriptionId: null,
+          updated_At: new Date(),
+        }, { merge: true }),
+      ])
+
+      await recordBillingIncident({
+        type: "billing.grace_period_expired",
+        severity: "error",
+        uid,
+        message: `Payment grace period ended. Account downgraded from ${billing.plan} to free plan.`,
+        metadata: {
+          previousPlan: billing.plan,
+          previousInterval: billing.planInterval || null,
+          graceUntil: billing.graceUntil,
+          subscriptionId: billing.subscriptionId,
+        },
+      })
+
+      downgradedCount += 1
+    }
+
+    if (downgradedCount > 0) {
+      console.log("downgradePastDueAccounts completed", { checkedAt: nowIso, downgradedCount })
+    }
+  },
+)
+
+/**
+ * Daily sweep that expires purchased & included credits past their expiry date.
+ * Credits granted with an expiresAt field in the past are deducted from the
+ * user's balance and recorded as an "expire" ledger entry for transparency.
+ * Configurable via BILLING_CREDIT_EXPIRY_DAYS env var (default: 365 days).
+ * Runs every 6 hours.
+ */
+export const expireStaleCredits = onSchedule(
+  {
+    schedule: "every 6 hours",
+    timeZone: "UTC",
+  },
+  async () => {
+    const now = new Date()
+    const nowIso = now.toISOString()
+
+    // Find all credit grant ledger entries that have expired.
+    const expiredLedgerSnap = await db.collectionGroup("credits_ledger")
+      .where("operation", "==", "grant")
+      .where("expiresAt", "<=", nowIso)
+      .limit(500)
+      .get()
+
+    // Group expired grants by user and bucket, summing the delta.
+    const expiryMap = new Map<string, { purchased: number; included: number }>()
+
+    for (const doc of expiredLedgerSnap.docs) {
+      const entry = doc.data() as {
+        bucket?: string
+        delta?: number
+        uid?: string
+      }
+
+      // Infer uid from the document path: users/{uid}/credits_ledger/{id}
+      const pathParts = doc.ref.path.split("/")
+      const uid = entry.uid || (pathParts.length >= 3 ? pathParts[1] : null)
+      if (!uid) {
+        continue
+      }
+
+      const bucket = entry.bucket === "included" ? "included" : "purchased"
+      const delta = Math.floor(Number(entry.delta || 0))
+      if (delta <= 0) {
+        continue
+      }
+
+      if (!expiryMap.has(uid)) {
+        expiryMap.set(uid, { purchased: 0, included: 0 })
+      }
+
+      const entryVal = expiryMap.get(uid) as { purchased: number; included: number } | undefined
+      if (!entryVal) {
+        continue
+      }
+      entryVal[bucket] += delta
+    }
+
+    let expiredCount = 0
+    const deletions: Array<Promise<unknown>> = []
+
+    for (const [uid, amounts] of expiryMap) {
+      const total = amounts.purchased + amounts.included
+      if (total <= 0) {
+        continue
+      }
+
+      const userRef = db.doc(`users/${uid}`)
+      const userSnap = await userRef.get()
+      const user = userSnap.data() as Users & { billing?: UserBilling } | undefined
+      const billing = user?.billing as UserBilling | undefined
+
+      if (!billing) {
+        continue
+      }
+
+      // Deduct expired purchased credits via negative mutation.
+      if (amounts.purchased > 0) {
+        const currentPurchased = Number(billing.credits?.purchasedBalance || 0)
+        const nextPurchased = Math.max(0, currentPurchased - amounts.purchased)
+        if (nextPurchased < currentPurchased) {
+          // Deduct expired purchased credits directly from billing doc.
+          const billingRef2 = db.doc(`users/${uid}/billing/current`)
+          await billingRef2.set({
+            credits: {
+              purchasedBalance: nextPurchased,
+              purchasedReserved: Math.min(
+                Number(billing.credits?.purchasedReserved || 0),
+                nextPurchased,
+              ),
+            },
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true })
+        }
+      }
+
+      // Deduct expired included credits.
+      if (amounts.included > 0) {
+        const currentIncluded = Number(billing.credits?.includedBalance || 0)
+        const nextIncluded = Math.max(0, currentIncluded - amounts.included)
+        if (nextIncluded < currentIncluded) {
+          await db.doc(`users/${uid}/billing/current`).set({
+            credits: {
+              includedBalance: nextIncluded,
+              includedReserved: Math.min(
+                Number(billing.credits?.includedReserved || 0),
+                nextIncluded,
+              ),
+            },
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true })
+        }
+      }
+
+      // Mark the original grant ledger entries as expired so they're not re-processed.
+      // We update them rather than delete for audit trail.
+      const userLedgerEntries = expiredLedgerSnap.docs.filter((d) => {
+        const pathParts = d.ref.path.split("/")
+        const docUid = d.data().uid || (pathParts.length >= 3 ? pathParts[1] : null)
+        return docUid === uid
+      })
+
+      for (const entryDoc of userLedgerEntries) {
+        deletions.push(
+          entryDoc.ref.set({ expiredAt: nowIso }, { merge: true }).catch(() => undefined),
+        )
+      }
+
+      expiredCount += 1
+    }
+
+    await Promise.all(deletions)
+    console.log("expireStaleCredits completed", { checkedAt: nowIso, expiredUsers: expiredCount })
   },
 )
 

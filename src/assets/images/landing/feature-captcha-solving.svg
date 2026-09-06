@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+  <rect width="200" height="150" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(244,63,94,0.2)" stroke-width="1"/>
+  <!-- Shield/check icon -->
+  <path d="M30,35 L50,28 L70,35 L70,55 C70,68 50,75 50,75 C50,75 30,68 30,55Z" fill="rgba(244,63,94,0.06)" stroke="rgba(244,63,94,0.2)" stroke-width="1.5">
+    <animate attributeName="fill" values="rgba(244,63,94,0.06);rgba(244,63,94,0.1);rgba(244,63,94,0.06)" dur="2s" repeatCount="indefinite"/>
+  </path>
+  <polyline points="42,50 48,56 58,44" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="50" y="100" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="13" font-family="sans-serif" font-weight="600">CAPTCHA Solving</text>
+  <text x="50" y="118" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">Automated</text>
+  <text x="50" y="132" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9" font-family="sans-serif">bypass</text>
+</svg>

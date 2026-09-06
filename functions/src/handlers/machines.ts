@@ -17,6 +17,25 @@ const validIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
 const toSingleParam = (value: string | string[] | undefined): string =>
     Array.isArray(value) ? (value[0] || "") : (value || "")
 
+const normalizeRequestHeaders = (headers: Request["headers"]): Record<string, string> => {
+    const normalized: Record<string, string> = {}
+
+    Object.entries(headers).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+            if (value.length > 0) {
+                normalized[key] = value.join(",")
+            }
+            return
+        }
+
+        if (typeof value === "string") {
+            normalized[key] = value
+        }
+    })
+
+    return normalized
+}
+
 class MachinesHandler {
     constructor() {
         // this.upload = multer({ storage: multer.memoryStorage() })
@@ -108,7 +127,7 @@ class MachinesHandler {
         // const token = req.app.locals["user"]
         const apiUrl = env.PRODUCTION == "true" ? env.API_ARACHNEFLY_URL || "https://arachnefly.fly.dev" : "http://localhost:8080"
         const url: URL = new URL(`${apiUrl}/api/machine/${machineId}`)
-        const headers = req.headers as any
+        const headers = normalizeRequestHeaders(req.headers)
 
         try {
             const fetchOptions: RequestInit = {

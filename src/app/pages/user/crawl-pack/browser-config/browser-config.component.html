@@ -92,7 +92,8 @@
 
         @if (browserProfiles$ | async; as profiles) {
           <div
-            class="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40">
+            class="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+            [@listStagger]="profiles.length">
             @for (profile of profiles; track profile; let i = $index) {
               <div
                 (click)="onSelectProfile(profile)"
@@ -172,10 +173,20 @@
         !(browserProfiles$ | async) && (browserProfiles$ | async) !== null
         ) {
         <div
-          class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40">
+          class="mb-8 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 min-h-40"
+          [@listStagger]="'browser-loading'"
+          aria-hidden="true">
           @for (item of [1, 2, 3, 4, 5]; track item) {
             <div
-            class="relative h-40 w-full px-[.7rem] py-1 animate-pulse rounded-lg bg-gray3 dark:bg-gray4/60"></div>
+            class="rounded-xl border border-gray-300/60 bg-gray-200/80 p-4 dark:border-gray-600/40 dark:bg-gray-700/35">
+              <div class="loading-line-mid"></div>
+              <div class="mt-3 loading-line-long"></div>
+              <div class="mt-2 loading-line-short"></div>
+              <div class="mt-5 flex items-center justify-between">
+                <div class="loading-chip w-24"></div>
+                <div class="loading-key h-8 w-14"></div>
+              </div>
+            </div>
           }
         </div>
       }

@@ -3,6 +3,8 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --fix --ext .js,.ts .",
+    "test": "tsx --test src/**/*.spec.ts",
+    "test:geo-matrix": "tsx --test src/gfunctions/geo-lookup-matrix.spec.ts",
     "build:angular": "node cp-angular.js",
     "build": "npm run build:angular && tsc",
     "build:watch": "npm run build:angular && tsc --watch",
@@ -20,10 +22,10 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@angular/common": "^20.3.17",
     "@dotenvx/dotenvx": "^1.52.0",
     "@google-cloud/functions-framework": "^5.0.2",
     "@google-cloud/secret-manager": "^5.6.0",
+    "@simplewebauthn/server": "^13.3.1",
     "@upstash/ratelimit": "^1.2.0",
     "@upstash/redis": "^1.34.3",
     "chalk": "^5.5.0",
@@ -37,11 +39,11 @@
     "form-data": "^4.0.4",
     "helmet": "^8.1.0",
     "ioredis": "^5.7.0",
-    "ip2location-nodejs": "^9.6.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "rate-limit-redis": "^4.2.2",
     "request-ip": "^3.3.0",
+    "resend": "^6.10.0",
     "stripe": "^17.7.0",
     "useragent": "^2.3.0"
   },
@@ -61,6 +63,7 @@
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.25.4",
     "firebase-functions-test": "^3.1.0",
+    "tsx": "^4.20.6",
     "typescript": "^4.9.0"
   },
   "private": true,

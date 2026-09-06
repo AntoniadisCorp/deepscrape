@@ -1,1 +1,56 @@
-<p>passes works!</p>
+<div class="container mx-auto px-4 py-6">
+  <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Credit Passes</h2>
+
+  <!-- Credit balance summary -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+    <div class="rounded-2xl bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-gray-800/30 border border-violet-200 dark:border-violet-800/30 p-5 shadow-sm">
+      <p class="text-xs text-violet-600 dark:text-violet-300 uppercase tracking-wide font-medium">Purchased credits</p>
+      <p class="text-3xl font-bold text-violet-700 dark:text-violet-200 mt-1">{{ purchasedCredits$ | async }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Available for usage-based access</p>
+    </div>
+    <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-gray-800/30 border border-emerald-200 dark:border-emerald-800/30 p-5 shadow-sm">
+      <p class="text-xs text-emerald-600 dark:text-emerald-300 uppercase tracking-wide font-medium">Included credits</p>
+      <p class="text-3xl font-bold text-emerald-700 dark:text-emerald-200 mt-1">{{ includedCredits$ | async }}</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">From your subscription plan</p>
+    </div>
+  </div>
+
+  <!-- Credit packs -->
+  <div class="mb-8">
+    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Credit packs</h3>
+    <div *ngIf="(canPurchaseCredits$ | async) === false" class="rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 mb-4">
+      <div class="flex items-center gap-2">
+        <mat-icon fontSet="material-icons-outlined" class="text-amber-600 dark:text-amber-300 text-sm">info</mat-icon>
+        <span>Standalone credits are only available on the free plan without an active subscription. <a routerLink="/billing/plans" class="underline font-medium">View plans</a></span>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div *ngFor="let pack of creditPacks$ | async" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/30 p-5 shadow-sm">
+        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ pack.label }}</p>
+        <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{{ (pack.amount / 100) | currency:pack.currency }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ pack.credits }} credits</p>
+        <button
+          type="button"
+          class="mt-4 w-full text-sm px-4 py-2 rounded-full bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50"
+          [disabled]="(canPurchaseCredits$ | async) === false"
+          (click)="purchasePack(pack)"
+        >
+          Buy now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current plan usage info -->
+  <div *ngIf="billing$ | async as billing" class="rounded-2xl bg-gray-50 dark:bg-gray-800/30 p-5 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-2 mb-3">
+      <mat-icon fontSet="material-icons-outlined" class="text-gray-500 dark:text-gray-400 text-sm">receipt</mat-icon>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Current plan: <span class="capitalize">{{ billing.plan }}</span></span>
+    </div>
+    <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+      <p>Purchased: {{ getAvailablePurchased(billing) }} credits available</p>
+      <p>Included: {{ getAvailableIncluded(billing) }} credits available</p>
+      <p *ngIf="billing.subscriptionId" class="text-xs text-gray-400">Subscription: {{ billing.subscriptionId.slice(0, 14) }}…</p>
+    </div>
+  </div>
+</div>

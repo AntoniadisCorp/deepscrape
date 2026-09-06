@@ -50,51 +50,6 @@ class SyncAIapis {
         }
     }
 
-    // async requirePaidAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
-    //     const request = req as AuthenticatedRequest
-    //     const uid = request.user?.uid
-    //     if (!uid) {
-    //         res.status(401).json({ error: 'unauthorized', code: 'unauthorized' })
-    //         return
-    //     }
-
-    //     try {
-    //         const billingRef = db.doc(`users/${uid}/billing/current`)
-    //         const billingSnap = await billingRef.get()
-
-    //         const now = Date.now()
-    //         if (billingSnap.exists) {
-    //             const billing = billingSnap.data() as {
-    //                 plan?: string
-    //                 graceUntil?: string | null
-    //                 credits?: { balance?: number; reserved?: number }
-    //             }
-
-    //             const plan = (billing.plan || 'free').toLowerCase()
-    //             const paidPlans = new Set(['trial', 'starter', 'pro', 'enterprise'])
-    //             const hasPaidPlan = paidPlans.has(plan)
-    //             const balance = Number(billing.credits?.balance || 0)
-    //             const reserved = Number(billing.credits?.reserved || 0)
-    //             const hasCredits = balance - reserved > 0
-    //             const hasGrace = !!billing.graceUntil && now < new Date(billing.graceUntil).getTime()
-
-    //             if (hasPaidPlan || hasCredits || hasGrace) {
-    //                 next()
-    //                 return
-    //             }
-    //         }
-
-    //         res.status(402).json({
-    //             error: 'payment_required',
-    //             code: 'payment_required',
-    //             message: 'Payment required to access this endpoint',
-    //         })
-    //     } catch (error) {
-    //         console.error('Payment gate check failed:', error)
-    //         res.status(500).json({ error: 'internal', code: 'internal' })
-    //     }
-    // }
-
     // ------------------- Node JS Routes ------------------- 
 
     /**

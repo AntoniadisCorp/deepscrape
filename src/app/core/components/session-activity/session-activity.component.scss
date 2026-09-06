@@ -1,0 +1,216 @@
+.activity-visualization {
+  --surface: #f8f8f8;
+  --surface-raised: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border: #dbe1e8;
+  --border-soft: #e8edf3;
+  --text-primary: #2a2e35;
+  --text-secondary: #454e56;
+  --text-muted: #6c7983;
+  --accent: #06b6d4;
+  --accent-strong: #0891b2;
+  --accent-soft: #67e8f9;
+  --row-hover: #f8fafc;
+  --status-active-bg: #d1fae5;
+  --status-active-text: #065f46;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+
+  .activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .total-activity {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+  }
+
+  .sparkline-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 100px;
+    padding: 20px 0;
+    background: var(--surface-raised);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+
+    .sparkline-bar {
+      flex: 1;
+      background: linear-gradient(to top, var(--accent-strong), var(--accent-soft));
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 0.8;
+        filter: brightness(0.9);
+      }
+    }
+  }
+
+  .activity-legend {
+    display: flex;
+    gap: 20px;
+    padding: 10px 0;
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+
+      .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+
+        &.low {
+          background: #67e8f9;
+        }
+
+        &.medium {
+          background: #06b6d4;
+        }
+
+        &.high {
+          background: #0e7490;
+        }
+      }
+    }
+  }
+
+  .activity-tables {
+    background: var(--surface-raised);
+    border-radius: 4px;
+    padding: 16px;
+    border: 1px solid var(--border);
+
+    .daily-summary {
+      h4 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        color: var(--text-secondary);
+
+        thead {
+          background: var(--surface-muted);
+
+          th {
+            padding: 8px;
+            text-align: left;
+            font-weight: 500;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+          }
+        }
+
+        tbody {
+          tr {
+            &:hover {
+              background: var(--row-hover);
+            }
+
+            td {
+              padding: 8px;
+              border-bottom: 1px solid var(--border-soft);
+
+              .status {
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+
+                &.active {
+                  background: var(--status-active-bg);
+                  color: var(--status-active-text);
+                }
+
+                &.inactive {
+                  background: #fed7aa;
+                  color: #9a3412;
+                }
+
+                &.idle {
+                  background: #fef08a;
+                  color: #854d0e;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .activity-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+
+    .metric {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px;
+      text-align: center;
+
+      .label {
+        display: block;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+
+      .value {
+        display: block;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+    }
+  }
+}
+
+:host-context(.dark) {
+  .activity-visualization {
+    --surface: rgba(18, 24, 27, 0.8);
+    --surface-raised: rgba(42, 46, 53, 0.85);
+    --surface-muted: rgba(69, 78, 86, 0.65);
+    --border: rgba(178, 190, 205, 0.28);
+    --border-soft: rgba(178, 190, 205, 0.2);
+    --text-primary: #f8f8f8;
+    --text-secondary: #dbe1e8;
+    --text-muted: #b2becd;
+    --accent: #22d3ee;
+    --accent-strong: #06b6d4;
+    --accent-soft: #67e8f9;
+    --row-hover: rgba(69, 78, 86, 0.35);
+    --status-active-bg: rgba(16, 185, 129, 0.22);
+    --status-active-text: #86efac;
+  }
+}

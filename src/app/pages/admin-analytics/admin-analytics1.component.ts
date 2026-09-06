@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core'
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core'
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms'
 import { BaseChartDirective } from 'ng2-charts'
@@ -28,7 +28,8 @@ interface FilterState {
   selector: 'app-admin-analytics',
   imports: [BaseChartDirective, DecimalPipe, LucideAngularModule, FormsModule, DatePipe],
   templateUrl: './admin-analytics1.component.html',
-  styleUrls: ['./admin-analytics.component.scss']
+  styleUrls: ['./admin-analytics.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
   private analyticsService = inject(FirestoreAnalyticsService)

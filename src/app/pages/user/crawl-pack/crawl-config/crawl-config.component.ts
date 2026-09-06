@@ -18,10 +18,12 @@ import { getErrorLabel, getOffsetTop, setCacheModeList } from 'src/app/core/func
 import { FormControlPipe } from 'src/app/core/pipes';
 import { CartService, PackService, ScrollService, SnackbarService, WindowToken } from 'src/app/core/services';
 import { CrawlConfig, CrawlerRunConfig, DropDownOption } from 'src/app/core/types';
+import { listStaggerAnimation } from 'src/app/animations';
 
 @Component({
   selector: 'app-crawl-config',
   imports: [ReactiveFormsModule, MatIcon, RadioToggleComponent, FormControlPipe, NgClass, StinputComponent, DropdownComponent, AsyncPipe, DatePipe, MatProgressSpinner, JsonPipe],
+  animations: [listStaggerAnimation],
   templateUrl: './crawl-config.component.html',
   styleUrl: './crawl-config.component.scss'
 })

@@ -1,9 +1,9 @@
-<div class="mx-auto mt-8 w-full">
+<div class="mx-auto mt-8 w-full overflow-x-clip">
   <div class="flex items-center flex-col relative">
     @if (currentMode; as mode) {
       <div
         [@routeChildAnimation]="mode"
-        class="flex max-w-3xl w-full flex-col mt-4 lg:mt-0">
+        class="flex min-w-0 max-w-3xl w-full flex-col mt-4 lg:mt-0">
         <div
           class="relative rounded-lg overflow-hidden dark:bg-gray6 bg-gray-200 shadow-md">
           <div

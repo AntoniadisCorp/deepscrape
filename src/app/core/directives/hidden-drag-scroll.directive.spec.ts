@@ -2,9 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, DebugElement } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HiddenDragScrollDirective } from './hidden-drag-scroll.directive';
+import { getTestProviders } from 'src/app/testing';
 
 // Test host component
 @Component({
+  standalone: true,
+  imports: [HiddenDragScrollDirective],
   template: `<div
     class="test-container overflow-x-hidden"
     appHiddenDragScroll
@@ -23,7 +26,8 @@ describe('HiddenDragScrollDirective', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [TestHostComponent, HiddenDragScrollDirective]
+      imports: [TestHostComponent],
+      providers: getTestProviders(),
     });
 
     fixture = TestBed.createComponent(TestHostComponent);
@@ -33,8 +37,12 @@ describe('HiddenDragScrollDirective', () => {
     fixture.detectChanges();
   });
 
-  it('should create an instance', () => {
-    expect(directiveInstance).toBeTruthy();
+  it('should set scrollbar-hiding styles and class on init', () => {
+    const host = directiveEl.nativeElement as HTMLElement;
+    expect(host.style.overflowX).toBe('auto');
+    expect(host.style.overflowY).toBe('hidden');
+    expect(host.style.scrollbarWidth).toBe('none');
+    expect((host.style as CSSStyleDeclaration & { msOverflowStyle?: string }).msOverflowStyle).toBe('none');
   });
 
   it('should have default scrollSpeed set to 2.0', () => {

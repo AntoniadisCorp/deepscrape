@@ -1,4 +1,4 @@
-import { Component } from '@angular/core'
+import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { NgIf } from '@angular/common'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 
@@ -6,7 +6,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router'
   selector: 'app-billing-cancel',
   imports: [RouterLink, NgIf],
   templateUrl: './billing-cancel.component.html',
-  styleUrl: './billing-cancel.component.scss'
+  styleUrl: './billing-cancel.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BillingCancelComponent {
   shouldShowCancelPage = false

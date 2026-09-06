@@ -18,10 +18,6 @@ describe('RemoveClassDirective', () => {
     directive = new RemoveClassDirective(el, renderer);
   });
 
-  it('should create an instance', () => {
-    expect(directive).toBeTruthy();
-  });
-
   it('should remove the class when appRemoveClass input changes', () => {
     const className = 'test-class';
     directive.appRemoveClass = className;

@@ -86,6 +86,23 @@ function serveapp(): Elysia {
                 baseUrl: '',
             }
         })
+        // Security.txt RFC 9116 endpoint - provides vulnerability reporting information to security researchers
+        .get('/.well-known/security.txt', () => {
+            const securityTxtContent = `Contact: mailto:security@deepscrape.dev
+Contact: https://deepscrape.dev/security
+Expires: 2027-05-28T00:00:00Z
+Preferred-Languages: en
+Policy: https://deepscrape.dev/security-policy
+Acknowledgments: https://deepscrape.dev/security-acknowledgments
+Canonical: https://deepscrape.dev/.well-known/security.txt
+`
+            return new Response(securityTxtContent, {
+                headers: {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                    'Cache-Control': 'public, max-age=604800',
+                },
+            })
+        })
         .group('/api', (api) => {
             return api
                 .get('/example', () => `just an example`)

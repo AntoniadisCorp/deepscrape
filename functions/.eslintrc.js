@@ -22,6 +22,7 @@ module.exports = {
     "/lib/**/*", // Ignore built files.
     "/dist/**/*", // Ignore built files.
     "/generated/**/*", // Ignore generated files.
+    "/scripts/**/*.cjs", // Standalone Node utility scripts.
   ],
   plugins: [
     "@typescript-eslint",

@@ -186,6 +186,9 @@ const getEnv = () => {
     OPENAI_API_URL: getConfigValue("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions"),
     OPENAI_API_KEY: getConfigValue("OPENAI_API_KEY"),
     GROQ_API_KEY: getConfigValue("GROQ_API_KEY"),
+    RESEND_API_KEY: getConfigValue("RESEND_API_KEY"),
+    RESEND_FROM_EMAIL: getConfigValue("RESEND_FROM_EMAIL"),
+    AUTHZ_STRICT_ORG_MODE: getConfigValue("AUTHZ_STRICT_ORG_MODE", "false"),
 
     // Google Cloud & Stripe
     GCP_PROJECT_ID: getConfigValue("GCP_PROJECT_ID"),
@@ -214,8 +217,14 @@ const getEnv = () => {
     BILLING_CUSTOM_CREDITS_MIN: getConfigValue("BILLING_CUSTOM_CREDITS_MIN", "50"),
     BILLING_CUSTOM_CREDITS_MAX: getConfigValue("BILLING_CUSTOM_CREDITS_MAX", "5000"),
     BILLING_CUSTOM_CREDIT_UNIT_AMOUNT_EUR: getConfigValue("BILLING_CUSTOM_CREDIT_UNIT_AMOUNT_EUR", "19"),
-    IP2LOCATION_GCS_PATH: getConfigValue("IP2LOCATION_GCS_PATH", ""),
-    IP2LOCATION_SHA256: getConfigValue("IP2LOCATION_SHA256", ""),
+    BILLING_CREDIT_EXPIRY_DAYS: getConfigValue("BILLING_CREDIT_EXPIRY_DAYS", "365"),
+    IP_GEO_API_URL: getConfigValue("IP_GEO_API_URL", "https://ip.deepscrape.dev/api/geo/lookup"),
+    IPREGISTRY_API_KEY: getConfigValue("IPREGISTRY_API_KEY"),
+    IP_INTEL_REFRESH_INTERVAL_MS: getConfigValue("IP_INTEL_REFRESH_INTERVAL_MS", "21600000"),
+
+    // WebAuthn / Passkey configuration
+    RP_NAME: getConfigValue("RP_NAME", "DeepScrape"),
+    RP_ORIGIN: getConfigValue("RP_ORIGIN", "http://localhost:4200"),
   } as const
 
   const finalEnv = {

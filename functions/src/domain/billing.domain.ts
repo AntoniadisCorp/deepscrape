@@ -40,7 +40,7 @@ export const isPaidPlan = (plan: string | BillingPlanTier | null | undefined): b
 }
 
 export const hasGraceAccess = (billing: BillingSnapshot | undefined, now = Date.now()): boolean => {
-  return Boolean(billing?.graceUntil) && now < new Date(billing!.graceUntil as string).getTime()
+  return Boolean(billing?.graceUntil) && now < new Date(billing?.graceUntil as string).getTime()
 }
 
 export const getLegacyCreditBucket = (billing: BillingSnapshot | undefined): CreditBucket => {
