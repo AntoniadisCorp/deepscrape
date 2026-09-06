@@ -1701,7 +1701,9 @@ export const enrichLoginSessionGeo = onDocumentWritten(
     const alreadyResolvedForSameIp =
       currentSourceIp === ipAddress &&
       typeof after.intelligenceUpdatedAt !== "undefined" &&
-      (currentStatus === "resolved" || currentStatus === "skipped")
+      // ponytail: no-match is terminal too, else every heartbeat (and this trigger's own
+      // status write) re-fires geo lookup and self-triggers an infinite loop / spend storm.
+      (currentStatus === "resolved" || currentStatus === "skipped" || currentStatus === "no-match")
 
     if (!ipChanged && alreadyResolvedForSameIp) {
       return
@@ -1762,7 +1764,9 @@ export const enrichGuestGeo = onDocumentWritten(
     const alreadyResolvedForSameIp =
       currentSourceIp === ipAddress &&
       typeof after.intelligenceUpdatedAt !== "undefined" &&
-      (currentStatus === "resolved" || currentStatus === "skipped")
+      // ponytail: no-match is terminal too, else every heartbeat (and this trigger's own
+      // status write) re-fires geo lookup and self-triggers an infinite loop / spend storm.
+      (currentStatus === "resolved" || currentStatus === "skipped" || currentStatus === "no-match")
 
     if (!ipChanged && alreadyResolvedForSameIp) {
       return
