@@ -126,9 +126,12 @@
 }
 
 .admin-analytics-theme .btn {
-  @apply rounded-xl border font-sans font-semibold tracking-[0.01em] transition-all duration-200;
-  @apply shadow-[0_12px_24px_-18px_rgba(42,46,53,0.45)] hover:-translate-y-[1px] hover:shadow-[0_18px_32px_-20px_rgba(42,46,53,0.55)];
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-300 dark:focus-visible:ring-cyan-700;
+  @apply relative isolate inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-xl border font-sans font-semibold tracking-[0.01em];
+  @apply transition-[transform,box-shadow,background-color,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)];
+  @apply shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_1px_1px_rgba(18,24,27,0.04),0_10px_24px_-16px_rgba(18,24,27,0.38)];
+  @apply hover:-translate-y-[2px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_2px_2px_rgba(18,24,27,0.04),0_20px_36px_-18px_rgba(18,24,27,0.5)];
+  @apply active:translate-y-0 active:scale-[0.975] active:duration-75 active:shadow-[0_4px_10px_-6px_rgba(18,24,27,0.35)];
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-cyan-400/60;
 }
 
 .admin-analytics-theme .btn-sm {
