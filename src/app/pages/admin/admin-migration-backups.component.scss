@@ -71,13 +71,28 @@ a:hover {
   @apply focus-visible:ring-red-300 dark:focus-visible:ring-red-500;
 }
 
+:host .admin-pagination {
+  @apply flex items-center gap-1.5;
+}
+
 :host .admin-pagination button {
-  @apply inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-gray3/60 bg-gray1/90 px-3 text-sm text-gray6 transition-colors duration-200 hover:bg-gray2/90 hover:text-gray7;
-  @apply dark:border-gray5/70 dark:bg-gray6/70 dark:text-gray1 dark:hover:bg-gray6 dark:hover:text-white;
-  @apply active:scale-[0.92] active:duration-75;
+  @apply inline-flex h-8 min-w-8 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2.5 text-sm font-medium text-gray6 transition-colors duration-200;
+  @apply hover:bg-gray2/80 hover:text-gray7;
+  @apply dark:text-gray2 dark:hover:bg-gray5/60 dark:hover:text-white;
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-blue-400/50;
 }
 
+:host .admin-pagination button.admin-page-nav {
+  @apply px-3 text-xs font-semibold uppercase tracking-wide text-gray6 dark:text-gray2;
+}
+
+:host .admin-pagination button.admin-page-active {
+  @apply bg-blue-600 text-white hover:bg-blue-600 hover:text-white;
+  @apply dark:bg-blue-600 dark:text-white dark:hover:bg-blue-600 dark:hover:text-white;
+  box-shadow: none;
+}
+
 :host .admin-pagination button:disabled {
-  @apply opacity-50;
+  @apply cursor-not-allowed text-gray4 opacity-50 hover:bg-transparent hover:text-gray4;
+  @apply dark:text-gray5 dark:hover:bg-transparent dark:hover:text-gray5;
 }
