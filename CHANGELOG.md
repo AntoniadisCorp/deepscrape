@@ -1,3 +1,10 @@
+# [0.7.0-beta.10](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.9...v0.7.0-beta.10) (2026-09-05)
+
+
+### Bug Fixes
+
+* **geo:** cache failed lookups to stop re-enrich storm ([ac15190](https://github.com/deepscrape/deepscrape/commit/ac15190d4765c11d22efa0563f5e6eee9ce43984))
+
 # [0.7.0-beta.7](https://github.com/deepscrape/deepscrape/compare/v0.7.0-beta.6...v0.7.0-beta.7) (2026-04-16)
 
 
