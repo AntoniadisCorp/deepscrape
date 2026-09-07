@@ -1,3 +1,28 @@
+# [0.8.0-beta.1](https://github.com/deepscrape/deepscrape/compare/v0.7.3-beta.1...v0.8.0-beta.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* **functions:** document geo lookup parameters ([86cf9a0](https://github.com/deepscrape/deepscrape/commit/86cf9a03a8a842741c2735d7a5599a36e0e63d92))
+* **test:** complete TranslateService mock for the v17 TranslatePipe ([c68feec](https://github.com/deepscrape/deepscrape/commit/c68feec57370651e53126e106f7a478dea8ae0b1))
+
+
+### Features
+
+* **analytics:** include ASN and ISP breakdowns in range metrics ([0ab1721](https://github.com/deepscrape/deepscrape/commit/0ab1721f3846e68f85120d97517de4afa1191408))
+* **geo:** coalesce concurrent IP lookups and add country-based deny-lists ([e5a47fe](https://github.com/deepscrape/deepscrape/commit/e5a47feb21f2ccc0750e79bea0da7f42605288f2))
+* **i18n:** add es, fr and de locales with header language picker ([227cc3e](https://github.com/deepscrape/deepscrape/commit/227cc3edda85c7f6d81c8ca9b4fb04838b39f577))
+* **i18n:** localize app templates and runtime strings with [@ngx-translate](https://github.com/ngx-translate) ([f625ec9](https://github.com/deepscrape/deepscrape/commit/f625ec96a02c44496bca2c53ec7eec87331ce117))
+* **i18n:** translate agent, playground, hero and nav copy (el, es, fr, de) ([cfd005b](https://github.com/deepscrape/deepscrape/commit/cfd005bb3910c2a3edd64a5410383f8f572a66b7))
+* **marketing:** add AI research agent section and live playground rework ([990abf8](https://github.com/deepscrape/deepscrape/commit/990abf83d605ff542eb39dc1027c81b7a1580a49))
+* **marketing:** add privacy/terms pages and scroll-reveal animations ([0b2b1c6](https://github.com/deepscrape/deepscrape/commit/0b2b1c6cd7b9e5b5f29ad10fc0e1c079d3a8928a))
+* **seo:** add per-route titles, robots, sitemap and OG image ([94ef7b1](https://github.com/deepscrape/deepscrape/commit/94ef7b17ff2d170ac9bce2c06451a2847019986e))
+
+
+### Performance Improvements
+
+* **functions:** raise default runtime memory to 512MiB ([0067f07](https://github.com/deepscrape/deepscrape/commit/0067f077150bc58e928f61b7a03f1a1a6165895a))
+
 ## [0.7.3-beta.1](https://github.com/deepscrape/deepscrape/compare/v0.7.2...v0.7.3-beta.1) (2026-09-06)
 
 
