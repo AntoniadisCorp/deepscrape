@@ -7,19 +7,15 @@
       >
       @if(!isConsent && forwardCookiesBtnEnabled) {
         <div>
-          <h2>Privacy Consent</h2>
+          <h2>{{ 'CONSENT.TITLE' | translate }}</h2>
           <p>
-            ⚠️ By proceeding, you are giving us permission to fetch cookies and
-            other data from your browser to improve your experience.
-            <br />
-            We take your privacy seriously and will only use the data for this
-            purpose. We do not save your privacy information on cloud
+            {{ 'CONSENT.BODY' | translate }}
           </p>
         </div>
         } @if(!isExtensionInstalled && forwardCookiesBtnEnabled) {
         <div>
-          <h2>Download The Extension</h2>
-          <p>you will redirect to chrome web store</p>
+          <h2>{{ 'CONSENT.EXT_TITLE' | translate }}</h2>
+          <p>{{ 'CONSENT.EXT_BODY' | translate }}</p>
         </div>
       }
       <button
@@ -39,7 +35,7 @@
             (click)="acceptConsent()"
             class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
             >
-            Accept
+            {{ 'CONSENT.ACCEPT' | translate }}
           </button>
         }
         @if (!isConsent) {
@@ -49,7 +45,7 @@
             (click)="declineConsent()"
             class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
             >
-            Decline
+            {{ 'CONSENT.DECLINE' | translate }}
           </button>
         }
         @if (!isExtensionInstalled && forwardCookiesBtnEnabled) {
@@ -59,7 +55,7 @@
             class="text-gray6 dark:text-gray-100 hover:text-gray6 hover:bg-gray4/[.1] hover:dark:bg-gray-400/[.4]"
             (click)="downloadExtension()"
             >
-            Download Extension
+            {{ 'CONSENT.DOWNLOAD_EXT' | translate }}
           </button>
         }
       </div>

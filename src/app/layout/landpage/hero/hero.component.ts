@@ -2,12 +2,13 @@ import { Component, inject, Inject, DOCUMENT } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
+import { TranslateModule } from '@ngx-translate/core';
 import { ScrollService } from 'src/app/core/services';
 import { myIcons } from 'src/app/shared';
 
 @Component({
   selector: 'app-hero',
-  imports: [LucideAngularModule, RouterLink, NgClass],
+  imports: [LucideAngularModule, RouterLink, NgClass, TranslateModule],
   templateUrl: './hero.component.html',
   styleUrl: './hero.component.scss'
 })

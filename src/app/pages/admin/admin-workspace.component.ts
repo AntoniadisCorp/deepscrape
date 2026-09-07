@@ -7,10 +7,11 @@ import { RippleDirective } from 'src/app/core/directives'
 import { myIcons } from 'src/app/shared'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { filter } from 'rxjs/internal/operators/filter'
+import { TranslateModule } from '@ngx-translate/core'
 
 @Component({
   selector: 'app-admin-workspace',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, LucideAngularModule, RippleDirective],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, LucideAngularModule, RippleDirective, TranslateModule],
   templateUrl: './admin-workspace.component.html',
   styleUrl: './admin-workspace.component.scss',
   animations: [smoothfadeAnimation],
@@ -26,12 +27,12 @@ export class AdminWorkspaceComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef)
   private readonly tabOverlayWidth = 56
   readonly tabs = [
-    { label: 'Project Config', route: '/admin/config', icon: 'settings' },
-    { label: 'Analytics', route: '/admin/analytics', icon: 'gauge' },
-    { label: 'Billing', route: '/admin/billing-observability', icon: 'piggy-bank' },
-    { label: 'Migration', route: '/admin/migration', icon: 'repeat' },
-    { label: 'Runs', route: '/admin/migration/runs', icon: 'recent-activity' },
-    { label: 'Backups', route: '/admin/migration/backups', icon: 'database' },
+    { label: 'ADMIN_WORKSPACE.TAB_CONFIG', route: '/admin/config', icon: 'settings' },
+    { label: 'ADMIN_WORKSPACE.TAB_ANALYTICS', route: '/admin/analytics', icon: 'gauge' },
+    { label: 'ADMIN_WORKSPACE.TAB_BILLING', route: '/admin/billing-observability', icon: 'piggy-bank' },
+    { label: 'ADMIN_WORKSPACE.TAB_MIGRATION', route: '/admin/migration', icon: 'repeat' },
+    { label: 'ADMIN_WORKSPACE.TAB_RUNS', route: '/admin/migration/runs', icon: 'recent-activity' },
+    { label: 'ADMIN_WORKSPACE.TAB_BACKUPS', route: '/admin/migration/backups', icon: 'database' },
   ]
 
   constructor() {

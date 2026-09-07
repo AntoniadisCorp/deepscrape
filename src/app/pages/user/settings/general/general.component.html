@@ -1,12 +1,12 @@
 <div class="container mx-auto mt-5">
-  <h1 class="text-2xl font-semibold mb-5">General Settings</h1>
+  <h1 class="text-2xl font-semibold mb-5">{{ 'SETTINGS_GENERAL.TITLE' | translate }}</h1>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+      <label for="email" class="block text-sm font-medium text-gray-700">{{ 'SETTINGS_GENERAL.EMAIL' | translate }}</label>
       <input type="email" name="email" id="email" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
     </div>
     <div>
-      <label for="language" class="block text-sm font-medium text-gray-700">Language</label>
+      <label for="language" class="block text-sm font-medium text-gray-700">{{ 'SETTINGS_GENERAL.LANGUAGE' | translate }}</label>
       <select name="language" id="language" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
         <option>English</option>
         <option>Spanish</option>
@@ -15,19 +15,19 @@
     </div>
     <div>
       <label class="block text-sm font-medium text-gray-700">
-        Receive Notifications
+        {{ 'SETTINGS_GENERAL.RECEIVE_NOTIFICATIONS' | translate }}
       </label>
       <div class="mt-2">
         <label class="inline-flex items-center">
           <input type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
           <span class="ml-2 text-sm text-gray-900">
-            Email
+            {{ 'SETTINGS_GENERAL.EMAIL' | translate }}
           </span>
         </label>
         <label class="inline-flex items-center ml-6">
           <input type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
           <span class="ml-2 text-sm text-gray-900">
-            Push
+            {{ 'SETTINGS_GENERAL.PUSH' | translate }}
           </span>
         </label>
       </div>
@@ -35,7 +35,7 @@
   </div>
   <div class="mt-5">
     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-      Save
+      {{ 'COMMON.SAVE' | translate }}
     </button>
   </div>
 </div>

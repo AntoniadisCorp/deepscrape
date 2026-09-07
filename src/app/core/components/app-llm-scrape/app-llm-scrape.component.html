@@ -4,7 +4,7 @@
 ></app-cookies>
 <div class="flex flex-col max-w-3xl w-full gap-3">
   <div class="text-left text-gray-500 dark:text-gray-100">
-    <span>Forward Cookies</span>
+    <span>{{ 'LLM.FORWARD_COOKIES' | translate }}</span>
   </div>
   <div class="flex flex-row flex-wrap items-center justify-between gap-4 mb-2">
     <!-- Set a radio button On/Off MFA-->
@@ -65,7 +65,7 @@
     @if(isResultsProcessing && !jsonChunk['content']) {
       <div class="w-full flex justify-center text-gray4 dark:text-gray-100">
         <div class="flex flex-col items-center gap-6">
-          waiting for results..
+          {{ 'LLM.WAITING' | translate }}
           @if (isResultsProcessing) {
             <mat-spinner
               [diameter]="40"
@@ -80,7 +80,7 @@
         <div
           class="w-full text-center text-gray4 dark:text-gray-100"
           >
-          no results
+          {{ 'LLM.NO_RESULTS' | translate }}
         </div>
       }
     }
@@ -93,9 +93,9 @@
           <p
             class="inline-flex items-center w-full justify-end mt-1 text-sm text-red-500 dark:text-red-300 font-medium self-center gap-2 text-[12px] lg:text-xs italic"
             >
-            Cost: {{ jsonChunk["usage"]?.total_cost || 0 }} $
+            {{ 'LLM.COST' | translate }}: {{ jsonChunk["usage"]?.total_cost || 0 }} $
             <mat-icon>bolt</mat-icon>
-            Tokens/s: {{ jsonChunk["usage"]?.total_tokens || 0 }}
+            {{ 'LLM.TOKENS' | translate }}: {{ jsonChunk["usage"]?.total_tokens || 0 }}
           </p>
         }
         <markdown

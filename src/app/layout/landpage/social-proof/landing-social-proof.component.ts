@@ -1,5 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
+import { RevealDirective } from 'src/app/shared';
 
 interface Testimonial {
   initials: string;
@@ -14,7 +16,7 @@ interface Testimonial {
 @Component({
   selector: 'app-landing-social-proof',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslateModule, RevealDirective],
   templateUrl: './landing-social-proof.component.html',
   styleUrl: './landing-social-proof.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,7 +28,7 @@ export class LandingSocialProofComponent {
       name: 'Jamie Doe',
       role: 'CTO',
       company: 'DataVault Inc.',
-      quote: 'deepscrape handles the complexity of distributed crawling so we can focus on building our product. The API is dead simple.',
+      quote: 'SOCIAL.QUOTE_1',
       stars: 5,
       gradient: 'from-cyan-500 to-rose-500',
     },
@@ -35,7 +37,7 @@ export class LandingSocialProofComponent {
       name: 'Alex Kim',
       role: 'Lead Engineer',
       company: 'ScrapeOps',
-      quote: 'We replaced our entire scraping stack with deepscrape. 10x faster, zero maintenance, and anti-detection that actually works in production.',
+      quote: 'SOCIAL.QUOTE_2',
       stars: 5,
       gradient: 'from-rose-500 to-cyan-500',
     },
@@ -44,7 +46,7 @@ export class LandingSocialProofComponent {
       name: 'Sarah Riviera',
       role: 'Head of Data',
       company: 'MarketIntel AI',
-      quote: 'We crawl 200k+ pages daily for competitive intelligence. deepscrape\'s memory-adaptive dispatcher handles the load without breaking a sweat. The self-hosted option sealed the deal for compliance.',
+      quote: 'SOCIAL.QUOTE_3',
       stars: 5,
       gradient: 'from-violet-500 to-cyan-500',
     },
@@ -53,7 +55,7 @@ export class LandingSocialProofComponent {
       name: 'Marcus Chen',
       role: 'Founder',
       company: 'DataFlow Labs',
-      quote: 'We started with an in-house scraper, then moved to deepscrape when we needed scale. Same results, zero infrastructure headaches. The best onboarding I\'ve experienced in a data product.',
+      quote: 'SOCIAL.QUOTE_4',
       stars: 5,
       gradient: 'from-emerald-500 to-cyan-500',
     },

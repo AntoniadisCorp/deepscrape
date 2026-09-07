@@ -12,7 +12,7 @@
               viewBox="0 0 8 8">
               <circle cx="4" cy="4" r="3" />
             </svg>
-            Default
+            {{ 'CNT.DEFAULT' | translate }}
           </span>
         }
       </div>
@@ -65,7 +65,7 @@
       <!-- Date Destroyed -->
       @if (machine.state === 'destroyed') {
         <span>
-          <p class="text-red-400 dark:text-red-200">destroyed</p>
+          <p class="text-red-400 dark:text-red-200">{{ 'CNT.DESTROYED' | translate }}</p>
         </span>
       }
       <div class="relative">
@@ -88,7 +88,7 @@
           <li>
             <span
               class="flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-600 dark:text-red-600/[.7] dark:hover:bg-gray5/[0.5] dark:focus:bg-gray5/[0.8] disabled:dark:hover:bg-gray-900/[0.5] disabled:dark:focus:bg-gray-900/[0.8] cursor-pointer font-medium duration-300 transition-colors"
-            >Destroy</span>
+            >{{ 'CNT.DESTROY' | translate }}</span>
           </li>
         </ul>
       </div>
@@ -120,11 +120,11 @@
       <!-- Title -->
       <h2
         class="text-lg font-mono font-bold text-gray-300 dark:text-gray-200">
-        {{ name || 'Machine title' }}
+        {{ name || ('CNT.DEFAULT_TITLE' | translate) }}
       </h2>
       <!-- Subtitle -->
       <p class="text-sm text-gray-400 dark:text-gray-400">
-        {{ description || 'This is a machine subtitle.' }}
+        {{ description || ('CNT.DEFAULT_SUBTITLE' | translate) }}
       </p>
     </div>
   </div>

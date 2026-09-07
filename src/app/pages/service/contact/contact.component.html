@@ -2,14 +2,14 @@
 <header class="fixed w-full z-[60] bg-transparent dark:bg-gray-900 dark:border-b border-gray-200/[0.08] dark:border-gray-800/[0.08]">
   <div class="flex h-20 items-center justify-between px-4 md:px-8 lg:px-32 py-2">
     <a [routerLink]="['/']" routerLinkActive="active" class="flex items-center justify-between space-x-2">
-      <h1 class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit">
+      <span class="top-0 z-[3] -mt-4 mb-0 flex h-16 items-center bg-inherit font-['Google_Sans_Display',Roboto,Arial,sans-serif] text-[2.75rem] font-normal leading-[3.25rem] tracking-[0] dark:bg-inherit">
         <img src="" alt=""
           [srcset]="(isDarkMode$ | async) ? 'assets/logo-512x512_sky.png 2x' : 'assets/logo-512x512.png 2x'"
           class="mt-4 h-20 border-none max-h-[80%] xs:max-h-max" />
-      </h1>
-      <h1 class="hidden text-2xl xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
+      </span>
+      <span class="hidden text-2xl xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
         DeepScrape
-      </h1>
+      </span>
     </a>
     <div class="flex items-center justify-end gap-2 w-full">
       <app-lang-picker></app-lang-picker>

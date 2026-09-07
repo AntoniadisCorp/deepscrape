@@ -26,7 +26,7 @@ describe('PassesComponent', () => {
   it('should render heading', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Credit Passes');
+    expect(text).toContain('BILLING_PASSES.TITLE');
   });
 
   it('should compile as standalone component', () => {

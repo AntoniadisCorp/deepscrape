@@ -7,10 +7,11 @@ import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule
 import { LucideAngularModule } from 'lucide-angular';
 import { myIcons } from 'src/app/shared';
 import { PdfSrcPipe } from '../../pipes';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-crawl-result-item',
-  imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe],
+  imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe, TranslateModule],
   animations: [expandCollapseAnimation],
   templateUrl: './crawl-result-item.component.html',
   styles: [`
@@ -34,15 +35,15 @@ export class CrawlResultItemComponent implements AfterViewInit {
   activeSubTab: string = 'overview';
 
   subTabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'metadata', label: 'Metadata' },
-    { key: 'media', label: 'Media' },
-    { key: 'links', label: 'Links' },
-    { key: 'tables', label: 'Tables' },
-    { key: 'raw_markdown', label: 'Raw Markdown' },
-    { key: 'raw_html', label: 'Raw HTML' },
-    { key: 'technical_details', label: 'Technical Details' },
-    { key: 'files', label: 'Files' },
+    { key: 'overview', label: 'CR_RES.TAB_OVERVIEW' },
+    { key: 'metadata', label: 'CR_RES.TAB_METADATA' },
+    { key: 'media', label: 'CR_RES.TAB_MEDIA' },
+    { key: 'links', label: 'CR_RES.TAB_LINKS' },
+    { key: 'tables', label: 'CR_RES.TAB_TABLES' },
+    { key: 'raw_markdown', label: 'CR_RES.TAB_MARKDOWN' },
+    { key: 'raw_html', label: 'CR_RES.TAB_HTML' },
+    { key: 'technical_details', label: 'CR_RES.TAB_TECH' },
+    { key: 'files', label: 'CR_RES.TAB_FILES' },
   ];
 
   constructor(private el: ElementRef) { }

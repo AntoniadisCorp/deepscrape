@@ -83,11 +83,11 @@
   <div class="mt-0 px-2 h-[20px] text-sm text-red-400" role="alert">
     {{
           control.errors?.['required']
-            ? 'This field is required'
+            ? ('STINPUT.REQUIRED' | translate)
             : control.errors?.['pattern']
               ? errorLabel
                 ? errorLabel
-                : 'Invalid format'
+                : ('STINPUT.INVALID' | translate)
               : errorLabel
     }}
   </div>

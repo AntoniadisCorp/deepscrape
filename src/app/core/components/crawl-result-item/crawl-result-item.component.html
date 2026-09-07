@@ -35,7 +35,7 @@
             activeSubTab !== tab.key
         }"
           class="px-4 py-2 rounded-t-lg font-medium transition-colors duration-200">
-          {{ tab.label }}
+          {{ tab.label | translate }}
         </button>
       }
     </div>
@@ -74,7 +74,7 @@
         @case ('media') {
           <div>
             <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
-              Media:
+              {{ 'CR_RES.MEDIA' | translate }}
             </h4>
             @if (
               crawlResult.media.images && crawlResult.media.images.length > 0
@@ -82,7 +82,7 @@
               <div
                 >
                 <h5 class="font-semibold text-gray-700 dark:text-gray-300">
-                  Images:
+                  {{ 'CR_RES.IMAGES' | translate }}
                 </h5>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                   @for (image of crawlResult.media.images; track image) {
@@ -106,12 +106,12 @@
                 <div
                   class="mt-4">
                   <h5 class="font-semibold text-gray-700 dark:text-gray-300">
-                    Videos:
+                    {{ 'CR_RES.VIDEOS' | translate }}
                   </h5>
                   @for (video of crawlResult.media.videos; track video) {
                     <div>
                       <p class="text-sm text-gray-600 dark:text-gray-400">
-                        {{ video.desc || 'No description' }}
+                        {{ video.desc || ('CR_RES.NO_DESC' | translate) }}
                       </p>
                       <!-- Add video player if src is available -->
                     </div>
@@ -126,7 +126,7 @@
                 ) {
                 <p
                   class="text-gray-600 dark:text-gray-400">
-                  No media content available.
+                  {{ 'CR_RES.NO_MEDIA' | translate }}
                 </p>
               }
             </div>
@@ -134,7 +134,7 @@
           @case ('links') {
             <div>
               <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
-                Links:
+                {{ 'CR_RES.LINKS' | translate }}
               </h4>
               @if (
                 crawlResult.links.internal &&
@@ -143,7 +143,7 @@
                 <div
                   >
                   <h5 class="font-semibold text-gray-700 dark:text-gray-300">
-                    Internal Links:
+                    {{ 'CR_RES.INTERNAL' | translate }}
                   </h5>
                   <ul class="list-disc list-inside ml-4">
                     @for (link of crawlResult.links.internal; track link) {
@@ -166,7 +166,7 @@
                 <div
                   class="mt-4">
                   <h5 class="font-semibold text-gray-700 dark:text-gray-300">
-                    External Links:
+                    {{ 'CR_RES.EXTERNAL' | translate }}
                   </h5>
                   <ul class="list-disc list-inside ml-4">
                     @for (link of crawlResult.links.external; track link) {
@@ -190,7 +190,7 @@
                 ) {
                 <p
                   class="text-gray-600 dark:text-gray-400">
-                  No link content available.
+                  {{ 'CR_RES.NO_LINKS' | translate }}
                 </p>
               }
             </div>
@@ -241,7 +241,7 @@
               @if (!crawlResult.tables || crawlResult.tables.length === 0) {
                 <p
                   class="text-gray-600 dark:text-gray-400">
-                  No table content available.
+                  {{ 'CR_RES.NO_TABLES' | translate }}
                 </p>
               }
             </div>
@@ -257,7 +257,7 @@
                   [clipboardButtonComponent]="clipboardButton"
               [data]="
                 crawlResult.markdown.raw_markdown ||
-                'No markdown content available.'
+                ('CR_RES.NO_MARKDOWN' | translate)
               "></markdown>
               </div>
             </div>
@@ -270,7 +270,7 @@
                 [clipboardButtonComponent]="clipboardButton"
               [data]="crawlResult.html | json | language : 'html'"></markdown>
               <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
-                Cleaned HTML:
+                {{ 'CR_RES.CLEANED_HTML' | translate }}
               </h5>
               <markdown
                 clipboard
@@ -280,7 +280,7 @@
               crawlResult.cleaned_html | json | language : 'html'
             "></markdown>
               <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
-                Fit HTML:
+                {{ 'CR_RES.FIT_HTML' | translate }}
               </h5>
               <markdown
                 clipboard
@@ -307,12 +307,12 @@
           @case ('files') {
             <div>
               <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
-                Files:
+                {{ 'CR_RES.FILES' | translate }}
               </h4>
               <pre
                 class="bg-gray-200 dark:bg-gray-600/10 p-2 rounded text-sm overflow-auto"><code>{{ crawlResult.downloaded_files | json }}</code></pre>
                 <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
-                  Screenshot:
+                  {{ 'CR_RES.SCREENSHOT' | translate }}
                 </h5>
                 @if (crawlResult.screenshot) {
                   <div>
@@ -325,11 +325,11 @@
                   @if (!crawlResult.screenshot) {
                     <p
                       class="text-gray-600 dark:text-gray-400">
-                      No screenshot available.
+                      {{ 'CR_RES.NO_SCREENSHOT' | translate }}
                     </p>
                   }
                   <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
-                    PDF:
+                    {{ 'CR_RES.PDF' | translate }}
                   </h5>
                   <p class="text-gray-600 dark:text-gray-400">
                     @if(crawlResult.pdf) {
@@ -340,17 +340,17 @@
                         height="600px"
                         />
                       } @else {
-                        {{'No PDF available.'}}
+                        {{('CR_RES.NO_PDF' | translate)}}
                       }
                     </p>
                     <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-4">
-                      MHTML:
+                      {{ 'CR_RES.MHTML' | translate }}
                     </h5>
                     <p class="text-gray-600 dark:text-gray-400">
                       {{
                       crawlResult.mhtml
-                      ? 'MHTML content available (not rendered).'
-                      : 'No MHTML available.'
+                      ? ('CR_RES.MHTML_AVAILABLE' | translate)
+                      : ('CR_RES.NO_MHTML' | translate)
                       }}
                     </p>
                   </div>
@@ -358,7 +358,7 @@
                 @default {
                   <div>
                     <p class="text-gray-600 dark:text-gray-400">
-                      Select a tab to view content.
+                      {{ 'CR_RES.SELECT_TAB' | translate }}
                     </p>
                   </div>
                 }

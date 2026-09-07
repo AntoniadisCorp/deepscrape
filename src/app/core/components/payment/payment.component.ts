@@ -4,12 +4,13 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CurrencyPipe } from '@angular/common';
 import { StripeCardCvcElement, StripeCardElement, StripeElement, StripeElementsOptions, StripePaymentElement, StripePaymentElementOptions } from '@stripe/stripe-js'
 import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe'
+import { TranslateModule } from '@ngx-translate/core'
 import { from, Subscription } from 'rxjs'
 import { SnackBarType } from '../snackbar/snackbar.component'
 
 @Component({
     selector: 'app-payment',
-    imports: [ReactiveFormsModule, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent],
+    imports: [ReactiveFormsModule, CurrencyPipe, StripeElementsDirective, StripePaymentElementComponent, TranslateModule],
     templateUrl: './payment.component.html',
   styleUrl: './payment.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

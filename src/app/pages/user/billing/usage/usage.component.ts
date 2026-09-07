@@ -1,8 +1,9 @@
 import { AsyncPipe, CurrencyPipe, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common'
-import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core'
+import { ChangeDetectionStrategy, Component, inject, ViewChild } from '@angular/core'
 import { FormControl, ReactiveFormsModule } from '@angular/forms'
 import { MatIconModule } from '@angular/material/icon'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 import { DropdownComponent } from 'src/app/core/components/dropdown/dropdown.component'
 import { ChartConfiguration, ChartData } from 'chart.js'
 import { BaseChartDirective } from 'ng2-charts'
@@ -24,24 +25,26 @@ type UsageViewModel = {
 
 @Component({
   selector: 'app-usage',
-  imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, CurrencyPipe, DecimalPipe, DatePipe, MatIconModule, MatProgressSpinnerModule, DropdownComponent, BaseChartDirective],
+  imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, CurrencyPipe, DecimalPipe, DatePipe, MatIconModule, MatProgressSpinnerModule, DropdownComponent, BaseChartDirective, TranslateModule],
   templateUrl: './usage.component.html',
   styleUrl: './usage.component.scss',
   animations: [fadeInUp, smoothfadeAnimation],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UsageComponent {
+  private readonly translate = inject(TranslateService)
+
   @ViewChild(BaseChartDirective) usageChart?: BaseChartDirective
 
   readonly rangeDropdownOptions: Array<{ name: string; code: string }> = [
-    { name: 'This month', code: 'this_month' },
-    { name: 'Last month', code: 'last_month' },
-    { name: 'Last 30 days', code: 'last_30_days' },
-    { name: 'Last 90 days', code: 'last_90_days' },
+    { name: 'BILLING_TRANSACTIONS.RANGE_THIS_MONTH', code: 'this_month' },
+    { name: 'BILLING_TRANSACTIONS.RANGE_LAST_MONTH', code: 'last_month' },
+    { name: 'BILLING_TRANSACTIONS.RANGE_LAST_30_DAYS', code: 'last_30_days' },
+    { name: 'BILLING_TRANSACTIONS.RANGE_LAST_90_DAYS', code: 'last_90_days' },
   ]
 
   readonly rangeControl = new FormControl<{ name: string; code: string }>(
-    { name: 'This month', code: 'this_month' },
+    { name: 'BILLING_TRANSACTIONS.RANGE_THIS_MONTH', code: 'this_month' },
     { nonNullable: true },
   )
 
@@ -63,7 +66,7 @@ export class UsageComponent {
           chartOptions: this.buildUsageChartOptions(),
         })),
         catchError(() => {
-          this.errorMessage = 'Unable to load billing usage right now. Please try again in a few moments.'
+          this.errorMessage = 'BILLING_USAGE.LOAD_ERROR'
           return of({
             report: null,
             chartPoints: [],
@@ -135,7 +138,7 @@ export class UsageComponent {
       labels: points.map((point) => point.label),
       datasets: [
         {
-          label: 'Metered usage',
+          label: this.translate.instant('BILLING_USAGE.METERED_USAGE'),
           data: points.map((point) => point.value),
           borderRadius: 8,
           borderSkipped: false,
@@ -163,7 +166,7 @@ export class UsageComponent {
           borderColor: 'rgba(148, 163, 184, 0.35)',
           borderWidth: 1,
           callbacks: {
-            label: (context) => `${context.parsed.y ?? 0} units`,
+            label: (context) => `${context.parsed.y ?? 0} ${this.translate.instant('BILLING_USAGE.UNITS')}`,
           },
         },
       },

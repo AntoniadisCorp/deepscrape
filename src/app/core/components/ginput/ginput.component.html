@@ -41,17 +41,17 @@
         >
         @if (control!.errors?.['required']) {
           <span class="font-medium"
-            >Url is required.</span
+            >{{ 'GINPUT.REQUIRED' | translate }}</span
             >
         }
         @if (control!.errors?.['minlength']) {
           <span class="font-medium">
-            Url must be at least 4 characters long.
+            {{ 'GINPUT.MINLENGTH' | translate }}
           </span>
         }
         @if (control!.errors?.['forbiddenName']) {
           <span class="font-medium">
-            The text input format must be as any url validated format.
+            {{ 'GINPUT.FORMAT' | translate }}
           </span>
         }
       </p>

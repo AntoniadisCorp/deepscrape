@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Auth, verifyPasswordResetCode, confirmPasswordReset, applyActionCode } from '@angular/fire/auth';
 import { TranslateService } from '@ngx-translate/core';
 import { ThemeService, FirestoreService, AuthService, WindowToken } from 'src/app/core/services';
-import { checkPasswordStrength, getErrorMessage } from 'src/app/core/functions';
+import { checkPasswordStrength, getErrorMessage, isStrongPassword } from 'src/app/core/functions';
 import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -239,12 +239,12 @@ export class ActionHandlerComponent implements OnInit {
 
   /** Validates password strength */
   protected getPasswordStrengthMessage(): string {
-    return checkPasswordStrength(this.newPassword);
-  }  /** Checks if password is valid (strong) */
+    return checkPasswordStrength(this.newPassword, (k) => this.translate.instant(k));
+  }
+
+  /** Checks if password is valid (strong) */
   protected isPasswordValid(): boolean {
-    const strengthMessage = this.getPasswordStrengthMessage();
-    // If message doesn't start with "Risky", it means password is strong
-    return !strengthMessage.startsWith('Risky');
+    return isStrongPassword(this.newPassword);
   }
 
   /** Checks if passwords match */

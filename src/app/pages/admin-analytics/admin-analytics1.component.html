@@ -8,7 +8,7 @@
             <lucide-angular [img]="icons['BarChart3']" class="w-6 h-6 text-teal-500"></lucide-angular> Analytics
             Dashboard
           </h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1"> Real-time insights and user behavior analytics </p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1"> {{ 'ADMIN_ANALYTICS1.SUB' | translate }} </p>
         </div>
         <!-- Connection Status & Controls -->
         <div class="flex items-center gap-4">
@@ -19,24 +19,24 @@
                   ? 'bg-green-500 animate-pulse'
                   : getStatusClass().replace('text-', 'bg-')
               "></div>
-            <span class="text-sm font-medium" [class]="getStatusClass()"> {{ getConnectionStatus() }} </span>
+            <span class="text-sm font-medium" [class]="getStatusClass()"> {{ getConnectionStatusKey() | translate }} </span>
           </div>
           <!-- Real-time Toggle -->
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" [(ngModel)]="filters.realtime" (change)="onRealtimeToggle()"
               class="toggle-checkbox" />
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300"> Live Updates </span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300"> {{ 'ADMIN_ANALYTICS1.LIVE_UPDATES' | translate }} </span>
             </label>
             <!-- Refresh Button -->
             <button (click)="refreshData()" [disabled]="loading"
               class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors">
               <lucide-angular [img]="icons['RefreshCw']" class="w-4 h-4" [class.animate-spin]="loading"></lucide-angular>
-            Refresh </button>
+            {{ 'COMMON.REFRESH' | translate }} </button>
           </div>
         </div>
         <!-- Last Updated -->
         @if (lastUpdated) {
-          <div class="mt-2 text-xs text-gray-500 dark:text-gray-400"> Last updated: {{ lastUpdated |
+          <div class="mt-2 text-xs text-gray-500 dark:text-gray-400"> {{ 'ADMIN_ANALYTICS1.LAST_UPDATED' | translate }}: {{ lastUpdated |
           date : 'medium' }} </div>
         }
       </div>
@@ -46,31 +46,31 @@
       <div class="flex flex-wrap items-center gap-4">
         <!-- Period Filter -->
         <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Period: </label>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> {{ 'ADMIN_ANALYTICS1.F_PERIOD' | translate }}: </label>
           <select title="Period" [(ngModel)]="filters.period" (ngModelChange)="onPeriodChange()"
             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
             @for (option of periodOptions; track option) {
-              <option [value]="option.value"> {{ option.label }} </option>
+              <option [value]="option.value"> {{ option.label | translate }} </option>
             }
           </select>
         </div>
         <!-- Device Filter -->
         <div class="flex items-center gap-2">
-          <label for="device-select" class="text-sm font-medium text-gray-700 dark:text-gray-300"> Device: </label>
+          <label for="device-select" class="text-sm font-medium text-gray-700 dark:text-gray-300"> {{ 'ADMIN_ANALYTICS1.F_DEVICE' | translate }}: </label>
           <select id="device-select" title="Device" [(ngModel)]="filters.device" (ngModelChange)="onDeviceChange()"
             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
             @for (option of deviceOptions; track option) {
-              <option [value]="option.value"> {{ option.label }} </option>
+              <option [value]="option.value"> {{ option.label | translate }} </option>
             }
           </select>
         </div>
         <!-- Provider Filter -->
         <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> Provider: </label>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300"> {{ 'ADMIN_ANALYTICS1.F_PROVIDER' | translate }}: </label>
           <select title="Provider" [(ngModel)]="filters.provider" (ngModelChange)="onProviderChange()"
             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
             @for (option of providerOptions; track option) {
-              <option [value]="option.value"> {{ option.label }} </option>
+              <option [value]="option.value"> {{ option.label | translate }} </option>
             }
           </select>
         </div>
@@ -84,7 +84,7 @@
           <div class="text-center">
             <lucide-angular [img]="icons['Loader2']"
             class="w-8 h-8 text-teal-500 animate-spin mx-auto mb-4"></lucide-angular>
-            <p class="text-gray-500 dark:text-gray-400"> Loading analytics data... </p>
+            <p class="text-gray-500 dark:text-gray-400"> {{ 'ADMIN_ANALYTICS1.LOADING' | translate }} </p>
           </div>
         </div>
       }
@@ -210,7 +210,7 @@
           <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <!-- Timeline Chart -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Activity Timeline </h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> {{ 'ADMIN_ANALYTICS1.CH_TIMELINE' | translate }} </h3>
               <div class="h-80">
                 <canvas baseChart [data]="timelineChartData" [options]="timelineChartOptions" [type]="timelineChartType"
                 class="w-full h-full"></canvas>
@@ -218,7 +218,7 @@
             </div>
             <!-- Countries Chart -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Top Countries </h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> {{ 'ADMIN_ANALYTICS1.CH_TOP_COUNTRIES' | translate }} </h3>
               <div class="h-80">
                 <canvas baseChart [data]="countryChartData" [options]="countryChartOptions" [type]="countryChartType"
                 class="w-full h-full"></canvas>
@@ -226,7 +226,7 @@
             </div>
             <!-- Browser Chart -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Browser Distribution </h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> {{ 'ADMIN_ANALYTICS1.CH_BROWSER_DIST' | translate }} </h3>
               <div class="h-80">
                 <canvas baseChart [data]="browserChartData" [options]="browserChartOptions" [type]="browserChartType"
                 class="w-full h-full"></canvas>
@@ -234,7 +234,7 @@
             </div>
             <!-- Device Chart -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> Device Types </h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4"> {{ 'ADMIN_ANALYTICS1.CH_DEVICE_TYPES' | translate }} </h3>
               <div class="h-80">
                 <canvas baseChart [data]="deviceChartData" [options]="deviceChartOptions" [type]="deviceChartType"
                 class="w-full h-full"></canvas>
@@ -246,18 +246,18 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
               >
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Live Activity
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> {{ 'ADMIN_ANALYTICS1.LIVE_ACTIVITY' | translate }}
               </h3>
               <div class="space-y-2">
           <div class="flex items-center justify-between py-2 px-3 bg-gray-50
           dark:bg-gray-700 rounded-lg transition-all duration-300" [class.bg-green-50]="realtimeIndicator"
                   [class.dark:bg-green-900]="realtimeIndicator">
-                  <span class="text-sm text-gray-600 dark:text-gray-400"> Active users in the last 5 minutes </span>
+                  <span class="text-sm text-gray-600 dark:text-gray-400"> {{ 'ADMIN_ANALYTICS1.ACTIVE_USERS_5M' | translate }} </span>
                   <span class="text-sm font-semibold text-gray-900 dark:text-white"> {{ dashboardSummary.activeUsers }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <span class="text-sm text-gray-600 dark:text-gray-400"> Active guests in the last 5 minutes </span>
+                  <span class="text-sm text-gray-600 dark:text-gray-400"> {{ 'ADMIN_ANALYTICS1.ACTIVE_GUESTS_5M' | translate }} </span>
                   <span class="text-sm font-semibold text-gray-900 dark:text-white"> {{ dashboardSummary.activeGuests }}
                   </span>
                 </div>

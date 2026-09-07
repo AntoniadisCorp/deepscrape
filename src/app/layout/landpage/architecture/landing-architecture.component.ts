@@ -1,11 +1,12 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
-import { myIcons } from 'src/app/shared';
+import { TranslateModule } from '@ngx-translate/core';
+import { myIcons, RevealDirective } from 'src/app/shared';
 
 @Component({
   selector: 'app-landing-architecture',
   standalone: true,
-  imports: [LucideAngularModule],
+  imports: [LucideAngularModule, TranslateModule, RevealDirective],
   templateUrl: './landing-architecture.component.html',
   styleUrl: './landing-architecture.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

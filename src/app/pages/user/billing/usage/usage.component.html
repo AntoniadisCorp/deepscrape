@@ -1,8 +1,8 @@
 <div class="container mx-auto px-4 py-8">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Billing usage</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-300">Usage breakdown and metered activity for your selected billing range.</p>
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">{{ 'BILLING_USAGE.TITLE' | translate }}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-300">{{ 'BILLING_USAGE.SUBTITLE' | translate }}</p>
     </div>
 
     <div class="flex items-center gap-2">
@@ -12,7 +12,7 @@
           [control]="rangeControl"
           [enableMenuAnimation]="true"
           [options]="rangeDropdownOptions"
-          [dropDownName]="'Range'"
+          [dropDownName]="'BILLING_USAGE.RANGE'"
           (select)="onRangeChange($event.code)"></app-dropdown>
       </div>
     </div>
@@ -65,34 +65,34 @@
 
     <ng-container *ngIf="!loading.usageReport">
       <div *ngIf="errorMessage" class="rounded-2xl border border-red-400/60 bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-200 px-5 py-4 mb-6">
-        {{ errorMessage }}
+        {{ errorMessage | translate }}
       </div>
 
       <ng-container *ngIf="vm$ | async as vm">
         <ng-container *ngIf="vm.report as report">
           <div class="rounded-2xl bg-white/80 dark:bg-gray-800/50 px-5 py-4 mb-6 shadow-md">
             <p class="text-sm text-gray-600 dark:text-gray-300">
-              Usage for <strong>{{ report.range.start | date:'MMM d, y' }}</strong> - <strong>{{ report.range.end | date:'MMM d, y' }}</strong>
+              {{ 'BILLING_USAGE.USAGE_FOR' | translate }} <strong>{{ report.range.start | date:'MMM d, y' }}</strong> - <strong>{{ report.range.end | date:'MMM d, y' }}</strong>
             </p>
           </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total invoiced</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.TOTAL_INVOICED' | translate }}</p>
           <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
             {{ report.summary.totalInvoiced | currency: asCurrencyCode(report.summary.currency) }}
           </p>
         </div>
 
         <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total paid</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.TOTAL_PAID' | translate }}</p>
           <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
             {{ report.summary.totalPaid | currency: asCurrencyCode(report.summary.currency) }}
           </p>
         </div>
 
         <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Metered units</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.METERED_UNITS' | translate }}</p>
           <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
             {{ report.summary.totalMeteredUnits | number:'1.0-2' }}
           </p>
@@ -100,7 +100,7 @@
       </div>
 
       <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 mb-8 shadow-md">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Meter usage trend</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ 'BILLING_USAGE.METER_TREND' | translate }}</h3>
 
         <div *ngIf="vm.chartPoints.length; else noChartData" class="usage-chart-shell">
           <div class="h-72 w-full">
@@ -115,23 +115,23 @@
         </div>
 
         <ng-template #noChartData>
-          <p class="text-sm text-gray-500 dark:text-gray-400">No metered usage data available for the selected range.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.NO_CHART_DATA' | translate }}</p>
         </ng-template>
       </div>
 
           <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Usage breakdown</h3>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ 'BILLING_USAGE.BREAKDOWN_TITLE' | translate }}</h3>
 
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm">
                 <thead>
                   <tr class="text-left border-b border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-                    <th class="px-3 py-2 font-semibold">Date</th>
-                    <th class="px-3 py-2 font-semibold">Source</th>
-                    <th class="px-3 py-2 font-semibold">Description</th>
-                    <th class="px-3 py-2 font-semibold">Quantity</th>
-                    <th class="px-3 py-2 font-semibold">Unit price</th>
-                    <th class="px-3 py-2 font-semibold">Total</th>
+                    <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.DATE' | translate }}</th>
+                    <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.SOURCE' | translate }}</th>
+                    <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.DESCRIPTION' | translate }}</th>
+                    <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.QUANTITY' | translate }}</th>
+                    <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.UNIT_PRICE' | translate }}</th>
+                    <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.TOTAL' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -163,7 +163,7 @@
                   </tr>
 
                   <tr *ngIf="!report.breakdown.length">
-                    <td colspan="6" class="px-3 py-5 text-center text-gray-500 dark:text-gray-400">No billing usage entries found for this range.</td>
+                    <td colspan="6" class="px-3 py-5 text-center text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.NO_ENTRIES' | translate }}</td>
                   </tr>
                 </tbody>
               </table>

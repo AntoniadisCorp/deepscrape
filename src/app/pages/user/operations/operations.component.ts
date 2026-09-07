@@ -8,6 +8,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner'
 import { RouterLink, Router, ActivatedRoute } from '@angular/router'
 import { BehaviorSubject, combineLatest, map, Observable, of, Subject, Subscription, tap, timer } from 'rxjs'
 import { DropdownComponent, GinputComponent, LoadingDotsComponent, PromptareaComponent, SnackBarType, StinputComponent } from 'src/app/core/components'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 import { Outsideclick, RippleDirective } from 'src/app/core/directives'
 import { CrawlOperationStatus } from 'src/app/core/enum'
 import { crawlOperationStatusColor, isArray, setAIModel, setOperationStatusList } from 'src/app/core/functions'
@@ -48,7 +49,7 @@ type OperationPageCursor = {
 
 @Component({
   selector: 'app-operations',
-  imports: [DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe, MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe, GinputComponent, DropdownComponent, RouterLink, PromptareaComponent, ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner, MatInputModule, DecimalPipe, MatTimepickerModule, MatDatepickerModule],
+  imports: [DatePipe, RippleDirective, MatIcon, NgClass, AsyncPipe, MatProgressBarModule, LoadingDotsComponent, StinputComponent, FormControlPipe, GinputComponent, DropdownComponent, RouterLink, PromptareaComponent, ReactiveFormsModule, MatFormFieldModule, Outsideclick, MatProgressSpinner, MatInputModule, DecimalPipe, MatTimepickerModule, MatDatepickerModule, TranslateModule],
   providers: [provideNativeDateAdapter(), provideNativeDateTimeAdapter()],
   animations: [listStaggerAnimation],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -146,7 +147,7 @@ export class OperationsComponent {
     private crawlStoreService: CrawlStoreService,
     private snackbarService: SnackbarService,
     private scroll: ScrollService,
-
+    private translate: TranslateService,
     private wsService: WebSocketService
   ) {
     this.db = this.firestoreService.getInstanceDB('easyscrape')
@@ -197,7 +198,7 @@ export class OperationsComponent {
      */
 
     this.operationStatus = new FormControl<DropDownOption>({
-      name: "Save",
+      name: 'COMMON.SAVE',
       code: CrawlOperationStatus.READY
     }, {
       // updateOn: 'blur', //default will be change
@@ -209,6 +210,22 @@ export class OperationsComponent {
     })
 
     setOperationStatusList(this.operStatusList)
+
+    // Action option names are i18n key paths (app-dropdown pipes option.name);
+    // codes stay enum literals because submit logic compares operationStatus.value.code.
+    for (const option of this.operStatusList) {
+      switch (option.code) {
+        case CrawlOperationStatus.READY:
+          option.name = 'COMMON.SAVE'
+          break
+        case CrawlOperationStatus.STARTED:
+          option.name = 'OPERATIONS.ACT_RUN'
+          break
+        case CrawlOperationStatus.SCHEDULED:
+          option.name = 'OPERATIONS.ACT_SCHEDULE'
+          break
+      }
+    }
 
     this.userprompt = new FormControl('', {
       nonNullable: true,
@@ -444,13 +461,13 @@ export class OperationsComponent {
 
     batch.commit()
       .then(async () => {
-        this.showSnackbar('Operation deletion successful', SnackBarType.success, '', 5000)
+        this.showSnackbar(this.translate.instant('OPERATIONS.DELETE_SUCCESS'), SnackBarType.success, '', 5000)
         this.resetOperationsPaginationCache()
         await this.loadOperationsPage(this.currentOpePage, true)
       })
       .catch((error: any) => {
         console.log('error', error)
-        this.showSnackbar('Operation deletion failed. Please try again later', SnackBarType.error, '', 5000)
+        this.showSnackbar(this.translate.instant('OPERATIONS.DELETE_ERROR'), SnackBarType.error, '', 5000)
       })
       .finally(() => {
         this.isOperOptionsLoading = false
@@ -555,7 +572,7 @@ export class OperationsComponent {
     this.destroy$.next()
     // this.isResultsProcessing = this.isCrawlProcessing = false
     // this.enableForm()
-    this.showSnackbar('Request canceled', SnackBarType.info, '', 5000)
+    this.showSnackbar(this.translate.instant('OPERATIONS.REQUEST_CANCELED'), SnackBarType.info, '', 5000)
   }
 
   protected onPromptSubmited(prompt: string) {
@@ -565,7 +582,7 @@ export class OperationsComponent {
       || !this.modelAI.valid || !this.operationName.valid
       || (this.operationStatus.value.code === CrawlOperationStatus.SCHEDULED &&
         (!this.datePick.valid || !this.timePick.valid))) {
-      this.showSnackbar('Invalid input', SnackBarType.error, '', 5000)
+      this.showSnackbar(this.translate.instant('OPERATIONS.INVALID_INPUT'), SnackBarType.error, '', 5000)
       return
     }
 

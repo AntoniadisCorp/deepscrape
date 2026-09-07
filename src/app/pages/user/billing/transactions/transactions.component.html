@@ -1,7 +1,7 @@
 <div class="container mx-auto px-4 py-6">
   <!-- Header with range selector -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Transactions</h2>
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ 'BILLING_TRANSACTIONS.TITLE' | translate }}</h2>
     <div class="flex flex-wrap gap-2">
       <button
         *ngFor="let range of ranges"
@@ -14,7 +14,7 @@
         [class.dark:text-gray-300]="(rangeKey$ | async) !== range.key"
         (click)="setRange(range.key)"
       >
-        {{ range.label }}
+        {{ range.label | translate }}
       </button>
     </div>
   </div>
@@ -23,19 +23,19 @@
   <ng-container *ngIf="summary$ | async as summary">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
       <div class="rounded-2xl bg-gray-50 dark:bg-gray-800/50 p-4 shadow-sm">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total invoiced</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ 'BILLING_TRANSACTIONS.TOTAL_INVOICED' | translate }}</p>
         <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
           {{ (summary.totalInvoiced / 100) | currency:summary.currency }}
         </p>
       </div>
       <div class="rounded-2xl bg-gray-50 dark:bg-gray-800/50 p-4 shadow-sm">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total paid</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ 'BILLING_TRANSACTIONS.TOTAL_PAID' | translate }}</p>
         <p class="text-2xl font-semibold text-green-600 dark:text-green-400 mt-1">
           {{ (summary.totalPaid / 100) | currency:summary.currency }}
         </p>
       </div>
       <div class="rounded-2xl bg-gray-50 dark:bg-gray-800/50 p-4 shadow-sm">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Metered units</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ 'BILLING_TRANSACTIONS.METERED_UNITS' | translate }}</p>
         <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ summary.totalMeteredUnits }}</p>
       </div>
     </div>
@@ -43,19 +43,19 @@
 
   <!-- Invoices -->
   <div class="mb-8">
-    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Invoices</h3>
+    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ 'BILLING_TRANSACTIONS.INVOICES_TITLE' | translate }}</h3>
     <div *ngIf="(invoices$ | async)?.length === 0" class="rounded-xl bg-gray-50 dark:bg-gray-800/30 p-6 text-center text-gray-500 dark:text-gray-400">
       <mat-icon fontSet="material-icons-outlined" class="text-4xl mb-2">receipt_long</mat-icon>
-      <p>No invoices for this period.</p>
+      <p>{{ 'BILLING_TRANSACTIONS.NO_INVOICES' | translate }}</p>
     </div>
     <div *ngIf="(invoices$ | async)?.length! > 0" class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th class="pb-2 font-medium">Invoice</th>
-            <th class="pb-2 font-medium">Date</th>
-            <th class="pb-2 font-medium">Amount</th>
-            <th class="pb-2 font-medium">Status</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.INVOICE' | translate }}</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DATE' | translate }}</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.AMOUNT' | translate }}</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.STATUS' | translate }}</th>
             <th class="pb-2 font-medium"></th>
           </tr>
         </thead>
@@ -85,7 +85,7 @@
             </td>
             <td class="py-3">
               <a *ngIf="inv.hostedInvoiceUrl" [href]="inv.hostedInvoiceUrl" target="_blank"
-                class="text-primary dark:text-violet-300 hover:underline text-xs">View</a>
+                class="text-primary dark:text-violet-300 hover:underline text-xs">{{ 'BILLING_TRANSACTIONS.VIEW' | translate }}</a>
             </td>
           </tr>
         </tbody>
@@ -95,19 +95,19 @@
 
   <!-- Payments -->
   <div>
-    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Payments</h3>
+    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ 'BILLING_TRANSACTIONS.PAYMENTS_TITLE' | translate }}</h3>
     <div *ngIf="(payments$ | async)?.length === 0" class="rounded-xl bg-gray-50 dark:bg-gray-800/30 p-6 text-center text-gray-500 dark:text-gray-400">
       <mat-icon fontSet="material-icons-outlined" class="text-4xl mb-2">payments</mat-icon>
-      <p>No payments for this period.</p>
+      <p>{{ 'BILLING_TRANSACTIONS.NO_PAYMENTS' | translate }}</p>
     </div>
     <div *ngIf="(payments$ | async)?.length! > 0" class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th class="pb-2 font-medium">Description</th>
-            <th class="pb-2 font-medium">Date</th>
-            <th class="pb-2 font-medium">Amount</th>
-            <th class="pb-2 font-medium">Status</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DESCRIPTION' | translate }}</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DATE' | translate }}</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.AMOUNT' | translate }}</th>
+            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.STATUS' | translate }}</th>
           </tr>
         </thead>
         <tbody>

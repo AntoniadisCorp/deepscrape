@@ -142,24 +142,23 @@
         </button>
       </div>
       <h1 class="text-2xl font-roboto text-green-700 dark:text-green-100">
-        <span>🚀🤖 New Operation</span>
+        <span>🚀🤖 {{ 'OPERATIONS.NEW_OPERATION' | translate }}</span>
       </h1>
       <p
         class="text-left text-base text-gray-500 dark:text-gray-300 max-w-screen-md">
-        Set mutiple urls separated by ',' choose your LLM model the crawl
-        conguration pack if've not set it up you can add
+        {{ 'OPERATIONS.NEW_OP_INTRO_1' | translate }}
         <a
           [routerLink]="['/crawlpack']"
           class="text-blue-400 hover:text-blue-600">
-          here
+          {{ 'OPERATIONS.NEW_OP_INTRO_LINK' | translate }}
         </a>
-        , Fill the prompt, take an action
-        <span class="font-semibold">Run</span>
-        to start instantly,
-        <span class="font-semibold">Save</span>
-        to create and not take an action or
-        <span class="font-semibold">Schedule</span>
-        to set a scheduler by providing a Date
+        {{ 'OPERATIONS.NEW_OP_INTRO_2' | translate }}
+        <span class="font-semibold">{{ 'OPERATIONS.ACT_RUN' | translate }}</span>
+        {{ 'OPERATIONS.NEW_OP_INTRO_3' | translate }}
+        <span class="font-semibold">{{ 'COMMON.SAVE' | translate }}</span>
+        {{ 'OPERATIONS.NEW_OP_INTRO_4' | translate }}
+        <span class="font-semibold">{{ 'OPERATIONS.ACT_SCHEDULE' | translate }}</span>
+        {{ 'OPERATIONS.NEW_OP_INTRO_5' | translate }}
       </p>
     </div>
     <div class="mt-2 w-full max-w-screen-md">
@@ -169,13 +168,13 @@
           [options]="model"
           [control]="modelAI | formControl"
           [padding]="'p-2'"
-          dropDownName="choose your model"
+          [dropDownName]="'OPERATIONS.CHOOSE_MODEL'"
         (select)="onDropDownSelected($event)"></app-dropdown>
         @if(!crawlConfigPack.length) {
           <a
             [routerLink]="['/crawlpack']"
             class="text-lg gap-1 hover:bg-blue-600/[0.5] focus:bg-blue-900/[0.8] bg-blue-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors">
-            setup configuration
+            {{ 'OPERATIONS.SETUP_CONFIG' | translate }}
             <span class="text-red-400">*</span>
           </a>
           }@else {
@@ -183,7 +182,7 @@
             [options]="crawlConfigPack"
             [control]="crawlPack | formControl"
             [padding]="'p-2'"
-            dropDownName="choose your Crawl Config"
+            [dropDownName]="'OPERATIONS.CHOOSE_CRAWL_CONFIG'"
           (select)="onDropDownSelected($event)"></app-dropdown>
         }
       </div>
@@ -200,7 +199,7 @@
             [options]="operStatusList"
             [control]="operationStatus | formControl"
             [padding]="'p-2'"
-            dropDownName="take an action"
+            [dropDownName]="'OPERATIONS.TAKE_AN_ACTION'"
           (select)="onDropDownSelected_Status($event)"></app-dropdown>
         </div>
       </div>
@@ -208,7 +207,7 @@
         <div
           class="flex mb-6 flex-row flex-wrap sm:flex-nowrap gap-6 justify-between items-center">
           <mat-form-field>
-            <mat-label>Schedule a date</mat-label>
+            <mat-label>{{ 'OPERATIONS.SCHEDULE_DATE' | translate }}</mat-label>
             <input
               matInput
               (dateChange)="setDateTime()"
@@ -219,7 +218,7 @@
               <mat-datepicker-toggle [for]="datepicker" matSuffix />
             </mat-form-field>
             <mat-form-field>
-              <mat-label>pick a time</mat-label>
+              <mat-label>{{ 'OPERATIONS.PICK_TIME' | translate }}</mat-label>
               <input
                 matInput
                 [matTimepicker]="timepicker"
@@ -229,11 +228,11 @@
                 <mat-timepicker #timepicker />
                 <mat-timepicker-toggle [for]="timepicker" matSuffix />
                 @if (timePick.errors?.['matTimepickerParse']) {
-                  <mat-error>Value isn't a valid time</mat-error>
+                  <mat-error>{{ 'OPERATIONS.ERR_TIME_INVALID' | translate }}</mat-error>
                   } @if (timePick.errors?.['matTimepickerMin']) {
-                  <mat-error>Value is too early</mat-error>
+                  <mat-error>{{ 'OPERATIONS.ERR_TIME_EARLY' | translate }}</mat-error>
                   } @if (timePick.errors?.['matTimepickerMax']) {
-                  <mat-error>Value is too late</mat-error>
+                  <mat-error>{{ 'OPERATIONS.ERR_TIME_LATE' | translate }}</mat-error>
                 }
               </mat-form-field>
               <!-- <p class="text-gray-400 dark:text-gray1">
@@ -315,15 +314,15 @@
             fill="currentcolor"
             fill-rule="evenodd" />
           </svg>
-          Filters
+          {{ 'OPERATIONS.FILTERS' | translate }}
         </button>
       </div>
       <!-- <div>
-      <label for="filterSelect" class="sr-only">Filter options</label>
+      <label for="filterSelect" class="sr-only">{{ 'OPERATIONS.FILTER_OPTIONS' | translate }}</label>
       <select
         id="filterSelect"
         class="rounded-lg border border-blue-300/20 bg-gray5/20 px-2 py-2 text-blue-400 outline-none dark:bg-gray5/20"
-        aria-label="Filter options"
+        [attr.aria-label]="'OPERATIONS.FILTER_OPTIONS' | translate"
         >
         <option class="bg-gray5/20 dark:bg-gray5" value="">Filter by...</option>
         <option class="bg-gray5/20 dark:bg-gray5" value="branch">Branch</option>
@@ -338,7 +337,7 @@
         <div class="flex items-center justify-between h-12 md:mr-8">
           <h2
             class="text-2xl font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            Operations
+            {{ 'OPERATIONS.TITLE' | translate }}
             @if (inTotal$ | async; as inTotal) {
               <span
                 class="dark:text-gray-300 text-sm dark:bg-gray5 rounded-full px-[.7rem] py-1 font-medium">
@@ -425,7 +424,7 @@
                     </div>
                     <div>
                       <p class="text-gray-600 text-sm dark:text-gray-400 italic">
-                        tap to open
+                        {{ 'OPERATIONS.TAP_TO_OPEN' | translate }}
                       </p>
                     </div>
                   </div>
@@ -531,7 +530,7 @@
                           class="flex w-full items-center justify-end gap-1 rounded-md px-1.5 py-1.5 disabled:opacity-50 text-red-400 dark:text-red-400/[.8] hover:bg-gray-400/[0.5] focus:bg-gray5/[0.8] cursor-pointer font-medium duration-300 transition-colors"
                           [id]="'operation-del-' + operation.id">
                           <mat-icon>delete</mat-icon>
-                          Delete
+                          {{ 'COMMON.DELETE' | translate }}
                           <span class="inline-flex flex-grow justify-end h-5 w-5">
                             @if (isOperOptionsLoading) {
                               <mat-spinner
@@ -680,15 +679,13 @@
       @if((operations$ | async)?.length === 0) {
         <div class="text-center py-8">
           <p class="text-gray-600 dark:text-gray-300">
-            No operations created yet. Click the green button to run instantly or
-            schedule or create.
+            {{ 'OPERATIONS.EMPTY' | translate }}
           </p>
         </div>
         } @if((operations$ | async) === null) {
         <div class="text-center py-8">
           <p class="text-red-600 dark:text-red-300">
-            An Error Occured. Please try again later. or contact with
-            administrator. find the feedback button in the sidebar
+            {{ 'OPERATIONS.ERROR_LOAD' | translate }}
           </p>
         </div>
       }

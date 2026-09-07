@@ -16,6 +16,7 @@ import { convertKeysToSnakeCase, switchPackageIcon, switchPackKey, } from 'src/a
 import { ActivatedRoute, Router } from '@angular/router';
 import { MarkdownModule } from 'ngx-markdown';
 import { ClipboardbuttonComponent, CPackComponent, DialogComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { expandCollapseAnimation, fadeinCartItems, listStaggerAnimation } from 'src/app/animations';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
 import { filter } from 'rxjs/internal/operators/filter';
@@ -31,7 +32,7 @@ import { UserInfo } from '@angular/fire/auth';
     selector: 'app-crawlerpack',
     templateUrl: './crawlerpack.component.html',
     styleUrl: './crawlerpack.component.scss',
-    imports: [ReactiveFormsModule, AsyncPipe, KeyValuePipe, JsonPipe, ReversePipe, MatIcon, MarkdownModule, RippleDirective, RemoveToolbarDirective, MatProgressSpinner, DialogComponent, CPackComponent, ReactiveFormsModule, StinputComponent],
+    imports: [ReactiveFormsModule, AsyncPipe, KeyValuePipe, JsonPipe, ReversePipe, MatIcon, MarkdownModule, RippleDirective, RemoveToolbarDirective, MatProgressSpinner, DialogComponent, CPackComponent, ReactiveFormsModule, StinputComponent, TranslateModule],
     animations: [
         // animation triggers go here
         expandCollapseAnimation,
@@ -44,6 +45,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
 
     private user: Users & { currProviderData: UserInfo | null } | null = null
     private localStorage = inject(LocalStorage)
+    private translate = inject(TranslateService)
     readonly clipboardButton = ClipboardbuttonComponent
     previousPacks: any[] = [];
     packTitleControl: FormControl<string>
@@ -123,7 +125,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
     saveCartItems() {
 
         if (!this.packTitleControl.valid) {
-            this.showSnackbar('Please enter a title before saving.', SnackBarType.info, '', 5000);
+            this.showSnackbar(this.translate.instant('CRAWLER_PACK.TITLE_REQUIRED'), SnackBarType.info, '', 5000);
             return
         }
         
@@ -134,7 +136,7 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
 
         // if cartItems is not empty
         if (!cartItems) {
-            this.showSnackbar('No items in the cart to package.', SnackBarType.info, '', 5000)
+            this.showSnackbar(this.translate.instant('CRAWLER_PACK.CART_NO_ITEMS'), SnackBarType.info, '', 5000)
             return
         }
 
@@ -171,11 +173,11 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (done: boolean) => {
 
-                this.showSnackbar('Cart successful packed!', SnackBarType.success, '', 5000)
+                this.showSnackbar(this.translate.instant('CRAWLER_PACK.CART_PACKED'), SnackBarType.success, '', 5000)
             },
             error: (error: any) => {
                 this.loadingCartItems = false
-                this.showSnackbar('Failed to package the cart. Please try again.', SnackBarType.error, '', 5000)
+                this.showSnackbar(this.translate.instant('CRAWLER_PACK.CART_PACK_FAILED'), SnackBarType.error, '', 5000)
                 console.error('Error saving cart items:', error)
             },
             complete: () => {
@@ -192,12 +194,12 @@ export class CrawlerPackComponent implements OnInit, OnDestroy {
             ).
             subscribe({
                 next: (done: boolean) => {
-                    this.showSnackbar('Cart deleted successfully!', SnackBarType.success, '', 5000)
+                    this.showSnackbar(this.translate.instant('CRAWLER_PACK.CART_DELETED'), SnackBarType.success, '', 5000)
                 },
                 error: (error: any) => {
                     this.deletingCart = false
                     this.dialogOpen.set(false)
-                    this.showSnackbar('Failed to delete cart. Please try again.', SnackBarType.error, '', 5000)
+                    this.showSnackbar(this.translate.instant('CRAWLER_PACK.CART_DELETE_FAILED'), SnackBarType.error, '', 5000)
                     console.error('Error deleting cart:', error)
                 },
                 complete: () => {
