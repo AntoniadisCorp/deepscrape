@@ -1,9 +1,10 @@
 import { Component, OnInit, HostListener, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { themeStorageKey, ThemeToggleComponent, AnimatedBgComponent, LangPickerComponent } from 'src/app/shared';
-import { FeaturesComponent, HeroComponent, LandingArchitectureComponent, LandingCodeDemoComponent, LandingPricingComponent, LandingSocialProofComponent, LandingUseCasesComponent, LandingFaqComponent } from 'src/app/layout/landpage';
+import { FeaturesComponent, HeroComponent, LandingAgentComponent, LandingArchitectureComponent, LandingCodeDemoComponent, LandingPricingComponent, LandingSocialProofComponent, LandingUseCasesComponent, LandingFaqComponent } from 'src/app/layout/landpage';
 import { LocalStorage, ThemeService, WindowToken, ScrollService } from 'src/app/core/services';
 import { AppFooterComponent } from 'src/app/layout/footer';
 import { Observable } from 'rxjs';
@@ -14,6 +15,7 @@ import { Observable } from 'rxjs';
     RouterLink,
     ThemeToggleComponent,
     HeroComponent,
+    LandingAgentComponent,
     FeaturesComponent,
     LandingArchitectureComponent,
     LandingCodeDemoComponent,
@@ -25,7 +27,8 @@ import { Observable } from 'rxjs';
     NgClass,
     AsyncPipe,
     AnimatedBgComponent,
-    LangPickerComponent
+    LangPickerComponent,
+    TranslateModule
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
@@ -43,11 +46,12 @@ export class HomeComponent implements OnInit {
   // Removed 'lang' property as I18nService does not have it.
 
   readonly navLinks = [
-    { id: 'features', label: 'Features' },
-    { id: 'use-cases', label: 'Use Cases' },
-    { id: 'architecture', label: 'Architecture' },
-    { id: 'pricing', label: 'Pricing' },
-    { id: 'faq', label: 'FAQ' },
+    { id: 'agent', label: 'HOME.AGENT' },
+    { id: 'features', label: 'HOME.FEATURES' },
+    { id: 'use-cases', label: 'HOME.USE_CASES' },
+    { id: 'architecture', label: 'HOME.ARCHITECTURE' },
+    { id: 'pricing', label: 'HOME.PRICING' },
+    { id: 'faq', label: 'HOME.FAQ' },
   ];
 
   constructor() {}

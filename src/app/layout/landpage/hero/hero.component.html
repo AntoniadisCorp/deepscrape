@@ -37,25 +37,33 @@
         <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-display font-bold leading-tight tracking-tight mb-6 text-gray-900 dark:text-white hero-anim hero-anim-2">
           {{ 'HERO.HEAD1' | translate }}
           <br class="hidden sm:block" />
-          <span class="bg-gradient-to-r from-cyan-500 via-cyan-600 to-rose-500 dark:from-cyan-400 dark:via-cyan-500 dark:to-rose-400 bg-clip-text text-transparent animate-gradient-x">
+          <span class="bg-gradient-to-r from-cyan-600 via-cyan-600 to-rose-600 dark:from-cyan-400 dark:via-cyan-500 dark:to-rose-400 bg-clip-text text-transparent animate-gradient-x">
             {{ 'HERO.HEAD2' | translate }}
           </span>
         </h1>
 
         <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-400 leading-relaxed mb-8 max-w-xl lg:max-w-none hero-anim hero-anim-3">
-          <strong class="text-gray-900 dark:text-white">deepscrape</strong> is the web layer for AI — a managed
-          crawl-orchestration suite that turns any site into clean, structured data for your agents.
-          Ask, crawl, and extract with multi-provider AI (<strong class="text-gray-900 dark:text-white">Claude · GPT · Groq</strong>),
-          and let your assistant browse, read, and answer from the live web via our
-          <strong class="text-gray-900 dark:text-white">webrain</strong> research agent.
-          No browser farms to manage. No token waste. No vendor lock-in.
+          <span class="block">
+            <strong class="text-gray-900 dark:text-white">deepscrape</strong>&#32;{{ 'HERO.SUB1' | translate }}
+          </span>
+          <span class="mt-1 block">
+            {{ 'HERO.SUB2' | translate }}&#32;<span class="typed-phrase font-semibold text-cyan-700 dark:text-cyan-300">
+              {{ typedText() }}<span class="hero-caret" [class.on]="caretOn()"></span>
+            </span>
+          </span>
+          <span class="mt-2 block text-gray-600 dark:text-gray-400">
+            {{ 'HERO.SUB3A' | translate }}&#32;<strong class="text-gray-900 dark:text-white">Claude · GPT · Groq</strong>{{ 'HERO.SUB3B' | translate }}&#32;<strong class="text-gray-900 dark:text-white">webrain</strong>&#32;{{ 'HERO.SUB3C' | translate }}
+          </span>
+          <span class="mt-3 block text-sm text-gray-500 dark:text-gray-500">
+            {{ 'HERO.SUB4' | translate }}
+          </span>
         </p>
 
         <!-- CTAs — glass style -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8 hero-anim hero-anim-4">
           <a
             routerLink="/service/signup"
-            class="group inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 glass hover:bg-cyan-600/90 dark:hover:bg-cyan-600/90 border-cyan-500/30 dark:border-cyan-500/40"
+            class="group inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 bg-cyan-600 hover:bg-cyan-500 border border-cyan-400/40"
           >
             {{ 'HERO.START_FREE' | translate }}
             <lucide-angular [img]="icons['arrowright']" class="ml-2 h-5 w-5 group-hover:translate-x-0.5 transition-transform fill-none"></lucide-angular>
@@ -127,10 +135,10 @@
         <div class="relative group transition-transform duration-500 hover:-translate-y-1">
           <!-- Glow that intensifies on hover -->
           <div class="absolute -inset-1 bg-gradient-to-r from-cyan-400/40 to-rose-400/30 dark:from-cyan-500/30 dark:to-rose-500/20 rounded-2xl blur-xl opacity-70 group-hover:opacity-100 group-hover:blur-2xl transition-all duration-500"></div>
-          <!-- Terminal window — glass style -->
-          <div class="relative rounded-xl shadow-2xl overflow-hidden border transition-all duration-500 glass dark:border-white/10 group-hover:border-cyan-500/30 dark:group-hover:border-cyan-500/20">
+          <!-- Terminal window — dark code surface in BOTH themes (syntax needs dark) -->
+          <div class="relative rounded-xl shadow-2xl overflow-hidden border transition-all duration-500 bg-[#0b1017]/95 dark:bg-[#0b1017]/95 backdrop-blur-xl border-white/10 group-hover:border-cyan-500/40 dark:group-hover:border-cyan-500/20">
             <!-- Chrome with language tabs -->
-            <div class="flex items-center gap-2 px-4 py-3 border-b dark:border-white/5">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-white/10">
               <span class="w-3 h-3 rounded-full bg-red-400"></span>
               <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
               <span class="w-3 h-3 rounded-full bg-green-400"></span>
@@ -205,8 +213,8 @@ curl -X POST https:<span class="text-gray-500">//api.deepscrape.dev/v1/crawl</sp
 
     <!-- Scroll-down indicator -->
     <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer" (click)="scrollTo('features')">
-      <div class="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-600 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors duration-300">
-        <span class="text-xs font-medium tracking-wider uppercase">Scroll</span>
+      <div class="flex flex-col items-center gap-2 text-gray-500 dark:text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors duration-300">
+        <span class="text-xs font-medium tracking-wider uppercase">{{ 'HERO.SCROLL' | translate }}</span>
         <span class="animate-bounce text-2xl">↓</span>
       </div>
     </div>
