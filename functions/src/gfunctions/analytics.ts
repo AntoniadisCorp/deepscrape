@@ -39,6 +39,11 @@ const ipregistryApiKey = env.IPREGISTRY_API_KEY.trim()
 const geoCacheTtlSeconds = 60 * 60 * 6
 const GEO_CACHE_PREFIX = "ipintel:v2:"
 
+// ponytail: coalesce concurrent cold-miss lookups for the same IP (rate limiter +
+// guest/session enrichment on one first-seen visitor) into a single provider call.
+// Instance-local only; Redis cache dedupes across instances and over time.
+const inflightGeoLookups = new Map<string, Promise<ResolvedGeoData | null>>()
+
 let geoInitializationPromise: Promise<void> | null = null
 
 export type ResolvedGeoData = {
@@ -575,17 +580,31 @@ export async function lookupGeoByIp(
     return cachedLookup.data
   }
 
-  await initializeGeoDatabase()
-  try {
-    const resolvedData = ipregistryApiKey ? await fetchIpregistryLookup(ip) : await fetchGeoLookup(ip, context)
-    await writeCachedGeoLookup(ip, resolvedData)
-    return resolvedData
-  } catch (error) {
-    console.warn("Failed to resolve IP intelligence from geo API:", error)
-    // ponytail: cache the failure so heartbeat-triggered re-enrichment stops hammering a down provider on every write.
-    await writeCachedGeoLookup(ip, null).catch(() => undefined)
-    return null
+  // Single-flight: if a sibling path (rate limiter, guest/session enrichment) is
+  // already resolving this cold IP, join that call instead of starting a second.
+  const inFlight = inflightGeoLookups.get(ip)
+  if (inFlight) {
+    return inFlight
   }
+
+  const lookup = (async (): Promise<ResolvedGeoData | null> => {
+    await initializeGeoDatabase()
+    try {
+      const resolvedData = ipregistryApiKey ? await fetchIpregistryLookup(ip) : await fetchGeoLookup(ip, context)
+      await writeCachedGeoLookup(ip, resolvedData)
+      return resolvedData
+    } catch (error) {
+      console.warn("Failed to resolve IP intelligence from geo API:", error)
+      // ponytail: cache the failure so heartbeat-triggered re-enrichment stops hammering a down provider on every write.
+      await writeCachedGeoLookup(ip, null).catch(() => undefined)
+      return null
+    } finally {
+      inflightGeoLookups.delete(ip)
+    }
+  })()
+
+  inflightGeoLookups.set(ip, lookup)
+  return lookup
 }
 
 // Geo lookup uses the remote ip.deepscrape.dev API.
