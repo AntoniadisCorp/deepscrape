@@ -549,6 +549,8 @@ async function computeRangeMetric(rangeId: string, days: number) {
   const byLanguage: { [key: string]: number } = {}
   const byIP: { [key: string]: number } = {}
   const byTimezone: { [key: string]: number } = {}
+  const byASN: { [key: string]: number } = {}
+  const byISP: { [key: string]: number } = {}
   const dailyBreakdown: Array<{
     date: string
     newGuests: number
@@ -614,6 +616,14 @@ async function computeRangeMetric(rangeId: string, days: number) {
     byDevice[guest.device || "Unknown"] = (byDevice[guest.device || "Unknown"] || 0) + 1
     byOS[guest.os || "Unknown"] = (byOS[guest.os || "Unknown"] || 0) + 1
     byTimezone[guest.timezone || "Unknown"] = (byTimezone[guest.timezone || "Unknown"] || 0) + 1
+
+    // ponytail: ASN/ISP come from the geo `network` object (ipregistry) stored on enriched guests.
+    const guestNetwork = (guest as unknown as { network?: { asn?: string | number | null; as?: string | null; isp?: string | null } }).network
+    const asn = guestNetwork?.asn != null ? String(guestNetwork.asn).trim() : ""
+    const asnKey = asn || "Unknown"
+    const isp = (guestNetwork?.as || guestNetwork?.isp || asn || "").trim() || "Unknown"
+    byASN[asnKey] = (byASN[asnKey] || 0) + 1
+    byISP[isp] = (byISP[isp] || 0) + 1
   })
 
   dailySnapshots.forEach((snapshot, index) => {
@@ -789,6 +799,8 @@ async function computeRangeMetric(rangeId: string, days: number) {
     byLanguage: byLanguage,
     byIP: byIP,
     byTimezone: byTimezone,
+    byASN: byASN,
+    byISP: byISP,
     dailyBreakdown: dailyBreakdown,
     trends: {
       avgDailyGuests: avgDailyGuests,
