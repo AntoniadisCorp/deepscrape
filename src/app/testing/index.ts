@@ -144,9 +144,16 @@ const mockTranslateService = {
   instant: (key: string) => key,
   get: (key: string) => of(key),
   stream: (key: string) => of(key),
+  // Members required by the TranslatePipe (ngx-translate v17) so specs that
+  // render templates using `| translate` do not throw. Values resolve to the
+  // key path, matching the instant/get contract used across the suite.
+  getCurrentLang: () => 'en',
+  getFallbackLang: () => 'en',
+  getParsedResult: (key: string) => key,
   onLangChange: of({ lang: 'en', translations: {} }),
   onTranslationChange: of({ lang: 'en', translations: {} }),
   onDefaultLangChange: of({ lang: 'en', translations: {} }),
+  onFallbackLangChange: of({ lang: 'en', translations: {} }),
 };
 
 const mockCartService = {
