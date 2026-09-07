@@ -14,6 +14,7 @@ import {Request, Response, NextFunction} from "express"
 import {Ratelimit} from "@upstash/ratelimit"
 import {Redis} from "@upstash/redis"
 import {env} from "../config/env"
+import {lookupGeoByIp} from "../gfunctions/analytics"
 
 const sanitizeUpstashRestUrl = (value: string): string => {
   if (!value) {
@@ -101,6 +102,33 @@ const eventRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
   prefix: "eventRateLimit",
 }) : null
 
+/**
+ * Best-effort country code for deny-list / dashboard analytics.
+ * Cheap edge headers first; falls back to the shared Redis-cached geo lookup
+ * (ipregistry when IPREGISTRY_API_KEY is set). Cached 6h, so only first-seen
+ * IPs ever hit the provider. Lookups are skipped on the event limiter
+ * (enableProtection=false) where country only feeds analytics, never a block.
+ */
+async function resolveCountryCode(
+  req: Request,
+  ip: string,
+  allowDenyListBlock: boolean
+): Promise<string> {
+  const edgeCountry = req.get("x-country") || req.get("cf-ipcountry")
+  if (edgeCountry) {
+    return edgeCountry
+  }
+  if (!allowDenyListBlock) {
+    return "unknown"
+  }
+  try {
+    const geo = await lookupGeoByIp(ip)
+    return geo?.countryShort || "unknown"
+  } catch {
+    return "unknown"
+  }
+}
+
 async function applyRateLimit(
   req: Request,
   res: Response,
@@ -125,12 +153,16 @@ async function applyRateLimit(
     // Use user UID if authenticated, otherwise use IP
     const identifier = req.user?.uid || ip
 
+    // Best-effort country for deny-list checks (edge headers, then Redis-cached geo).
+    const country = await resolveCountryCode(req, ip, allowDenyListBlock)
+
     // Apply rate limit with protection
     const {success, limit, remaining, reset, pending, reason} = await ratelimit.limit(
       identifier,
       {
         ip, // For auto IP deny list
         userAgent, // For user-agent based blocking
+        country, // For country-based blocking
       }
     )
 
