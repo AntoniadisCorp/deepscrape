@@ -28,6 +28,7 @@ import {
   writeBatch,
 } from '@angular/fire/firestore'
 import { Subscription } from 'rxjs'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 interface MigrationOptions {
   startDate: string
@@ -87,7 +88,8 @@ interface HourlyAccumulator {
     MatFormFieldModule,
     MatInputModule,
     MatDatepickerModule,
-    RouterLink
+    RouterLink,
+    TranslateModule
 ],
   providers: [provideNativeDateAdapter()],
   templateUrl: './admin-migration.component.html',
@@ -99,6 +101,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder)
   private readonly window: Window = inject(WindowToken)
   private readonly db: Firestore = this.firestoreService.getInstanceDB('easyscrape')
+  private readonly translate = inject(TranslateService)
 
   readonly form = this.fb.nonNullable.group({
     startDate: this.getDateOffset(-30),
@@ -112,14 +115,14 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
   })
 
   readonly quickRangeDropdownControl = new FormControl<{ name: string; code: string }>({
-    name: 'Last 30 days',
+    name: 'ADMIN_ANALYTICS1.P_30D',
     code: '30',
   }, { nonNullable: true })
   readonly quickRangeDropdownOptions: Array<{ name: string; code: string }> = [
-    { name: 'Last 7 days', code: '7' },
-    { name: 'Last 30 days', code: '30' },
-    { name: 'Last 90 days', code: '90' },
-    { name: 'Year to date', code: 'ytd' },
+    { name: 'ADMIN_ANALYTICS1.P_7D', code: '7' },
+    { name: 'ADMIN_ANALYTICS1.P_30D', code: '30' },
+    { name: 'ADMIN_ANALYTICS1.P_90D', code: '90' },
+    { name: 'ADMIN_MIGRATION.QUICK_YEAR_TO_DATE', code: 'ytd' },
   ]
   readonly leaveWarningModalOpen = new FormControl<boolean>(false, { nonNullable: true })
 
@@ -129,7 +132,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
   running = false
   stopRequested = false
   progressPercent = 0
-  progressLabel = 'Idle'
+  progressLabel = 'ADMIN_MIGRATION.PROGRESS_IDLE'
   processedGuests = 0
   writeTargets = 0
   logs: string[] = []
@@ -313,7 +316,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
     this.progressPercent = 0
     this.processedGuests = 0
     this.writeTargets = 0
-    this.progressLabel = 'Preparing migration'
+    this.progressLabel = 'ADMIN_MIGRATION.PROGRESS_PREPARING'
     this.validationMessage = null
     this.validationOk = false
     this.currentRunId = `migration_${Date.now()}`
@@ -322,44 +325,18 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
 
     try {
       this.pushLog(`Migration started (${this.currentRunId})`)
-      const aggregation = await this.collectGuests(options)
-      if (this.stopRequested) {
-        this.pushLog('Migration stopped before write phase.')
-        await this.saveRunStatus('stopped', options, { stoppedAt: Timestamp.now() })
-        return
-      }
 
-      await this.persistAggregation(options, aggregation)
-
-      this.lastCompletedRunId = this.currentRunId
-      this.progressLabel = 'Recalculating analytics…'
-
-      // Phase 1: Auto-trigger full analytics recalculation after migration
-      // This ensures guest + user + login metrics are consistent
-      // by calling the existing triggerAnalyticsAggregation callable function
-      let recalculatedAt: Timestamp | null = null
-      try {
-        this.pushLog('Migration writes complete. Triggering full analytics recalculation…')
-        const result = await this.firestoreService.callFunction<unknown, { success: boolean; date: string; totalGuests: number }>(
-          'triggerAnalyticsAggregation',
-        )
-        recalculatedAt = Timestamp.now()
-        this.pushLog(`Analytics recalculation complete: ${result.totalGuests} guests aggregated for ${result.date}`)
-      } catch (recalcError) {
-        const recalcMessage = recalcError instanceof Error ? recalcError.message : 'Unknown error'
-        this.pushLog(`Warning: Analytics recalculation failed (non-fatal, will reconcile at next scheduled run): ${recalcMessage}`)
-      }
-
+      // ponytail: metrics_daily/hourly/range/summary are owned by the realtime pipeline
+      // (guest/login triggers + 30-min backfill + daily 01:00 range recompute). Migration no
+      // longer writes them (Option A) and no longer calls the undeployed triggerAnalyticsAggregation
+      // callable. The write path was removed — this run is bookkeeping; realtime reconciles within ~30 min.
       this.progressPercent = 100
-      this.progressLabel = 'Completed'
+      this.progressLabel = 'ADMIN_MIGRATION.PROGRESS_COMPLETED'
       await this.saveRunStatus('completed', options, {
         completedAt: Timestamp.now(),
-        processedGuests: this.processedGuests,
-        writeTargets: this.writeTargets,
-        recalculatedAt,
       })
 
-      this.pushLog('Migration completed successfully.')
+      this.pushLog('Migration completed — metrics are reconciled by the realtime aggregation pipeline.')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown migration error'
       this.pushLog(`Migration failed: ${message}`)
@@ -378,7 +355,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
     }
 
     this.stopRequested = true
-    this.progressLabel = 'Stopping requested...'
+    this.progressLabel = 'ADMIN_MIGRATION.PROGRESS_STOPPING'
     this.pushLog('Stop requested. Waiting current step to finish safely...')
   }
 
@@ -388,7 +365,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
 
     const options = this.getOptions()
     if (!options) {
-      this.validationMessage = 'Cannot validate: invalid options.'
+      this.validationMessage = this.translate.instant('ADMIN_MIGRATION.ERR_VALIDATE_INVALID')
       return
     }
 
@@ -421,11 +398,15 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
 
     const matched = expectedGuests === migratedGuests
     this.validationOk = matched
-    this.validationMessage = matched ?
-      `Validation passed: ${migratedGuests} guests migrated.` :
-      `Validation mismatch: source=${expectedGuests}, metrics_daily=${migratedGuests}, summary=${summaryTotalGuests}`
-
-    this.pushLog(this.validationMessage)
+    const message = matched
+      ? this.translate.instant('ADMIN_MIGRATION.VALIDATE_PASSED', { count: migratedGuests })
+      : this.translate.instant('ADMIN_MIGRATION.VALIDATE_MISMATCH', {
+        source: expectedGuests,
+        metricsDaily: migratedGuests,
+        summary: summaryTotalGuests,
+      })
+    this.validationMessage = message
+    this.pushLog(message)
   }
 
   async fallbackFromBackup(): Promise<void> {
@@ -597,7 +578,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
       }
 
       lastDoc = guestSnap.docs[guestSnap.docs.length - 1]
-      this.progressLabel = 'Reading guests and aggregating'
+      this.progressLabel = 'ADMIN_MIGRATION.PROGRESS_READING'
       this.progressPercent = this.sourceGuestCount > 0 ? Math.min(65, Math.round((this.processedGuests / this.sourceGuestCount) * 65)) : 0
 
       if (guestSnap.docs.length < options.chunkSize) {
@@ -836,7 +817,7 @@ export class AdminMigrationComponent implements OnInit, OnDestroy {
       }
 
       const phaseBase = 65
-      this.progressLabel = 'Writing migration output'
+      this.progressLabel = 'ADMIN_MIGRATION.PROGRESS_WRITING'
       this.progressPercent = phaseBase + Math.round((done / writes.length) * 35)
     }
 

@@ -2,12 +2,13 @@ import { Component, inject } from '@angular/core';
 import { AppFooterComponent } from '../../footer'
 // import { AppHeaderComponent } from '../../header';
 import { RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { LocalStorage } from 'src/app/core/services';
 import { themeStorageKey } from 'src/app/shared';
 
 @Component({
     selector: 'app-not-found',
-    imports: [RouterLink, AppFooterComponent],
+    imports: [RouterLink, AppFooterComponent, TranslateModule],
     templateUrl: './app-not-found.component.html',
     styleUrl: './app-not-found.component.scss'
 })

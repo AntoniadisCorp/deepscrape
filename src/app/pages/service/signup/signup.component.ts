@@ -266,7 +266,7 @@ export class SignupComponent implements OnInit, OnDestroy, AfterViewInit {
 
     protected checkPasswordStrength(password: string): string {
 
-        return checkPasswordStrength(password)
+        return checkPasswordStrength(password, (k) => this.translate.instant(k))
     }
 
     async signup() {

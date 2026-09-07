@@ -13,7 +13,7 @@
           class="flex border-solid border-b dark:border-gray-100/10 border-gray5 items-center justify-start min-h-12">
           <h2
             class="ml-4 grow font-semibold font-sans text-gray-900 dark:text-gray-300 text-lg">
-            Cart Packaging
+            {{ 'CART.TITLE' | translate }}
           </h2>
           <button
             type="button"
@@ -36,7 +36,7 @@
             <div id="Configuration">
               <h2
                 class="text-base font-mono mt-5 mb-2 ml-[18px] dark:text-gray-100 text-gray4 font-normal">
-                Configurations
+                {{ 'CART.CONFIGURATIONS' | translate }}
               </h2>
             </div>
             @for (item of items | keyvalue | reverse; track item.key) {

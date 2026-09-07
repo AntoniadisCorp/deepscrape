@@ -21,6 +21,7 @@ import { RouterLink } from '@angular/router';
 import { DropdownComponent } from 'src/app/core/components/dropdown/dropdown.component';
 import { SessionDisplayInfo } from 'src/app/core/types';
 import { firstValueFrom, Subscription } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface DayActivity {
     date: string;
@@ -73,6 +74,8 @@ interface Dashboard {
     byRegion?: Record<string, number>;
     byLanguage?: Record<string, number>;
     byIP?: Record<string, number>;
+    byASN?: Record<string, number>;
+    byISP?: Record<string, number>;
 }
 
 interface RangeMetrics {
@@ -104,13 +107,27 @@ interface RangeMetrics {
     byRegion?: Record<string, number>;
     byLanguage?: Record<string, number>;
     byIP?: Record<string, number>;
+    byASN?: Record<string, number>;
+    byISP?: Record<string, number>;
+}
+
+interface RankRow {
+    label: string;
+    count: number;
+    pct: number;
+}
+
+interface DimensionPanel {
+    title: string;
+    accent: string;
+    rows: RankRow[];
 }
 
 type AnalyticsPeriod = 'last-30m' | 'last-1h' | 'last-24h' | 'last-7d' | 'last-30d' | 'last-90d' | 'custom';
 
 @Component({
     selector: 'app-admin-analytics',
-    imports: [BaseChartDirective, DecimalPipe, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent],
+    imports: [BaseChartDirective, DecimalPipe, NgClass, LucideAngularModule, RouterLink, FormsModule, DropdownComponent, TranslateModule],
     templateUrl: './admin-analytics.component.html',
     styleUrls: ['./admin-analytics.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -120,6 +137,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     private analyticsRangeService = inject(AnalyticsRangeService);
     private firestoreAnalyticsService = inject(FirestoreAnalyticsService);
     private cdr = inject(ChangeDetectorRef);
+    private translate = inject(TranslateService);
 
     // Data properties
     loading = true;
@@ -137,6 +155,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     recentActivity: DayActivity[] = [];
     Math = Math;
     readonly icons = myIcons;
+    trafficPanels: DimensionPanel[] = [];
     displayPeriodDays = 7;
     adminSessionTargetUserId = '';
     adminSessionsLoading = false;
@@ -161,19 +180,19 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     // Filter state
     selectedPeriod: AnalyticsPeriod = 'last-7d';
     readonly periodControl = new FormControl<{ name: string; code: AnalyticsPeriod }>({
-        name: 'Last 7 days',
+        name: 'ADMIN_ANALYTICS1.P_7D',
         code: 'last-7d'
     }, { nonNullable: true });
     customStartDate = this.getDateOffset(-7);
     customEndDate = this.getDateOffset(0);
     readonly periodOptions: Array<{ value: AnalyticsPeriod; label: string }> = [
-        { value: 'last-30m', label: 'Last 30 minutes' },
-        { value: 'last-1h', label: 'Last 1 hour' },
-        { value: 'last-24h', label: 'Last 24 hours' },
-        { value: 'last-7d', label: 'Last 7 days' },
-        { value: 'last-30d', label: 'Last 30 days' },
-        { value: 'last-90d', label: 'Last 90 days' },
-        { value: 'custom', label: 'Custom range' },
+        { value: 'last-30m', label: 'ADMIN_ANALYTICS.RANGE_LAST_30M' },
+        { value: 'last-1h', label: 'ADMIN_ANALYTICS.RANGE_LAST_1H' },
+        { value: 'last-24h', label: 'ADMIN_ANALYTICS.RANGE_LAST_24H' },
+        { value: 'last-7d', label: 'ADMIN_ANALYTICS1.P_7D' },
+        { value: 'last-30d', label: 'ADMIN_ANALYTICS1.P_30D' },
+        { value: 'last-90d', label: 'ADMIN_ANALYTICS1.P_90D' },
+        { value: 'custom', label: 'ADMIN_ANALYTICS.RANGE_CUSTOM' },
     ];
     readonly periodDropdownOptions: Array<{ name: string; code: AnalyticsPeriod }> = this.periodOptions.map(option => ({
         name: option.label,
@@ -184,7 +203,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public lineChartData: ChartData<'line'> = {
         labels: [],
         datasets: [{
-            label: 'Logins',
+            label: this.translate.instant('ADMIN_ANALYTICS.TH_LOGINS'),
             data: [],
             borderColor: '#0F766E',
             backgroundColor: 'rgba(15, 118, 110, 0.12)',
@@ -210,12 +229,12 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         labels: [],
         datasets: [
             {
-                label: 'Guests',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS'),
                 data: [],
                 backgroundColor: '#10B981'
             },
             {
-                label: 'Authenticated',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_AUTHENTICATED'),
                 data: [],
                 backgroundColor: '#66BB6A'
             }
@@ -233,7 +252,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
 
     // Pie Chart Configuration
     public pieChartData: ChartData<'pie'> = {
-        labels: ['Guests', 'Authenticated Users'],
+        labels: [this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS'), this.translate.instant('ADMIN_ANALYTICS.DS_AUTH_USERS')],
         datasets: [{
             data: [0, 0],
             backgroundColor: ['#10B981', '#66BB6A'],
@@ -267,7 +286,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public radarChartData: ChartData<'radar'> = {
         labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
         datasets: [{
-            label: 'Activity',
+            label: this.translate.instant('ADMIN_ANALYTICS.DS_ACTIVITY'),
             data: [10, 5, 25, 40, 35, 20],
             backgroundColor: 'rgba(15, 118, 110, 0.2)',
             borderColor: '#0F766E',
@@ -290,7 +309,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
 
     // Guest Conversion Chart (Registered vs Unregistered)
     public guestConversionChartData: ChartData<'doughnut'> = {
-        labels: ['Registered', 'Unregistered'],
+        labels: [this.translate.instant('ADMIN_ANALYTICS.DS_REGISTERED'), this.translate.instant('ADMIN_ANALYTICS.DS_UNREGISTERED')],
         datasets: [{
             data: [0, 0],
             backgroundColor: ['#10B981', '#EF4444'],
@@ -322,7 +341,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public guestCountryChartData: ChartData<'bar'> = {
         labels: [],
         datasets: [{
-            label: 'Guests by Country',
+            label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS_BY_COUNTRY'),
             data: [],
             backgroundColor: '#14B8A6',
             borderRadius: 6
@@ -378,7 +397,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public guestOSChartData: ChartData<'bar'> = {
         labels: [],
         datasets: [{
-            label: 'Operating Systems',
+            label: this.translate.instant('ADMIN_ANALYTICS.CH_OS'),
             data: [],
             backgroundColor: '#8B5CF6',
             borderRadius: 6
@@ -399,7 +418,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public guestTimezoneChartData: ChartData<'bar'> = {
         labels: [],
         datasets: [{
-            label: 'Timezones',
+            label: this.translate.instant('ADMIN_ANALYTICS.DS_TIMEZONES'),
             data: [],
             backgroundColor: '#22C55E',
             borderRadius: 6
@@ -421,7 +440,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public regionChartData: ChartData<'bar'> = {
         labels: [],
         datasets: [{
-            label: 'Guests by Region',
+            label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS_BY_REGION'),
             data: [],
             backgroundColor: '#06B6D4',
             borderRadius: 6
@@ -460,7 +479,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public topIPsChartData: ChartData<'bar'> = {
         labels: [],
         datasets: [{
-            label: 'Connections',
+            label: this.translate.instant('ADMIN_ANALYTICS.DS_CONNECTIONS'),
             data: [],
             backgroundColor: '#F43F5E',
             borderRadius: 6
@@ -482,7 +501,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     public guestActivityChartData: ChartData<'line'> = {
         labels: [],
         datasets: [{
-            label: 'New Guests',
+            label: this.translate.instant('ADMIN_ANALYTICS.DS_NEW_GUESTS'),
             data: [],
             borderColor: '#10B981',
             backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -504,8 +523,40 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     };
     public guestActivityChartType = 'line' as const;
 
+    // ponytail: top-15 ranked lists beat one mixed chart for six different-cardinality dimensions.
+    private buildDimensionPanel(title: string, accent: string, source: unknown, fallback: string): DimensionPanel {
+        const entries = this.getTopDimensionEntries(source, 15, fallback);
+        const total = entries.reduce((sum, [, count]) => sum + count, 0);
+        const rows: RankRow[] = entries.map(([label, count]) => ({
+            label,
+            count,
+            pct: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
+        }));
+        return { title, accent, rows };
+    }
+
+    private refreshTrafficPanels(dashboard: Dashboard, rangeMetrics: RangeMetrics): void {
+        const has = (value?: Record<string, number>): value is Record<string, number> =>
+            !!value && Object.keys(value).length > 0;
+
+        this.trafficPanels = [
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_IP', '#F43F5E',
+                has(rangeMetrics?.byIP) ? rangeMetrics.byIP : dashboard.byIP, 'Unknown IP'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_REGION', '#06B6D4',
+                has(rangeMetrics?.byRegion) ? rangeMetrics.byRegion : dashboard.byRegion, 'Unknown Region'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_ASN', '#8B5CF6',
+                has(rangeMetrics?.byASN) ? rangeMetrics.byASN : dashboard.byASN, 'Unknown ASN'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_COUNTRY', '#14B8A6',
+                has(rangeMetrics?.byCountry) ? rangeMetrics.byCountry : (has(dashboard.topCountries) ? dashboard.topCountries : dashboard.byCountry), 'Unknown Country'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_DEVICE', '#0F766E',
+                has(rangeMetrics?.byDevice) ? rangeMetrics.byDevice : (has(dashboard.topDevices) ? dashboard.topDevices : dashboard.byDevice), 'Unknown Device'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_BROWSER', '#F59E0B',
+                has(rangeMetrics?.byBrowser) ? rangeMetrics.byBrowser : (has(dashboard.topBrowsers) ? dashboard.topBrowsers : dashboard.byBrowser), 'Unknown Browser'),
+        ];
+    }
+
     get selectedPeriodLabel(): string {
-        return this.periodOptions.find(option => option.value === this.selectedPeriod)?.label ?? 'Selected period';
+        return this.periodOptions.find(option => option.value === this.selectedPeriod)?.label ?? 'ADMIN_ANALYTICS.SELECTED_PERIOD';
     }
 
     ngOnInit(): void {
@@ -523,7 +574,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         try {
             await this.loadAnalyticsData();
         } catch (err) {
-            this.error = 'Failed to load analytics data';
+            this.error = this.translate.instant('ADMIN_ANALYTICS.ERR_LOAD_DATA');
             console.error(err);
         } finally {
             this.loading = false;
@@ -606,7 +657,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         try {
             await this.loadAnalyticsData(true);
         } catch (err) {
-            this.error = 'Failed to refresh data';
+            this.error = this.translate.instant('ADMIN_ANALYTICS.ERR_REFRESH');
             console.error(err);
         } finally {
             this.loading = false;
@@ -679,7 +730,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     async loadAdminSessions(): Promise<void> {
         const targetUserId = this.adminSessionTargetUserId.trim();
         if (!targetUserId) {
-            this.adminSessionsError = 'Target user ID is required';
+            this.adminSessionsError = this.translate.instant('ADMIN_ANALYTICS.ERR_SESSION_TARGET_REQUIRED');
             this.adminSessions = [];
             this.renderNow();
             return;
@@ -708,7 +759,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         } catch (error) {
             console.error('Failed to load admin sessions:', error);
             this.adminSessions = [];
-            this.adminSessionsError = 'Failed to load sessions for this user';
+            this.adminSessionsError = this.translate.instant('ADMIN_ANALYTICS.ERR_SESSIONS_LOAD');
         } finally {
             this.adminSessionsLoading = false;
             this.renderNow();
@@ -735,7 +786,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
             await this.loadAdminSessions();
         } catch (error) {
             console.error('Failed to revoke admin session:', error);
-            this.adminSessionsError = 'Failed to revoke session';
+            this.adminSessionsError = this.translate.instant('ADMIN_ANALYTICS.ERR_SESSION_REVOKE');
         } finally {
             this.revokingAdminSessionId = '';
             this.renderNow();
@@ -751,19 +802,19 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     }
 
     getAdminSessionRiskLabel(session: SessionDisplayInfo): string {
-        return getSessionRiskLabel(session);
+        return getSessionRiskLabel(session, (k, p) => this.translate.instant(k, p));
     }
 
     getAdminSessionRiskReason(session: SessionDisplayInfo): string {
-        return getSessionRiskReason(session);
+        return getSessionRiskReason(session, (k, p) => this.translate.instant(k, p));
     }
 
     getAdminSessionNetworkSummary(session: SessionDisplayInfo): string {
-        return getSessionNetworkSummary(session);
+        return getSessionNetworkSummary(session, (k, p) => this.translate.instant(k, p));
     }
 
     getAdminSessionProxySummary(session: SessionDisplayInfo): string {
-        return getSessionProxySummary(session);
+        return getSessionProxySummary(session, (k, p) => this.translate.instant(k, p));
     }
 
     getAdminDisplayBrowser(session: SessionDisplayInfo): string {
@@ -795,7 +846,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         if (session.humanReadableTime && session.humanReadableTime !== 'Unknown time') {
             return session.humanReadableTime;
         }
-        return String(session.createdAt ? new Date(session.createdAt).toLocaleString() : 'Unknown time');
+        return String(session.createdAt ? new Date(session.createdAt).toLocaleString() : this.translate.instant('ADMIN_ANALYTICS.UNKNOWN_TIME'));
     }
 
     private isCacheValid(now: number): boolean {
@@ -827,7 +878,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.lineChartData = {
             labels: labels,
             datasets: [{
-                label: 'Logins',
+                label: this.translate.instant('ADMIN_ANALYTICS.TH_LOGINS'),
                 data: loginData,
                 borderColor: '#0F766E',
                 backgroundColor: 'rgba(15, 118, 110, 0.12)',
@@ -841,12 +892,12 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
             labels: labels,
             datasets: [
                 {
-                    label: 'Guests',
+                    label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS'),
                     data: newGuestsData,
                     backgroundColor: '#10B981'
                 },
                 {
-                    label: 'Authenticated',
+                    label: this.translate.instant('ADMIN_ANALYTICS.DS_AUTHENTICATED'),
                     data: newUsersData,
                     backgroundColor: '#66BB6A'
                 }
@@ -855,7 +906,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
 
         // Update Pie Chart - Total Distribution
         this.pieChartData = {
-            labels: ['Guests', 'Authenticated Users'],
+            labels: [this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS'), this.translate.instant('ADMIN_ANALYTICS.DS_AUTH_USERS')],
             datasets: [{
                 data: [this.guestCount, this.userCount],
                 backgroundColor: ['#10B981', '#66BB6A'],
@@ -891,7 +942,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
 
         // Guest Conversion Chart
         this.guestConversionChartData = {
-            labels: ['Registered', 'Unregistered'],
+            labels: [this.translate.instant('ADMIN_ANALYTICS.DS_REGISTERED'), this.translate.instant('ADMIN_ANALYTICS.DS_UNREGISTERED')],
             datasets: [{
                 data: [this.registeredGuestsCount, this.unregisteredGuestsCount],
                 backgroundColor: ['#10B981', '#EF4444'],
@@ -910,7 +961,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.guestCountryChartData = {
             labels: topCountries.map(([country]) => country),
             datasets: [{
-                label: 'Guests by Country',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS_BY_COUNTRY'),
                 data: topCountries.map(([, count]) => count),
                 backgroundColor: '#14B8A6',
                 borderRadius: 6
@@ -961,7 +1012,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.guestOSChartData = {
             labels: osEntries.map(([os]) => os),
             datasets: [{
-                label: 'Operating Systems',
+                label: this.translate.instant('ADMIN_ANALYTICS.CH_OS'),
                 data: osEntries.map(([, count]) => count),
                 backgroundColor: '#8B5CF6',
                 borderRadius: 6
@@ -976,7 +1027,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.guestTimezoneChartData = {
             labels: timezoneEntries.map(([timezone]) => timezone),
             datasets: [{
-                label: 'Timezones',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_TIMEZONES'),
                 data: timezoneEntries.map(([, count]) => count),
                 backgroundColor: '#22C55E',
                 borderRadius: 6,
@@ -992,7 +1043,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.regionChartData = {
             labels: regionEntries.map(([region]) => region),
             datasets: [{
-                label: 'Guests by Region',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS_BY_REGION'),
                 data: regionEntries.map(([, count]) => count),
                 backgroundColor: '#06B6D4',
                 borderRadius: 6,
@@ -1028,7 +1079,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.topIPsChartData = {
             labels: ipEntries.map(([ip]) => ip),
             datasets: [{
-                label: 'Connections',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_CONNECTIONS'),
                 data: ipEntries.map(([, count]) => count),
                 backgroundColor: '#F43F5E',
                 borderRadius: 6,
@@ -1039,7 +1090,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.guestActivityChartData = {
             labels: labels,
             datasets: [{
-                label: 'New Guests',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_NEW_GUESTS'),
                 data: newGuestsData,
                 borderColor: '#10B981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -1056,6 +1107,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
             trend: day.conversionRate || 0
         }));
 
+        this.refreshTrafficPanels(dashboard, rangeMetrics);
         this.renderNow();
     }
 
@@ -1194,7 +1246,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         if (ua.includes('firefox')) return 'Firefox';
         if (ua.includes('chrome') && !ua.includes('edg')) return 'Chrome';
         if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
-        return 'Unknown browser';
+        return this.translate.instant('ADMIN_ANALYTICS.UNKNOWN_BROWSER');
     }
 
     private detectOsFromUserAgent(userAgent: string): string {
@@ -1204,7 +1256,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         if (ua.includes('android')) return 'Android';
         if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS';
         if (ua.includes('linux')) return 'Linux';
-        return 'Unknown OS';
+        return this.translate.instant('ADMIN_ANALYTICS.UNKNOWN_OS');
     }
 
     /**
@@ -1258,7 +1310,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.lineChartData = {
             labels: labels,
             datasets: [{
-                label: 'Logins',
+                label: this.translate.instant('ADMIN_ANALYTICS.TH_LOGINS'),
                 data: loginData as number[],
                 borderColor: '#0F766E',
                 backgroundColor: 'rgba(15, 118, 110, 0.12)',
@@ -1272,12 +1324,12 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
             labels: labels,
             datasets: [
                 {
-                    label: 'Guests',
+                    label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS'),
                     data: (loginData as number[]).map(val => Math.floor(val * 0.4)),
                     backgroundColor: '#10B981'
                 },
                 {
-                    label: 'Authenticated',
+                    label: this.translate.instant('ADMIN_ANALYTICS.DS_AUTHENTICATED'),
                     data: (loginData as number[]).map(val => Math.floor(val * 0.6)),
                     backgroundColor: '#66BB6A'
                 }
@@ -1286,7 +1338,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
 
         // Update Pie Chart
         this.pieChartData = {
-            labels: ['Guests', 'Authenticated Users'],
+            labels: [this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS'), this.translate.instant('ADMIN_ANALYTICS.DS_AUTH_USERS')],
             datasets: [{
                 data: [this.guestCount, this.userCount],
                 backgroundColor: ['#10B981', '#66BB6A'],
@@ -1297,7 +1349,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
 
         // Guest Conversion Chart
         this.guestConversionChartData = {
-            labels: ['Registered', 'Unregistered'],
+            labels: [this.translate.instant('ADMIN_ANALYTICS.DS_REGISTERED'), this.translate.instant('ADMIN_ANALYTICS.DS_UNREGISTERED')],
             datasets: [{
                 data: [this.registeredGuestsCount, this.unregisteredGuestsCount],
                 backgroundColor: ['#10B981', '#EF4444'],
@@ -1313,7 +1365,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.guestCountryChartData = {
             labels: topCountries.map(([country]) => country),
             datasets: [{
-                label: 'Guests by Country',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_GUESTS_BY_COUNTRY'),
                 data: topCountries.map(([, count]) => count),
                 backgroundColor: '#14B8A6',
                 borderRadius: 6
@@ -1349,7 +1401,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         this.guestOSChartData = {
             labels: osEntries.map(([os]) => os),
             datasets: [{
-                label: 'Operating Systems',
+                label: this.translate.instant('ADMIN_ANALYTICS.CH_OS'),
                 data: osEntries.map(([, count]) => count),
                 backgroundColor: '#8B5CF6',
                 borderRadius: 6
@@ -1364,7 +1416,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
                 new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             ),
             datasets: [{
-                label: 'New Guests',
+                label: this.translate.instant('ADMIN_ANALYTICS.DS_NEW_GUESTS'),
                 data: activityDates.map(date => byDayRecord[date]),
                 borderColor: '#10B981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',

@@ -26,7 +26,7 @@ describe('PaymentTabComponent', () => {
   it('should render Payment Settings heading', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Payment Settings');
+    expect(text).toContain('SETTINGS_PAYMENT.TITLE');
   });
 
   it('should embed the stripe payment component', () => {

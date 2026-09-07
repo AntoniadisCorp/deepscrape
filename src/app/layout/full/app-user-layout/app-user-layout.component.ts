@@ -4,6 +4,7 @@ import { Auth, User, UserInfo } from '@angular/fire/auth'
 import { doc, Firestore, getDoc } from '@angular/fire/firestore'
 import { MatIcon } from '@angular/material/icon'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
+import { TranslateModule } from '@ngx-translate/core'
 import { ActivatedRoute, ChildrenOutletContexts, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterLink, RouterOutlet } from '@angular/router'
 import { FormControl, FormsModule } from '@angular/forms'
 import { catchError, delay, finalize, from, map, switchMap, throwError, timer, fromEvent } from 'rxjs' // Added fromEvent
@@ -28,7 +29,7 @@ import { DropdownComponent } from 'src/app/core/components'
  */
 @Component({
   selector: 'app-user-layout', 
-  imports: [NgClass, RouterOutlet, DropdownComponent, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent, FormsModule],
+  imports: [NgClass, RouterOutlet, DropdownComponent, RouterLink, ThemeToggleComponent, AsyncPipe, MatIcon, MatProgressSpinner, ImageSrcsetDirective, ProviderPipe, Outsideclick, AppSidebarComponent, AppFooterComponent, RippleDirective, CartPackNotifyComponent, DropdownCartComponent, AsyncPipe, LangPickerComponent, FormsModule, TranslateModule],
   animations: [fadeInOutAnimation, PopupAnimation, asideBarAnimation],
   templateUrl: './app-user-layout.component.html',
   styleUrl: './app-user-layout.component.scss'
@@ -55,7 +56,7 @@ export class AppUserLayoutComponent implements OnDestroy {
   invitations: OrganizationInvitation[] = []
   selectedOrgId: string | null = null
   workspaceDropdownOptions: Array<{ name: string; code: string }> = []
-  readonly workspaceControl = new FormControl<{ name: string; code: string }>({ name: 'Select workspace', code: '' }, { nonNullable: true })
+  readonly workspaceControl = new FormControl<{ name: string; code: string }>({ name: 'SHELL.SELECT_WORKSPACE', code: '' }, { nonNullable: true })
   orgLoading = false
   inviteActionLoading = false
   cartPackager$: Observable<any>

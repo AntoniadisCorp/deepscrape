@@ -15,11 +15,12 @@ import { themeStorageKey } from 'src/app/shared'
 import { from, take } from 'rxjs'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 
 @Component({
   selector: 'app-profile-tab',
-  imports: [StinputComponent, FormControlPipe, DatePipe, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective, ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent],
+  imports: [StinputComponent, FormControlPipe, DatePipe, ReactiveFormsModule, NgClass, MatProgressBarModule, ImageSrcsetDirective, ProviderPipe, DropdownComponent, RippleDirective, MatProgressSpinnerModule, PreviewImageComponent, TranslateModule],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +33,7 @@ export class ProfileTabComponent {
   private firestore = inject(FirestoreService)
   private authService = inject(AuthService)
   private snackbarService = inject(SnackbarService)
+  private translate = inject(TranslateService)
 
   profileForm: FormGroup
 
@@ -62,16 +64,44 @@ export class ProfileTabComponent {
     return this.authService.isAdmin || role === 'admin'
   }
 
+  // Resolve a stored engineer-status value (stable code, display key path, or a pre-i18n
+  // English label already persisted in Firestore) to the matching option. The dropdown keeps
+  // the localized key-path `name` for display while the persisted value is the stable `code`.
+  private engineerStatusOptionFor(stored?: string | null): DropDownOption {
+    if (stored) {
+      const byCode = this.engineerStatuses.find((s) => s.code === stored)
+      if (byCode) return byCode
+      const byKey = this.engineerStatuses.find((s) => s.name === stored)
+      if (byKey) return byKey
+      // Legacy rows written before i18n stored the raw English label.
+      const legacyToCode: Record<string, string> = {
+        'Not selected': '0',
+        'Aspiring engineer (<1 year)': '1',
+        'Entry-level (1 year)': '2',
+        'Mid-level (2-3 years)': '3',
+        'Experienced (4-5 years)': '4',
+        'Highly experienced (6-10 years)': '5',
+        'I\'ve suffered enough (10+ years)': '6',
+        'I am ethical hacker': '7',
+        'I\'m not an engineer': '8',
+      }
+      const code = legacyToCode[stored]
+      if (code !== undefined)
+        return this.engineerStatuses.find((s) => s.code === code) || this.engineerStatuses[0]
+    }
+    return this.engineerStatuses[0]
+  }
+
 
   validateFile(file: File): boolean {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      this.fileError = 'Only image files of type JPEG, PNG, GIF, SVG, or WEBP are allowed.'
+      this.fileError = 'SETTINGS_PROFILE.FILE_ERROR_TYPE'
       return false
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      this.fileError = 'File size must be less than 5MB.'
+      this.fileError = 'SETTINGS_PROFILE.FILE_ERROR_SIZE'
       return false
     }
 
@@ -160,20 +190,20 @@ export class ProfileTabComponent {
         }),
       }),
       role: new FormControl<string>('', { nonNullable: false, validators: [] }),
-      engineerStatus: new FormControl<DropDownOption>({ name: 'Not selected', code: '0' }, { validators: [], nonNullable: true } ),
+      engineerStatus: new FormControl<DropDownOption>({ name: 'SETTINGS_PROFILE.STATUS_NONE', code: '0' }, { validators: [], nonNullable: true } ),
       }
     )
 
     this.engineerStatuses = [
-      { name: 'Not selected', code: '0' },
-      { name: 'Aspiring engineer (<1 year)', code: '1' },
-      { name: 'Entry-level (1 year)', code: '2' },
-      { name: 'Mid-level (2-3 years)', code: '3' },
-      { name: 'Experienced (4-5 years)', code: '4' },
-      { name: 'Highly experienced (6-10 years)', code: '5' },
-      { name: 'I\'ve suffered enough (10+ years)', code: '6' },
-      { name: 'I am ethical hacker', code: '7' },
-      { name: 'I\'m not an engineer', code: '8' }
+      { name: 'SETTINGS_PROFILE.STATUS_NONE', code: '0' },
+      { name: 'SETTINGS_PROFILE.STATUS_ASPIRING', code: '1' },
+      { name: 'SETTINGS_PROFILE.STATUS_ENTRY', code: '2' },
+      { name: 'SETTINGS_PROFILE.STATUS_MID', code: '3' },
+      { name: 'SETTINGS_PROFILE.STATUS_EXPERIENCED', code: '4' },
+      { name: 'SETTINGS_PROFILE.STATUS_HIGHLY_EXPERIENCED', code: '5' },
+      { name: 'SETTINGS_PROFILE.STATUS_SUFFERED', code: '6' },
+      { name: 'SETTINGS_PROFILE.STATUS_ETHICAL_HACKER', code: '7' },
+      { name: 'SETTINGS_PROFILE.STATUS_NOT_ENGINEER', code: '8' }
     ]
     
     // Initialize form with user data if available
@@ -204,10 +234,7 @@ export class ProfileTabComponent {
     this.profileForm.patchValue({
       username: this.user?.username || '',
       displayName,
-      engineerStatus: { 
-        name: this.user?.details?.engineerStatus || 'Not selected', 
-        code: this.engineerStatuses.find( status => status.name === this.user?.details?.engineerStatus )?.code || '0' 
-      },
+      engineerStatus: this.engineerStatusOptionFor(this.user?.details?.engineerStatus),
       bio: this.user?.details?.bio || '',
       company: this.user?.details?.company || '',
       location: this.user?.details?.location || '',
@@ -248,11 +275,11 @@ export class ProfileTabComponent {
   
         if (formControl && (formControl.dirty || !formControl.pristine) && newConfig[key] !== null && newConfig[key] !== '') {
           if (key === 'engineerStatus')
-            acc[key] = newConfig[key]?.name
+            acc[key] = newConfig[key]?.code
           else acc[key] = newConfig[key]
         } else if (!formControl && newConfig[key] !== null && newConfig[key] !== '') {
           if (key === 'engineerStatus')
-            acc[key] = newConfig[key]?.name
+            acc[key] = newConfig[key]?.code
           else acc[key] = newConfig[key]
         }
         // console.log(acc, key)
@@ -328,13 +355,13 @@ export class ProfileTabComponent {
         this.isSaving = false
         console.error('Error updating profile:', error)
 
-        const errorMessage = error?.message || 'An unexpected error occurred while updating the profile. Please try again later.'
+        const errorMessage = error?.message || this.translate.instant('SETTINGS_PROFILE.UPDATE_ERROR_GENERIC')
         this.showSnackbar(errorMessage, SnackBarType.error, '', 5000)
         this.cdRef.detectChanges() // Ensure the view is updated
       },
       complete: async () => {
         this.isSaving = false
-        this.showSnackbar('Profile updated successfully', SnackBarType.success, '', 3000)
+        this.showSnackbar(this.translate.instant('SETTINGS_PROFILE.UPDATE_SUCCESS'), SnackBarType.success, '', 3000)
         this.cdRef.detectChanges() // Ensure the view is updated
       }
     })
@@ -382,7 +409,7 @@ export class ProfileTabComponent {
       }
     } catch (error) {
       console.error('Error occured on file uploading: ', error)
-      this.showSnackbar('There was an error uploading the profile picture. Please try again.', SnackBarType.error)
+      this.showSnackbar(this.translate.instant('SETTINGS_PROFILE.UPLOAD_ERROR'), SnackBarType.error)
       return null
     }
 
@@ -401,7 +428,7 @@ export class ProfileTabComponent {
     };
     reader.onerror = () => {
       console.error('Error reading file.');
-      this.fileError = 'There was an error reading the file.';
+      this.fileError = 'SETTINGS_PROFILE.FILE_ERROR_READ';
       this.isLoadingFile = false
       this.cdRef.markForCheck()
       this.cdRef.detectChanges()

@@ -12,7 +12,7 @@
   *ngIf="cookies.length"
   class="bg-white p-4 dark:bg-gray6 rounded shadow-md mb-4"
   >
-  <h3 class="text-lg font-bold mb-2 dark:text-gray-100">Fetched Cookies:</h3>
+  <h3 class="text-lg font-bold mb-2 dark:text-gray-100">{{ 'COOKIES.FETCHED' | translate }}</h3>
   <ul>
     <li
       *ngFor="let cookie of cookies"

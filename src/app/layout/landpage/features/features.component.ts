@@ -1,12 +1,13 @@
 
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
+import { TranslateModule } from '@ngx-translate/core';
 import { WithGradientBorderComponent } from 'src/app/core/components';
-import { myIcons } from 'src/app/shared';
+import { myIcons, RevealDirective } from 'src/app/shared';
 
 @Component({
   selector: 'app-features',
-  imports: [LucideAngularModule, WithGradientBorderComponent],
+  imports: [LucideAngularModule, WithGradientBorderComponent, TranslateModule, RevealDirective],
   templateUrl: './features.component.html',
   styleUrl: './features.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,67 +17,67 @@ export class FeaturesComponent {
   readonly icons = myIcons
   coreFeatures = [
     {
-      icon: myIcons['bot'], // Replace with actual icon component or path
-      title: "AI-Powered Extraction",
-      description: "Smart algorithms with LLM integration for intelligent content extraction and structured data generation."
+      icon: myIcons['bot'],
+      title: "FEATURES.CORE_1_T",
+      description: "FEATURES.CORE_1_D"
     },
     {
-      icon: myIcons['gauge'], // Replace with actual icon component or path
-      title: "Lightning-Fast Engine",
-      description: "Browser pooling with pre-warmed instances and a memory-adaptive dispatcher for low-latency crawls."
+      icon: myIcons['gauge'],
+      title: "FEATURES.CORE_2_T",
+      description: "FEATURES.CORE_2_D"
     },
     {
-      icon: myIcons['shield'], // Replace with actual icon component or path
-      title: "Advanced Anti-Detection",
-      description: "Custom browser profiles, proxy rotation, and world-aware crawling with geolocation settings."
+      icon: myIcons['shield'],
+      title: "FEATURES.CORE_3_T",
+      description: "FEATURES.CORE_3_D"
     },
     {
-      icon: myIcons['database'], // Replace with actual icon component or path
-      title: "Structured Data Export",
-      description: "Extract to JSON, CSV, pandas DataFrames with heuristic markdown generation."
+      icon: myIcons['database'],
+      title: "FEATURES.CORE_4_T",
+      description: "FEATURES.CORE_4_D"
     },
     {
-      icon: myIcons['code'], // Replace with actual icon component or path
-      title: "JavaScript Execution",
-      description: "Execute JavaScript and extract dynamic content without requiring external LLMs."
+      icon: myIcons['code'],
+      title: "FEATURES.CORE_5_T",
+      description: "FEATURES.CORE_5_D"
     },
     {
-      icon: myIcons['network'], // Replace with actual icon component or path
-      title: "Deep Crawling Strategies",
-      description: "BFS, DFS, and BestFirst traversal — graph-based algorithms with crash recovery and prefetch mode."
+      icon: myIcons['network'],
+      title: "FEATURES.CORE_6_T",
+      description: "FEATURES.CORE_6_D"
     }
   ];
 
   advancedFeatures = [
     {
-      icon: myIcons['brain'], // Replace with actual icon component or path
-      title: "Agentic Crawler",
-      description: "Autonomous multi-step crawling operations with question-based natural language discovery."
+      icon: myIcons['brain'],
+      title: "FEATURES.ADV_1_T",
+      description: "FEATURES.ADV_1_D"
     },
     {
-      icon: myIcons['globe'], // Replace with actual icon component or path
-      title: "World-Aware Crawling",
-      description: "Set geolocation, language, and timezone for authentic locale-specific content extraction."
+      icon: myIcons['globe'],
+      title: "FEATURES.ADV_2_T",
+      description: "FEATURES.ADV_2_D"
     },
     {
-      icon: myIcons['filetext'], // Replace with actual icon component or path
-      title: "Multi-Format Processing",
-      description: "PDF processing, MHTML snapshots, and table-to-DataFrame extraction capabilities."
+      icon: myIcons['filetext'],
+      title: "FEATURES.ADV_3_T",
+      description: "FEATURES.ADV_3_D"
     },
     {
-      icon: myIcons['search'], // Replace with actual icon component or path
-      title: "Semantic Search",
-      description: "Web embedding index with semantic search infrastructure for crawled content."
+      icon: myIcons['search'],
+      title: "FEATURES.ADV_4_T",
+      description: "FEATURES.ADV_4_D"
     },
     {
-      icon: myIcons['monitor'], // Replace with actual icon component or path
-      title: "Performance Monitoring",
-      description: "Real-time insights with network capture, console logs, and performance analytics."
+      icon: myIcons['monitor'],
+      title: "FEATURES.ADV_5_T",
+      description: "FEATURES.ADV_5_D"
     },
     {
-      icon: myIcons['zap'], // Replace with actual icon component or path
-      title: "LXML Speed Mode",
-      description: "Ultra-fast HTML parsing with an lxml-backed engine, optimized for large-scale extraction."
+      icon: myIcons['zap'],
+      title: "FEATURES.ADV_6_T",
+      description: "FEATURES.ADV_6_D"
     }
   ];
 }

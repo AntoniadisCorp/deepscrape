@@ -5,18 +5,18 @@
       <a
         [routerLink]="['/crawlpack']"
         class="text-lg gap-1 hover:bg-blue-600/[0.5] focus:bg-blue-900/[0.8] bg-blue-600/[.8] text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium py-2 px-4 duration-300 rounded-full transition-colors">
-        setup configuration
+        {{ 'CRAWL.SETUP_CONFIGURATION' | translate }}
         <span class="text-red-400">*</span>
       </a>
       }@else {
       <app-radiotoggle
         class="flex-grow"
         [control]="stream | formControl"
-      title="stream On / stream Off"></app-radiotoggle>
+      [title]="'CRAWL.STREAM' | translate"></app-radiotoggle>
       <div class="flex gap-3 my-2">
         @if (crawlpack) {
           <button
-            title="show json config file"
+            [title]="'CRAWL.SHOW_JSON_CONFIG' | translate"
             type="button"
             (click)="openJsonFormat($event, crawlPackSelector.value?.code)"
             class="text-sm px-2 py-1 rounded-xl dark:text-gray-100 hover:bg-green-400/80 text-gray-300 bg-gray-600/10 border border-gray-400/30 hover:border-green-400/30 w-fit font-normal">
@@ -30,7 +30,7 @@
         [options]="crawlConfigPack"
         [control]="crawlPackSelector | formControl"
         [padding]="'p-2'"
-        dropDownName="choose your Crawl Pack"
+        [dropDownName]="'CRAWL.SELECT_PACK' | translate"
       (select)="onDropDownSelected($event)"></app-dropdown>
     }
   </div>
@@ -81,7 +81,7 @@
         @if (taskStatus.status === 'In Progress' || taskStatus.status === 'Pending') {
           <div
             class="animate-pulse bg-yellow-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-yellow-700 dark:text-yellow-200 p-4 rounded shadow-md">
-            Processing... Please wait. {{taskStatus.status === 'Pending' ? '(in queue)' : ''}}
+            {{ 'CRAWL.PROCESSING' | translate }} {{ 'CRAWL.PLEASE_WAIT' | translate }} {{taskStatus.status === 'Pending' ? ('CRAWL.IN_QUEUE' | translate) : ''}}
           </div>
         }
         @if (taskStatus.status === 'In Progress' || taskStatus.status === 'Pending') {
@@ -98,19 +98,19 @@
         @if (taskStatus.status === 'Completed') {
           <div
             class="bg-green-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-green-700 dark:text-green-200 p-4 rounded shadow-md">
-            Task completed {{taskStatus?.result?.status === 'Failed' ? 'with error' : 'successfully'}}!
+            {{ 'CRAWL.TASK_COMPLETED' | translate }} {{taskStatus?.result?.status === 'Failed' ? ('CRAWL.WITH_ERROR' | translate) : ('CRAWL.SUCCESSFULLY' | translate)}}!
           </div>
         }
         @if (taskStatus.status === 'Canceled') {
           <div
             class="bg-red-100 dark:bg-transparent dark:rounded-none dark:shadow-none text-red-700 dark:text-red-200 p-4 rounded shadow-md">
-            Task was canceled {{taskStatus?.result?.status === 'Failed' ? 'with error' : 'successfully'}}.
+            {{ 'CRAWL.TASK_CANCELED' | translate }} {{taskStatus?.result?.status === 'Failed' ? ('CRAWL.WITH_ERROR' | translate) : ('CRAWL.SUCCESSFULLY' | translate)}}.
           </div>
         }
         @if (taskStatus.status === 'Failed') {
           <div
             class="bg-red-600 dark:bg-transparent dark:rounded-none dark:shadow-none text-white p-4 rounded">
-            Task failed. Please try again.
+            {{ 'CRAWL.TASK_FAILED' | translate }}
           </div>
         }
       }
@@ -119,16 +119,15 @@
       @if (!submitButton.value) {
         <button
           type="button"
-          aria-label="clear"
         [disabled]="
           ((urls.value.length === 0) && (crawlPackSelector.value?.code === 'default')  ) || submitButton.value
         "
           (click)="clearForm()"
           class="inline-flex h-10 w-10 items-center justify-center gap-1 disabled:bg-transparent bg-orange-200/20 dark:bg-gray-100/[0.08] rounded-full text-orange-500 transition-colors duration-200 hover:bg-orange-400/60 hover:text-orange-900 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-orange-500 dark:hover:bg-orange-200/20 dark:hover:text-orange-700 dark:focus:ring-gray4/60 font-roboto mr-2">
+          <span class="sr-only">{{ 'CRAWL.CLEAR' | translate }}</span>
           <mat-icon
             svgIcon="clear"
-            faria-hidden="false"
-            aria-label="clear"
+            aria-hidden="true"
           class="!w-5 !h-5 text-lg"></mat-icon>
         </button>
       }
@@ -141,7 +140,7 @@
           class="flex flex-row w-auto flex-nowrap gap-1 pr-[7px] pl-[5px] justify-center h-10 items-center disabled:bg-transparent hover:bg-dark-400/20 dark:bg-gray-100/[0.08] rounded-full text-gray-600 transition-colors duration-200 bg-gray-100/60 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100/70 dark:disabled:bg-transparent dark:text-gray-100 dark:hover:bg-gray5/60 dark:hover:text-gray-400 dark:focus:ring-gray4/60 font-roboto py-0 mr-2">
           <mat-icon
             faria-hidden="false"
-            aria-label="abort"
+            [attr.aria-label]="'CRAWL.ABORT' | translate"
             class="!w-7 !h-8 text-3xl leading-8">
             stop_circle
           </mat-icon>
@@ -191,7 +190,7 @@
       [clipboardButton]="clipboardButton"></app-crawl-result-item>
     }
     @if (!crawlResults.length) {
-      <p class="text-gray-600 dark:text-gray-400">No crawl results yet.</p>
+      <p class="text-gray-600 dark:text-gray-400">{{ 'CRAWL.NO_RESULTS_YET' | translate }}</p>
     }
   </div>
 </div>

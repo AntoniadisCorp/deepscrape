@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common'
 import { MatCardModule } from '@angular/material/card'
 import { MatTooltipModule } from '@angular/material/tooltip'
 import { MatIconModule } from '@angular/material/icon'
+import { TranslateModule } from '@ngx-translate/core'
 import { FirestoreService } from '../../services/firestore.service'
 import { SessionActivityPoint, SessionDisplayInfo } from '../../types/global.interface'
 import { environment } from 'src/environments/environment'
@@ -22,7 +23,7 @@ interface DailySummary {
 
 @Component({
   selector: 'app-session-activity',
-  imports: [CommonModule, MatCardModule, MatTooltipModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatTooltipModule, MatIconModule, TranslateModule],
   templateUrl: './session-activity.component.html',
   styleUrl: './session-activity.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core'
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms'
-import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common'
+import { CommonModule, DatePipe } from '@angular/common'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { finalize } from 'rxjs'
 import { DropdownComponent, StinputComponent } from 'src/app/core/components'
 import { IfAuthorizedDirective, RippleDirective } from 'src/app/core/directives'
 import { FormControlPipe } from 'src/app/core/pipes'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 import { listStaggerAnimation } from 'src/app/animations'
 import {
   AuthzService,
@@ -24,7 +25,7 @@ type DropdownOption = {
 
 @Component({
   selector: 'app-workspace-tab',
-  imports: [CommonModule, ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe, DropdownComponent, DatePipe, TitleCasePipe],
+  imports: [CommonModule, ReactiveFormsModule, IfAuthorizedDirective, RippleDirective, StinputComponent, FormControlPipe, DropdownComponent, DatePipe, TranslateModule],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
   animations: [listStaggerAnimation],
@@ -37,6 +38,7 @@ export class WorkspaceTabComponent {
   private organizationService = inject(OrganizationService)
   private authzService = inject(AuthzService)
   private snackbar = inject(SnackbarService)
+  private translate = inject(TranslateService)
   private destroyRef = inject(DestroyRef)
 
   organizations = signal<OrganizationSummary[]>([])
@@ -53,13 +55,24 @@ export class WorkspaceTabComponent {
   isSubmittingInvite = signal(false)
   isAcceptingInvite = signal<string | null>(null)
   isRemovingMember = signal<string | null>(null)
-  readonly workspaceControl = new FormControl<DropdownOption>({ name: 'Select workspace', code: '' }, { nonNullable: true })
-  readonly inviteRoleControl = new FormControl<DropdownOption>({ name: 'Member', code: 'member' }, { nonNullable: true })
+  readonly workspaceControl = new FormControl<DropdownOption>({ name: 'SHELL.SELECT_WORKSPACE', code: '' }, { nonNullable: true })
+  readonly inviteRoleControl = new FormControl<DropdownOption>({ name: 'SETTINGS_WORKSPACE.ROLE_MEMBER', code: 'member' }, { nonNullable: true })
   readonly inviteRoleOptions: DropdownOption[] = [
-    { name: 'Admin', code: 'admin' },
-    { name: 'Member', code: 'member' },
-    { name: 'Viewer', code: 'viewer' },
+    { name: 'SETTINGS_WORKSPACE.ROLE_ADMIN', code: 'admin' },
+    { name: 'SETTINGS_WORKSPACE.ROLE_MEMBER', code: 'member' },
+    { name: 'SETTINGS_WORKSPACE.ROLE_VIEWER', code: 'viewer' },
   ]
+
+  // display label for a role code (admin/member/viewer/owner); unknown codes pass through
+  roleLabelKey(role: string): string {
+    const map: Record<string, string> = {
+      admin: 'SETTINGS_WORKSPACE.ROLE_ADMIN',
+      member: 'SETTINGS_WORKSPACE.ROLE_MEMBER',
+      viewer: 'SETTINGS_WORKSPACE.ROLE_VIEWER',
+      owner: 'SETTINGS_WORKSPACE.ROLE_OWNER',
+    }
+    return map[role] || role
+  }
 
   readonly workspaceOptions = computed(() =>
     this.organizations().map((org) => ({
@@ -131,7 +144,7 @@ export class WorkspaceTabComponent {
           this.members.set([])
           this.sentInvitations.set([])
           this.syncWorkspaceControl(null)
-          this.showError('Failed to load workspaces')
+          this.showError(this.translate.instant('SETTINGS_WORKSPACE.ERR_LOAD_WORKSPACES'))
         },
       })
   }
@@ -187,11 +200,11 @@ export class WorkspaceTabComponent {
       .subscribe({
         next: () => {
           this.createOrgForm.reset({ name: '' })
-          this.showSuccess('Workspace created')
+          this.showSuccess(this.translate.instant('SETTINGS_WORKSPACE.SUCCESS_CREATED'))
           this.refreshWorkspaceData()
         },
         error: () => {
-          this.showError('Failed to create workspace')
+          this.showError(this.translate.instant('SETTINGS_WORKSPACE.ERR_CREATE'))
         },
       })
   }
@@ -218,11 +231,11 @@ export class WorkspaceTabComponent {
       .subscribe({
         next: () => {
           this.inviteForm.reset({ email: '', role: 'member' })
-          this.showSuccess('Invitation sent')
+          this.showSuccess(this.translate.instant('SETTINGS_WORKSPACE.SUCCESS_INVITATION_SENT'))
           this.refreshWorkspaceData()
         },
         error: () => {
-          this.showError('Failed to send invitation')
+          this.showError(this.translate.instant('SETTINGS_WORKSPACE.ERR_SEND_INVITATION'))
         },
       })
   }
@@ -244,11 +257,11 @@ export class WorkspaceTabComponent {
       )
       .subscribe({
         next: () => {
-          this.showSuccess('Member removed')
+          this.showSuccess(this.translate.instant('SETTINGS_WORKSPACE.SUCCESS_MEMBER_REMOVED'))
           this.loadMembers(orgId)
         },
         error: () => {
-          this.showError('Failed to remove member')
+          this.showError(this.translate.instant('SETTINGS_WORKSPACE.ERR_REMOVE_MEMBER'))
         },
       })
   }
@@ -335,12 +348,12 @@ export class WorkspaceTabComponent {
       )
       .subscribe({
         next: () => {
-          this.showSuccess('Invitation accepted')
+          this.showSuccess(this.translate.instant('SETTINGS_WORKSPACE.SUCCESS_INVITATION_ACCEPTED'))
           this.loadIncomingInvitations()
           this.refreshWorkspaceData()
         },
         error: () => {
-          this.showError('Failed to accept invitation')
+          this.showError(this.translate.instant('SETTINGS_WORKSPACE.ERR_ACCEPT_INVITATION'))
         },
       })
   }
@@ -361,14 +374,14 @@ export class WorkspaceTabComponent {
         },
         error: () => {
           this.members.set([])
-          this.showError('Failed to load members')
+          this.showError(this.translate.instant('SETTINGS_WORKSPACE.ERR_LOAD_MEMBERS'))
         },
       })
   }
 
   private syncWorkspaceControl(orgId: string | null): void {
     const selectedOption = this.workspaceOptions().find((option) => option.code === orgId)
-    this.workspaceControl.setValue(selectedOption || { name: 'Select workspace', code: '' })
+    this.workspaceControl.setValue(selectedOption || { name: 'SHELL.SELECT_WORKSPACE', code: '' })
   }
 
   private showSuccess(message: string): void {

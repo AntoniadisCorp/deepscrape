@@ -6,6 +6,6 @@
   }"
   class="flex items-center rounded font-sans text-gray5 dark:text-gray-100"
 >
-  <mat-icon>{{ title !== "copy code" ? "check" : "content_copy" }}</mat-icon
-  >{{ title }}
+  <mat-icon>{{ title !== copyCodeKey ? "check" : "content_copy" }}</mat-icon
+  >{{ title | translate }}
 </button>

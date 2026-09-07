@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, Router } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RippleDirective } from 'src/app/core/directives';
 import { animate, style, transition, trigger } from '@angular/animations';
 import {
@@ -23,7 +24,7 @@ import { WindowToken } from 'src/app/core/services';
 
 @Component({
     selector: 'app-plans',
-  imports: [NgIf, NgFor, RippleDirective, CurrencyPipe, AsyncPipe, NgClass, MatIconModule, MatProgressSpinnerModule, FormsModule],
+  imports: [NgIf, NgFor, RippleDirective, CurrencyPipe, AsyncPipe, NgClass, MatIconModule, MatProgressSpinnerModule, FormsModule, TranslateModule],
     templateUrl: './plans.component.html',
     styleUrl: './plans.component.scss',
     animations: [
@@ -44,6 +45,7 @@ import { WindowToken } from 'src/app/core/services';
 export class PlansComponent {
   private window: Window = inject(WindowToken)
   private readonly destroyRef = inject(DestroyRef)
+  private readonly translate = inject(TranslateService)
   planView: PlanPeriod
   planPeriods: Array<PlanPeriod> = []
 
@@ -65,13 +67,13 @@ export class PlansComponent {
   readonly loadingState$ = this.billingService.loadingState$
   readonly pageReady$: Observable<boolean>
 
-  currentPrice: PlanPeriod = { value: "monthly", label: "Monthly" }
+  currentPrice: PlanPeriod = { value: "monthly", label: "BILLING_PLAN_DETAILS.INT_MONTHLY" }
 
   private readonly periodByInterval: Record<BillingInterval, PlanPeriod> = {
-    payAsYouGo: { value: "payAsYouGo", label: "Pay as you go" },
-    monthly: { value: "monthly", label: "Monthly" },
-    quarterly: { value: "quarterly", label: "Quarterly" },
-    annually: { value: "annually", label: "Annually" },
+    payAsYouGo: { value: "payAsYouGo", label: "BILLING_PLAN_DETAILS.INT_PAY_AS_YOU_GO" },
+    monthly: { value: "monthly", label: "BILLING_PLAN_DETAILS.INT_MONTHLY" },
+    quarterly: { value: "quarterly", label: "BILLING_PLAN_DETAILS.INT_QUARTERLY" },
+    annually: { value: "annually", label: "BILLING_PLAN_DETAILS.INT_ANNUALLY" },
   }
 
   private readonly restrictedRoleKeywords = ['manager', 'editor']
@@ -106,7 +108,7 @@ export class PlansComponent {
         return
       }
 
-      this.offerBadgeMessage = params.get('offerMessage') || 'oh are you not satisfied with the offer, ask for new offer'
+      this.offerBadgeMessage = params.get('offerMessage') || this.translate.instant('BILLING_PLANS.OFFER_MESSAGE')
       this.window.setTimeout(() => {
         this.offerBadgeMessage = null
       }, 6500)
@@ -134,14 +136,14 @@ export class PlansComponent {
     })
 
     this.planPeriods = [
-      { value: "payAsYouGo", label: "Pay as you go" },
-      { value: "monthly", label: "Monthly" },
-      { value: "quarterly", label: "Quarterly" },
-      { value: "annually", label: "Annually" }]
+      { value: "payAsYouGo", label: "BILLING_PLAN_DETAILS.INT_PAY_AS_YOU_GO" },
+      { value: "monthly", label: "BILLING_PLAN_DETAILS.INT_MONTHLY" },
+      { value: "quarterly", label: "BILLING_PLAN_DETAILS.INT_QUARTERLY" },
+      { value: "annually", label: "BILLING_PLAN_DETAILS.INT_ANNUALLY" }]
 
 
     if (!this.currentPrice.value || !this.currentPlan$)
-      this.planView = { value: "payAsYouGo", label: "Pay as you go" }
+      this.planView = { value: "payAsYouGo", label: "BILLING_PLAN_DETAILS.INT_PAY_AS_YOU_GO" }
     else this.planView = this.currentPrice
   }
 
@@ -213,18 +215,18 @@ export class PlansComponent {
 
   getCreditsUnavailableMessage(billing: UserBilling | null | undefined): string {
     if (!billing) {
-      return 'Credits are only available when your account is on the free plan.'
+      return 'BILLING_PLANS.CREDITS_UNAVAILABLE_NO_BILLING'
     }
 
     if (billing.plan !== 'free') {
-      return 'Standalone credits are disabled while a trial or paid subscription is active. Use either subscription access or credit access, not both.'
+      return 'BILLING_PLANS.CREDITS_UNAVAILABLE_SUBSCRIPTION_ACTIVE'
     }
 
     if (billing.subscriptionId) {
-      return 'Credits cannot be purchased while a subscription is attached to this account.'
+      return 'BILLING_PLANS.CREDITS_UNAVAILABLE_SUBSCRIPTION_ATTACHED'
     }
 
-    return 'Credits are available only when your account is on the free plan.'
+    return 'BILLING_PLANS.CREDITS_UNAVAILABLE_FREE_ONLY'
   }
 
   clampCustomCredits(config: CustomCreditsCatalog): void {
@@ -254,13 +256,13 @@ export class PlansComponent {
   getPriceUnit(): string {
     switch (this.planView.value) {
     case 'monthly':
-      return '/month'
+      return 'BILLING_PLANS.PRICE_UNIT_MONTH'
     case 'quarterly':
-      return '/quarter'
+      return 'BILLING_PLANS.PRICE_UNIT_QUARTER'
     case 'annually':
-      return '/year'
+      return 'BILLING_PLANS.PRICE_UNIT_YEAR'
     default:
-      return '/usage'
+      return 'BILLING_PLANS.PRICE_UNIT_USAGE'
     }
   }
 
@@ -371,19 +373,19 @@ export class PlansComponent {
     return Boolean(billing.trialUsedAt)
   }
 
-  getTrialStatusMessage(billing: UserBilling | null | undefined): string {
+  getTrialStatusMessage(billing: UserBilling | null | undefined): { key: string; params: { date: string } } {
     if (!billing?.trialUsedAt) {
-      return 'Your 14-day trial is available.'
+      return { key: 'BILLING_PLANS.TRIAL_STATUS_AVAILABLE', params: { date: '' } }
     }
 
     if (billing.plan === 'trial') {
-      const endsAt = billing.trialEndsAt ? new Date(billing.trialEndsAt).toLocaleDateString() : null
+      const endsAt = billing.trialEndsAt ? new Date(billing.trialEndsAt).toLocaleDateString() : ''
       return endsAt
-        ? `Your 14-day trial is active until ${endsAt}.`
-        : 'Your 14-day trial is currently active.'
+        ? { key: 'BILLING_PLANS.TRIAL_STATUS_ACTIVE_UNTIL', params: { date: endsAt } }
+        : { key: 'BILLING_PLANS.TRIAL_STATUS_ACTIVE', params: { date: '' } }
     }
 
-    return 'You have already used your one-time 14-day trial.'
+    return { key: 'BILLING_PLANS.TRIAL_STATUS_USED', params: { date: '' } }
   }
 
   isPlanActionDisabled(plan: BillingPlanCatalog, currentPlan: BillingPlanTier | null, billing: UserBilling | null | undefined): boolean {
@@ -404,14 +406,14 @@ export class PlansComponent {
 
   getPlanActionLabel(plan: BillingPlanCatalog, currentPlan: BillingPlanTier | null, billing: UserBilling | null | undefined): string {
     if (this.isCurrentPlan(plan, currentPlan, billing)) {
-      return 'Current Plan'
+      return 'BILLING_PLAN_DETAILS.CURRENT_PLAN'
     }
 
     if (plan.id === 'trial') {
-      return this.canStartTrial(billing) ? 'Start Trial' : 'Trial Already Used'
+      return this.canStartTrial(billing) ? 'BILLING_PLANS.START_TRIAL' : 'BILLING_PLANS.TRIAL_ALREADY_USED'
     }
 
-    return `Select ${plan.label} Plan`
+    return 'BILLING_PLANS.SELECT_PLAN'
   }
 
   getPlanTabClass(plan: BillingPlanCatalog, currentPlan: BillingPlanTier | null, billing: UserBilling | null | undefined): string {
@@ -446,30 +448,30 @@ export class PlansComponent {
 
   getCancellationEndLabel(billing: UserBilling | null | undefined): string {
     if (!billing?.currentPeriodEnd) {
-      return 'the end of your current billing period'
+      return 'BILLING_PLANS.CANCELLATION_END_PERIOD'
     }
 
     const endingAt = new Date(billing.currentPeriodEnd)
     if (Number.isNaN(endingAt.getTime())) {
-      return 'the end of your current billing period'
+      return 'BILLING_PLANS.CANCELLATION_END_PERIOD'
     }
 
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(endingAt)
   }
 
-  getCancellationTimeRemainingText(billing: UserBilling | null | undefined): string {
+  getCancellationTimeRemainingText(billing: UserBilling | null | undefined): { key: string; params: { days: number; hours: number; minutes: number } } {
     if (!billing?.currentPeriodEnd) {
-      return 'an unknown amount of time'
+      return { key: 'BILLING_PLANS.CANCEL_TIME_MOMENTS', params: { days: 0, hours: 0, minutes: 0 } }
     }
 
     const endingAt = new Date(billing.currentPeriodEnd).getTime()
     if (Number.isNaN(endingAt)) {
-      return 'an unknown amount of time'
+      return { key: 'BILLING_PLANS.CANCEL_TIME_MOMENTS', params: { days: 0, hours: 0, minutes: 0 } }
     }
 
     const msRemaining = endingAt - Date.now()
     if (msRemaining <= 0) {
-      return 'less than a minute'
+      return { key: 'BILLING_PLANS.CANCEL_TIME_MOMENTS', params: { days: 0, hours: 0, minutes: 0 } }
     }
 
     const totalMinutes = Math.floor(msRemaining / 60000)
@@ -477,20 +479,28 @@ export class PlansComponent {
     const hours = Math.floor((totalMinutes % 1440) / 60)
     const minutes = totalMinutes % 60
 
-    const parts: string[] = []
+    const empty = { days: 0, hours: 0, minutes: 0 }
+    if (days > 0 && hours > 0) {
+      return { key: 'BILLING_PLANS.CANCEL_TIME_DAYS_HOURS', params: { days, hours, minutes } }
+    }
+
     if (days > 0) {
-      parts.push(`${days} day${days === 1 ? '' : 's'}`)
+      return { key: 'BILLING_PLANS.CANCEL_TIME_DAYS', params: { days, hours, minutes } }
+    }
+
+    if (hours > 0 && minutes > 0) {
+      return { key: 'BILLING_PLANS.CANCEL_TIME_HOURS_MINUTES', params: { days, hours, minutes } }
     }
 
     if (hours > 0) {
-      parts.push(`${hours} hour${hours === 1 ? '' : 's'}`)
+      return { key: 'BILLING_PLANS.CANCEL_TIME_HOURS', params: { days, hours, minutes } }
     }
 
-    if (days === 0 && minutes > 0) {
-      parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`)
+    if (minutes > 0) {
+      return { key: 'BILLING_PLANS.CANCEL_TIME_MINUTES', params: { days, hours, minutes } }
     }
 
-    return parts.slice(0, 2).join(', ') || 'less than a minute'
+    return { key: 'BILLING_PLANS.CANCEL_TIME_MOMENTS', params: empty }
   }
 
   openPlanDetails(planId: BillingPlanTier): void {
@@ -563,7 +573,7 @@ export class PlansComponent {
       }
 
       const successUrl = `${this.window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`
-      const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent('oh are you not satisfied with the offer, ask for new offer')}`
+      const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent(this.translate.instant('BILLING_PLANS.OFFER_MESSAGE'))}`
 
       const result = await this.billingService.openCheckoutForPlan({
         planId: plan.id,
@@ -592,7 +602,7 @@ export class PlansComponent {
       }
 
       const successUrl = `${this.window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`
-      const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent('oh are you not satisfied with the offer, ask for new offer')}`
+      const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent(this.translate.instant('BILLING_PLANS.OFFER_MESSAGE'))}`
 
       const result = await this.billingService.openCheckoutForCreditPack({
         planId: pack.id,
@@ -622,7 +632,7 @@ export class PlansComponent {
       }
 
       const successUrl = `${this.window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`
-      const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent('custom credits checkout canceled')}`
+      const cancelUrl = `${this.window.location.origin}/billing/plans?offer=1&offerMessage=${encodeURIComponent(this.translate.instant('BILLING_PLANS.CUSTOM_CREDITS_CANCEL_MESSAGE'))}`
 
       const result = await this.billingService.openCheckoutForCustomCredits({
         credits: this.customCreditsAmount,

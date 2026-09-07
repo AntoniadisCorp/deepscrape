@@ -4,13 +4,14 @@ import { AuthService, WebRtcService, WindowToken } from '../../services';
 import { ClipboardComponent } from '../clipboard/clipboard.component';
 import { ResolutionComponent } from '../resolution/resolution.component';
 import { ControlComponent } from '../control/control.component';
+import { TranslateModule } from '@ngx-translate/core';
 import { environment } from 'src/environments/environment';
 import { fromEvent, merge, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-browser',
-  imports: [ClipboardComponent, ResolutionComponent, ControlComponent],
+  imports: [ClipboardComponent, ResolutionComponent, ControlComponent, TranslateModule],
   templateUrl: './browser.component.html',
   styleUrl: './browser.component.scss'
 })

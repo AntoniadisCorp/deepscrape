@@ -30,7 +30,7 @@ import { TrustedDevice } from 'src/app/core/services/device-verification.service
 import { WebAuthnCredential } from 'src/app/core/services/webauthn.service';
 import { DEFAULT_PROFILE_URL } from 'src/app/core/variables';
 import { myIcons, OtpInputComponent, themeStorageKey } from 'src/app/shared';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 type SecurityTimelineEvent = loginHistoryEvent & {
   occurredAt: Date | null
@@ -42,7 +42,7 @@ type SecurityTimelineEvent = loginHistoryEvent & {
 
 @Component({
   selector: 'app-security-tab',
-  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass, OtpInputComponent, RadioToggleComponent, DialogComponent, SessionActivityComponent],
+  imports: [ReactiveFormsModule, StinputComponent, FormControlPipe, MatIcon, RippleDirective, UpperCasePipe, MatProgressSpinnerModule, LucideAngularModule, NgClass, OtpInputComponent, RadioToggleComponent, DialogComponent, SessionActivityComponent, TranslateModule],
   templateUrl: './security.component.html',
   styleUrl: './security.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -260,7 +260,7 @@ export class SecurityTabComponent {
       this.trustedDevices.set(devices)
     } catch (error) {
       console.error('Failed to load trusted devices:', error)
-      this.trustedDevicesError.set('Failed to load trusted devices.')
+      this.trustedDevicesError.set(this.translate.instant('SETTINGS_SECURITY.FAILED_LOAD_TRUSTED'))
     } finally {
       this.trustedDevicesLoading.set(false)
     }
@@ -275,13 +275,13 @@ export class SecurityTabComponent {
       const success = await this.deviceVerificationService.removeTrustedDevice(this.user.uid, deviceId)
       if (success) {
         this.trustedDevices.update((devices) => devices.filter((d) => d.deviceId !== deviceId))
-        this.showSnackbar('Device trust revoked.', SnackBarType.success, '', 3000)
+        this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.DEVICE_TRUST_REVOKED'), SnackBarType.success, '', 3000)
       } else {
-        this.showSnackbar('Failed to revoke device trust.', SnackBarType.error, '', 5000)
+        this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.DEVICE_TRUST_REVOKE_FAILED'), SnackBarType.error, '', 5000)
       }
     } catch (error) {
       console.error('Failed to remove trusted device:', error)
-      this.showSnackbar('Failed to revoke device trust.', SnackBarType.error, '', 5000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.DEVICE_TRUST_REVOKE_FAILED'), SnackBarType.error, '', 5000)
     } finally {
       this.revokingDeviceId.set('')
     }
@@ -297,11 +297,11 @@ export class SecurityTabComponent {
   }
 
   getDeviceDisplayName(device: TrustedDevice): string {
-    return device.deviceName || 'Unknown device'
+    return device.deviceName || this.translate.instant('SETTINGS_SECURITY.UNKNOWN_DEVICE')
   }
 
   getDeviceBrowser(device: TrustedDevice): string {
-    return device.browser || device.fingerprint?.userAgent?.slice(0, 50) || 'Unknown'
+    return device.browser || device.fingerprint?.userAgent?.slice(0, 50) || this.translate.instant('SETTINGS_SECURITY.UNKNOWN')
   }
 
   getDeviceOs(device: TrustedDevice): string {
@@ -309,11 +309,11 @@ export class SecurityTabComponent {
   }
 
   getDeviceLocation(device: TrustedDevice): string {
-    return device.location || 'Unknown location'
+    return device.location || this.translate.instant('SETTINGS_SECURITY.UNKNOWN_LOCATION')
   }
 
   formatTrustedDate(date: Date | undefined): string {
-    if (!date) return 'N/A'
+    if (!date) return this.translate.instant('SETTINGS_SECURITY.NA')
     try {
       return new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -323,7 +323,7 @@ export class SecurityTabComponent {
         minute: '2-digit',
       })
     } catch {
-      return 'N/A'
+      return this.translate.instant('SETTINGS_SECURITY.NA')
     }
   }
 
@@ -337,7 +337,7 @@ export class SecurityTabComponent {
       this.passkeyError.set('')
     } catch (error) {
       console.error('Failed to load passkeys:', error)
-      this.passkeyError.set('Failed to load passkeys.')
+      this.passkeyError.set(this.translate.instant('SETTINGS_SECURITY.FAILED_LOAD_PASSKEYS'))
     } finally {
       this.passkeysLoading.set(false)
     }
@@ -350,13 +350,13 @@ export class SecurityTabComponent {
       const success = await this.webAuthnService.registerPasskey()
       if (success) {
         this.passkeys.set(this.webAuthnService.passkeys())
-        this.showSnackbar('Passkey registered successfully.', SnackBarType.success, '', 3000)
+        this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PASSKEY_REGISTERED'), SnackBarType.success, '', 3000)
       } else {
-        this.passkeyError.set(this.webAuthnService.error() || 'Failed to register passkey.')
+        this.passkeyError.set(this.webAuthnService.error() || this.translate.instant('SETTINGS_SECURITY.PASSKEY_REGISTER_FAILED'))
       }
     } catch (error) {
       console.error('Passkey registration error:', error)
-      this.passkeyError.set('Failed to register passkey.')
+      this.passkeyError.set(this.translate.instant('SETTINGS_SECURITY.PASSKEY_REGISTER_FAILED'))
     } finally {
       this.isRegisteringPasskey.set(false)
     }
@@ -367,13 +367,13 @@ export class SecurityTabComponent {
       const success = await this.webAuthnService.removePasskey(credentialDocId)
       if (success) {
         this.passkeys.set(this.webAuthnService.passkeys())
-        this.showSnackbar('Passkey removed.', SnackBarType.success, '', 3000)
+        this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PASSKEY_REMOVED'), SnackBarType.success, '', 3000)
       } else {
-        this.showSnackbar('Failed to remove passkey.', SnackBarType.error, '', 5000)
+        this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PASSKEY_REMOVE_FAILED'), SnackBarType.error, '', 5000)
       }
     } catch (error) {
       console.error('Failed to remove passkey:', error)
-      this.showSnackbar('Failed to remove passkey.', SnackBarType.error, '', 5000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PASSKEY_REMOVE_FAILED'), SnackBarType.error, '', 5000)
     }
   }
 
@@ -417,7 +417,7 @@ export class SecurityTabComponent {
       this.mfaPrimaryControl.setValue(result.preferences.primaryMethod, { emitEvent: false })
       this.mfaSecondaryControl.setValue(result.preferences.secondaryMethod || 'none', { emitEvent: false })
       this.riskEmailNotificationsControl.setValue(result.preferences.riskEmailNotifications, { emitEvent: false })
-      this.showSnackbar('Security MFA preferences saved', SnackBarType.success, '', 2500)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.MFA_PREFS_SAVED'), SnackBarType.success, '', 2500)
     } catch (error: any) {
       this.mfaPreferencesError.set(this.getMfaErrorMessage(error))
       this.showSnackbar(this.mfaPreferencesError(), SnackBarType.error, '', 4500)
@@ -603,7 +603,7 @@ export class SecurityTabComponent {
       'signInTime',
       'created_At',
     ])
-    return dateValue ? dateValue.toLocaleString() : 'Unknown time'
+    return dateValue ? dateValue.toLocaleString() : this.translate.instant('SETTINGS_SECURITY.UNKNOWN_TIME')
   }
 
   getDisplayBrowser(session: SessionDisplayInfo): string {
@@ -633,19 +633,19 @@ export class SecurityTabComponent {
   }
 
   getSessionRiskLabel(session: SessionDisplayInfo): string {
-    return getSessionRiskLabel(session)
+    return getSessionRiskLabel(session, (k, p) => this.translate.instant(k, p))
   }
 
   getSessionRiskReason(session: SessionDisplayInfo): string {
-    return getSessionRiskReason(session)
+    return getSessionRiskReason(session, (k, p) => this.translate.instant(k, p))
   }
 
   getSessionNetworkSummary(session: SessionDisplayInfo): string {
-    return getSessionNetworkSummary(session)
+    return getSessionNetworkSummary(session, (k, p) => this.translate.instant(k, p))
   }
 
   getSessionProxySummary(session: SessionDisplayInfo): string {
-    return getSessionProxySummary(session)
+    return getSessionProxySummary(session, (k, p) => this.translate.instant(k, p))
   }
 
   async revokeSession(session: SessionDisplayInfo & { id?: string }): Promise<void> {
@@ -714,7 +714,7 @@ export class SecurityTabComponent {
     if (ua.includes('firefox')) return 'Firefox'
     if (ua.includes('chrome') && !ua.includes('edg')) return 'Chrome'
     if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari'
-    return 'Unknown browser'
+    return this.translate.instant('SETTINGS_SECURITY.UNKNOWN_BROWSER')
   }
 
   private detectOsFromUserAgent(userAgent: string): string {
@@ -724,15 +724,15 @@ export class SecurityTabComponent {
     if (ua.includes('android')) return 'Android'
     if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS'
     if (ua.includes('linux')) return 'Linux'
-    return 'Unknown OS'
+    return this.translate.instant('SETTINGS_SECURITY.UNKNOWN_OS')
   }
 
   getActivityEventLabel(event: SecurityTimelineEvent): string {
-    if (event.eventType === 'mfa_preference_updated') return 'MFA preferences updated'
-    if (event.eventType === 'mfa_disabled') return 'MFA disabled risk event'
-    if (event.eventType === 'logout') return 'Signed out'
-    if (event.eventType === 'revoke') return 'Session revoked'
-    return 'Signed in'
+    if (event.eventType === 'mfa_preference_updated') return this.translate.instant('SETTINGS_SECURITY.ACT_MFA_PREFS_UPDATED')
+    if (event.eventType === 'mfa_disabled') return this.translate.instant('SETTINGS_SECURITY.ACT_MFA_DISABLED')
+    if (event.eventType === 'logout') return this.translate.instant('SETTINGS_SECURITY.ACT_SIGNED_OUT')
+    if (event.eventType === 'revoke') return this.translate.instant('SETTINGS_SECURITY.ACT_SESSION_REVOKED')
+    return this.translate.instant('SETTINGS_SECURITY.ACT_SIGNED_IN')
   }
 
   getActivityEventTone(event: SecurityTimelineEvent): string {
@@ -744,11 +744,11 @@ export class SecurityTabComponent {
   }
 
   formatActivityTimestamp(event: SecurityTimelineEvent): string {
-    return event.occurredAt ? event.occurredAt.toLocaleString() : 'Unknown time'
+    return event.occurredAt ? event.occurredAt.toLocaleString() : this.translate.instant('SETTINGS_SECURITY.UNKNOWN_TIME')
   }
 
   getActivitySummary(event: SecurityTimelineEvent): string {
-    const location = event.locationLabel || 'Unknown location'
+    const location = event.locationLabel || this.translate.instant('SETTINGS_SECURITY.UNKNOWN_LOCATION')
     return `${event.browserLabel} • ${event.osLabel} • ${location}`
   }
 
@@ -850,7 +850,7 @@ export class SecurityTabComponent {
 
       if (!this.canEnrollPhoneMfa()) {
         this.syncMfaStatusControl()
-        this.showSnackbar('Multi-factor authentication is not available for the current sign-in method. Sign in with email/password, Google, or GitHub and try again.', SnackBarType.warning, '', 6000)
+        this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.MFA_UNAVAILABLE_SIGNIN_METHOD'), SnackBarType.warning, '', 6000)
         return
       }
 
@@ -865,7 +865,7 @@ export class SecurityTabComponent {
       }
 
       this.openPhoneAdd()
-      this.showSnackbar('Add an SMS second factor first, or verify your email to enable authenticator app MFA.', SnackBarType.info, '', 6000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.MFA_ADD_SMS_FIRST'), SnackBarType.info, '', 6000)
       return
     }
 
@@ -926,33 +926,33 @@ export class SecurityTabComponent {
 
   getConfirmationTitle(): string {
     if (this.confirmationDialog() === 'disable-mfa') {
-      return 'Disable multi-factor authentication?'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_MFA_TITLE')
     }
 
     if (this.confirmationDialog() === 'disable-totp-factor') {
-      return 'Disable authenticator app?'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_TOTP_TITLE')
     }
 
     if (this.confirmationDialog() === 'revoke-current-session') {
-      return 'Revoke current session?'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_REVOKE_SESSION_TITLE')
     }
 
-    return 'Confirm action'
+    return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DEFAULT_TITLE')
   }
 
   getConfirmationSubtitle(): string {
     if (this.confirmationDialog() === 'disable-mfa') {
-      return 'This will remove <strong class="text-white">all enrolled second factors</strong> from your account.'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_MFA_SUB')
     }
 
     if (this.confirmationDialog() === 'disable-totp-factor') {
       const factor = this.pendingTotpFactorToRemove()
-      const factorName = factor?.displayName || 'Authenticator app'
-      return `This will disable <strong class="text-white">${factorName}</strong> as a sign-in second factor.`
+      const factorName = factor?.displayName || this.translate.instant('SETTINGS_SECURITY.AUTH_APP_NAME')
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_TOTP_SUB_A') + factorName + this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_TOTP_SUB_B')
     }
 
     if (this.confirmationDialog() === 'revoke-current-session') {
-      return 'You are about to revoke your <strong class="text-white">current session</strong>. You will be signed out immediately.'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_REVOKE_SESSION_SUB')
     }
 
     return ''
@@ -960,18 +960,18 @@ export class SecurityTabComponent {
 
   getConfirmationConfirmLabel(): string {
     if (this.confirmationDialog() === 'disable-mfa') {
-      return 'Disable MFA'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_MFA_BTN')
     }
 
     if (this.confirmationDialog() === 'disable-totp-factor') {
-      return 'Disable app'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DISABLE_TOTP_BTN')
     }
 
     if (this.confirmationDialog() === 'revoke-current-session') {
-      return 'Revoke session'
+      return this.translate.instant('SETTINGS_SECURITY.CONFIRM_REVOKE_SESSION_BTN')
     }
 
-    return 'Confirm'
+    return this.translate.instant('SETTINGS_SECURITY.CONFIRM_DEFAULT_BTN')
   }
 
   private openCurrentSessionRevokeDialog(session: SessionDisplayInfo & { id?: string }): void {
@@ -998,7 +998,7 @@ export class SecurityTabComponent {
       this.phoneStep.set('idle')
       this.phoneMfaVerificationId = ''
       await this.refreshSecurityUser()
-      this.showSnackbar('Two-factor authentication disabled', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.TWO_FACTOR_DISABLED'), SnackBarType.success, '', 3000)
       try {
         await this.authService.notifyMfaDisabledRisk()
       } catch {
@@ -1027,7 +1027,7 @@ export class SecurityTabComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.showSnackbar('Session revoked successfully', SnackBarType.success, '', 3000)
+          this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.SESSION_REVOKED'), SnackBarType.success, '', 3000)
           if (loginId === this.currentSessionId()) {
             this.authService.logout().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
               complete: () => {
@@ -1054,7 +1054,7 @@ export class SecurityTabComponent {
 
   linkLoginProvider(provider: string) {
     if (this.isProviderMutationInProgress()) {
-      this.showSnackbar('Another provider operation is in progress. Please wait.', SnackBarType.info, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PROVIDER_OP_IN_PROGRESS'), SnackBarType.info, '', 3000)
       return
     }
 
@@ -1095,7 +1095,7 @@ export class SecurityTabComponent {
 
             if (response && response.user) {
               if (expectedUid && response.user.uid !== expectedUid) {
-                this.showSnackbar('Linking was blocked because Google authenticated a different account. Sign in with the same email as your current account and try again.', SnackBarType.error, '', 7000)
+                this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.LINK_BLOCKED_GOOGLE'), SnackBarType.error, '', 7000)
                 return
               }
               // this.pendingCredential = GoogleAuthProvider.credentialFromResult(response.result);
@@ -1111,7 +1111,7 @@ export class SecurityTabComponent {
               }
               await this.firestoreService.storeUserData(response.user, this.user?.providerId || 'google.com', true, this.user?.username)
               await this.refreshSecurityUser()
-              this.showSnackbar('Google provider linked Sucessfully', SnackBarType.success, '', 3000)
+              this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.LINKED_GOOGLE'), SnackBarType.success, '', 3000)
               this.cdr.detectChanges()
             }
           },
@@ -1153,7 +1153,7 @@ export class SecurityTabComponent {
 
             if (response && response.user) {
               if (expectedUid && response.user.uid !== expectedUid) {
-                this.showSnackbar('Linking was blocked because GitHub authenticated a different account. Sign in with the same email as your current account and try again.', SnackBarType.error, '', 7000)
+                this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.LINK_BLOCKED_GITHUB'), SnackBarType.error, '', 7000)
                 return
               }
               // this.pendingCredential = GithubAuthProvider.credentialFromResult(response.result);
@@ -1169,7 +1169,7 @@ export class SecurityTabComponent {
               }
               await this.firestoreService.storeUserData(response.user, this.user?.providerId || 'github.com', true, this.user?.username)
               await this.refreshSecurityUser()
-              this.showSnackbar('Github provider linked Sucessfully', SnackBarType.success, '', 3000)
+              this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.LINKED_GITHUB'), SnackBarType.success, '', 3000)
               this.cdr.detectChanges()
             }
           },
@@ -1196,7 +1196,7 @@ export class SecurityTabComponent {
 
   protected async disconnectProvider(provider: string) {
     if (this.isProviderMutationInProgress()) {
-      this.showSnackbar('Another provider operation is in progress. Please wait.', SnackBarType.info, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PROVIDER_OP_IN_PROGRESS'), SnackBarType.info, '', 3000)
       return
     }
 
@@ -1212,7 +1212,7 @@ export class SecurityTabComponent {
 
     const verified = await this.highRiskActionService.ensureVerified('unlink_provider')
     if (!verified) {
-      this.showSnackbar('Device verification is required before unlinking providers.', SnackBarType.warning, '', 4000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.UNLINK_DEVICE_VERIFY_REQUIRED'), SnackBarType.warning, '', 4000)
       return
     }
 
@@ -1286,7 +1286,7 @@ export class SecurityTabComponent {
         },
         complete: () => {
           this.loading.password = false
-          this.showSnackbar('Password changed successfully!', SnackBarType.success, '', 3000)
+          this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.PASSWORD_CHANGED'), SnackBarType.success, '', 3000)
           this.cdr.detectChanges()
         }
       })
@@ -1342,7 +1342,7 @@ export class SecurityTabComponent {
       this.totpQrUrl.set('')
       this.totpQrCodeDataUrl.set('')
       this.syncTotpFactors()
-      this.showSnackbar('Authenticator app enrolled successfully', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.TOTP_ENROLLED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       const message = this.getMfaErrorMessage(error)
       this.totpError.set(message)
@@ -1380,7 +1380,7 @@ export class SecurityTabComponent {
     try {
       await this.authService.unenrollMultiFactor(factorUid)
       this.syncTotpFactors()
-      this.showSnackbar('Authenticator app removed', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.TOTP_REMOVED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       const message = this.getMfaErrorMessage(error)
       this.totpError.set(message)
@@ -1404,7 +1404,7 @@ export class SecurityTabComponent {
       normalizedMessage.includes('missing phoneenrollmentinfo') ||
       normalizedMessage.includes('phoneenrollmentinfo')
     ) {
-      return 'Add SMS / Text message as a real second factor first, then enable authenticator app MFA.'
+      return this.translate.instant('SETTINGS_SECURITY.MFA_ERR_SMS_REAL_FACTOR')
     }
 
     if (
@@ -1412,14 +1412,14 @@ export class SecurityTabComponent {
       normalizedMessage.includes('unsupported_first_factor') ||
       normalizedMessage.includes('mfa is not available for the given first factor')
     ) {
-      return 'Authenticator app MFA is not available for your current sign-in method. Sign in with email/password, Google, or GitHub and try again.'
+      return this.translate.instant('SETTINGS_SECURITY.MFA_ERR_UNSUPPORTED_FIRST')
     }
 
     if (
       normalizedMessage.includes('operation_not_allowed') &&
       normalizedMessage.includes('totp based mfa not enabled')
     ) {
-      return 'Authenticator app MFA is not enabled for this project yet. Ask an administrator to enable TOTP MFA in Admin > Project Configuration, then retry enrollment.'
+      return this.translate.instant('SETTINGS_SECURITY.MFA_ERR_TOTP_NOT_ENABLED')
     }
 
     if (rawMessage && !code.startsWith('auth/')) {
@@ -1491,7 +1491,7 @@ export class SecurityTabComponent {
 
 
   protected checkPasswordStrength(password: string): string {
-      return checkPasswordStrength(password)
+      return checkPasswordStrength(password, (k) => this.translate.instant(k))
   }
 
   getErrorLabel(controlName: string): string | undefined {
@@ -1546,7 +1546,7 @@ export class SecurityTabComponent {
     const existingAccountPhone = String(this.user?.phoneNumber || '').trim()
     const nextPhone = String(this.accountPhoneNumber.value || '').trim()
     if (existingAccountPhone && existingAccountPhone !== nextPhone) {
-      this.accountPhoneError.set('Unlink your current account phone first, then add the new one.')
+      this.accountPhoneError.set(this.translate.instant('SETTINGS_SECURITY.ERR_UNLINK_CURRENT_PHONE_FIRST'))
       this.cdr.detectChanges()
       return
     }
@@ -1559,7 +1559,7 @@ export class SecurityTabComponent {
       this.accountPhoneConfirmationResult = await this.authService.linkPhoneNumber(this.accountPhoneNumber.value, this.recaptchaVerifier)
       this.accountPhoneStep.set('enter-code')
       this.accountPhoneCode.reset('')
-      this.showSnackbar('Verification code sent to your account phone', SnackBarType.info, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.CODE_SENT_ACCOUNT_PHONE'), SnackBarType.info, '', 3000)
     } catch (error: any) {
       this.accountPhoneError.set(getErrorMessage(error, this.translate))
       try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
@@ -1591,7 +1591,7 @@ export class SecurityTabComponent {
       this.accountPhoneStep.set('idle')
       this.accountPhoneConfirmationResult = null
       this.accountPhoneCode.reset('')
-      this.showSnackbar('Account phone verified successfully', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.ACCOUNT_PHONE_VERIFIED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       this.accountPhoneError.set(getErrorMessage(error, this.translate))
       this.accountPhoneCode.reset('')
@@ -1613,13 +1613,13 @@ export class SecurityTabComponent {
   async unlinkAccountPhone(): Promise<void> {
     if (!this.user?.uid) return
     if (this.isCurrentProvider('phone')) {
-      this.showSnackbar('Cannot unlink phone while it is your currently active sign-in provider.', SnackBarType.error, '', 5000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.ERR_UNLINK_ACTIVE_PHONE'), SnackBarType.error, '', 5000)
       return
     }
 
     const verified = await this.highRiskActionService.ensureVerified('unlink_provider')
     if (!verified) {
-      this.showSnackbar('Device verification is required before unlinking providers.', SnackBarType.warning, '', 4000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.UNLINK_DEVICE_VERIFY_REQUIRED'), SnackBarType.warning, '', 4000)
       return
     }
 
@@ -1632,7 +1632,7 @@ export class SecurityTabComponent {
       await this.firestoreService.updateUserPhoneNumber(this.user.uid, '', false)
       await firstValueFrom(this.authService.updatePhoneVerificationStatus(this.user.uid, false))
       await this.refreshSecurityUser()
-      this.showSnackbar('Account phone unlinked successfully', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.ACCOUNT_PHONE_UNLINKED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       this.accountPhoneError.set(getErrorMessage(error, this.translate))
       this.showSnackbar(this.accountPhoneError(), SnackBarType.error, '', 5000)
@@ -1653,7 +1653,7 @@ export class SecurityTabComponent {
       )
       this.phoneStep.set('enter-code')
       this.otpControl.reset('')
-      this.showSnackbar('Verification code sent to your phone', SnackBarType.info, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.CODE_SENT_PHONE'), SnackBarType.info, '', 3000)
     } catch (error: any) {
       this.phoneError.set(this.getMfaErrorMessage(error))
       try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
@@ -1674,7 +1674,7 @@ export class SecurityTabComponent {
       await this.refreshSecurityUser()
       this.phoneStep.set('idle')
       this.phoneMfaVerificationId = ''
-      this.showSnackbar('SMS second factor enrolled successfully!', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.SMS_FACTOR_ENROLLED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       this.phoneError.set(this.getMfaErrorMessage(error))
       this.otpControl.reset('')
@@ -1701,7 +1701,7 @@ export class SecurityTabComponent {
         await this.authService.unenrollMultiFactor(factor.uid)
       }
       await this.refreshSecurityUser()
-      this.showSnackbar('SMS second factor removed', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.SMS_FACTOR_REMOVED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       this.showSnackbar(this.getMfaErrorMessage(error), SnackBarType.error, '', 5000)
     } finally {
@@ -1719,7 +1719,7 @@ export class SecurityTabComponent {
     try {
       await this.authService.unenrollMultiFactor(factorUid)
       await this.refreshSecurityUser()
-      this.showSnackbar('SMS second factor removed', SnackBarType.success, '', 3000)
+      this.showSnackbar(this.translate.instant('SETTINGS_SECURITY.SMS_FACTOR_REMOVED'), SnackBarType.success, '', 3000)
     } catch (error: any) {
       this.phoneError.set(this.getMfaErrorMessage(error))
       this.showSnackbar(this.phoneError(), SnackBarType.error, '', 5000)
@@ -1818,7 +1818,7 @@ export class SecurityTabComponent {
     // All phone factors failed
     this.mfaLinkPhoneFactorAttempts.set(attempts)
     const attemptsDisplay = attempts.map((a, idx) => `${idx + 1}. ${a.phoneNumber}: ${a.error}`).join('\n')
-    this.mfaLinkError.set(`Failed to send verification code to all enrolled phones:\n${attemptsDisplay}`)
+    this.mfaLinkError.set(this.translate.instant('SETTINGS_SECURITY.ERR_SEND_CODE_ALL_PHONES') + '\n' + attemptsDisplay)
     this.mfaLinkStep.set('idle')
     this.mfaLinkResolver.set(null)
     try { this.recaptchaVerifier.clear() } catch { /* ignore */ }
@@ -1862,7 +1862,7 @@ export class SecurityTabComponent {
 
     try {
       const totpHint = resolver.hints.find(h => h.factorId === 'totp')
-      if (!totpHint) throw new Error('No TOTP factor enrolled')
+      if (!totpHint) throw new Error(this.translate.instant('SETTINGS_SECURITY.ERR_MFA_NO_TOTP_FACTOR'))
       const userCredential = await this.authService.completeMfaTotpChallenge(resolver, totpHint.uid, code)
       await this.finishMfaLinkCompletion(userCredential, provider)
     } catch (err: any) {
@@ -1878,7 +1878,7 @@ export class SecurityTabComponent {
     if (userCredential?.user) {
       const expectedUid = this.user?.uid || ''
       if (expectedUid && userCredential.user.uid !== expectedUid) {
-        throw new Error('Linking was blocked because MFA challenge resolved to a different user account. Please sign in with the original account and retry.')
+        throw new Error(this.translate.instant('SETTINGS_SECURITY.ERR_MFA_LINK_DIFFERENT_USER'))
       }
       if (userCredential.user.displayName || userCredential.user.photoURL) {
         await updateProfile(userCredential.user, {

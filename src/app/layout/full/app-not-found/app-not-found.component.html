@@ -7,19 +7,19 @@
       <h1>
         <strong
           class="text-2l font-bold sm:text-4xl text-gray-400 dark:text-gray-100"
-          >hmm!</strong
+          >{{ 'NOT_FOUND.HMM' | translate }}</strong
         >
         <p class="sm:mt-4 sm:text-lg text-gray-400 dark:text-gray-100">
-          Our bloodhound can't find the page you're looking for.
+          {{ 'NOT_FOUND.BLOODHOUND_LOST' | translate }}
         </p>
       </h1>
       <span class="sm:mt-4 sm:text-lg text-gray-500 dark:text-gray-100"
-        >But it can guide you back to the home page!</span
+        >{{ 'NOT_FOUND.GUIDE_HOME' | translate }}</span
       >
       <a
         [routerLink]="['/']"
         class="mt-4 block text-base font-bold text-blue-700"
-        >Return to the home page</a
+        >{{ 'NOT_FOUND.RETURN_HOME' | translate }}</a
       >
     </div>
 

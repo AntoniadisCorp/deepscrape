@@ -6,12 +6,12 @@
     class="mx-auto w-full pt-6 order-2 px-4 sm:order-1 lg:order-2 xl:order-1">
     <h1
       class="text-3xl text-center font-bold mb-8 text-gray-800 dark:text-gray-200">
-      Crawl Results
+      {{ 'CRAWL_PACK_CRESULTS.TITLE' | translate }}
     </h1>
 
     <div class="w-full text-center inline-flex items-center justify-center">
       <mat-icon
-        aria-label="results"
+        [attr.aria-label]="'CRAWL_PACK_CRESULTS.RESULT_NOUN' | translate"
         svgIcon="results"
         class="font-bold !size-40 mb-4 text-gray-800 dark:text-gray-200"></mat-icon>
     </div>
@@ -19,24 +19,21 @@
     <h3
       id="controlling-each-crawl-result"
       class="text-xl py-8 font-weight-light text-gray-800 dark:text-gray-200">
-      Controlling Each CrawlResult
+      {{ 'CRAWL_PACK_CRESULTS.CONTROLLING' | translate }}
     </h3>
 
     <!--  Parameters Hilights -->
     <p class="mb-8 font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-      The crawler returns a
+      {{ 'CRAWL_PACK_CRESULTS.INTRO_1' | translate }}
       <span class="text-sky-500 bg-sky-700/10">CrawlResult</span>
-      object containing everything you might need—raw HTML, a cleaned version,
-      optional screenshots or PDFs, structured extraction results, and more.
-      This document explains those fields and how they map to different output
-      types.
+      {{ 'CRAWL_PACK_CRESULTS.INTRO_2' | translate }}
     </p>
 
     <h3
       class="flex flex-wrap justify-between mb-4 text-xl font-light text-gray-800 dark:text-gray-200">
-      <span>Recent Configs</span>
+      <span>{{ 'CRAWL_PACK_CRESULTS.RECENT_CONFIGS' | translate }}</span>
       <button
-        title="add new profile"
+        [title]="'CRAWL_PACK_CRESULTS.ADD_NEW_CONFIG' | translate"
         type="button"
         (click)="addNewCrawlResults()"
         [ngClass]="
@@ -45,6 +42,9 @@
             : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
         "
         class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+        <span class="sr-only">{{
+          'CRAWL_PACK_CRESULTS.ADD_NEW_CONFIG' | translate
+        }}</span>
         <mat-icon
           [ngClass]="
             !newConfigOpened
@@ -162,16 +162,14 @@
       @if ((crawlResults$ | async)?.length === 0) {
         <div class="text-center py-8">
           <p class="text-gray-600 dark:text-gray-300">
-            No crawler results configuration created yet. Click the 'plus'
-            button to add a new result configuration.
+            {{ 'CRAWL_PACK_CRESULTS.EMPTY' | translate }}
           </p>
         </div>
       }
       @if ((crawlResults$ | async) === null) {
         <div class="text-center py-8">
           <p class="text-red-600 dark:text-red-300">
-            An Error Occured. Please try again later. or contact with
-            administrator. find the feedback button in the sidebar
+            {{ 'CRAWL_PACK_CRESULTS.ERROR_LOAD' | translate }}
           </p>
         </div>
       }
@@ -189,14 +187,14 @@
               }"
               class="p-2 rounded-xl mr-2">
               {{
-                !newConfigOpened && !editMode
-                  ? 'Opened'
+                (!newConfigOpened && !editMode
+                  ? 'CRAWL_PACK_CRESULTS.ST_OPENED'
                   : editMode
-                    ? 'Editing'
-                    : 'New'
+                    ? 'CRAWL_PACK_CRESULTS.ST_EDITING'
+                    : 'CRAWL_PACK_CRESULTS.ST_NEW') | translate
               }}
             </span>
-            <span>Crawl Results</span>
+            <span>{{ 'CRAWL_PACK_CRESULTS.RESULT_NOUN' | translate }}</span>
           </span>
           @if (newConfigOpened) {
             <span class="text-red-400">*</span>
@@ -205,7 +203,11 @@
         @if (!newConfigOpened) {
           <button
             type="button"
-            [title]="editMode ? 'cancel edit' : 'edit config'"
+            [title]="
+              (editMode
+                ? 'CRAWL_PACK_CRESULTS.CANCEL_EDIT'
+                : 'CRAWL_PACK_CRESULTS.EDIT_CONFIG') | translate
+            "
             (click)="makeEditable()"
             [ngClass]="
               !editMode
@@ -213,6 +215,11 @@
                 : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
             "
             class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+            <span class="sr-only">{{
+              (editMode
+                ? 'CRAWL_PACK_CRESULTS.CANCEL_EDIT'
+                : 'CRAWL_PACK_CRESULTS.EDIT_CONFIG') | translate
+            }}</span>
             <mat-icon
               [ngClass]="
                 !editMode ? 'text-gray-600 dark:text-gray-300/80' : '-rotate-90'
@@ -244,7 +251,7 @@
                 <app-stinput
                   [control]="resultsForm.get('title') | formControl"
                   [leftIcon]="'person'"
-                  [label]="'Title'"
+                  [label]="'CRAWL_PACK_CRESULTS.TITLE_LABEL' | translate"
                   [errorLabel]="getErrorLabel('title')"></app-stinput>
               </div>
               <div class="inline-flex items-center justify-center gap-2">
@@ -261,8 +268,11 @@
                       savingNewConfig ||
                       (editMode && resultsForm.pristine),
                   }"
-                  title="save config"
+                  [title]="'CRAWL_PACK_CRESULTS.SAVE_CONFIG' | translate"
                   class="inline-flex text-lg items-center justify-center text-center border border-transparent leading-[0] gap-2 disabled:bg-green-600/[0.5] bg-green-600/80 hover:bg-green-700/70 focus:bg-green-900/[0.8] disabled:hover:bg-green-600/50 text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium p-[.6rem] lg:p-3 duration-300 rounded-full transition-colors">
+                  <span class="sr-only">{{
+                    'CRAWL_PACK_CRESULTS.SAVE_CONFIG' | translate
+                  }}</span>
                   @if (!savingNewConfig) {
                     <mat-icon class="font-bold">save</mat-icon>
                   } @else {
@@ -277,11 +287,11 @@
           <!-- Parameters to Set -->
           <div>
             <h3 class="text-xl font-normal text-gray-800 dark:text-gray-200">
-              Parameters Highlights
+              {{ 'CRAWL_PACK_CRESULTS.PARAM_HIGHLIGHTS' | translate }}
             </h3>
             <h2
               class="text-sm py-4 font-normal text-gray-800 dark:text-gray-200">
-              We group them by category.
+              {{ 'CRAWL_PACK_CRESULTS.GROUPED' | translate }}
             </h2>
           </div>
         </div>
@@ -291,7 +301,7 @@
           id="html-variants"
           (mouseover)="showLink = true"
           (mouseleave)="showLink = false">
-          <span class="border-b-4 border-gray5">HTML Variants</span>
+          <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CRESULTS.CAT_HTML' | translate }}</span>
           @if (showLink) {
             <a
               (click)="scrollTo('html-variants')"
@@ -309,28 +319,27 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Raw HTML
+                  {{ 'CRAWL_PACK_CRESULTS.F_RAW_HTML' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Original, unmodified page HTML. Good for debugging or custom
-                    processing.
+                    {{ 'CRAWL_PACK_CRESULTS.RAW_HTML_DESC' | translate }}
                   </span>
                   <span>&nbsp;</span>
-                  <span>Crawl4AI preserves the exact HTML as</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.RAW_HTML_PRESERVES' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     result.html
                   </p>
-                  <span>. Useful for:</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.RAW_HTML_USEFUL_FOR' | translate }}</span>
                   <br />
                   <span>
-                    - Debugging page issues or checking the original content.
+                    {{ 'CRAWL_PACK_CRESULTS.RAW_HTML_USES_1' | translate }}
                   </span>
                   <br />
                   <span>
-                    - Performing your own specialized parse if needed.
+                    {{ 'CRAWL_PACK_CRESULTS.RAW_HTML_USES_2' | translate }}
                   </span>
                 </div>
               </div>
@@ -338,7 +347,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="html"
                   [control]="
                     resultsForm.get('html') | formControl
@@ -350,20 +359,19 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Cleaned html
+                  {{ 'CRAWL_PACK_CRESULTS.F_CLEANED_HTML' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Sanitized HTML with scripts/styles removed; can exclude tags
-                    If you specify any cleanup or exclusion parameters in
+                    {{ 'CRAWL_PACK_CRESULTS.CLEANED_HTML_DESC' | translate }}
                   </span>
                   <span>&nbsp;</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     CrawlerRunConfig
                   </p>
-                  <span>(like</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.CLEANED_HTML_LIKE' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     excluded_tags
@@ -373,14 +381,14 @@
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     remove_forms
                   </p>
-                  <span>, etc.)</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.CLEANED_HTML_ETC' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="cleanedHtml"
                   [control]="
                     resultsForm.get('cleanedHtml') | formControl
@@ -394,7 +402,7 @@
           id="markdown-generation"
           (mouseover)="showLink = true"
           (mouseleave)="showLink = false">
-          <span class="border-b-4 border-gray5">Markdown Generation</span>
+          <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CRESULTS.CAT_MARKDOWN' | translate }}</span>
           @if (showLink) {
             <a
               (click)="scrollTo('markdown-generation')"
@@ -412,23 +420,22 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Raw Markdown
+                  {{ 'CRAWL_PACK_CRESULTS.F_RAW_MARKDOWN' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>It holds a</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.RAW_MD_HOLDS' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     MarkdownGenerationResult
                   </p>
-                  <span>. Over time, this will be consolidated into</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.RAW_MD_CONSOLIDATED' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     markdown
                   </p>
                   <span>
-                    . The generator can provide raw markdown, citations,
-                    references, and optionally
+                    {{ 'CRAWL_PACK_CRESULTS.RAW_MD_GENERATOR' | translate }}
                   </span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
@@ -441,7 +448,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="rawMarkdown"
                   [control]="
                     resultsForm.get('rawMarkdown') | formControl
@@ -453,13 +460,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Markdown With Citations
+                  {{ 'CRAWL_PACK_CRESULTS.F_MD_CITATIONS' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Markdown including inline citations that reference links at
-                    the end.
+                    {{ 'CRAWL_PACK_CRESULTS.MD_CITATIONS_DESC' | translate }}
                   </span>
                 </div>
               </div>
@@ -467,7 +473,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="markdownWithCitations"
                   [control]="
                     resultsForm.get('markdownWithCitations') | formControl
@@ -479,11 +485,11 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  References Markdown
+                  {{ 'CRAWL_PACK_CRESULTS.F_REFERENCES_MD' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>The references/citations themselves (if</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.REFERENCES_MD_DESC' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     citations=True
@@ -495,7 +501,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="referencesMarkdown"
                   [control]="
                     resultsForm.get('referencesMarkdown') | formControl
@@ -507,12 +513,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Fit Markdown
+                  {{ 'CRAWL_PACK_CRESULTS.F_FIT_MD' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    The filtered/“fit” markdown if a content filter was used.
+                    {{ 'CRAWL_PACK_CRESULTS.FIT_MD_DESC' | translate }}
                   </span>
                 </div>
               </div>
@@ -520,7 +526,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="fitMarkdown"
                   [control]="
                     resultsForm.get('fitMarkdown') | formControl
@@ -532,23 +538,23 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Fit HTML
+                  {{ 'CRAWL_PACK_CRESULTS.F_FIT_HTML' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>The filtered HTML that generated</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.FIT_HTML_GENERATED' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     fit_markdown
                   </p>
-                  <span>. if a content filter was used.</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.FIT_HTML_DESC' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="fitHtml"
                   [control]="
                     resultsForm.get('fitHtml') | formControl
@@ -562,7 +568,7 @@
           id="structured-extraction"
           (mouseover)="showLink = true"
           (mouseleave)="showLink = false">
-          <span class="border-b-4 border-gray5">Structured Extraction</span>
+          <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CRESULTS.CAT_STRUCT' | translate }}</span>
           @if (showLink) {
             <a
               (click)="scrollTo('structured-extraction')"
@@ -580,31 +586,30 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Extracted Content
+                  {{ 'CRAWL_PACK_CRESULTS.F_EXTRACTED_CONTENT' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    If you run a JSON-based extraction strategy (CSS, XPath,
-                    LLM, etc.), the structured data is not stored in
+                    {{ 'CRAWL_PACK_CRESULTS.EXTRACTED_DESC_1' | translate }}
                   </span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     markdown
                   </p>
-                  <span>—it’s placed in</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.EXTRACTED_DESC_2' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     result.extracted_content
                   </p>
-                  <span>as a JSON string (or sometimes plain text).</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.EXTRACTED_DESC_3' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="extractedContent"
                   [control]="
                     resultsForm.get('extractedContent') | formControl
@@ -618,7 +623,7 @@
           id="more-fields"
           (mouseover)="showLink = true"
           (mouseleave)="showLink = false">
-          <span class="border-b-4 border-gray5">Links Media and More</span>
+          <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CRESULTS.CAT_MORE' | translate }}</span>
           @if (showLink) {
             <a
               (click)="scrollTo('more-fields')"
@@ -636,13 +641,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Media
+                  {{ 'CRAWL_PACK_CRESULTS.F_MEDIA' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Extracted media info (images, audio, etc.), each with
-                    attributes like
+                    {{ 'CRAWL_PACK_CRESULTS.MEDIA_DESC' | translate }}
                   </span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
@@ -658,14 +662,14 @@
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     score
                   </p>
-                  <span>, etc.</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.MEDIA_ETC' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="media"
                   [control]="
                     resultsForm.get('media') | formControl
@@ -677,21 +681,21 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Links
+                  {{ 'CRAWL_PACK_CRESULTS.F_LINKS' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>Extracted link data, split by</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.LINKS_DESC' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     internal
                   </p>
-                  <span>and</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.LINKS_AND' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     external
                   </p>
-                  <span>. Each link usually has</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.LINKS_DESC_2' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     href
@@ -701,14 +705,14 @@
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     text
                   </p>
-                  <span>, etc.</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.LINKS_ETC' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="links"
                   [control]="
                     resultsForm.get('links') | formControl
@@ -720,28 +724,28 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Downloaded Files
+                  {{ 'CRAWL_PACK_CRESULTS.F_DOWNLOADED_FILES' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>If</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.DOWNLOAD_IF' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     accept_downloads=True
                   </p>
-                  <span>in</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.DOWNLOAD_IN' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     BrowserConfig
                   </p>
-                  <span>, this lists the filepaths of saved downloads.</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.DOWNLOAD_DESC' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="downloadFiles"
                   [control]="
                     resultsForm.get('downloadFiles') | formControl
@@ -753,11 +757,11 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  ScreenShot
+                  {{ 'CRAWL_PACK_CRESULTS.F_SCREENSHOT' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>Screenshot of the page (base64-encoded) if</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.SCREENSHOT_DESC' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     screenshot=True
@@ -769,7 +773,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="screenshot"
                   [control]="
                     resultsForm.get('screenshot') | formControl
@@ -781,11 +785,11 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Pdf
+                  {{ 'CRAWL_PACK_CRESULTS.F_PDF' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>PDF of the page if</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.PDF_DESC' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     pdf=True
@@ -797,7 +801,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="pdf"
                   [control]="
                     resultsForm.get('pdf') | formControl
@@ -809,12 +813,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Metadata
+                  {{ 'CRAWL_PACK_CRESULTS.F_METADATA' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Additional info about the crawl or extracted data.
+                    {{ 'CRAWL_PACK_CRESULTS.METADATA_DESC' | translate }}
                   </span>
                 </div>
               </div>
@@ -822,7 +826,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="metadata"
                   [control]="
                     resultsForm.get('metadata') | formControl
@@ -834,17 +838,17 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Error Message
+                  {{ 'CRAWL_PACK_CRESULTS.F_ERROR_MESSAGE' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>If</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.ERR_IF' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     success=False
                   </p>
                   <span>
-                    , contains a short description of what went wrong.
+                    {{ 'CRAWL_PACK_CRESULTS.ERR_DESC' | translate }}
                   </span>
                 </div>
               </div>
@@ -852,7 +856,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="errorMessage"
                   [control]="
                     resultsForm.get('errorMessage') | formControl
@@ -864,13 +868,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Session Id
+                  {{ 'CRAWL_PACK_CRESULTS.F_SESSION_ID' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    The ID of the session used for multi-page or persistent
-                    crawling.
+                    {{ 'CRAWL_PACK_CRESULTS.SESSION_ID_DESC' | translate }}
                   </span>
                 </div>
               </div>
@@ -878,7 +881,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="sessionId"
                   [control]="
                     resultsForm.get('sessionId') | formControl
@@ -890,18 +893,18 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Response Headers
+                  {{ 'CRAWL_PACK_CRESULTS.F_RESPONSE_HEADERS' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>HTTP response headers, if captured.</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.RESPONSE_HEADERS_DESC' | translate }}</span>
                 </div>
               </div>
               <label
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="responseHeaders"
                   [control]="
                     resultsForm.get('responseHeaders') | formControl
@@ -913,11 +916,11 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  SSL Certificate
+                  {{ 'CRAWL_PACK_CRESULTS.F_SSL_CERTIFICATE' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>SSL certificate info if</span>
+                  <span>{{ 'CRAWL_PACK_CRESULTS.SSL_CERT_DESC' | translate }}</span>
                   <p
                     class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                     fetch_ssl_certificate=True
@@ -929,7 +932,7 @@
                 class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
                 <!-- Set a radio button Enabled/Disabled -->
                 <app-radiotoggle
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_CRESULTS.TOGGLE_ENABLED_DISABLED' | translate"
                   identity="sslCertificate"
                   [control]="
                     resultsForm.get('sslCertificate') | formControl
@@ -957,7 +960,7 @@
               : 'dark:text-gray-200 before:hidden'
           "
           class="cursor-pointer text-gray-600/60 hover:text-sky-600 focus:text-sky-700 dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] font-bold p-3 hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-          <span>Controlling Each CrawlResult</span>
+          <span>{{ 'CRAWL_PACK_CRESULTS.CONTROLLING' | translate }}</span>
         </a>
       </li>
       @if (showSettings) {
@@ -971,7 +974,7 @@
                 : 'dark:text-gray-100 before:hidden'
             "
             class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-            <span>Html Variants</span>
+            <span>{{ 'CRAWL_PACK_CRESULTS.CAT_HTML' | translate }}</span>
           </a>
         </li>
       }
@@ -987,7 +990,7 @@
                 : 'dark:text-gray-100 before:hidden'
             "
             class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-            <span>Markdown Generation</span>
+            <span>{{ 'CRAWL_PACK_CRESULTS.CAT_MARKDOWN' | translate }}</span>
           </a>
         </li>
       }
@@ -1002,7 +1005,7 @@
                 : 'dark:text-gray-100 before:hidden'
             "
             class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-            <span>Structured Extraction</span>
+            <span>{{ 'CRAWL_PACK_CRESULTS.CAT_STRUCT' | translate }}</span>
           </a>
         </li>
       }
@@ -1018,7 +1021,7 @@
                 : 'dark:text-gray-100 before:hidden'
             "
             class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-            <span>More Fields</span>
+            <span>{{ 'CRAWL_PACK_CRESULTS.NAV_MORE' | translate }}</span>
           </a>
         </li>
       }

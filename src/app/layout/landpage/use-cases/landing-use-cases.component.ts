@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
-import { myIcons } from 'src/app/shared';
+import { TranslateModule } from '@ngx-translate/core';
+import { myIcons, RevealDirective } from 'src/app/shared';
 
 interface UseCase {
   icon: string;
@@ -16,7 +17,7 @@ interface UseCase {
 @Component({
   selector: 'app-landing-use-cases',
   standalone: true,
-  imports: [NgClass, LucideAngularModule],
+  imports: [NgClass, LucideAngularModule, TranslateModule, RevealDirective],
   templateUrl: './landing-use-cases.component.html',
   styleUrl: './landing-use-cases.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,61 +61,57 @@ export class LandingUseCasesComponent {
   readonly useCases: UseCase[] = [
     {
       icon: 'shoppingbag',
-      title: 'E-Commerce',
-      headline: 'Track competitors. Monitor prices. Automate product research.',
-      description:
-        'Extract product listings, pricing, reviews, and inventory data from any e-commerce platform at scale. deepscrape handles pagination, infinite scroll, and anti-bot measures so you get clean data every time.',
+      title: 'USECASES.UC1_T',
+      headline: 'USECASES.UC1_H',
+      description: 'USECASES.UC1_D',
       gradient: 'from-cyan-500 to-blue-600',
       features: [
-        'Product catalog extraction with AI schema detection',
-        'Price monitoring & price history tracking',
-        'Review & rating aggregation across sites',
-        'Inventory & stock availability alerts',
+        'USECASES.UC1_F1',
+        'USECASES.UC1_F2',
+        'USECASES.UC1_F3',
+        'USECASES.UC1_F4',
       ],
       bgIcon: 'store',
     },
     {
       icon: 'brain',
-      title: 'AI Training Data',
-      headline: 'Build better models with real-world, diverse training data.',
-      description:
-        'Feed your LLMs, RAG pipelines, and ML models with fresh, structured web data. deepscrape delivers clean markdown and JSON at production scale — no HTML parsing, no token waste.',
+      title: 'USECASES.UC2_T',
+      headline: 'USECASES.UC2_H',
+      description: 'USECASES.UC2_D',
       gradient: 'from-violet-500 to-rose-500',
       features: [
-        'Clean markdown output optimized for LLM ingestion',
-        'Structured JSON extraction with LLM schema support',
-        'Multi-format export: JSON, CSV, DataFrames',
-        'Semantic search index for RAG pipelines',
+        'USECASES.UC2_F1',
+        'USECASES.UC2_F2',
+        'USECASES.UC2_F3',
+        'USECASES.UC2_F4',
       ],
       bgIcon: 'sparkles',
     },
     {
       icon: 'target',
-      title: 'Market Research',
-      headline: 'Gather intelligence. Analyze trends. Move faster.',
-      description:
-        'Monitor news sites, social platforms, and industry publications for competitive intelligence. With deep crawling and world-aware geolocation, see what the market sees — from any region.',
+      title: 'USECASES.UC3_T',
+      headline: 'USECASES.UC3_H',
+      description: 'USECASES.UC3_D',
       gradient: 'from-emerald-500 to-teal-600',
       features: [
-        'Multi-site content aggregation with deduplication',
-        'Geolocation-aware crawling (40+ countries)',
-        'Trend analysis with semantic search',
-        'Scheduled recurring crawls with change detection',
+        'USECASES.UC3_F1',
+        'USECASES.UC3_F2',
+        'USECASES.UC3_F3',
+        'USECASES.UC3_F4',
       ],
       bgIcon: 'globe',
     },
     {
       icon: 'search',
-      title: 'SEO & Content',
-      headline: 'Crawl like Googlebot. Optimize with real data.',
-      description:
-        'Understand how search engines see your site and your competitors. deepscrape renders JavaScript, captures Core Web Vitals, and extracts metadata for comprehensive SEO audits at scale.',
+      title: 'USECASES.UC4_T',
+      headline: 'USECASES.UC4_H',
+      description: 'USECASES.UC4_D',
       gradient: 'from-orange-500 to-rose-500',
       features: [
-        'Full JavaScript rendering for SPA audits',
-        'Core Web Vitals & performance metrics',
-        'Sitemap & internal link structure analysis',
-        'Bulk competitor content comparison',
+        'USECASES.UC4_F1',
+        'USECASES.UC4_F2',
+        'USECASES.UC4_F3',
+        'USECASES.UC4_F4',
       ],
       bgIcon: 'linechart',
     },

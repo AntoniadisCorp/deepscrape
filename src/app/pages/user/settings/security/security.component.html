@@ -6,33 +6,32 @@
     <!-- Email Control field -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Account email
+      {{ 'SETTINGS_SECURITY.ACCOUNT_EMAIL' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-2xl flex-col rounded-2xl bg-gray-50 p-5 pb-0 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 mb-4 font-body text-sm text-gray-600 dark:text-gray-300">
-        The email address associated with your account
+        {{ 'SETTINGS_SECURITY.ACCOUNT_EMAIL_DESC' | translate }}
       </h3>
 
       <app-stinput
         [control]="email | formControl"
         [leftIcon]="'alternate_email'"
         [rightIcon]="'lock'"
-        [label]="'Email'"></app-stinput>
+        [label]="('SETTINGS_SECURITY.EMAIL' | translate)"></app-stinput>
     </div>
 
     <!-- Login Account -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Link Login Provider
+      {{ 'SETTINGS_SECURITY.LINK_LOGIN_TITLE' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Add more accounts to ensure you never lose access to your profile and to
-        make login quick and easy cross device
+        {{ 'SETTINGS_SECURITY.LINK_LOGIN_DESC' | translate }}
       </h3>
 
       <!-- Connect with Button -->
@@ -63,7 +62,7 @@
                     mode="indeterminate"
                     diameter="16"></mat-progress-spinner>
                 } @else {
-                  Connect with {{ provider | uppercase }}
+                  {{ 'SETTINGS_SECURITY.CONNECT_WITH' | translate }} {{ provider | uppercase }}
                 }
               </span>
             </button>
@@ -72,7 +71,7 @@
       } @else {
         <h3
           class="mt-5 font-serif text-base font-semibold text-gray-700 dark:text-gray-300">
-          All provider accounts has been connected.
+          {{ 'SETTINGS_SECURITY.ALL_PROVIDERS_CONNECTED' | translate }}
         </h3>
       }
     </div>
@@ -85,10 +84,10 @@
           <mat-icon class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400">shield_lock</mat-icon>
           <div>
             <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-              Verify your identity to link {{ mfaLinkProvider() | uppercase }}
+              {{ 'SETTINGS_SECURITY.MFA_LINK_TITLE' | translate }} {{ mfaLinkProvider() | uppercase }}
             </h4>
             <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-              Your account has two-factor authentication enabled. Confirm your identity to proceed.
+              {{ 'SETTINGS_SECURITY.MFA_LINK_DESC' | translate }}
             </p>
           </div>
         </div>
@@ -96,9 +95,9 @@
         @if (mfaLinkStep() === 'phone-code') {
           <div class="space-y-3">
             <p class="text-xs text-gray-600 dark:text-gray-300">
-              A verification code was sent to
+              {{ 'SETTINGS_SECURITY.MFA_LINK_PHONE_SENT_TO' | translate }}
               <span class="font-mono font-semibold text-gray-800 dark:text-gray-100">{{ mfaLinkPhoneHint() }}</span>.
-              Enter it below.
+              {{ 'SETTINGS_SECURITY.MFA_LINK_PHONE_ENTER' | translate }}
             </p>
             <app-otp-input
               [formControl]="mfaLinkOtp"
@@ -114,14 +113,14 @@
                 @if (isMfaLinkLoading()) {
                   <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
                 } @else {
-                  Verify &amp; link
+                  {{ 'SETTINGS_SECURITY.VERIFY_LINK' | translate }}
                 }
               </button>
               <button
                 type="button"
                 (click)="cancelMfaLinkChallenge()"
                 class="inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                Cancel
+                {{ 'COMMON.CANCEL' | translate }}
               </button>
             </div>
           </div>
@@ -130,7 +129,7 @@
         @if (mfaLinkStep() === 'totp-code') {
           <div class="space-y-3">
             <p class="text-xs text-gray-600 dark:text-gray-300">
-              Enter the current 6-digit code from your authenticator app.
+              {{ 'SETTINGS_SECURITY.MFA_LINK_TOTP_ENTER' | translate }}
             </p>
             <input
               type="text"
@@ -150,14 +149,14 @@
                 @if (isMfaLinkLoading()) {
                   <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
                 } @else {
-                  Verify &amp; link
+                  {{ 'SETTINGS_SECURITY.VERIFY_LINK' | translate }}
                 }
               </button>
               <button
                 type="button"
                 (click)="cancelMfaLinkChallenge()"
                 class="inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                Cancel
+                {{ 'COMMON.CANCEL' | translate }}
               </button>
             </div>
           </div>
@@ -172,12 +171,12 @@
     <!-- Connected accounts -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Connected Providers
+      {{ 'SETTINGS_SECURITY.CONNECTED_PROVIDERS' | translate }}
     </h2>
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Unlink the connection for authorized login providers.
+        {{ 'SETTINGS_SECURITY.CONNECTED_PROVIDERS_DESC' | translate }}
       </h3>
       <!-- Disconnect button -->
       @if (remProviders && remProviders.length > 0) {
@@ -209,7 +208,7 @@
                       mode="indeterminate"
                       diameter="16"></mat-progress-spinner>
                   } @else {
-                    Unlink
+                    {{ 'SETTINGS_SECURITY.UNLINK' | translate }}
                     <!-- {{ provider | uppercase }} -->
                   }
                 </span>
@@ -217,7 +216,7 @@
               @if (isCurrentProvider(provider)) {
                 <div
                   class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-                  Currently logged in
+                  {{ 'SETTINGS_SECURITY.CURRENTLY_LOGGED_IN' | translate }}
                 </div>
               }
             </div>
@@ -226,7 +225,7 @@
       } @else {
         <h3
           class="mt-5 font-serif text-base font-semibold text-gray-700 dark:text-gray-300">
-          No SSO provider account connected yet.
+          {{ 'SETTINGS_SECURITY.NO_SSO_CONNECTED' | translate }}
         </h3>
       }
     </div>
@@ -234,7 +233,7 @@
     <!-- Set Password -->
     <h2
       class="mt-5 flex items-center justify-start gap-2 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Set your password
+      {{ 'SETTINGS_SECURITY.SET_PASSWORD_TITLE' | translate }}
       <small>
         <lucide-angular
           [img]="icons['circle-check-big']"
@@ -248,21 +247,21 @@
       @if (isCurrentProvider('password')) {
         <div
           class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-          Currently logged in
+          {{ 'SETTINGS_SECURITY.CURRENTLY_LOGGED_IN' | translate }}
         </div>
       }
     </h2>
     <div
       class="flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mb-2 mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Please enter your new password. We recommended to use strong password.
+        {{ 'SETTINGS_SECURITY.SET_PASSWORD_DESC' | translate }}
       </h3>
       <!-- Password Control field -->
       <app-stinput
         [control]="password | formControl"
         [leftIcon]="'vpn_key'"
         [rightIcon]="'visibility'"
-        [label]="'Password'"
+        [label]="('SETTINGS_SECURITY.PASSWORD' | translate)"
         [errorLabel]="
           password?.value
             ? password?.errors?.['passwordStrength']
@@ -294,7 +293,7 @@
                 mode="indeterminate"
                 diameter="16"></mat-progress-spinner>
             } @else {
-              Set Password
+              {{ 'SETTINGS_SECURITY.SET_PASSWORD_BTN' | translate }}
             }
           </span>
         </button>
@@ -323,7 +322,7 @@
                   mode="indeterminate"
                   color="accent"></mat-spinner>
               } @else {
-                unlink Email/Password
+                {{ 'SETTINGS_SECURITY.UNLINK_EMAIL_PASSWORD' | translate }}
               }
             </span>
           </button>
@@ -334,11 +333,11 @@
     <!-- Account phone number (sign-in provider) -->
     <h2
       class="mt-5 flex items-center justify-start gap-2 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Account phone number
+      {{ 'SETTINGS_SECURITY.ACCOUNT_PHONE_TITLE' | translate }}
       @if (isCurrentProvider('phone')) {
         <div
           class="ml-2 rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-          Currently logged in
+          {{ 'SETTINGS_SECURITY.CURRENTLY_LOGGED_IN' | translate }}
         </div>
       }
     </h2>
@@ -346,20 +345,20 @@
     <div
       class="flex w-full max-w-3xl flex-col gap-3 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        This is your account phone (phone sign-in provider). It is different from SMS MFA factors below.
+        {{ 'SETTINGS_SECURITY.ACCOUNT_PHONE_DESC' | translate }}
       </p>
 
       @if (user?.phoneNumber) {
         <div class="rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
-          <p class="text-xs text-gray-500 dark:text-gray-400">Current account phone</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ 'SETTINGS_SECURITY.CURRENT_ACCOUNT_PHONE' | translate }}</p>
           <p class="mt-1 font-mono text-sm text-gray-800 dark:text-gray-100">{{ user?.phoneNumber }}</p>
           <p class="mt-1 text-xs" [ngClass]="isPhoneVerifiedForDisplay() ? 'text-green-600 dark:text-green-400' : 'text-amber-700 dark:text-amber-300'">
-            {{ isPhoneVerifiedForDisplay() ? 'Verified' : 'Not verified yet' }}
+            {{ isPhoneVerifiedForDisplay() ? ('PHONE_SECURITY.VERIFIED' | translate) : ('SETTINGS_SECURITY.NOT_VERIFIED_YET' | translate) }}
           </p>
         </div>
       } @else {
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          No account phone is linked yet.
+          {{ 'SETTINGS_SECURITY.NO_ACCOUNT_PHONE' | translate }}
         </p>
       }
 
@@ -371,7 +370,7 @@
             rippleColor="light"
             (click)="openAccountPhoneEdit()"
             class="inline-flex items-center justify-center rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors duration-100 ease-in hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500">
-            {{ user?.phoneNumber ? 'Change phone' : 'Add phone' }}
+            {{ user?.phoneNumber ? ('SETTINGS_SECURITY.CHANGE_PHONE' | translate) : ('SETTINGS_SECURITY.ADD_PHONE' | translate) }}
           </button>
 
           @if (user?.phoneNumber) {
@@ -384,7 +383,7 @@
               @if (loading.remove) {
                 <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
               } @else {
-                Unlink account phone
+                {{ 'SETTINGS_SECURITY.UNLINK_ACCOUNT_PHONE' | translate }}
               }
             </button>
           }
@@ -394,7 +393,7 @@
       @if (accountPhoneStep() === 'enter-number') {
         <div class="space-y-3 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            Enter phone in international format. This will be your default account phone for phone sign-in.
+            {{ 'SETTINGS_SECURITY.ACCOUNT_PHONE_ENTER_DESC' | translate }}
           </p>
           <input
             type="tel"
@@ -414,14 +413,14 @@
               @if (loading.phone) {
                 <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
               } @else {
-                Send verification code
+                {{ 'SETTINGS_SECURITY.SEND_VERIFICATION_CODE' | translate }}
               }
             </button>
             <button
               type="button"
               (click)="cancelAccountPhoneEdit()"
               class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              Cancel
+              {{ 'COMMON.CANCEL' | translate }}
             </button>
           </div>
         </div>
@@ -430,7 +429,7 @@
       @if (accountPhoneStep() === 'enter-code') {
         <div class="space-y-3 rounded-xl border border-gray-200 bg-white/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
           <p class="text-sm text-gray-700 dark:text-gray-200">
-            Enter the 6-digit verification code for
+            {{ 'SETTINGS_SECURITY.ACCOUNT_PHONE_ENTER_CODE_FOR' | translate }}
             <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ accountPhoneNumber.value }}</span>
           </p>
           <app-otp-input
@@ -447,14 +446,14 @@
               @if (loading.code) {
                 <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
               } @else {
-                Verify account phone
+                {{ 'SETTINGS_SECURITY.VERIFY_ACCOUNT_PHONE' | translate }}
               }
             </button>
             <button
               type="button"
               (click)="cancelAccountPhoneEdit()"
               class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              Cancel
+              {{ 'COMMON.CANCEL' | translate }}
             </button>
           </div>
         </div>
@@ -468,20 +467,18 @@
     <!-- Two-factor authentication -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Two-factor Authentication
+      {{ 'SETTINGS_SECURITY.TWO_FACTOR_TITLE' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3
         class="mt-1 max-w-screen-sm font-body text-sm text-gray-600 dark:text-gray-300">
-        Manage real second factors backed by Firebase Authentication. TOTP with
-        an authenticator app is the recommended method because it avoids SIM-swap
-        risk and does not rely on telecom delivery.
+        {{ 'SETTINGS_SECURITY.TWO_FACTOR_DESC' | translate }}
         <a
           class="font-medium text-sky-700 underline hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300"
           href="https://docs.github.com/authentication/securing-your-account-with-two-factor-authentication-2fa/about-two-factor-authentication">
-          Learn more about two-factor authentication
+          {{ 'SETTINGS_SECURITY.LEARN_MORE_2FA' | translate }}
         </a>
         .
       </h3>
@@ -490,17 +487,17 @@
         <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-              MFA status
+              {{ 'SETTINGS_SECURITY.MFA_STATUS' | translate }}
             </h4>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              {{ hasAnyMfaFactors() ? 'Enabled: at least one second factor is enrolled.' : 'Disabled: no second factors are enrolled yet.' }}
+              {{ hasAnyMfaFactors() ? ('SETTINGS_SECURITY.MFA_ENABLED_STATUS' | translate) : ('SETTINGS_SECURITY.MFA_DISABLED_STATUS' | translate) }}
             </p>
           </div>
 
           <div class="min-w-[15rem]">
             <app-radiotoggle
               [control]="mfaStatusControl"
-              [title]="'Enable MFA/Disable MFA'"
+              [title]="('SETTINGS_SECURITY.ENABLE_DISABLE_MFA' | translate)"
               [identity]="'mfa-status-toggle'"></app-radiotoggle>
           </div>
         </div>
@@ -512,7 +509,7 @@
           [title]="getConfirmationTitle()"
           [subtitle]="getConfirmationSubtitle()"
           [confirmLabel]="getConfirmationConfirmLabel()"
-          [cancelLabel]="'Cancel'"
+          [cancelLabel]="'COMMON.CANCEL'"
           (onClose)="closeConfirmationDialog()"
           (onConfirm)="confirmDialogAction()"></app-dialog>
       }
@@ -520,9 +517,9 @@
       <div class="rounded-2xl border border-gray-200/70 bg-white/85 px-4 py-4 shadow-sm dark:border-gray-700/60 dark:bg-gray-900/35">
         <div class="mb-3 flex items-start justify-between gap-3">
           <div>
-            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">MFA challenge preferences</h4>
+            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ 'SETTINGS_SECURITY.MFA_CHALLENGE_PREFS' | translate }}</h4>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              Default order for challenge methods. Security-first default follows GitHub guidance: authenticator app before SMS.
+              {{ 'SETTINGS_SECURITY.MFA_CHALLENGE_PREFS_DESC' | translate }}
             </p>
           </div>
           @if (mfaPreferencesLoading()) {
@@ -532,36 +529,36 @@
 
         <div class="grid gap-3 md:grid-cols-2">
           <label class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            Primary method
+            {{ 'SETTINGS_SECURITY.PRIMARY_METHOD' | translate }}
             <select
               [formControl]="mfaPrimaryControl"
               class="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100">
               @if (isMethodAvailable('totp')) {
-                <option value="totp">Authenticator app (TOTP)</option>
+                <option value="totp">{{ 'SETTINGS_SECURITY.MFA_METHOD_TOTP' | translate }}</option>
               }
               @if (isMethodAvailable('sms')) {
-                <option value="sms">SMS / Text message</option>
+                <option value="sms">{{ 'SETTINGS_SECURITY.MFA_METHOD_SMS' | translate }}</option>
               }
               @if (isMethodAvailable('email')) {
-                <option value="email">Email code</option>
+                <option value="email">{{ 'SETTINGS_SECURITY.MFA_METHOD_EMAIL' | translate }}</option>
               }
             </select>
           </label>
 
           <label class="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            Secondary method
+            {{ 'SETTINGS_SECURITY.SECONDARY_METHOD' | translate }}
             <select
               [formControl]="mfaSecondaryControl"
               class="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100">
-              <option value="none">None</option>
+              <option value="none">{{ 'SETTINGS_SECURITY.MFA_METHOD_NONE' | translate }}</option>
               @if (isMethodAvailable('totp')) {
-                <option value="totp">Authenticator app (TOTP)</option>
+                <option value="totp">{{ 'SETTINGS_SECURITY.MFA_METHOD_TOTP' | translate }}</option>
               }
               @if (isMethodAvailable('sms')) {
-                <option value="sms">SMS / Text message</option>
+                <option value="sms">{{ 'SETTINGS_SECURITY.MFA_METHOD_SMS' | translate }}</option>
               }
               @if (isMethodAvailable('email')) {
-                <option value="email">Email code</option>
+                <option value="email">{{ 'SETTINGS_SECURITY.MFA_METHOD_EMAIL' | translate }}</option>
               }
             </select>
           </label>
@@ -569,7 +566,7 @@
 
         <label class="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
           <input type="checkbox" [formControl]="riskEmailNotificationsControl" />
-          Notify me by email when MFA is disabled or security risk is detected
+          {{ 'SETTINGS_SECURITY.NOTIFY_RISK_EMAIL' | translate }}
         </label>
 
         @if (mfaPreferencesError()) {
@@ -587,14 +584,14 @@
             @if (mfaPreferencesSaving()) {
               <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
             } @else {
-              Save preferences
+              {{ 'SETTINGS_SECURITY.SAVE_PREFERENCES' | translate }}
             }
           </button>
           <button
             type="button"
             (click)="loadMfaPreferences()"
             class="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
-            Reload
+            {{ 'SETTINGS_SECURITY.RELOAD' | translate }}
           </button>
         </div>
       </div>
@@ -602,7 +599,7 @@
       <div
         class="mt-4 flex h-12 items-center rounded-t-2xl bg-gray-900 px-4 shadow-sm dark:bg-gray6">
         <h4 class="text-base font-normal text-white dark:text-gray-100">
-          Two-factor methods
+          {{ 'SETTINGS_SECURITY.TWO_FACTOR_METHODS' | translate }}
         </h4>
       </div>
 
@@ -615,32 +612,32 @@
             <div class="flex flex-col gap-1">
               <div class="flex flex-wrap items-center gap-2">
                 <h5 class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                  Authenticator app (TOTP)
+                  {{ 'SETTINGS_SECURITY.MFA_METHOD_TOTP' | translate }}
                 </h5>
                 @if (totpFactors().length > 0) {
                   <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                    Enrolled
+                    {{ 'SETTINGS_SECURITY.ENROLLED' | translate }}
                   </span>
                 } @else {
                   <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                    Recommended
+                    {{ 'SETTINGS_SECURITY.RECOMMENDED' | translate }}
                   </span>
                 }
               </div>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                Use Google Authenticator, 1Password, Authy, or any compatible TOTP app.
+                {{ 'SETTINGS_SECURITY.AUTH_APP_DESC' | translate }}
               </p>
               @if (!user?.emailVerified) {
                 <p class="text-xs text-amber-700 dark:text-amber-300">
-                  Verify your email before enrolling an authenticator app.
+                  {{ 'SETTINGS_SECURITY.VERIFY_EMAIL_FIRST' | translate }}
                 </p>
               } @else if (!canEnrollTotp()) {
                 <p class="text-xs text-amber-700 dark:text-amber-300">
-                  Authenticator app MFA is not available for phone-only sign-in. Link email/password, Google, or GitHub first.
+                  {{ 'SETTINGS_SECURITY.TOTP_NOT_AVAILABLE_PHONE' | translate }}
                 </p>
               } @else if (phoneMfaFactors().length === 0) {
                 <p class="text-xs text-amber-700 dark:text-amber-300">
-                  In the emulator, you may need to enroll SMS / Text message before enabling an authenticator app.
+                  {{ 'SETTINGS_SECURITY.EMULATOR_SMS_HINT' | translate }}
                 </p>
               }
             </div>
@@ -657,7 +654,7 @@
               @if (loading.mfa) {
                 <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
               } @else {
-                Add app
+                {{ 'SETTINGS_SECURITY.ADD_APP' | translate }}
               }
             </button>
           }
@@ -666,20 +663,20 @@
         @if (totpFactors().length > 0) {
           <div class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
             <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
-              Enrolled authenticator apps are challenged automatically at login.
+              {{ 'SETTINGS_SECURITY.ENROLLED_APPS_AUTO' | translate }}
             </p>
             <div class="flex flex-col gap-3">
               @for (factor of totpFactors(); track factor.uid) {
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                      {{ factor.displayName || 'Authenticator app' }}
+                      {{ factor.displayName || ('SETTINGS_SECURITY.AUTH_APP_NAME' | translate) }}
                       @if (isPrimaryMethod('totp')) {
-                        <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">Primary</span>
+                        <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">{{ 'SETTINGS_SECURITY.PRIMARY_BADGE' | translate }}</span>
                       }
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                      Enrolled {{ factor.enrollmentTime || 'recently' }}
+                      {{ 'SETTINGS_SECURITY.ENROLLED' | translate }} {{ factor.enrollmentTime || ('SETTINGS_SECURITY.RECENTLY' | translate) }}
                     </p>
                   </div>
                   <button
@@ -688,7 +685,7 @@
                     (click)="openTotpDisableDialog(factor)"
                     [disabled]="loading.mfa"
                     class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                    Disable app
+                    {{ 'SETTINGS_SECURITY.DISABLE_APP' | translate }}
                   </button>
                 </div>
               }
@@ -701,10 +698,10 @@
             <div class="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-4 shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-gray-900/70 dark:to-cyan-950/20">
               <div class="mb-4 flex flex-wrap items-center gap-2">
                 <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                  Setup in 3 steps
+                  {{ 'SETTINGS_SECURITY.SETUP_3_STEPS' | translate }}
                 </span>
                 <p class="text-xs text-gray-600 dark:text-gray-300">
-                  Scan the QR code or enter the secret manually, then verify with a fresh 6-digit code.
+                  {{ 'SETTINGS_SECURITY.TOTP_INTRO' | translate }}
                 </p>
               </div>
 
@@ -712,17 +709,17 @@
                 <div class="space-y-4">
                   <div class="rounded-2xl border border-gray-200 bg-white/90 p-4 dark:border-gray-700 dark:bg-gray-900/60">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                      Step 1: scan the QR code
+                      {{ 'SETTINGS_SECURITY.STEP1_TITLE' | translate }}
                     </p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Open Google Authenticator, 1Password, Authy, or another TOTP app and scan this code.
+                      {{ 'SETTINGS_SECURITY.STEP1_DESC' | translate }}
                     </p>
 
                     <div class="mt-4 flex justify-center rounded-2xl border border-dashed border-emerald-200 bg-white p-4 dark:border-emerald-800/60 dark:bg-gray-950/60">
                       @if (totpQrCodeDataUrl()) {
                         <img
                           [src]="totpQrCodeDataUrl()"
-                          alt="Authenticator app QR code"
+                          alt="{{ 'SETTINGS_SECURITY.QR_ALT' | translate }}"
                           class="h-[220px] w-[220px] rounded-xl bg-white p-2 shadow-sm" />
                       }
                     </div>
@@ -732,10 +729,10 @@
                     <div class="flex items-center justify-between gap-3">
                       <div>
                         <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                          Step 2: or enter the setup code manually
+                          {{ 'SETTINGS_SECURITY.STEP2_TITLE' | translate }}
                         </p>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          Use this if your app cannot scan QR codes.
+                          {{ 'SETTINGS_SECURITY.STEP2_DESC' | translate }}
                         </p>
                       </div>
                       <button
@@ -744,13 +741,13 @@
                         rippleColor="dark"
                         (click)="copyTotpValue(totpSecretKey(), 'Secret key')"
                         class="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800">
-                        Copy key
+                        {{ 'SETTINGS_SECURITY.COPY_KEY' | translate }}
                       </button>
                     </div>
 
                     <div class="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-950/50">
                       <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                        Secret key
+                        {{ 'SETTINGS_SECURITY.SECRET_KEY' | translate }}
                       </p>
                       <p class="break-all font-mono text-sm text-gray-800 dark:text-gray-100">
                         {{ totpSecretKey() }}
@@ -772,7 +769,7 @@
                         rippleColor="dark"
                         (click)="copyTotpValue(totpQrUrl(), 'OTP URI')"
                         class="inline-flex shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900/70 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800">
-                        Copy URI
+                        {{ 'SETTINGS_SECURITY.COPY_URI' | translate }}
                       </button>
                     </div>
                   </div>
@@ -780,10 +777,10 @@
 
                 <div class="space-y-3 rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/60">
                   <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                    Step 3: verify and enable the app
+                    {{ 'SETTINGS_SECURITY.STEP3_TITLE' | translate }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Enter the current 6-digit code shown in your authenticator app, then save a display label so you can identify this app later.
+                    {{ 'SETTINGS_SECURITY.STEP3_DESC' | translate }}
                   </p>
                   <input
                     type="text"
@@ -795,10 +792,10 @@
                   <input
                     type="text"
                     [formControl]="totpDisplayName"
-                    placeholder="Authenticator app"
+                    placeholder="{{ 'SETTINGS_SECURITY.AUTH_APP_NAME' | translate }}"
                     class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-900/60 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-green-400 dark:focus:ring-green-400" />
                   <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-xs text-cyan-800 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-200">
-                    Keep at least one working sign-in method before disabling an authenticator app later.
+                    {{ 'SETTINGS_SECURITY.KEEP_SIGNIN_WARNING' | translate }}
                   </div>
                   <div class="flex flex-wrap gap-2">
                     <button
@@ -811,14 +808,14 @@
                       @if (loading.mfa) {
                         <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
                       } @else {
-                        Verify and enable
+                        {{ 'SETTINGS_SECURITY.VERIFY_ENABLE' | translate }}
                       }
                     </button>
                     <button
                       type="button"
                       (click)="cancelTotpSetup()"
                       class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                      Cancel
+                      {{ 'COMMON.CANCEL' | translate }}
                     </button>
                   </div>
                 </div>
@@ -854,27 +851,26 @@
               <div class="flex flex-wrap items-center gap-2">
                 <h5
                   class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                  SMS / Text message
+                  {{ 'SETTINGS_SECURITY.MFA_METHOD_SMS' | translate }}
                 </h5>
                 @if (phoneMfaFactors().length > 0) {
                   <span
                     class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                    Enrolled
+                    {{ 'SETTINGS_SECURITY.ENROLLED' | translate }}
                   </span>
                 } @else {
                   <span
                     class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                    Available
+                    {{ 'SETTINGS_SECURITY.AVAILABLE' | translate }}
                   </span>
                 }
               </div>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                Get one-time codes sent to your phone via SMS to complete
-                authentication requests.
+                {{ 'SETTINGS_SECURITY.SMS_DESC' | translate }}
               </p>
               @if (phoneMfaFactors().length > 0) {
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ phoneMfaFactors().length }} phone factor{{ phoneMfaFactors().length > 1 ? 's are' : ' is' }} enrolled in Firebase Authentication.
+                  {{ phoneMfaFactors().length }} {{ (phoneMfaFactors().length > 1 ? 'SETTINGS_SECURITY.PHONE_FACTORS_MANY' : 'SETTINGS_SECURITY.PHONE_FACTOR_ONE') | translate }}
                 </p>
               }
               @if (getExistingPhoneMfaNumber()) {
@@ -883,7 +879,7 @@
                 </p>
               } @else if (user?.phoneNumber) {
                 <p class="font-mono text-xs text-gray-400 dark:text-gray-500">
-                  Suggested: {{ user?.phoneNumber }}
+                  {{ 'SETTINGS_SECURITY.SUGGESTED' | translate }}: {{ user?.phoneNumber }}
                 </p>
               }
             </div>
@@ -898,7 +894,7 @@
                 rippleColor="dark"
                 (click)="openPhoneAdd()"
                 class="ml-4 inline-flex shrink-0 items-center justify-center rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors duration-100 ease-in hover:bg-gray-100 dark:bg-gray-700/60 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">
-                Add SMS MFA
+                {{ 'SETTINGS_SECURITY.ADD_SMS_MFA' | translate }}
               </button>
             } @else {
               <div class="ml-4 flex shrink-0 gap-2">
@@ -908,7 +904,7 @@
                   rippleColor="dark"
                   (click)="openPhoneAdd()"
                   class="inline-flex items-center justify-center rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors duration-100 ease-in hover:bg-gray-100 dark:bg-gray-700/60 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700">
-                  Add another phone
+                  {{ 'SETTINGS_SECURITY.ADD_ANOTHER_PHONE' | translate }}
                 </button>
                 <button
                   type="button"
@@ -921,7 +917,7 @@
                       mode="indeterminate"
                       [diameter]="14"></mat-progress-spinner>
                   } @else {
-                    Remove all
+                    {{ 'SETTINGS_SECURITY.REMOVE_ALL' | translate }}
                   }
                 </button>
               </div>
@@ -936,12 +932,12 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                      {{ factor.displayName || 'SMS / Text message' }}
+                      {{ factor.displayName || ('SETTINGS_SECURITY.MFA_METHOD_SMS' | translate) }}
                       @if (i === 0 && isPrimaryMethod('sms')) {
-                        <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">Primary</span>
+                        <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">{{ 'SETTINGS_SECURITY.PRIMARY_BADGE' | translate }}</span>
                       }
                     </p>
-                    <p class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ $any(factor).phoneNumber || 'Hidden phone' }}</p>
+                    <p class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ $any(factor).phoneNumber || ('SETTINGS_SECURITY.HIDDEN_PHONE' | translate) }}</p>
                   </div>
                   <button
                     type="button"
@@ -949,7 +945,7 @@
                     (click)="removePhoneMfaFactor(factor.uid)"
                     [disabled]="loading.remove"
                     class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                    Remove
+                    {{ 'COMMON.REMOVE' | translate }}
                   </button>
                 </div>
               }
@@ -962,7 +958,7 @@
           <div
             class="border-t border-gray-200/60 px-5 pb-5 pt-4 dark:border-gray-700/60">
             <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
-              Enter your number in international format, e.g.
+              {{ 'SETTINGS_SECURITY.SMS_ENTER_NUMBER_E' | translate }}
               <span class="font-mono text-gray-700 dark:text-gray-300">
                 +12025551234
               </span>
@@ -971,7 +967,7 @@
 
             @if (user?.phoneNumber) {
               <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
-                Your account phone is prefilled as a convenience, but SMS MFA enrollment is separate from linking a phone number for sign-in.
+                {{ 'SETTINGS_SECURITY.ACCOUNT_PHONE_PREFILL' | translate }}
               </p>
             }
 
@@ -1004,14 +1000,14 @@
                       mode="indeterminate"
                       [diameter]="14"></mat-progress-spinner>
                   } @else {
-                      Enroll phone
+                      {{ 'SETTINGS_SECURITY.ENROLL_PHONE' | translate }}
                   }
                 </button>
                 <button
                   type="button"
                   (click)="cancelPhoneVerification()"
                   class="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                  Cancel
+                  {{ 'COMMON.CANCEL' | translate }}
                 </button>
               </div>
             </div>
@@ -1030,14 +1026,14 @@
             class="border-t border-gray-200/60 px-5 pb-6 pt-4 dark:border-gray-700/60">
             <p
               class="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">
-              Enter the 6-digit code sent to
+              {{ 'SETTINGS_SECURITY.SMS_ENTER_CODE_FOR' | translate }}
               <span
                 class="font-mono font-semibold text-gray-900 dark:text-gray-100">
                 {{ phoneNumber.value }}
               </span>
             </p>
             <p class="mb-5 text-xs text-gray-500 dark:text-gray-400">
-              Enter the 6-digit code sent to your phone to finish SMS MFA enrollment.
+              {{ 'SETTINGS_SECURITY.SMS_ENTER_CODE_DESC' | translate }}
             </p>
 
             <div class="mb-5">
@@ -1052,7 +1048,7 @@
                 <mat-progress-spinner
                   mode="indeterminate"
                   [diameter]="16"></mat-progress-spinner>
-                <span>Verifying…</span>
+                <span>{{ 'SETTINGS_SECURITY.VERIFYING' | translate }}</span>
               </div>
             }
 
@@ -1069,7 +1065,7 @@
                 (click)="sendPhoneCode()"
                 [disabled]="loading.phone || loading.code"
                 class="text-xs font-medium text-green-700 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-green-400">
-                Resend code
+                {{ 'SETTINGS_SECURITY.RESEND_CODE' | translate }}
               </button>
               <span class="select-none text-gray-300 dark:text-gray-600">
                 |
@@ -1078,7 +1074,7 @@
                 type="button"
                 (click)="cancelPhoneVerification()"
                 class="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                Cancel
+                {{ 'COMMON.CANCEL' | translate }}
               </button>
             </div>
           </div>
@@ -1091,24 +1087,24 @@
     <!-- Active sessions -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Active Sessions
+      {{ 'SETTINGS_SECURITY.ACTIVE_SESSIONS' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Current sign-ins from login metrics. Revoke any session to force sign-out on that device.
+        {{ 'SETTINGS_SECURITY.ACTIVE_SESSIONS_DESC' | translate }}
       </h3>
 
       @if (sessionsLoading()) {
         <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
-          <span>Loading sessions…</span>
+          <span>{{ 'SETTINGS_SECURITY.LOADING_SESSIONS' | translate }}</span>
         </div>
       } @else {
         @if (activeSessions().length === 0) {
           <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            No recorded sessions found.
+            {{ 'SETTINGS_SECURITY.NO_SESSIONS' | translate }}
           </p>
         } @else {
           <div class="mt-3 flex flex-col gap-3">
@@ -1121,16 +1117,16 @@
                     </p>
                     @if (isCurrentSession(session)) {
                       <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-                        Current session
+                        {{ 'SETTINGS_SECURITY.CURRENT_SESSION' | translate }}
                       </span>
                     }
                     @if (canRevokeSession(session)) {
                       <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                        Active
+                        {{ 'SETTINGS_SECURITY.ACTIVE' | translate }}
                       </span>
                     } @else {
                       <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                        Ended
+                        {{ 'SETTINGS_SECURITY.ENDED' | translate }}
                       </span>
                     }
                     <span
@@ -1140,16 +1136,16 @@
                     </span>
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ getDisplayOS(session) }} • {{ session.location || 'Unknown location' }}
+                    {{ getDisplayOS(session) }} • {{ session.location || ('SETTINGS_SECURITY.UNKNOWN_LOCATION' | translate) }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Last sign-in: {{ formatSessionTimestamp(session) }}
+                    {{ 'SETTINGS_SECURITY.LAST_SIGN_IN' | translate }}: {{ formatSessionTimestamp(session) }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Network: {{ getSessionNetworkSummary(session) }}
+                    {{ 'SETTINGS_SECURITY.NETWORK' | translate }}: {{ getSessionNetworkSummary(session) }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Proxy: {{ getSessionProxySummary(session) }}
+                    {{ 'SETTINGS_SECURITY.PROXY' | translate }}: {{ getSessionProxySummary(session) }}
                   </p>
                   <p
                     [ngClass]="getSessionRiskLevel(session) === 'high' ? 'text-red-600 dark:text-red-300' : 'text-gray-500 dark:text-gray-400'"
@@ -1167,7 +1163,7 @@
                   @if (revokingSessionId() === session.sessionId) {
                     <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
                   } @else {
-                    Revoke
+                    {{ 'SETTINGS_SECURITY.REVOKE' | translate }}
                   }
                 </button>
               </div>
@@ -1186,24 +1182,24 @@
     <!-- Trusted devices -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Trusted Devices
+      {{ 'SETTINGS_SECURITY.TRUSTED_DEVICES' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Devices that are trusted without requiring verification. Trust expires after 90 days.
+        {{ 'SETTINGS_SECURITY.TRUSTED_DEVICES_DESC' | translate }}
       </h3>
 
       @if (trustedDevicesLoading()) {
         <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
-          <span>Loading trusted devices…</span>
+          <span>{{ 'SETTINGS_SECURITY.LOADING_TRUSTED' | translate }}</span>
         </div>
       } @else {
         @if (trustedDevices().length === 0) {
           <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            No trusted devices found.
+            {{ 'SETTINGS_SECURITY.NO_TRUSTED_DEVICES' | translate }}
           </p>
         } @else {
           <div class="mt-3 flex flex-col gap-3">
@@ -1221,9 +1217,9 @@
                     • {{ getDeviceLocation(device) }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Trusted: {{ formatTrustedDate(device.trustedAt) }}
+                    {{ 'SETTINGS_SECURITY.TRUSTED_ON' | translate }}: {{ formatTrustedDate(device.trustedAt) }}
                     @if (device.lastUsedAt) {
-                      • Last used: {{ formatTrustedDate(device.lastUsedAt) }}
+                      • {{ 'SETTINGS_SECURITY.LAST_USED' | translate }}: {{ formatTrustedDate(device.lastUsedAt) }}
                     }
                   </p>
                 </div>
@@ -1237,7 +1233,7 @@
                   @if (revokingDeviceId() === device.deviceId) {
                     <mat-progress-spinner mode="indeterminate" [diameter]="14"></mat-progress-spinner>
                   } @else {
-                    Revoke
+                    {{ 'SETTINGS_SECURITY.REVOKE' | translate }}
                   }
                 </button>
               </div>
@@ -1250,7 +1246,7 @@
               appRipple
               (click)="revokeAllTrustedDevices()"
               class="mt-2 inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-              Revoke all trusted devices
+              {{ 'SETTINGS_SECURITY.REVOKE_ALL_TRUSTED' | translate }}
             </button>
           }
         }
@@ -1266,19 +1262,19 @@
     <!-- Passkeys / WebAuthn -->
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Passkeys (Fingerprint & Face ID)
+      {{ 'SETTINGS_SECURITY.PASSKEYS_TITLE' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Use your device&rsquo;s fingerprint, Face ID, or platform authenticator as a passwordless sign-in method.
+        {{ 'SETTINGS_SECURITY.PASSKEYS_DESC' | translate }}
       </h3>
 
       @if (passkeysLoading()) {
         <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
-          <span>Loading passkeys&hellip;</span>
+          <span>{{ 'SETTINGS_SECURITY.LOADING_PASSKEYS' | translate }}</span>
         </div>
       } @else {
         <div class="mt-3 flex flex-col gap-3">
@@ -1287,12 +1283,12 @@
               <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/40">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {{ key.deviceName || 'Passkey' }}
+                    {{ key.deviceName || ('SETTINGS_SECURITY.PASSKEY' | translate) }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Created: {{ formatTrustedDate(key.createdAt) }}
+                    {{ 'SETTINGS_SECURITY.CREATED' | translate }}: {{ formatTrustedDate(key.createdAt) }}
                     @if (key.lastUsedAt) {
-                      &bull; Last used: {{ formatTrustedDate(key.lastUsedAt) }}
+                      &bull; {{ 'SETTINGS_SECURITY.LAST_USED' | translate }}: {{ formatTrustedDate(key.lastUsedAt) }}
                     }
                   </p>
                 </div>
@@ -1302,7 +1298,7 @@
                   appRipple
                   (click)="removePasskey(key.id)"
                   class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                  Remove
+                  {{ 'COMMON.REMOVE' | translate }}
                 </button>
               </div>
             }
@@ -1316,7 +1312,7 @@
           [disabled]="isRegisteringPasskey()"
           class="mt-2 inline-flex items-center justify-center rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60">
           @if (!isRegisteringPasskey()) {
-            Register New Passkey
+            {{ 'SETTINGS_SECURITY.REGISTER_NEW_PASSKEY' | translate }}
           } @else {
             <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
           }
@@ -1332,44 +1328,44 @@
 
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Session Activity Visualization
+      {{ 'SETTINGS_SECURITY.SESSION_ACTIVITY_VIZ' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Hourly activity pattern for your current session, including active time and request volume.
+        {{ 'SETTINGS_SECURITY.SESSION_ACTIVITY_VIZ_DESC' | translate }}
       </h3>
 
       @if (getSessionForVisualization(); as activitySession) {
         <app-session-activity [session]="activitySession"></app-session-activity>
       } @else {
         <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-          Session activity will appear after a login session is available.
+          {{ 'SETTINGS_SECURITY.SESSION_ACTIVITY_EMPTY' | translate }}
         </p>
       }
     </div>
 
     <h2
       class="mt-5 font-body text-lg font-bold text-gray-900 dark:text-gray-100">
-      Recent Security Activity
+      {{ 'SETTINGS_SECURITY.RECENT_SECURITY_ACTIVITY' | translate }}
     </h2>
 
     <div
       class="flex w-full max-w-3xl flex-col gap-2 space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray-600 dark:text-gray-300">
-        Chronological login and logout events from your account activity stream.
+        {{ 'SETTINGS_SECURITY.RECENT_SECURITY_ACTIVITY_DESC' | translate }}
       </h3>
 
       @if (activityLoading()) {
         <div class="mt-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <mat-progress-spinner mode="indeterminate" [diameter]="16"></mat-progress-spinner>
-          <span>Loading activity…</span>
+          <span>{{ 'SETTINGS_SECURITY.LOADING_ACTIVITY' | translate }}</span>
         </div>
       } @else {
         @if (activityTimeline().length === 0) {
           <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            No recent security activity found.
+            {{ 'SETTINGS_SECURITY.NO_RECENT_ACTIVITY' | translate }}
           </p>
         } @else {
           <div class="mt-3 flex flex-col gap-3">
@@ -1385,7 +1381,7 @@
                     </span>
                     @if (isCurrentActivityEvent(event)) {
                       <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-200">
-                        Current session
+                        {{ 'SETTINGS_SECURITY.CURRENT_SESSION' | translate }}
                       </span>
                     }
                   </div>
@@ -1423,30 +1419,27 @@
 <h2
   id="🚨dangerzone"
   class="mt-10 font-bold typo-body text-gray-900 dark:text-gray-100">
-  🚨 Danger zone
+  🚨 {{ 'SETTINGS_SECURITY.DANGER_ZONE' | translate }}
 </h2>
 <section
   class="relative mt-6 flex flex-col overflow-hidden rounded-2xl bg-red-500/10 px-6 py-4 shadow-md dark:bg-red-500/15">
   <div
     class="bg-[#d52c2013] dark:bg-[#d52c2013] absolute inset-0 -z-1 w-full h-full opacity-24"></div>
   <div class="text-gray-700 dark:text-gray-300">
-    Deleting your account will:
+    {{ 'SETTINGS_SECURITY.DANGER_INTRO' | translate }}
     <br />
     <br />
     <ol>
       <li>
-        1. Permanently delete your profile, along with your authentication
-        associations.
+        1. {{ 'SETTINGS_SECURITY.DANGER_LI_1' | translate }}
       </li>
       <li>
-        2. Permanently delete all your content, including your tasks, task
-        completions, analytics graphs, scrape data, storage, machines etc.
+        2. {{ 'SETTINGS_SECURITY.DANGER_LI_2' | translate }}
       </li>
-      <li>3. Allow your username to become available to anyone.</li>
+      <li>3. {{ 'SETTINGS_SECURITY.DANGER_LI_3' | translate }}</li>
     </ol>
     <br />
-    Important: deleting your account is unrecoverable and cannot be undone. Feel
-    free to contact
+    {{ 'SETTINGS_SECURITY.DANGER_IMPORTANT' | translate }}
     <a
       class="text-text-link"
       href="mailto:support@deepscrape.dev?subject=I have a question about deleting my account"
@@ -1454,15 +1447,15 @@
       rel="noopener noreferrer">
       support&#64;deepscrape.dev
     </a>
-    with any questions.
+    {{ 'SETTINGS_SECURITY.DANGER_CONTACT_SUFFIX' | translate }}
   </div>
   <button
     type="button"
-    title="Delete Account"
+    [title]="('SETTINGS_SECURITY.DELETE_ACCOUNT' | translate)"
     appRipple
     rippleColor="light"
     (click)="('')"
     class="z-10 mt-6 inline-flex h-9 select-none items-center justify-center self-start rounded-full bg-red-600 px-4 font-sans font-semibold text-white shadow-sm transition duration-200 ease-in-out hover:bg-red-700 dark:bg-red-500 dark:text-white">
-    Delete account
+    {{ 'SETTINGS_SECURITY.DELETE_ACCOUNT' | translate }}
   </button>
 </section>

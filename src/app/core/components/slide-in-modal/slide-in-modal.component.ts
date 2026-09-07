@@ -2,6 +2,7 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, input, Input, model, output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { TranslateModule } from '@ngx-translate/core';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { slideInModalAnimation } from 'src/app/animations';
 import { SCREEN_SIZE } from '../../enum';
@@ -10,7 +11,7 @@ import { delay, map, of, Subject, take, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-slideinmodal',
-  imports: [MatProgressBarModule],
+  imports: [MatProgressBarModule, TranslateModule],
   templateUrl: './slide-in-modal.component.html',
   styleUrl: './slide-in-modal.component.scss',
   animations: [slideInModalAnimation],
@@ -47,7 +48,7 @@ export class SlideInModalComponent {
   @Input() isOpen: FormControl<boolean>
 
 
-  @Input() title: string = 'Add Menu item'
+  @Input() title: string = 'SLIDE_MODAL.ADD_MENU_ITEM'
   @Input() position?: string = 'right'
 
   @Input() loading?: boolean = false

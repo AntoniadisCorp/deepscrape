@@ -26,7 +26,7 @@ describe('TransactionsComponent', () => {
   it('should render placeholder copy', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Transactions');
+    expect(text).toContain('BILLING_TRANSACTIONS.TITLE');
   });
 
   it('should compile as standalone component', () => {

@@ -3,11 +3,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { generateRandomString } from '../../functions';
 
 @Component({
     selector: 'app-stinput',
-    imports: [CommonModule, CommonModule, ReactiveFormsModule /* , ForbiddenValidatorDirective */, MatIcon],
+    imports: [CommonModule, CommonModule, ReactiveFormsModule /* , ForbiddenValidatorDirective */, MatIcon, TranslateModule],
     templateUrl: './stinput.component.html',
     styleUrl: './stinput.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush

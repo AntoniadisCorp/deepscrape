@@ -22,6 +22,7 @@ import {
   writeBatch,
 } from '@angular/fire/firestore'
 import { CacheService, FirestoreService } from 'src/app/core/services'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 type StartedAtCursor = {
   kind: 'timestamp' | 'number' | 'string'
@@ -54,7 +55,7 @@ interface MigrationRunItem {
 
 @Component({
   selector: 'app-admin-migration-runs',
-  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent, RippleDirective],
+  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent, RippleDirective, TranslateModule],
   templateUrl: './admin-migration-runs.component.html',
   styleUrl: './admin-migration-runs.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -62,6 +63,7 @@ interface MigrationRunItem {
 export class AdminMigrationRunsComponent implements OnInit {
   private readonly firestoreService = inject(FirestoreService)
   private readonly cacheService = inject(CacheService)
+  private readonly translate = inject(TranslateService)
   private readonly db: Firestore = this.firestoreService.getInstanceDB('easyscrape')
   private readonly pageSize = 10
   private readonly pageCursorCacheNamespace = 'admin-migration-runs:lastDocByPage'
@@ -93,18 +95,18 @@ export class AdminMigrationRunsComponent implements OnInit {
   requestDeleteRun(runId: string): void {
     this.pendingRunId = runId
     this.pendingDeleteAll = false
-    this.confirmModalTitle = 'Delete migration run'
-    this.confirmModalMessage = `Delete migration run history ${runId}? This action cannot be undone.`
-    this.confirmModalActionLabel = 'Delete Run'
+    this.confirmModalTitle = this.translate.instant('ADMIN_MIGRATION_RUNS.CONFIRM_DELETE_RUN_TITLE')
+    this.confirmModalMessage = this.translate.instant('ADMIN_MIGRATION_RUNS.CONFIRM_DELETE_RUN_MSG', { runId })
+    this.confirmModalActionLabel = this.translate.instant('ADMIN_MIGRATION_RUNS.DELETE_RUN')
     this.confirmModalOpen.setValue(true)
   }
 
   requestDeleteAllRunHistory(): void {
     this.pendingRunId = null
     this.pendingDeleteAll = true
-    this.confirmModalTitle = 'Delete all migration runs'
-    this.confirmModalMessage = 'Delete all migration runs history? This action cannot be undone.'
-    this.confirmModalActionLabel = 'Delete All History'
+    this.confirmModalTitle = this.translate.instant('ADMIN_MIGRATION_RUNS.CONFIRM_DELETE_ALL_TITLE')
+    this.confirmModalMessage = this.translate.instant('ADMIN_MIGRATION_RUNS.CONFIRM_DELETE_ALL_MSG')
+    this.confirmModalActionLabel = this.translate.instant('ADMIN_MIGRATION_RUNS.DELETE_ALL_HISTORY')
     this.confirmModalOpen.setValue(true)
   }
 
@@ -145,7 +147,7 @@ export class AdminMigrationRunsComponent implements OnInit {
       this.resetPaginationCache()
       await this.loadRuns(this.currentPage, true)
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to delete migration run.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_RUNS.ERR_DELETE_RUN')
     }
   }
 
@@ -189,7 +191,7 @@ export class AdminMigrationRunsComponent implements OnInit {
       this.currentPage = 1
       this.resetPaginationCache()
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to clear migration runs history.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_RUNS.ERR_CLEAR_HISTORY')
     } finally {
       this.deletingAll = false
     }
@@ -242,9 +244,22 @@ export class AdminMigrationRunsComponent implements OnInit {
 
   formatStatus(status: string): string {
     if (!status) {
-      return 'unknown'
+      return 'ADMIN_MIGRATION_RUNS.STATUS_UNKNOWN'
     }
-    return status.replace(/-/g, ' ')
+    switch (status) {
+      case 'completed':
+        return 'ADMIN_MIGRATION_RUNS.STATUS_COMPLETED'
+      case 'running':
+        return 'ADMIN_MIGRATION_RUNS.STATUS_RUNNING'
+      case 'failed':
+        return 'ADMIN_MIGRATION_RUNS.STATUS_FAILED'
+      case 'stopped':
+        return 'ADMIN_MIGRATION_RUNS.STATUS_STOPPED'
+      case 'fallback-completed':
+        return 'ADMIN_MIGRATION_RUNS.STATUS_FALLBACK_COMPLETED'
+      default:
+        return 'ADMIN_MIGRATION_RUNS.STATUS_UNKNOWN'
+    }
   }
 
   badgeClass(status: string): string {
@@ -303,7 +318,7 @@ export class AdminMigrationRunsComponent implements OnInit {
       const pageCursor = this.toRunsPageCursor(pageLastDoc)
       this.cacheService.set<number, RunsPageCursor | null>(this.pageCursorCacheNamespace, this.currentPage, pageCursor)
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to load migration runs.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_RUNS.ERR_LOAD_RUNS')
       this.runs = []
     } finally {
       this.loading = false

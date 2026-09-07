@@ -1,9 +1,9 @@
 <section class="space-y-6">
   <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
     <div>
-      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Migration Backups</h2>
+      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">{{ 'ADMIN_MIGRATION_BACKUPS.TITLE' | translate }}</h2>
       <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
-        Backup snapshots created before migration writes, grouped by migration run.
+        {{ 'ADMIN_MIGRATION_BACKUPS.SUB' | translate }}
       </p>
     </div>
 
@@ -13,7 +13,7 @@
         appRipple
         rippleColor="dark"
         class="btn btn-sm btn-gray btn-ring inline-flex items-center justify-center">
-        Back to Migration Tool
+        {{ 'ADMIN_MIGRATION_BACKUPS.BACK_MIGRATION_TOOL' | translate }}
       </a>
       <button
         type="button"
@@ -21,7 +21,7 @@
         appRipple
         rippleColor="light"
         class="btn btn-sm btn-gray btn-ring">
-        Refresh
+        {{ 'COMMON.REFRESH' | translate }}
       </button>
       <button
         type="button"
@@ -30,7 +30,7 @@
         appRipple
         rippleColor="light"
         class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
-        Delete All Backup History
+        {{ 'ADMIN_MIGRATION_BACKUPS.DELETE_ALL_BACKUP_HISTORY' | translate }}
       </button>
     </div>
   </header>
@@ -44,37 +44,37 @@
   @if (!loading && totalItems > 0) {
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
       <div class="admin-glass-card rounded-xl border border-gray-300/45 dark:border-gray5/40 bg-gray-50/70 dark:bg-gray6/45 p-4">
-        <p class="text-xs text-gray6/80 dark:text-gray-300/80">Page Items</p>
+        <p class="text-xs text-gray6/80 dark:text-gray-300/80">{{ 'ADMIN_MIGRATION_BACKUPS.STAT_PAGE_ITEMS' | translate }}</p>
         <p class="text-xl font-semibold text-gray6 dark:text-gray-200">{{ backups.length }}</p>
-        <p class="text-xs text-gray6/70 dark:text-gray-300/70">Runs with backups: {{ pageRunsWithBackups }}</p>
+        <p class="text-xs text-gray6/70 dark:text-gray-300/70">{{ 'ADMIN_MIGRATION_BACKUPS.RUNS_WITH_BACKUPS' | translate }}: {{ pageRunsWithBackups }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-emerald-300/40 dark:border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
-        <p class="text-xs text-emerald-700/80 dark:text-emerald-300/80">Backup Docs (Page)</p>
+        <p class="text-xs text-emerald-700/80 dark:text-emerald-300/80">{{ 'ADMIN_MIGRATION_BACKUPS.BACKUP_DOCS_PAGE' | translate }}</p>
         <p class="text-xl font-semibold text-emerald-800 dark:text-emerald-200">{{ pageBackupDocuments | number }}</p>
-        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">Completed runs: {{ pageCompletedRuns }}</p>
+        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">{{ 'ADMIN_MIGRATION_BACKUPS.COMPLETED_RUNS' | translate }}: {{ pageCompletedRuns }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-teal-300/45 dark:border-teal-500/35 bg-teal-50/65 dark:bg-teal-900/16 p-4">
-        <p class="text-xs text-teal-700/80 dark:text-teal-300/80">Current Page</p>
+        <p class="text-xs text-teal-700/80 dark:text-teal-300/80">{{ 'ADMIN_MIGRATION_BACKUPS.CURRENT_PAGE' | translate }}</p>
         <p class="text-xl font-semibold text-teal-800 dark:text-teal-200">{{ currentPage }} / {{ totalPages }}</p>
-        <p class="text-xs text-teal-700/70 dark:text-teal-300/70">10 per page</p>
+        <p class="text-xs text-teal-700/70 dark:text-teal-300/70">{{ 'ADMIN_MIGRATION_BACKUPS.PER_PAGE' | translate }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-amber-300/40 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-900/10 p-4">
-        <p class="text-xs text-amber-700/80 dark:text-amber-300/80">All Pages Total Runs</p>
+        <p class="text-xs text-amber-700/80 dark:text-amber-300/80">{{ 'ADMIN_MIGRATION_BACKUPS.ALL_PAGES_TOTAL' | translate }}</p>
         <p class="text-xl font-semibold text-amber-800 dark:text-amber-200">{{ totalItems | number }}</p>
-        <p class="text-xs text-amber-700/70 dark:text-amber-300/70">{{ totalPages }} total pages</p>
+        <p class="text-xs text-amber-700/70 dark:text-amber-300/70">{{ totalPages }} {{ 'ADMIN_MIGRATION_BACKUPS.TOTAL_PAGES' | translate }}</p>
       </div>
     </div>
   }
 
   @if (loading) {
     <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
-      Loading backup history...
+      {{ 'ADMIN_MIGRATION_BACKUPS.LOADING' | translate }}
     </div>
   }
 
   @if (!loading && backups.length === 0) {
     <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
-      No backup history found.
+      {{ 'ADMIN_MIGRATION_BACKUPS.EMPTY' | translate }}
     </div>
   }
 
@@ -87,25 +87,25 @@
             <div>
               <p class="font-mono text-xs text-gray5/70 dark:text-gray-400 break-all">{{ backup.runId }}</p>
               <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
-                Started {{ backup.startedAt ? (backup.startedAt | date: 'medium') : '-' }}
+                {{ 'ADMIN_MIGRATION_BACKUPS.STARTED_LBL' | translate }} {{ backup.startedAt ? (backup.startedAt | date: 'medium') : '-' }}
               </p>
             </div>
             <span class="text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-1" [ngClass]="badgeClass(backup.status)">
-              {{ backup.status }}
+              {{ statusLabel(backup.status) | translate }}
             </span>
           </div>
           <div class="grid grid-cols-2 gap-3 text-sm">
             <div class="rounded-lg border border-gray-300/70 dark:border-gray5/65 bg-white/70 dark:bg-gray7/55 p-3">
-              <p class="text-gray5/60 dark:text-gray-400">Backup Docs</p>
+              <p class="text-gray5/60 dark:text-gray-400">{{ 'ADMIN_MIGRATION_BACKUPS.BACKUP_DOCS' | translate }}</p>
               <p class="font-semibold">{{ backup.backupCount | number }}</p>
             </div>
             <div class="rounded-lg border border-gray-300/70 dark:border-gray5/65 bg-white/70 dark:bg-gray7/55 p-3">
-              <p class="text-gray5/60 dark:text-gray-400">Completed</p>
+              <p class="text-gray5/60 dark:text-gray-400">{{ 'ADMIN_MIGRATION_BACKUPS.COMPLETED_LBL' | translate }}</p>
               <p class="font-semibold">{{ backup.completedAt ? (backup.completedAt | date: 'short') : '-' }}</p>
             </div>
           </div>
           <p class="text-xs text-gray5/70 dark:text-gray-300">
-            Last backed up at: {{ backup.lastBackedUpAt ? (backup.lastBackedUpAt | date: 'medium') : '-' }}
+            {{ 'ADMIN_MIGRATION_BACKUPS.LAST_BACKED_UP' | translate }}: {{ backup.lastBackedUpAt ? (backup.lastBackedUpAt | date: 'medium') : '-' }}
           </p>
           <div class="flex justify-end">
             <button
@@ -115,7 +115,7 @@
               appRipple
               rippleColor="light"
               class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
-              {{ deletingBackupRunIds.has(backup.runId) ? 'Deleting Backups...' : 'Delete Backup Docs' }}
+              {{ deletingBackupRunIds.has(backup.runId) ? ('ADMIN_MIGRATION_BACKUPS.DELETING_BACKUPS' | translate) : ('ADMIN_MIGRATION_BACKUPS.DELETE_BACKUP_DOCS' | translate) }}
             </button>
             <button
               type="button"
@@ -124,7 +124,7 @@
               appRipple
               rippleColor="dark"
               class="btn btn-sm btn-gray btn-ring disabled:opacity-50 disabled:cursor-not-allowed ml-2">
-              {{ deletingRunIds.has(backup.runId) ? 'Deleting Run...' : 'Delete Run' }}
+              {{ deletingRunIds.has(backup.runId) ? ('ADMIN_MIGRATION_BACKUPS.DELETING_RUN' | translate) : ('ADMIN_MIGRATION_BACKUPS.DELETE_RUN' | translate) }}
             </button>
           </div>
         </article>
@@ -136,7 +136,7 @@
     <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-gray5/70 dark:text-gray-300">
-          Showing {{ backups.length }} of {{ totalItems }} runs · Page {{ currentPage }} / {{ totalPages }}
+          {{ 'ADMIN_MIGRATION_BACKUPS.SHOWING' | translate }} {{ backups.length }} {{ 'ADMIN_MIGRATION_BACKUPS.OF_LBL' | translate }} {{ totalItems }} {{ 'ADMIN_MIGRATION_BACKUPS.RUNS_WORD' | translate }} · {{ 'ADMIN_MIGRATION_BACKUPS.PAGE_LBL' | translate }} {{ currentPage }} / {{ totalPages }}
         </p>
         @if (totalPages > 1) {
           <div class="admin-pagination flex items-center gap-1.5">
@@ -147,7 +147,7 @@
               appRipple
               rippleColor="dark"
               class="admin-page-nav">
-              Previous
+              {{ 'COMMON.PREVIOUS' | translate }}
             </button>
             <div class="flex items-center justify-center gap-1">
               @if (totalPages > 7) {
@@ -206,7 +206,7 @@
               appRipple
               rippleColor="dark"
               class="admin-page-nav">
-              Next
+              {{ 'COMMON.NEXT' | translate }}
             </button>
           </div>
         }
@@ -233,7 +233,7 @@
         appRipple
         rippleColor="dark"
         class="btn btn-sm btn-gray btn-ring disabled:opacity-50 disabled:cursor-not-allowed">
-        Cancel
+        {{ 'COMMON.CANCEL' | translate }}
       </button>
       <button
         type="button"

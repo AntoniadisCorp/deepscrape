@@ -3,11 +3,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { TranslateModule } from '@ngx-translate/core';
 import { RippleDirective } from '../../directives';
 
 @Component({
   selector: 'app-promptarea',
-  imports: [ReactiveFormsModule, NgClass, MatIcon, MatProgressSpinner, RippleDirective],
+  imports: [ReactiveFormsModule, NgClass, MatIcon, MatProgressSpinner, RippleDirective, TranslateModule],
   templateUrl: './promptarea.component.html',
   styleUrl: './promptarea.component.scss'
 })

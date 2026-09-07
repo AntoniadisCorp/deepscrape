@@ -7,7 +7,7 @@
         <p class="text-xs font-bold uppercase tracking-[0.18em] text-gray5 dark:text-gray3">Analytics</p>
         <h1 class="mt-2 text-2xl font-extrabold tracking-tight text-gray6 dark:text-white sm:text-3xl">Admin Analytics</h1>
         <p class="mt-1 flex items-center gap-2 text-sm text-gray5/80 dark:text-gray3">
-          Real-time insights and metrics by selected period
+          {{ 'ADMIN_ANALYTICS.SUB' | translate }}
           @if (realtimeIndicator) {
             <span class="relative flex h-2.5 w-2.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -22,21 +22,21 @@
           <app-dropdown
             [control]="periodControl"
             [options]="periodDropdownOptions"
-            [dropDownName]="'Range'"
+            [dropDownName]="'ADMIN_ANALYTICS.RANGE_LBL' | translate"
           (select)="onPeriodSelected($event)"></app-dropdown>
         </div>
 
         @if (selectedPeriod === 'custom') {
           <div class="flex gap-2">
             <div>
-              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Start</label>
+              <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">{{ 'ADMIN_ANALYTICS.START' | translate }}</label>
               <input
                 type="date"
                 [(ngModel)]="customStartDate"
                 class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100" />
               </div>
               <div>
-                <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">End</label>
+                <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">{{ 'ADMIN_ANALYTICS.END' | translate }}</label>
                 <input
                   type="date"
                   [(ngModel)]="customEndDate"
@@ -48,7 +48,7 @@
                   appRipple
                   rippleColor="dark"
                   class="btn btn-sm btn-blue btn-ring btn-ring-blue self-end disabled:opacity-50 disabled:cursor-not-allowed">
-                  Apply
+                  {{ 'ADMIN_ANALYTICS.APPLY' | translate }}
                 </button>
               </div>
             }
@@ -70,9 +70,9 @@
         <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-lg text-amber-700 dark:text-amber-300 mb-6">
           <lucide-angular [img]="icons['zap']" class="w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400" aria-label="Warning"></lucide-angular>
           <div class="text-sm">
-            <strong>Pre-computed data not available</strong> for this period. Showing live-computed data from daily metrics.
-            <a routerLink="/admin/migration" class="underline font-medium hover:text-amber-800 dark:hover:text-amber-200 ml-1">Run a migration</a>
-            to pre-compute range metrics for faster loading.
+            <strong>{{ 'ADMIN_ANALYTICS.BANNER_STRONG' | translate }}</strong> {{ 'ADMIN_ANALYTICS.BANNER_BODY' | translate }}
+            <a routerLink="/admin/migration" class="underline font-medium hover:text-amber-800 dark:hover:text-amber-200 ml-1">{{ 'ADMIN_ANALYTICS.BANNER_LINK' | translate }}</a>
+            {{ 'ADMIN_ANALYTICS.BANNER_TAIL' | translate }}
           </div>
         </div>
       }
@@ -84,7 +84,7 @@
           <div
           class="admin-loader w-12 h-12 border-4 border-slate-200 dark:border-slate-600 border-t-emerald-600 dark:border-t-emerald-400 rounded-full animate-spin"></div>
           <p class="text-base text-slate-600 dark:text-slate-300">
-            Loading analytics data...
+            {{ 'ADMIN_ANALYTICS.LOADING' | translate }}
           </p>
         </div>
       }
@@ -105,10 +105,10 @@
           <section class="space-y-6">
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-                Analytics Overview
+                {{ 'ADMIN_ANALYTICS.OVERVIEW_TITLE' | translate }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Key performance indicators and real-time metrics
+                {{ 'ADMIN_ANALYTICS.OVERVIEW_SUB' | translate }}
               </p>
             </div>
             <!-- KPI Grid (4 Cards) -->
@@ -129,7 +129,7 @@
                     {{ guestCount + userCount | number }}
                   </p>
                   <span class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ selectedPeriodLabel }} unique visitors
+                    {{ selectedPeriodLabel | translate }} unique visitors
                   </span>
                 </div>
               </div>        <!-- Active Users -->
@@ -148,7 +148,7 @@
                     {{ activeUsersNow | number }}
                   </p>
                   <span class="text-xs text-slate-500 dark:text-slate-400">
-                    Registered & authenticated
+                    {{ 'ADMIN_ANALYTICS.AUTH_SUB' | translate }}
                   </span>
                 </div>
               </div>        <!-- Guest Visitors -->
@@ -167,7 +167,7 @@
                     {{ guestCount | number }}
                   </p>
                   <span class="text-xs text-slate-500 dark:text-slate-400">
-                    Anonymous sessions
+                    {{ 'ADMIN_ANALYTICS.ANON_SUB' | translate }}
                   </span>
                 </div>
               </div>        <!-- Total Logins -->
@@ -186,7 +186,7 @@
                     {{ totalLogins | number }}
                   </p>
                   <span class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ selectedPeriodLabel }}
+                    {{ selectedPeriodLabel | translate }}
                   </span>
                 </div>
               </div>
@@ -196,10 +196,10 @@
           <section class="space-y-6">
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-                Conversion & Engagement
+                {{ 'ADMIN_ANALYTICS.CONV_ENG_TITLE' | translate }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Funnel performance and user behavior metrics
+                {{ 'ADMIN_ANALYTICS.CONV_ENG_SUB' | translate }}
               </p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
@@ -208,7 +208,7 @@
                 class="col-span-full bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    Conversion Funnel
+                    {{ 'ADMIN_ANALYTICS.FUNNEL_TITLE' | translate }}
                   </h3>
                   <lucide-angular [img]="icons['gauge']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Conversion Funnel"></lucide-angular>
                 </div>
@@ -259,7 +259,7 @@
                 class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    Engagement
+                    {{ 'ADMIN_ANALYTICS.ENGAGEMENT_TITLE' | translate }}
                   </h3>
                   <lucide-angular [img]="icons['zap']" class="w-5 h-5 text-slate-500 dark:text-slate-400" aria-label="Engagement"></lucide-angular>
                 </div>
@@ -314,7 +314,7 @@
                 class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    Quick Stats
+                    {{ 'ADMIN_ANALYTICS.QUICK_STATS_TITLE' | translate }}
                   </h3>
                   <lucide-angular [img]="icons['gauge']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none" aria-label="Quick Stats"></lucide-angular>
                 </div>
@@ -392,17 +392,17 @@
           <section class="space-y-6">
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-                Admin Session Risk Inspector
+                {{ 'ADMIN_ANALYTICS.RISK_TITLE' | translate }}
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Review a user's live sessions with the same proxy/network threat model used in user security settings.
+                {{ 'ADMIN_ANALYTICS.RISK_SUB' | translate }}
               </p>
             </div>
 
             <div class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm space-y-4">
               <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
                 <div class="lg:col-span-2">
-                  <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Target User ID</label>
+                  <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">{{ 'ADMIN_ANALYTICS.TARGET_USER_ID' | translate }}</label>
                   <input
                     type="text"
                     [(ngModel)]="adminSessionTargetUserId"
@@ -410,7 +410,7 @@
                     class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-100" />
                 </div>
                 <div>
-                  <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Session Limit</label>
+                  <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">{{ 'ADMIN_ANALYTICS.SESSION_LIMIT' | translate }}</label>
                   <input
                     type="number"
                     [(ngModel)]="adminSessionLimit"
@@ -424,7 +424,7 @@
                       type="checkbox"
                       [(ngModel)]="adminActiveOnly"
                       class="rounded border-slate-300 dark:border-slate-600" />
-                    Active only
+                    {{ 'ADMIN_ANALYTICS.ACTIVE_ONLY' | translate }}
                   </label>
                 </div>
               </div>
@@ -437,10 +437,10 @@
                   appRipple
                   rippleColor="dark"
                   class="btn btn-sm btn-blue btn-ring btn-ring-blue disabled:opacity-50 disabled:cursor-not-allowed">
-                  {{ adminSessionsLoading ? 'Loading…' : 'Load Sessions' }}
+                  {{ adminSessionsLoading ? ('ADMIN_ANALYTICS.LOADING_ELLIPSIS' | translate) : ('ADMIN_ANALYTICS.LOAD_SESSIONS' | translate) }}
                 </button>
                 <span class="text-xs text-slate-500 dark:text-slate-400">
-                  {{ adminSessions.length }} sessions loaded
+                  {{ adminSessions.length }} {{ 'ADMIN_ANALYTICS.SESSIONS_LOADED' | translate }}
                 </span>
               </div>
 
@@ -460,16 +460,16 @@
                           {{ getAdminSessionRiskLabel(session) }}
                         </span>
                         @if (canRevokeAdminSession(session)) {
-                          <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Active</span>
+                          <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">{{ 'ADMIN_ANALYTICS.STATE_ACTIVE' | translate }}</span>
                         } @else {
-                          <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">Ended</span>
+                          <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ 'ADMIN_ANALYTICS.STATE_ENDED' | translate }}</span>
                         }
                       </div>
 
-                      <p class="text-xs text-slate-500 dark:text-slate-400">{{ session.location || 'Unknown location' }} • {{ session.ipAddress || 'Unknown IP' }}</p>
-                      <p class="text-xs text-slate-500 dark:text-slate-400">Last sign-in: {{ formatAdminSessionTimestamp(session) }}</p>
-                      <p class="text-xs text-slate-500 dark:text-slate-400">Network: {{ getAdminSessionNetworkSummary(session) }}</p>
-                      <p class="text-xs text-slate-500 dark:text-slate-400">Proxy: {{ getAdminSessionProxySummary(session) }}</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">{{ session.location || ('ADMIN_ANALYTICS.UNKNOWN_LOCATION' | translate) }} • {{ session.ipAddress || ('ADMIN_ANALYTICS.UNKNOWN_IP' | translate) }}</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">{{ 'ADMIN_ANALYTICS.LAST_SIGNIN' | translate }}: {{ formatAdminSessionTimestamp(session) }}</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">{{ 'ADMIN_ANALYTICS.NETWORK' | translate }}: {{ getAdminSessionNetworkSummary(session) }}</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">{{ 'ADMIN_ANALYTICS.PROXY' | translate }}: {{ getAdminSessionProxySummary(session) }}</p>
                       <p [ngClass]="getAdminSessionRiskLevel(session) === 'high' ? 'text-red-600 dark:text-red-300' : 'text-slate-500 dark:text-slate-400'" class="text-xs mt-1">
                         {{ getAdminSessionRiskReason(session) }}
                       </p>
@@ -482,7 +482,7 @@
                           appRipple
                           rippleColor="light"
                           class="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25">
-                          {{ revokingAdminSessionId === session.sessionId ? 'Revoking…' : 'Revoke Session' }}
+                          {{ revokingAdminSessionId === session.sessionId ? ('ADMIN_ANALYTICS.REVOKING' | translate) : ('ADMIN_ANALYTICS.REVOKE_SESSION' | translate) }}
                         </button>
                       </div>
                     </div>
@@ -498,10 +498,10 @@
             <div class="space-y-6">
               <div class="mb-6">
                 <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-                  Login Analytics
+                  {{ 'ADMIN_ANALYTICS.LOGIN_ANALYTICS_TITLE' | translate }}
                 </h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
-                  User behavior and authentication patterns
+                  {{ 'ADMIN_ANALYTICS.LOGIN_ANALYTICS_SUB' | translate }}
                 </p>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6">
@@ -511,7 +511,7 @@
                   <div class="flex items-center justify-between mb-4">
                     <h3
                       class="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                      Logins Over Time
+                      {{ 'ADMIN_ANALYTICS.CH_LOGINS_OVER_TIME' | translate }}
                     </h3>
                     <button
                       (click)="refreshData()"
@@ -536,7 +536,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    User Distribution
+                    {{ 'ADMIN_ANALYTICS.CH_USER_DIST' | translate }}
                     <lucide-angular [img]="icons['user-distribution']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="User Distribution"></lucide-angular>
                   </h3>
                   <div
@@ -552,7 +552,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-50 flex items-center justify-between">
-                    Login Methods
+                    {{ 'ADMIN_ANALYTICS.CH_LOGIN_METHODS' | translate }}
                     <lucide-angular [img]="icons['login-methods']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Login Methods"></lucide-angular>
                   </h3>
                   <div
@@ -568,7 +568,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col md:col-span-2 lg:col-span-2 xl:col-span-2">
                   <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-50 flex items-center justify-between">
-                    Daily Activity Comparison
+                    {{ 'ADMIN_ANALYTICS.CH_DAILY_ACTIVITY' | translate }}
                     <lucide-angular [img]="icons['daily-activity']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Daily Activity Comparison"></lucide-angular>
                   </h3>
                   <div
@@ -584,7 +584,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-50 flex items-center justify-between">
-                    Peak Activity Hours
+                    {{ 'ADMIN_ANALYTICS.CH_PEAK_HOURS' | translate }}
                     <lucide-angular [img]="icons['peak-hours']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Peak Activity Hours"></lucide-angular>
                   </h3>
                   <div
@@ -602,10 +602,10 @@
             <div class="space-y-6">
               <div class="mb-6">
                 <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-                  Guest Analytics
+                  {{ 'ADMIN_ANALYTICS.GUEST_ANALYTICS_TITLE' | translate }}
                 </h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
-                  Visitor insights and conversion tracking
+                  {{ 'ADMIN_ANALYTICS.GUEST_ANALYTICS_SUB' | translate }}
                 </p>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-6">
@@ -613,7 +613,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Guest Conversion
+                    {{ 'ADMIN_ANALYTICS.CH_GUEST_CONVERSION' | translate }}
                     <lucide-angular [img]="icons['guest-conversion']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Guest Conversion"></lucide-angular>
                   </h3>
                   <div
@@ -629,7 +629,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Guest Activity
+                    {{ 'ADMIN_ANALYTICS.CH_GUEST_ACTIVITY' | translate }}
                     <lucide-angular [img]="icons['guest-activity']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Guest Activity (7d)"></lucide-angular>
                   </h3>
                   <div
@@ -645,7 +645,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Browser Distribution
+                    {{ 'ADMIN_ANALYTICS.CH_BROWSER_DIST' | translate }}
                     <lucide-angular [img]="icons['browser-distribution']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Browser Distribution"></lucide-angular>
                   </h3>
                   <div
@@ -661,7 +661,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Device Types
+                    {{ 'ADMIN_ANALYTICS.CH_DEVICE_TYPES' | translate }}
                     <lucide-angular [img]="icons['device-types']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Device Types"></lucide-angular>
                   </h3>
                   <div
@@ -677,7 +677,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col md:col-span-2 lg:col-span-2 xl:col-span-2">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Top 10 Countries
+                    {{ 'ADMIN_ANALYTICS.CH_TOP_COUNTRIES' | translate }}
                     <lucide-angular [img]="icons['top-countries']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Top 10 Countries"></lucide-angular>
                   </h3>
                   <div
@@ -693,7 +693,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col xl:col-span-3">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Operating Systems
+                    {{ 'ADMIN_ANALYTICS.CH_OS' | translate }}
                     <lucide-angular [img]="icons['operating-systems']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Operating Systems"></lucide-angular>
                   </h3>
                   <div
@@ -709,7 +709,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col xl:col-span-3">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Timezone Distribution
+                    {{ 'ADMIN_ANALYTICS.CH_TIMEZONE_DIST' | translate }}
                     <lucide-angular [img]="icons['globe']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Timezone Distribution"></lucide-angular>
                   </h3>
                   <div
@@ -725,7 +725,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col xl:col-span-3">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Region Distribution
+                    {{ 'ADMIN_ANALYTICS.CH_REGION_DIST' | translate }}
                     <lucide-angular [img]="icons['globe']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Region Distribution"></lucide-angular>
                   </h3>
                   <div
@@ -741,7 +741,7 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col xl:col-span-3">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Language Distribution
+                    {{ 'ADMIN_ANALYTICS.CH_LANG_DIST' | translate }}
                     <lucide-angular [img]="icons['globe']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Language Distribution"></lucide-angular>
                   </h3>
                   <div
@@ -757,10 +757,10 @@
                 <div
                   class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col xl:col-span-3">
                   <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center justify-between">
-                    Top IP Addresses
+                    {{ 'ADMIN_ANALYTICS.CH_TOP_IPS' | translate }}
                     <lucide-angular [img]="icons['fingerprint']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Top IP Addresses"></lucide-angular>
                   </h3>
-                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Most frequent guest IP addresses (top 15)</p>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">{{ 'ADMIN_ANALYTICS.TOP_IPS_HELPER' | translate }}</p>
                   <div
                     class="chart-wrapper flex-1 min-h-[16rem] sm:min-h-[18rem] lg:min-h-[20rem] overflow-hidden rounded-lg p-2 bg-slate-50/30 dark:bg-gray7/80">
                     <canvas
@@ -770,6 +770,45 @@
                     [type]="topIPsChartType"></canvas>
                   </div>
                 </div>
+                <!-- Top 15 Network & Device Rank Panel -->
+                <div
+                  class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-200 md:col-span-2 lg:col-span-2 xl:col-span-3">
+                  <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-1 flex items-center justify-between">
+                    {{ 'ADMIN_ANALYTICS.PANEL_HEADER_TITLE' | translate }}
+                    <lucide-angular [img]="icons['fingerprint']" class="w-5 h-5 text-slate-500 dark:text-slate-400 fill-none flex-shrink-0" aria-label="Network and device ranks"></lucide-angular>
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">{{ 'ADMIN_ANALYTICS.PANEL_HEADER_HELPER' | translate }}</p>
+                  @if (trafficPanels.length === 0) {
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ 'ADMIN_ANALYTICS.NO_RANK_YET' | translate }}</p>
+                  } @else {
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      @for (panel of trafficPanels; track panel.title) {
+                        <div class="rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3 bg-slate-50/40 dark:bg-gray7/70">
+                          <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full" [style.background]="panel.accent"></span>
+                            {{ panel.title | translate }}
+                            <span class="ml-auto text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">top 15</span>
+                          </h4>
+                          <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                            @if (panel.rows.length === 0) {
+                              <p class="text-xs text-slate-400 dark:text-slate-500">{{ 'ADMIN_ANALYTICS.NO_PANEL_DATA' | translate }}</p>
+                            }
+                            @for (row of panel.rows; track row.label) {
+                              <div class="flex items-center gap-2 text-xs">
+                                <span class="w-1/2 truncate text-slate-700 dark:text-slate-300" [title]="row.label">{{ row.label }}</span>
+                                <span class="w-9 text-right tabular-nums text-slate-500 dark:text-slate-400">{{ row.count }}</span>
+                                <span class="w-11 text-right tabular-nums text-slate-400 dark:text-slate-500">{{ row.pct }}%</span>
+                                <div class="flex-1 h-1.5 rounded-full bg-slate-200/70 dark:bg-slate-700/60 overflow-hidden">
+                                  <div class="h-full rounded-full" [style.width.%]="row.pct" [style.background]="panel.accent"></div>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
               </div>
             </div>
           </section>
@@ -777,11 +816,11 @@
           <section class="space-y-6">
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2 flex items-center justify-between">
-                Recent Activity
+                {{ 'ADMIN_ANALYTICS.RECENT_TITLE' | translate }}
                 <lucide-angular [img]="icons['recent-activity']" class="w-6 h-6 text-slate-500 dark:text-slate-400 fill-none" aria-label="Recent Activity"></lucide-angular>
               </h2>
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Daily login trends and user activity
+                {{ 'ADMIN_ANALYTICS.RECENT_SUB' | translate }}
               </p>
             </div>
             <div
@@ -793,19 +832,19 @@
                     <tr>
                       <th
                         class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                        Date
+                        {{ 'ADMIN_ANALYTICS.TH_DATE' | translate }}
                       </th>
                       <th
                         class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                        Logins
+                        {{ 'ADMIN_ANALYTICS.TH_LOGINS' | translate }}
                       </th>
                       <th
                         class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                        New Users
+                        {{ 'ADMIN_ANALYTICS.TH_NEW_USERS' | translate }}
                       </th>
                       <th
                         class="text-left py-3 px-6 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                        Trend
+                        {{ 'ADMIN_ANALYTICS.TH_TREND' | translate }}
                       </th>
                     </tr>
                   </thead>

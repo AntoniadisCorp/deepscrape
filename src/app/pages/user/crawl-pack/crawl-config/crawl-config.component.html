@@ -7,7 +7,7 @@
     class="mx-auto w-full pt-6 order-2 px-4 sm:order-1 lg:order-2 xl:order-1">
     <h1
       class="text-3xl text-center font-bold mb-8 text-gray-800 dark:text-gray-200">
-      Crawl Pack Configuration
+      {{ 'CRAWL_PACK_CCONFIG.TITLE' | translate }}
     </h1>
 
     <div class="w-full text-center inline-flex items-center justify-center">
@@ -20,25 +20,24 @@
     <h3
       id="controlling-each-crawl"
       class="text-xl py-8 font-weight-light text-gray-800 dark:text-gray-200">
-      Controlling Each Crawl
+      {{ 'CRAWL_PACK_CCONFIG.CONTROLLING' | translate }}
     </h3>
 
     <!--  Parameters Hilights -->
     <p class="mb-8 font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-      While
+      {{ 'CRAWL_PACK_CCONFIG.INTRO_WHILE' | translate }}
       <span class="text-sky-500 bg-sky-700/10">BrowserConfig</span>
-      sets up the environment,
+      {{ 'CRAWL_PACK_CCONFIG.INTRO_ENV' | translate }}
       <span class="text-sky-500 bg-sky-700/10">CrawlerRunConfig</span>
-      details how each crawl operation should behave: caching, content
-      filtering, link or domain blocking, timeouts, JavaScript code, etc.
+      {{ 'CRAWL_PACK_CCONFIG.INTRO_BEHAVE' | translate }}
     </p>
 
     <!-- Recent Configs -->
     <h3
       class="flex flex-wrap justify-between mb-4 text-xl font-light text-gray-800 dark:text-gray-200">
-      <span>Recent Configs</span>
+      <span>{{ 'CRAWL_PACK_CCONFIG.RECENT_CONFIGS' | translate }}</span>
       <button
-        title="add new profile"
+        [title]="'CRAWL_PACK_CCONFIG.ADD_NEW_PROFILE' | translate"
         type="button"
         (click)="addCrawlConfig()"
         [ngClass]="
@@ -47,16 +46,17 @@
             : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
         "
         class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
-        <mat-icon
-          [ngClass]="
-            !newConfigOpened
-              ? 'text-gray-600 dark:text-gray-300/80'
-              : '-rotate-45'
-          "
-          class="text-3xl transition-transform !size-8 leading-8">
-          add
-        </mat-icon>
-      </button>
+          <mat-icon
+            [ngClass]="
+              !newConfigOpened
+                ? 'text-gray-600 dark:text-gray-300/80'
+                : '-rotate-45'
+            "
+            class="text-3xl transition-transform !size-8 leading-8">
+            add
+          </mat-icon>
+          <span class="sr-only">{{ 'CRAWL_PACK_CCONFIG.ADD_NEW_PROFILE' | translate }}</span>
+        </button>
     </h3>
 
     <!-- Recent Crawl Config Async List -->
@@ -94,6 +94,7 @@
                       class="text-lg text-gray-600 dark:text-gray-300/80 !size-8 !leading-8">
                       more_vert
                     </mat-icon>
+                    <span class="sr-only">{{ 'CRAWL_PACK_CCONFIG.MORE_ACTIONS' | translate }}</span>
                   </button>
                 </div>
                 <div
@@ -122,6 +123,7 @@
                       <mat-icon
                         svgIcon="package-box"
                       class="font-bold !w-[2rem] !h-[1.6rem] text-sm"></mat-icon>
+                      <span class="sr-only">{{ 'CRAWL_PACK_CCONFIG.REMOVE_FROM_CART' | translate }}</span>
                     </a>
                   }
                   @if (config.id !== (packCart$ | async)?.id) {
@@ -132,6 +134,7 @@
                       <mat-icon
                         svgIcon="package-box"
                       class="font-bold !w-[2rem] !h-[1.6rem] text-sm"></mat-icon>
+                      <span class="sr-only">{{ 'CRAWL_PACK_CCONFIG.ADD_TO_CART' | translate }}</span>
                     </a>
                   }
                 </div>
@@ -165,15 +168,13 @@
       @if((crawlConfigs$ | async)?.length === 0) {
         <div class="text-center py-8">
           <p class="text-gray-600 dark:text-gray-300">
-            No crawler configuration created yet. Click the 'plus' button to add a
-            new configuration.
+            {{ 'CRAWL_PACK_CCONFIG.EMPTY' | translate }}
           </p>
         </div>
         } @if((crawlConfigs$ | async) === null) {
         <div class="text-center py-8">
           <p class="text-red-600 dark:text-red-300">
-            An Error Occured. Please try again later. or contact with
-            administrator. find the feedback button in the sidebar
+            {{ 'CRAWL_PACK_CCONFIG.ERROR_LOAD' | translate }}
           </p>
         </div>
       }
@@ -190,14 +191,14 @@
             }"
             class="p-2 rounded-xl mr-2">
             {{
-            !newConfigOpened && !editMode
-            ? 'Opened'
+            (!newConfigOpened && !editMode
+            ? 'CRAWL_PACK_CCONFIG.ST_OPENED'
             : editMode
-            ? 'Editing'
-            : 'New'
+            ? 'CRAWL_PACK_CCONFIG.ST_EDITING'
+            : 'CRAWL_PACK_CCONFIG.ST_NEW') | translate
             }}
           </span>
-          <span>Crawl Config</span>
+          <span>{{ 'CRAWL_PACK_CCONFIG.CONFIG_NOUN' | translate }}</span>
         </span>
         @if (newConfigOpened) {
           <span class="text-red-400">*</span>
@@ -206,7 +207,7 @@
       @if (!newConfigOpened) {
         <button
           type="button"
-          [title]="editMode ? 'cancel edit' : 'edit config'"
+          [title]="(editMode ? 'CRAWL_PACK_CCONFIG.CANCEL_EDIT' : 'CRAWL_PACK_CCONFIG.EDIT_CONFIG') | translate"
           (click)="makeEditable()"
         [ngClass]="
           !editMode
@@ -221,6 +222,7 @@
             class="text-xl transition-transform !size-6 leading-6">
             {{ editMode ? 'close' : 'edit' }}
           </mat-icon>
+          <span class="sr-only">{{ (editMode ? 'CRAWL_PACK_CCONFIG.CANCEL_EDIT' : 'CRAWL_PACK_CCONFIG.EDIT_CONFIG') | translate }}</span>
         </button>
       }
     </div>
@@ -244,7 +246,7 @@
             <app-stinput
               [control]="configForm.get('title') | formControl"
               [leftIcon]="'person'"
-              [label]="'Title'"
+              [label]="'CRAWL_PACK_CCONFIG.TITLE_LABEL' | translate"
             [errorLabel]="getErrorLabel('title')"></app-stinput>
           </div>
           <div class="inline-flex items-center justify-center gap-2">
@@ -255,7 +257,7 @@
                 'bg-green-600/[.2] dark:bg-green-600/[0.2]':
                   configForm.invalid || savingNewConfig || (editMode && configForm.pristine)
               }"
-              title="save config"
+              [title]="'CRAWL_PACK_CCONFIG.SAVE_CONFIG' | translate"
               class="inline-flex text-lg items-center justify-center text-center border border-transparent leading-[0] gap-2 disabled:bg-green-600/[0.5] bg-green-600/80 hover:bg-green-700/70 focus:bg-green-900/[0.8] disabled:hover:bg-green-600/50 text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium p-[.6rem] lg:p-3 duration-300 rounded-full transition-colors">
               @if (!savingNewConfig) {
                 <mat-icon class="font-bold">save</mat-icon>
@@ -264,6 +266,7 @@
                   [diameter]="20"
                 class="stroke-gray-200"></mat-spinner>
               }
+              <span class="sr-only">{{ 'CRAWL_PACK_CCONFIG.SAVE_CONFIG' | translate }}</span>
             </button>
           </div>
         </div>
@@ -271,10 +274,10 @@
       <!-- Parameters to Set -->
       <div>
         <h3 class="text-xl font-normal text-gray-800 dark:text-gray-200">
-          Parameters Highlights
+          {{ 'CRAWL_PACK_CCONFIG.PARAM_HIGHLIGHTS' | translate }}
         </h3>
         <h2 class="text-sm py-4 font-normal text-gray-800 dark:text-gray-200">
-          We group them by category.
+          {{ 'CRAWL_PACK_CCONFIG.GROUPED' | translate }}
         </h2>
       </div>
     </div>
@@ -283,7 +286,7 @@
       id="content-processing"
       (mouseover)="showLink = true"
       (mouseleave)="showLink = false">
-      <span class="border-b-4 border-gray5">Content Processing</span>
+      <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_CONTENT' | translate }}</span>
       @if (showLink) {
         <a
           (click)="scrollTo('content-processing')"
@@ -301,24 +304,24 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Text Only
+              {{ 'CRAWL_PACK_CCONFIG.TEXT_ONLY_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <span>&nbsp;</span>
               <p
                 class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                 True
               </p>
-              <span>, tries to extract text-only content</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.TEXT_ONLY_DESC' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="onlyText"
                 [control]="
                   configForm.get('onlyText') | formControl
@@ -330,24 +333,24 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Prettify HTML
+              {{ 'CRAWL_PACK_CCONFIG.PRETTIFY_HTML_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <span>&nbsp;</span>
               <p
                 class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                 True
               </p>
-              <span>, beautifies final HTML (slower, purely cosmetic)</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.PRETTIFY_HTML_DESC' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="prettify"
                 [control]="
                   configForm.get('prettify') | formControl
@@ -359,31 +362,31 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] block text-base font-medium text-gray-700 dark:text-gray-200">
-              Remove Forms
+              {{ 'CRAWL_PACK_CCONFIG.REMOVE_FORMS_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <span>&nbsp;</span>
               <p
                 class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                 True
               </p>
-              , remove all
+              {{ 'CRAWL_PACK_CCONFIG.REMOVE_FORMS_DESC_1' | translate }}
               <span>&nbsp;</span>
               <p
                 class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                 forms
               </p>
               <span>&nbsp;</span>
-              <span>elements.</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.REMOVE_FORMS_DESC_2' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="removeForms"
                 [control]="
                   configForm.get('removeForms') | formControl
@@ -395,23 +398,23 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Keep Data Attributes
+              {{ 'CRAWL_PACK_CCONFIG.KEEP_DATA_ATTRS_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">True</p>
-              , preserve
+              {{ 'CRAWL_PACK_CCONFIG.KEEP_DATA_ATTRS_DESC_1' | translate }}
               <p class="text-sky-500 bg-sky-700/10 inline">data-*</p>
               <span>&nbsp;</span>
-              attributes in cleaned HTML.
+              {{ 'CRAWL_PACK_CCONFIG.KEEP_DATA_ATTRS_DESC_2' | translate }}
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="keepDataAttributes"
                 [control]="
                   configForm.get('keepDataAttributes') | formControl
@@ -423,12 +426,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] block text-base font-medium text-gray-700 dark:text-gray-200">
-              Word Count Threshold
+              {{ 'CRAWL_PACK_CCONFIG.WORD_COUNT_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Skips text blocks below X words. Helps ignore trivial sections
+                {{ 'CRAWL_PACK_CCONFIG.WORD_COUNT_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -451,12 +454,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Css Selector
+              {{ 'CRAWL_PACK_CCONFIG.CSS_SELECTOR_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Retains only the part of the page matching this selector.
+                {{ 'CRAWL_PACK_CCONFIG.CSS_SELECTOR_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -477,14 +480,14 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Excluded Selector
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDED_SELECTOR_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Like</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.EXCLUDED_SELECTOR_DESC_1' | translate }}</span>
               <span>&nbsp;</span>
               <p class="text-sky-500 bg-sky-700/10 inline">css_selector</p>
-              but to exclude. E.g.
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDED_SELECTOR_DESC_2' | translate }}
               <p class="text-sky-500 bg-sky-700/10 inline">
                 "#ads, .tracker"
               </p>
@@ -530,7 +533,7 @@
         id="caching-session"
         (mouseover)="showLink = true"
         (mouseleave)="showLink = false">
-        <span class="border-b-4 border-gray5">Caching & Session</span>
+        <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_CACHING' | translate }}</span>
         @if (showLink) {
           <a
             (click)="scrollTo('caching-session')"
@@ -542,8 +545,7 @@
       </h3>
       <h2 class="p-4">
         <p class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-          Use these for controlling whether you read or write from a local
-          content cache. Handy for large batch crawls or repeated site visits.
+          {{ 'CRAWL_PACK_CCONFIG.CACHE_INTRO' | translate }}
         </p>
       </h2>
       <div class="space-y-4 p-4">
@@ -554,11 +556,11 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Cache Mode
+                {{ 'CRAWL_PACK_CCONFIG.CACHE_MODE_LABEL' | translate }}
               </label>
               <div
                 class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>Controls how caching is handled {{ '(' }}</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.CACHE_MODE_DESC_1' | translate }} {{ '(' }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">ENABLED</p>
                 ,
                 <p class="text-sky-500 bg-sky-700/10 inline">BYPASS</p>
@@ -566,9 +568,9 @@
                 <p class="text-sky-500 bg-sky-700/10 inline">DISABLED</p>
                 ,
                 <p class="text-sky-500 bg-sky-700/10 inline">None</p>
-                , etc.{{ ')' }}. If
+                , {{ 'CRAWL_PACK_CCONFIG.CACHE_MODE_DESC_2' | translate }}{{ ')' }}. {{ 'CRAWL_PACK_CCONFIG.IF' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">None</p>
-                , typically defaults to
+                , {{ 'CRAWL_PACK_CCONFIG.CACHE_MODE_DESC_3' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">ENABLED</p>
                 .
               </div>
@@ -581,7 +583,7 @@
                   [options]="cachModeOptions"
                   [control]="configForm.get('cacheMode') | formControl"
                   [padding]="'p-2'"
-                  dropDownName="take an action"
+                  [dropDownName]="'CRAWL_PACK_CCONFIG.DD_ACTION_LABEL' | translate"
                 (select)="onCacheModeSelect($event)"></app-dropdown>
               </div>
             </label>
@@ -591,17 +593,16 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Session Id
+                {{ 'CRAWL_PACK_CCONFIG.SESSION_ID_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                 <span>
-                  Assign a unique ID to reuse a single browser session across
-                  multiple
+                  {{ 'CRAWL_PACK_CCONFIG.SESSION_ID_DESC_1' | translate }}
                 </span>
                 <p class="text-sky-500 bg-sky-700/10 inline">arun()</p>
                 <span>&nbsp;</span>
-                <span>calls.</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.SESSION_ID_DESC_2' | translate }}</span>
               </div>
             </div>
             <label
@@ -621,13 +622,13 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Bypass Cache
+                {{ 'CRAWL_PACK_CCONFIG.BYPASS_CACHE_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>If</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">True</p>
-                , acts like
+                , {{ 'CRAWL_PACK_CCONFIG.ACTS_LIKE' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">
                   CacheMode.BYPASS
                 </p>
@@ -639,7 +640,7 @@
               class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
               <!-- Set a radio button Enabled/Disabled -->
               <app-radiotoggle
-                title="Enabled/Disabled"
+                [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
                 identity="bypassCache"
                 [control]="
                   configForm.get('bypassCache') | formControl
@@ -651,13 +652,13 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Disable Cache
+                {{ 'CRAWL_PACK_CCONFIG.DISABLE_CACHE_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>If</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">True</p>
-                , acts like
+                , {{ 'CRAWL_PACK_CCONFIG.ACTS_LIKE' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">
                   CacheMode.DISABLED
                 </p>
@@ -669,7 +670,7 @@
               class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
               <!-- Set a radio button Enabled/Disabled -->
               <app-radiotoggle
-                title="Enabled/Disabled"
+                [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
                 identity="disableCache"
                 [control]="
                   configForm.get('disableCache') | formControl
@@ -681,25 +682,25 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                No Cache Read
+                {{ 'CRAWL_PACK_CCONFIG.NO_CACHE_READ_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>If</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">True</p>
-                , acts like
+                , {{ 'CRAWL_PACK_CCONFIG.ACTS_LIKE' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">
                   CacheMode.WRITE_ONLY
                 </p>
                 <span>&nbsp;</span>
-                (writes cache but never reads).
+                ({{ 'CRAWL_PACK_CCONFIG.NO_CACHE_READ_DESC' | translate }}).
               </div>
             </div>
             <label
               class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
               <!-- Set a radio button Enabled/Disabled -->
               <app-radiotoggle
-                title="Enabled/Disabled"
+                [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
                 identity="noCacheRead"
                 [control]="
                   configForm.get('noCacheRead') | formControl
@@ -711,25 +712,25 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                No Cache Write
+                {{ 'CRAWL_PACK_CCONFIG.NO_CACHE_WRITE_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>If</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">True</p>
-                , acts like
+                , {{ 'CRAWL_PACK_CCONFIG.ACTS_LIKE' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">
                   CacheMode.READ_ONLY
                 </p>
                 <span>&nbsp;</span>
-                (reads cache but never writes).
+                ({{ 'CRAWL_PACK_CCONFIG.NO_CACHE_WRITE_DESC' | translate }}).
               </div>
             </div>
             <label
               class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
               <!-- Set a radio button Enabled/Disabled -->
               <app-radiotoggle
-                title="Enabled/Disabled"
+                [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
                 identity="noCacheWrite"
                 [control]="
                   configForm.get('noCacheWrite') | formControl
@@ -743,7 +744,7 @@
         id="page-nav-timing"
         (mouseover)="showLink = true"
         (mouseleave)="showLink = false">
-        <span class="border-b-4 border-gray5">Page Navigation & Timing</span>
+        <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_NAVTIMING' | translate }}</span>
         @if (showLink) {
           <a
             (click)="scrollTo('page-nav-timing')"
@@ -761,13 +762,12 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Wait For Images
+                {{ 'CRAWL_PACK_CCONFIG.WAIT_FOR_IMAGES_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                 <span>
-                  Wait for images to load before finishing. Slows down if you
-                  only want text.
+                  {{ 'CRAWL_PACK_CCONFIG.WAIT_FOR_IMAGES_DESC' | translate }}
                 </span>
               </div>
             </div>
@@ -775,7 +775,7 @@
               class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
               <!-- Set a radio button Enabled/Disabled -->
               <app-radiotoggle
-                title="Enabled/Disabled"
+                [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
                 identity="waitForImages"
                 [control]="
                   configForm.get('waitForImages') | formControl
@@ -787,13 +787,12 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Check Robots Txt
+                {{ 'CRAWL_PACK_CCONFIG.CHECK_ROBOTS_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                 <span>
-                  Whether to check and respect robots.txt rules before crawling.
-                  If True, caches robots.txt for efficiency.
+                  {{ 'CRAWL_PACK_CCONFIG.CHECK_ROBOTS_DESC' | translate }}
                 </span>
               </div>
             </div>
@@ -801,7 +800,7 @@
               class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
               <!-- Set a radio button Enabled/Disabled -->
               <app-radiotoggle
-                title="Enabled/Disabled"
+                [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
                 identity="checkRobotsTxt"
                 [control]="
                   configForm.get('checkRobotsTxt') | formControl
@@ -813,13 +812,12 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Page Timeout
+                {{ 'CRAWL_PACK_CCONFIG.PAGE_TIMEOUT_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                 <span>
-                  Timeout for page navigation or JS steps. Increase for slow
-                  sites.
+                  {{ 'CRAWL_PACK_CCONFIG.PAGE_TIMEOUT_DESC' | translate }}
                 </span>
               </div>
             </div>
@@ -840,15 +838,15 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Wait For
+                {{ 'CRAWL_PACK_CCONFIG.WAIT_FOR_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>Wait for a CSS (</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.WAIT_FOR_DESC_1' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">"css:selector"</p>
-                <span>) or JS (</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.WAIT_FOR_DESC_2' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">"js:() => bool"</p>
-                <span>) condition before content extraction.</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.WAIT_FOR_DESC_3' | translate }}</span>
               </div>
             </div>
             <label
@@ -868,13 +866,13 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Wait Until
+                {{ 'CRAWL_PACK_CCONFIG.WAIT_UNTIL_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>Condition for navigation to “complete”. Often</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.WAIT_UNTIL_DESC_1' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">"networkidle"</p>
-                <span>or</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.WAIT_UNTIL_DESC_2' | translate }}</span>
                 <p class="text-sky-500 bg-sky-700/10 inline">
                   "domcontentloaded"
                 </p>
@@ -898,13 +896,12 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Delay Before Return Html
+                {{ 'CRAWL_PACK_CCONFIG.DELAY_RETURN_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                 <span>
-                  Additional pause (seconds) before final HTML is captured. Good
-                  for last-second updates.
+                  {{ 'CRAWL_PACK_CCONFIG.DELAY_RETURN_DESC' | translate }}
                 </span>
               </div>
             </div>
@@ -935,7 +932,7 @@
         id="page-interaction"
         (mouseover)="showLink = true"
         (mouseleave)="showLink = false">
-        <span class="border-b-4 border-gray5">Page Interaction</span>
+        <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_INTERACTION' | translate }}</span>
         @if (showLink) {
           <a
             (click)="scrollTo('page-interaction')"
@@ -948,12 +945,12 @@
       <h2 class="p-4">
         <p class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
           <span>
-            If your page is a single-page app with repeated JS updates, set
+            {{ 'CRAWL_PACK_CCONFIG.INTERACT_INTRO_1' | translate }}
           </span>
           <span class="text-sky-500 bg-sky-700/10 inline">js_only=True</span>
-          <span>in subsequent calls, plus a</span>
+          <span>{{ 'CRAWL_PACK_CCONFIG.INTERACT_INTRO_2' | translate }}</span>
           <span class="text-sky-500 bg-sky-700/10 inline">session_id</span>
-          <span>for reusing the same tab.</span>
+          <span>{{ 'CRAWL_PACK_CCONFIG.INTERACT_INTRO_3' | translate }}</span>
         </p>
       </h2>
       <div class="space-y-4 p-4">
@@ -964,16 +961,16 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                JavaScript Code
+                {{ 'CRAWL_PACK_CCONFIG.JS_CODE_LABEL' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>JavaScript to run after load. E.g.</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.JS_CODE_DESC_1' | translate }}</span>
                 <span
                   class="break-all text-sky-500 w-full xs:w-[initial] bg-sky-700/10 inline-block">
                   "document.querySelector('button')?.click();"
                 </span>
-                <span>or list</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.JS_CODE_DESC_2' | translate }}</span>
                 <span
                   class="break-all text-sky-500 w-full xs:w-[initial] bg-sky-700/10 inline-block">
                   ["document.querySelector('button').click()","const num = 3;"]
@@ -989,7 +986,7 @@
                   <label
                     for="jsCode"
                     class="block text-sm font-medium text-gray-700">
-                    JavaScript Code
+                    {{ 'CRAWL_PACK_CCONFIG.JS_CODE_TEXTAREA_LABEL' | translate }}
                   </label>
                   <textarea
                     id="jsCode"
@@ -1000,7 +997,7 @@
                   @if (configForm.get('jsCode')?.invalid) {
                     <div
                       class="text-red-500 text-xs">
-                      Invalid array of JavaScript Code
+                      {{ 'CRAWL_PACK_CCONFIG.JS_CODE_INVALID' | translate }}
                       {{ configForm.get('jsCode')?.errors | json }}
                     </div>
                   }
@@ -1020,15 +1017,14 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              JavaScript Only
+              {{ 'CRAWL_PACK_CCONFIG.JS_ONLY_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">True</p>
               <span>
-                , indicates we’re reusing an existing session and only
-                applying JS. No full reload.
+                {{ 'CRAWL_PACK_CCONFIG.JS_ONLY_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1036,7 +1032,7 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="jsOnly"
                 [control]="
                   configForm.get('jsOnly') | formControl
@@ -1048,14 +1044,14 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Ignore Body Visibility
+              {{ 'CRAWL_PACK_CCONFIG.IGNORE_BODY_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Skip checking if</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IGNORE_BODY_DESC_1' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">&lt;body&gt;</p>
-              is visible. Usually best to keep
-              <span>is visible. Usually best to keep</span>
+              {{ 'CRAWL_PACK_CCONFIG.IGNORE_BODY_DESC_2' | translate }}
+              <span>{{ 'CRAWL_PACK_CCONFIG.IGNORE_BODY_DESC_2' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">True</p>
               <span>.</span>
             </div>
@@ -1064,7 +1060,7 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="ignoreBodyVisibility"
                 [control]="
                   configForm.get('ignoreBodyVisibility') | formControl
@@ -1076,15 +1072,14 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Scan Full Page
+              {{ 'CRAWL_PACK_CCONFIG.SCAN_FULL_PAGE_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">True</p>
               <span>
-                , auto-scroll the page to load dynamic content (infinite
-                scroll).
+                {{ 'CRAWL_PACK_CCONFIG.SCAN_FULL_PAGE_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1092,7 +1087,7 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="scanFullPage"
                 [control]="
                   configForm.get('scanFullPage') | formControl
@@ -1104,11 +1099,11 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Scroll Delay
+              {{ 'CRAWL_PACK_CCONFIG.SCROLL_DELAY_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Delay between scroll steps if</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.SCROLL_DELAY_DESC' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">
                 scan_full_page=True
               </p>
@@ -1133,18 +1128,18 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Process Iframes
+              {{ 'CRAWL_PACK_CCONFIG.PROCESS_IFRAMES_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Inlines iframe content for single-page extraction.</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.PROCESS_IFRAMES_DESC' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="processIframes"
                 [control]="
                   configForm.get('processIframes') | formControl
@@ -1156,12 +1151,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Remove Overlay Elements
+              {{ 'CRAWL_PACK_CCONFIG.REMOVE_OVERLAY_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Removes potential modals/popups blocking the main content.
+                {{ 'CRAWL_PACK_CCONFIG.REMOVE_OVERLAY_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1169,7 +1164,7 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="removeOverlayElements"
                 [control]="
                   configForm.get('removeOverlayElements') | formControl
@@ -1181,13 +1176,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Simulate User
+              {{ 'CRAWL_PACK_CCONFIG.SIMULATE_USER_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Simulate user interactions (mouse movements) to avoid bot
-                detection.
+                {{ 'CRAWL_PACK_CCONFIG.SIMULATE_USER_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1195,7 +1189,7 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="simulateUser"
                 [control]="
                   configForm.get('simulateUser') | formControl
@@ -1207,20 +1201,20 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Override Navigator
+              {{ 'CRAWL_PACK_CCONFIG.OVERRIDE_NAV_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Override</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.OVERRIDE_NAV_DESC_1' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">navigator</p>
-              <span>properties in JS for stealth.</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.OVERRIDE_NAV_DESC_2' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="overrideNavigator"
                 [control]="
                   configForm.get('overrideNavigator') | formControl
@@ -1232,12 +1226,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Magic
+              {{ 'CRAWL_PACK_CCONFIG.MAGIC_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Automatic handling of popups/consent banners. Experimental.
+                {{ 'CRAWL_PACK_CCONFIG.MAGIC_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1245,7 +1239,7 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="magic"
                 [control]="
                   configForm.get('magic') | formControl
@@ -1257,18 +1251,18 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Adjust Viewport To Content
+              {{ 'CRAWL_PACK_CCONFIG.ADJUST_VIEWPORT_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Resizes viewport to match page content height.</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.ADJUST_VIEWPORT_DESC' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="adjustViewportToContent"
                 [control]="
                   configForm.get('adjustViewportToContent') | formControl
@@ -1283,7 +1277,7 @@
       id="media-handling"
       (mouseover)="showLink = true"
       (mouseleave)="showLink = false">
-      <span class="border-b-4 border-gray5">Media Handling</span>
+      <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_MEDIA' | translate }}</span>
       @if (showLink) {
         <a
           (click)="scrollTo('media-handling')"
@@ -1301,11 +1295,11 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              ScreenShot
+              {{ 'CRAWL_PACK_CCONFIG.SCREENSHOT_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Capture a screenshot (base64) in</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.SCREENSHOT_DESC_1' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">
                 result.screenshot
               </p>
@@ -1316,9 +1310,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="screenshot"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('screenshot') | formControl
                 "></app-radiotoggle>
@@ -1329,11 +1322,11 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Screenshot Wait For
+              {{ 'CRAWL_PACK_CCONFIG.SCREENSHOT_WAIT_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Extra wait time before the screenshot.</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.SCREENSHOT_WAIT_DESC' | translate }}</span>
             </div>
           </div>
           <label
@@ -1356,13 +1349,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Screenshot Height Threshold
+              {{ 'CRAWL_PACK_CCONFIG.SCREENSHOT_HGT_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                If the page is taller than this, alternate screenshot
-                strategies are used.
+                {{ 'CRAWL_PACK_CCONFIG.SCREENSHOT_HGT_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1387,13 +1379,13 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Pdf
+              {{ 'CRAWL_PACK_CCONFIG.PDF_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>If</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.IF' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">True</p>
-              <span>, returns a PDF in</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.PDF_DESC' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">result.pdf</p>
               <span>.</span>
             </div>
@@ -1402,9 +1394,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="pdf"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('pdf') | formControl
                 "></app-radiotoggle>
@@ -1415,13 +1406,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Image Description Min Tord Threshold
+              {{ 'CRAWL_PACK_CCONFIG.IMG_DESC_THRESHOLD_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Minimum words for an image’s alt text or description to be
-                considered valid.
+                {{ 'CRAWL_PACK_CCONFIG.IMG_DESC_THRESHOLD_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1447,13 +1437,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Image Score Threshold
+              {{ 'CRAWL_PACK_CCONFIG.IMG_SCORE_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Filter out low-scoring images. The crawler scores images by
-                relevance (size, context, etc.).
+                {{ 'CRAWL_PACK_CCONFIG.IMG_SCORE_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1478,20 +1467,19 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Exclude External Images
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_EXT_IMAGES_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Exclude images from other domains.</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.EXCLUDE_EXT_IMAGES_DESC' | translate }}</span>
             </div>
           </div>
           <label
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="excludeExternalImages"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('excludeExternalImages') | formControl
                 "></app-radiotoggle>
@@ -1505,7 +1493,7 @@
       id="link-domain-handling"
       (mouseover)="showLink = true"
       (mouseleave)="showLink = false">
-      <span class="border-b-4 border-gray5">Link/Domain Handling</span>
+      <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_LINKDOMAIN' | translate }}</span>
       @if (showLink) {
         <a
           (click)="scrollTo('link-domain-handling')"
@@ -1518,8 +1506,7 @@
     <h2 class="p-4">
       <p class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
         <span>
-          Use these for link-level content filtering (often to keep crawls
-          “internal” or to remove spammy domains).
+          {{ 'CRAWL_PACK_CCONFIG.LINKDOMAIN_INTRO' | translate }}
         </span>
       </p>
     </h2>
@@ -1531,12 +1518,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Exclude External Links
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_EXT_LINKS_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Removes all links pointing outside the current domain.
+                {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_EXT_LINKS_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1544,9 +1531,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="excludeExternalLinks"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('excludeExternalLinks') | formControl
                 "></app-radiotoggle>
@@ -1557,13 +1543,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Exclude Social Media Links
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_SOCIAL_LINKS_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Strips links specifically to social sites (like Facebook or
-                Twitter).
+                {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_SOCIAL_LINKS_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1571,9 +1556,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="excludeSocialMediaLinks"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('excludeSocialMediaLinks') | formControl
                 "></app-radiotoggle>
@@ -1584,13 +1568,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Exclude Social Media Domains
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_SOCIAL_DOMAINS_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                A default list can be extended. Any link to these domains is
-                removed from final output.
+                {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_SOCIAL_DOMAINS_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1614,15 +1597,15 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Exclude Domains
+              {{ 'CRAWL_PACK_CCONFIG.EXCLUDE_DOMAINS_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Provide a custom list of domains to exclude (like</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.EXCLUDE_DOMAINS_DESC_1' | translate }}</span>
               <p class="text-sky-500 bg-sky-700/10 inline">
                 ["ads.com", "trackers.io"]
               </p>
-              <span>).</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.EXCLUDE_DOMAINS_DESC_2' | translate }}</span>
             </div>
           </div>
           <label
@@ -1644,7 +1627,7 @@
       id="debug-logging"
       (mouseover)="showLink = true"
       (mouseleave)="showLink = false">
-      <span class="border-b-4 border-gray5">Debug & Logging</span>
+      <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_DEBUG' | translate }}</span>
       @if (showLink) {
         <a
           (click)="scrollTo('debug-logging')"
@@ -1661,13 +1644,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Verbose
+              {{ 'CRAWL_PACK_CCONFIG.VERBOSE_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Prints logs detailing each step of crawling, interactions, or
-                errors.
+                {{ 'CRAWL_PACK_CCONFIG.VERBOSE_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1675,9 +1657,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="verbose"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('verbose') | formControl
                 "></app-radiotoggle>
@@ -1688,13 +1669,12 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Logging Console
+              {{ 'CRAWL_PACK_CCONFIG.LOG_CONSOLE_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Logs the page’s JavaScript console output if you want deeper
-                JS debugging.
+                {{ 'CRAWL_PACK_CCONFIG.LOG_CONSOLE_DESC' | translate }}
               </span>
             </div>
           </div>
@@ -1702,9 +1682,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="logConsole"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('logConsole') | formControl
                 "></app-radiotoggle>
@@ -1718,7 +1697,7 @@
       id="other"
       (mouseover)="showLink = true"
       (mouseleave)="showLink = false">
-      <span class="border-b-4 border-gray5">Other Parameters</span>
+      <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_CCONFIG.CAT_OTHER' | translate }}</span>
       @if (showLink) {
         <a
           (click)="scrollTo('other')"
@@ -1735,16 +1714,14 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Streaming Support
+              {{ 'CRAWL_PACK_CCONFIG.STREAM_LABEL' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
               <span>
-                Enable streaming by setting
+                {{ 'CRAWL_PACK_CCONFIG.STREAM_DESC_1' | translate }}
                 <p class="text-sky-500 bg-sky-700/10 inline">stream=True</p>
-                in your CrawlerRunConfig. When streaming, use async for to
-                process results as they become available. Ideal for processing
-                large numbers of URLs without waiting for all to complete.
+                {{ 'CRAWL_PACK_CCONFIG.STREAM_DESC_2' | translate }}
               </span>
             </div>
           </div>
@@ -1752,9 +1729,8 @@
             class="block text-sm justify-self-end font-medium text-gray-700 dark:text-gray-200">
             <!-- Set a radio button Enabled/Disabled -->
             <app-radiotoggle
-              title="Enabled/Disabled"
+              [title]="'CRAWL_PACK_CCONFIG.TOGGLE_STATE' | translate"
               identity="stream"
-              title="Enabled/Disabled"
                 [control]="
                   configForm.get('stream') | formControl
                 "></app-radiotoggle>
@@ -1780,7 +1756,7 @@
               : 'dark:text-gray-200 before:hidden'
           "
         class="cursor-pointer text-gray-600/60 hover:text-sky-600 focus:text-sky-700 dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] font-bold p-3 hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-        <span>Controlling Each Crawl</span>
+        <span>{{ 'CRAWL_PACK_CCONFIG.CONTROLLING' | translate }}</span>
       </a>
     </li>
     @if (showSettings) {
@@ -1794,7 +1770,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
           class="p-3 flex text-gray-600 cursor-pointer hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-          <span>Content Processing</span>
+          <span>{{ 'CRAWL_PACK_CCONFIG.CAT_CONTENT' | translate }}</span>
         </a>
         <!-- <ul class="pl-4">
         <li>
@@ -1825,7 +1801,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
             class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-            <span>Caching & Session</span>
+            <span>{{ 'CRAWL_PACK_CCONFIG.CAT_CACHING' | translate }}</span>
           </a>
           <!-- <ul class="pl-4">
           <li>
@@ -1856,7 +1832,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
               class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-              <span>Page Navigation & Timing</span>
+              <span>{{ 'CRAWL_PACK_CCONFIG.CAT_NAVTIMING' | translate }}</span>
             </a>
             <!-- <ul class="pl-4">
             <li>
@@ -1887,7 +1863,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
                 class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-                <span>Page Interaction</span>
+                <span>{{ 'CRAWL_PACK_CCONFIG.CAT_INTERACTION' | translate }}</span>
               </a>
               <!-- <ul class="pl-4">
               <li>
@@ -1918,7 +1894,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
                   class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-                  <span>Media Handling</span>
+                  <span>{{ 'CRAWL_PACK_CCONFIG.CAT_MEDIA' | translate }}</span>
                 </a>
                 <!-- <ul class="pl-4">
                 <li>
@@ -1949,7 +1925,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
                     class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-                    <span>Link/Domain Handling</span>
+                    <span>{{ 'CRAWL_PACK_CCONFIG.CAT_LINKDOMAIN' | translate }}</span>
                   </a>
                   <!-- <ul class="pl-4">
                   <li>
@@ -1980,7 +1956,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
                       class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-                      <span>Debug & Logging</span>
+                      <span>{{ 'CRAWL_PACK_CCONFIG.CAT_DEBUG' | translate }}</span>
                     </a>
                     <!-- <ul class="pl-4">
                     <li>
@@ -2011,7 +1987,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
                         class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-                        <span>Others</span>
+                        <span>{{ 'CRAWL_PACK_CCONFIG.NAV_OTHER' | translate }}</span>
                       </a>
                     </li>
                   }
