@@ -1,1 +1,32 @@
-:host { display: block; }
+:host {
+  display: block;
+}
+
+/* ===== Console log lines: fade/slide in as each step resolves ===== */
+@keyframes ds-console-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.console-line {
+  opacity: 0;
+  transform: translateX(6px);
+}
+
+.console-line.is-in {
+  animation: ds-console-in 0.4s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-line {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}

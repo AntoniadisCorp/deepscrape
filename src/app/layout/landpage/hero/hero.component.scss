@@ -86,3 +86,31 @@
   transform: translateY(-6px);
   box-shadow: 0 20px 40px -12px rgba(6, 182, 212, 0.15);
 }
+
+/* ===== Hero typed phrase caret ===== */
+.hero-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -0.12em;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.hero-caret.on {
+  opacity: 1;
+  animation: hero-caret-blink 0.8s steps(1) infinite;
+}
+
+@keyframes hero-caret-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-caret {
+    display: none;
+  }
+}

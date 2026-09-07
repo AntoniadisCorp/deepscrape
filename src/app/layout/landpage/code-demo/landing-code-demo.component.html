@@ -19,59 +19,196 @@
       </p>
     </div>
 
-    <!-- 3-step glass cards (Figma-inspired numbered steps) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-      <!-- Step 1 -->
-      <div class="group relative glass rounded-2xl border-white/5 dark:border-white/10 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-cyan-500/30 dark:hover:border-cyan-400/20">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="flex-shrink-0 w-8 h-8 bg-cyan-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">1</span>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ 'DEMO.STEP1' | translate }}</h3>
+    <!-- Interactive run console (hyperframe) -->
+    <!-- Demo console: live machine-deploy simulation, no real API calls. -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- ============ LIVE CONSOLE ============ -->
+      <div class="lg:col-span-7 relative group">
+        <div class="absolute -inset-1 bg-gradient-to-r from-cyan-400/30 to-rose-400/25 dark:from-cyan-500/20 dark:to-rose-500/15 rounded-2xl blur-xl opacity-70 transition-all duration-500"></div>
+        <div class="relative rounded-2xl overflow-hidden border shadow-2xl bg-[#0b1017]/95 dark:bg-[#0b1017]/95 border-white/10">
+          <!-- Chrome -->
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+            <span class="w-3 h-3 rounded-full bg-red-400/80"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-400/80"></span>
+            <span class="w-3 h-3 rounded-full bg-green-400/80"></span>
+            <span class="ml-3 font-mono text-xs text-gray-400 flex items-center gap-1.5">
+              <lucide-angular [img]="icons['terminal']" class="h-3.5 w-3.5 text-cyan-400 fill-none"></lucide-angular>
+              {{ 'DEMO.CONSOLE' | translate }}
+            </span>
+            <div class="ml-auto">
+              <span class="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border transition-colors duration-300"
+                    [ngClass]="{
+                      'text-cyan-300 border-cyan-500/40 bg-cyan-500/10': statusTone() === 'live',
+                      'text-emerald-300 border-emerald-500/40 bg-emerald-500/10': statusTone() === 'done',
+                      'text-gray-400 border-white/10 bg-white/5': statusTone() === 'pending'
+                    }">
+                @if (statusTone() === 'live') {
+                  <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>{{ 'DEMO.ST_INPROG' | translate }}</span>
+                } @else if (statusTone() === 'done') {
+                  <span class="inline-flex items-center gap-1.5"><lucide-angular [img]="icons['check']" class="h-3 w-3 fill-none"></lucide-angular>{{ 'DEMO.ST_DONE' | translate }}</span>
+                } @else {
+                  {{ 'DEMO.ST_SCHEDULED' | translate }}
+                }
+              </span>
+            </div>
+          </div>
+
+          <!-- Toolbar: pack selector + run -->
+          <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-gray-500 flex items-center gap-1.5 mr-1">
+              <lucide-angular [img]="icons['layers']" class="h-3 w-3 fill-none"></lucide-angular>
+              {{ 'DEMO.PACK_LABEL' | translate }}
+            </span>
+            @for (p of packs; track p.id) {
+              <button type="button" (click)="selectPack(p)"
+                class="font-mono text-xs px-3 py-1.5 rounded-lg border transition-all duration-200"
+                [ngClass]="{
+                  '!border-cyan-500/50 text-cyan-300 bg-cyan-500/10 shadow-[0_0_12px_rgba(34,211,238,0.15)]': pack().id === p.id,
+                  'border-white/10 text-gray-400 hover:text-gray-200 hover:border-white/25': pack().id !== p.id
+                }">{{ p.id }}</button>
+            }
+            <div class="ml-auto flex items-center gap-2">
+              <span class="hidden sm:inline-flex font-mono text-[10px] text-gray-500 items-center gap-1">
+                <lucide-angular [img]="icons['server']" class="h-3 w-3 fill-none"></lucide-angular>
+                {{ pack().machine }} · {{ pack().engine }}
+              </span>
+              <button type="button" (click)="run()" [disabled]="running()"
+                class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg text-white transition-all duration-200 bg-cyan-600 hover:bg-cyan-500 border border-cyan-400/40 disabled:opacity-60 disabled:cursor-not-allowed">
+                @if (running()) {
+                  <lucide-angular [img]="icons['loader-circle']" class="h-3.5 w-3.5 animate-spin fill-none"></lucide-angular>
+                  {{ 'DEMO.RUNNING' | translate }}
+                } @else {
+                  <lucide-angular [img]="icons['play']" class="h-3.5 w-3.5 fill-none"></lucide-angular>
+                  {{ step() >= stepCount ? ('DEMO.RUN_AGAIN' | translate) : ('DEMO.RUN' | translate) }}
+                }
+              </button>
+            </div>
+          </div>
+
+          <!-- Console body -->
+          <div class="p-4 sm:p-5 font-mono text-[13px] leading-relaxed min-h-[17rem] flex flex-col justify-start gap-1.5 bg-[#0b1017]/60">
+            <!-- target line -->
+            <div class="flex items-center gap-2 text-gray-300">
+              <span class="text-cyan-400">$</span>
+              <span class="text-gray-500">target</span>
+              <span class="text-cyan-200 truncate">{{ pack().url }}</span>
+            </div>
+
+            @for (s of logSteps; track s.key; let i = $index) {
+              <div class="flex items-start gap-2.5 console-line text-gray-300" [class.is-in]="step() > i">
+                <span class="mt-0.5 flex-shrink-0"
+                      [ngClass]="{ 'text-cyan-400': s.tone === 'cyan', 'text-rose-400': s.tone === 'rose', 'text-emerald-400': s.tone === 'green' }">
+                  <lucide-angular [img]="icons[s.icon]" class="h-3.5 w-3.5 fill-none"></lucide-angular>
+                </span>
+                <span class="console-text text-gray-300/90">{{ s.key | translate: lineParams() }}</span>
+                @if (step() > i) {
+                  <span class="ml-auto mt-0.5 flex-shrink-0 text-emerald-400"><lucide-angular [img]="icons['check']" class="h-3 w-3 fill-none"></lucide-angular></span>
+                }
+              </div>
+            }
+
+            @if (running()) {
+              <div class="flex items-center gap-2 mt-1 text-cyan-300">
+                <span class="inline-block h-3.5 w-2 bg-cyan-400/70 animate-pulse"></span>
+                <span class="text-xs">{{ 'DEMO.LIVE_CARET' | translate }}</span>
+              </div>
+            } @else if (step() === 0) {
+              <div class="flex items-center gap-2 mt-1 text-gray-500">
+                <lucide-angular [img]="icons['mouse-pointer-click']" class="h-3.5 w-3.5 fill-none"></lucide-angular>
+                <span class="text-xs">{{ 'DEMO.IDLE_HINT' | translate }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Progress -->
+          <div class="px-4 sm:px-5 py-3 border-t border-white/10 bg-white/[0.02]">
+            <div class="flex items-center justify-between mb-2 font-mono text-[10px] uppercase tracking-wider text-gray-500">
+              <span>{{ 'DEMO.PROGRESS' | translate }}</span>
+              <span class="text-cyan-300">{{ progress() }}%</span>
+            </div>
+            <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-rose-500 transition-all duration-500"
+                   [style.width.%]="progress()"></div>
+            </div>
+          </div>
         </div>
-        <div class="bg-gray-900/80 rounded-xl p-4 font-mono text-sm text-gray-300 overflow-x-auto">
-          <span class="text-gray-500">url</span> = <span class="text-yellow-300">https://example.com</span>
-        </div>
-        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ 'DEMO.STEP1_D' | translate }}</p>
       </div>
 
-      <!-- Step 2 -->
-      <div class="group relative glass rounded-2xl border-white/5 dark:border-white/10 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-cyan-500/30 dark:hover:border-cyan-400/20">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="flex-shrink-0 w-8 h-8 bg-rose-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">2</span>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ 'DEMO.STEP2' | translate }}</h3>
-        </div>
-        <div class="bg-gray-900/80 rounded-xl p-4 font-mono text-sm text-gray-300 overflow-x-auto leading-relaxed">
-          <span class="text-cyan-400">from</span> deepscrape <span class="text-cyan-400">import</span> CrawlClient<br/><br/>
-          <span class="text-rose-400">client</span> = CrawlClient(api_key=<span class="text-yellow-300">"ds_sk_..."</span>)<br/>
-          <span class="text-rose-400">data</span> = <span class="text-cyan-400">await</span> client.crawl(<span class="text-yellow-300">"https://example.com"</span>)<br/>
-          <span class="text-cyan-400">print</span>(data.markdown[:<span class="text-orange-300">500</span>])
-        </div>
-        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ 'DEMO.STEP2_D' | translate }}</p>
-      </div>
+      <!-- ============ UNDER THE HOOD (operations engines) ============ -->
+      <div class="lg:col-span-5">
+        <div class="glass rounded-2xl border-white/5 dark:border-white/10 p-5 sm:p-6 h-full">
+          <div class="flex items-center gap-2 mb-1">
+            <lucide-angular [img]="icons['cpu']" class="h-4 w-4 text-cyan-500 fill-none"></lucide-angular>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ 'DEMO.HOOD_TITLE' | translate }}</h3>
+          </div>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">{{ 'DEMO.HOOD_SUB' | translate }}</p>
 
-      <!-- Step 3 -->
-      <div class="group relative glass rounded-2xl border-white/5 dark:border-white/10 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-cyan-500/30 dark:hover:border-cyan-400/20">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">3</span>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ 'DEMO.STEP3' | translate }}</h3>
+          <div class="space-y-3">
+            @for (row of hoodRows; track row.key; let i = $index) {
+              <div class="flex items-center gap-3 rounded-xl border border-gray-200/70 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] px-3 py-2.5">
+                <span class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300"
+                      [ngClass]="{
+                        'bg-emerald-500/15 text-emerald-500': hoodState(i) === 'done',
+                        'bg-cyan-500/15 text-cyan-500': hoodState(i) === 'live',
+                        'bg-gray-500/10 text-gray-400': hoodState(i) === 'pending'
+                      }">
+                  <lucide-angular [img]="icons[row.icon]" class="h-4 w-4 fill-none"></lucide-angular>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ row.labelKey | translate }}</span>
+                    <span class="font-mono text-[10px] uppercase tracking-wide"
+                          [ngClass]="{
+                            'text-emerald-500': hoodState(i) === 'done',
+                            'text-cyan-400': hoodState(i) === 'live',
+                            'text-gray-400': hoodState(i) === 'pending'
+                          }">
+                      @if (hoodState(i) === 'done') { {{ 'DEMO.ST_DONE' | translate }} }
+                      @else if (hoodState(i) === 'live') { {{ 'DEMO.ST_INPROG' | translate }} }
+                      @else { {{ 'DEMO.ST_READY' | translate }} }
+                    </span>
+                  </div>
+                  <div class="mt-1.5 h-1 rounded-full bg-gray-200/80 dark:bg-white/10 overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500"
+                         [ngClass]="{ 'bg-emerald-500': hoodState(i) === 'done', 'bg-cyan-500 animate-pulse': hoodState(i) === 'live' }"
+                         [style.width.%]="hoodPct(i)"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-gray-200/70 dark:border-white/10">
+            <div class="flex flex-wrap gap-2">
+              <span class="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] text-gray-600 dark:text-gray-400 rounded-full">
+                <lucide-angular [img]="icons['server']" class="h-3 w-3 text-rose-500 fill-none"></lucide-angular>
+                {{ 'DEMO.INFRA_MACHINE' | translate }} {{ pack().machine }}
+              </span>
+              <span class="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] text-gray-600 dark:text-gray-400 rounded-full">
+                <lucide-angular [img]="icons['monitor']" class="h-3 w-3 text-cyan-500 fill-none"></lucide-angular>
+                {{ 'DEMO.INFRA_ENGINE' | translate }} {{ pack().engine }}
+              </span>
+              <span class="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] text-gray-600 dark:text-gray-400 rounded-full">
+                <lucide-angular [img]="icons['shield']" class="h-3 w-3 text-emerald-500 fill-none"></lucide-angular>
+                {{ 'DEMO.INFRA_ANTIBOT' | translate }}
+              </span>
+              <span class="glass-pill inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[10px] text-gray-600 dark:text-gray-400 rounded-full">
+                <lucide-angular [img]="icons['git-branch']" class="h-3 w-3 text-rose-500 fill-none"></lucide-angular>
+                {{ 'DEMO.INFRA_PACK' | translate }}
+              </span>
+            </div>
+            <p class="mt-3 text-xs text-gray-500 dark:text-gray-500">{{ 'DEMO.HOOD_FOOT' | translate }}</p>
+          </div>
         </div>
-        <div class="bg-gray-900/80 rounded-xl p-4 font-mono text-sm text-gray-300 overflow-x-auto leading-relaxed">
-          <span class="text-gray-500"># Structured JSON from any page</span><br/>
-          &#123;<br/>
-          &nbsp;&nbsp;<span class="text-yellow-300">"title"</span>: <span class="text-green-400">"Example"</span>,<br/>
-          &nbsp;&nbsp;<span class="text-yellow-300">"markdown"</span>: <span class="text-green-400">"..."</span>,<br/>
-          &nbsp;&nbsp;<span class="text-yellow-300">"extracted"</span>: &#123; <span class="text-orange-300">...</span> &#125;<br/>
-          &#125;
-        </div>
-        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ 'DEMO.STEP3_D' | translate }}</p>
       </div>
     </div>
 
     <!-- Bottom CTA -->
-    <div class="text-center">
-      <a routerLink="/service/signup" class="glass hover:bg-white/15 dark:hover:bg-white/10 inline-flex items-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 border-cyan-500/30 dark:border-cyan-500/40">
+    <div class="text-center mt-14">
+      <a routerLink="/service/signup" class="bg-cyan-600 hover:bg-cyan-500 border border-cyan-400/40 inline-flex items-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
         {{ 'DEMO.CTA' | translate }} →
       </a>
-      <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">{{ 'DEMO.CTA_SUB' | translate }}</p>
+      <p class="mt-3 text-xs text-gray-500 dark:text-gray-500">{{ 'DEMO.CTA_SUB' | translate }}</p>
     </div>
   </div>
 </section>

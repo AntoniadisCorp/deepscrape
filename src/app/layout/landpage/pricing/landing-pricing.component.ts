@@ -113,7 +113,7 @@ export class LandingPricingComponent implements OnInit {
       ],
       highlighted: false,
       cta: 'PRICING.CTA_SALES',
-      ctaLink: '/service/contact',
+      ctaLink: '/contact',
     },
   ];
 }

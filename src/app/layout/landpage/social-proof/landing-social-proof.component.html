@@ -6,7 +6,7 @@
       <h2 class="text-lg sm:text-xl text-gray-500 dark:text-gray-400 font-medium mb-4">
         {{ 'SOCIAL.HEAD_LINE' | translate }}
       </h2>
-      <div class="text-8xl sm:text-9xl lg:text-[140px] font-display font-bold bg-gradient-to-r from-cyan-500 to-rose-500 dark:from-cyan-400 dark:to-rose-400 bg-clip-text text-transparent leading-none mb-3">
+      <div class="text-8xl sm:text-9xl lg:text-[140px] font-display font-bold bg-gradient-to-r from-cyan-600 to-rose-600 dark:from-cyan-400 dark:to-rose-400 bg-clip-text text-transparent leading-none mb-3">
         10M+
       </div>
       <p class="text-base text-gray-500 dark:text-gray-400">{{ 'SOCIAL.STAT_NOTE' | translate }}</p>
@@ -15,7 +15,7 @@
     <!-- Company logo bar (Figma-inspired "trusted by" row) -->
     <div class="flex flex-wrap justify-center items-center gap-x-12 gap-y-4 mb-20">
       @for (company of companyLogos; track company) {
-        <span class="text-lg sm:text-xl font-display font-bold text-gray-300 dark:text-gray-600 tracking-tight select-none opacity-60 hover:opacity-100 transition-opacity duration-300">
+        <span class="text-lg sm:text-xl font-display font-bold text-gray-400 dark:text-gray-600 tracking-tight select-none opacity-60 hover:opacity-100 transition-opacity duration-300">
           {{ company }}
         </span>
       }
@@ -72,7 +72,9 @@
     </div>
 
     <!-- Final CTA — glass gradient -->
-    <div class="relative overflow-hidden rounded-2xl p-10 md:p-14 text-center glass glass-cta-bg border-white/10 dark:border-white/10">
+    <div class="relative overflow-hidden rounded-2xl p-10 md:p-14 text-center glass glass-cta-bg border-gray-900/60 dark:border-white/10">
+      <!-- Dark scrim so white CTA text reads in BOTH modes (glass-cta-bg is too pale on white) -->
+      <div class="absolute inset-0 bg-slate-900/80 dark:bg-slate-950/60 pointer-events-none"></div>
       <div class="absolute inset-0 pointer-events-none">
         <div class="absolute top-0 right-0 w-64 h-64 orb-rose-cta rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 left-0 w-48 h-48 orb-cyan-cta rounded-full blur-3xl"></div>
@@ -85,7 +87,7 @@
           {{ 'SOCIAL.CTA_SUB' | translate }}
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a routerLink="/service/signup" class="glass-hover inline-flex items-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-cyan-500/30">
+          <a routerLink="/service/signup" class="inline-flex items-center px-8 py-4 text-base font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 bg-cyan-600 hover:bg-cyan-500 border border-cyan-400/40">
             {{ 'SOCIAL.CTA_BTN' | translate }} →
           </a>
         </div>
