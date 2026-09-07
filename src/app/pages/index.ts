@@ -1,4 +1,6 @@
 export * from './home/home.component'
+export * from './legal/privacy.component'
+export * from './legal/terms.component'
 export * from './landpage/landpage.component'
 export * from './admin-analytics/admin-analytics.component'
 export * from './admin/admin-workspace.component'
