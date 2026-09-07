@@ -108,6 +108,10 @@ const eventRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
  * (ipregistry when IPREGISTRY_API_KEY is set). Cached 6h, so only first-seen
  * IPs ever hit the provider. Lookups are skipped on the event limiter
  * (enableProtection=false) where country only feeds analytics, never a block.
+ * @param {Request} req Incoming request with optional edge country headers.
+ * @param {string} ip Client IP address used for the geo fallback.
+ * @param {boolean} allowDenyListBlock Whether geo lookup may affect blocking.
+ * @return {Promise<string>} Resolved country code or "unknown".
  */
 async function resolveCountryCode(
   req: Request,
