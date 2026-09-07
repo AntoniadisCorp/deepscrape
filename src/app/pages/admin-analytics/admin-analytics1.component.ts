@@ -14,6 +14,7 @@ import {
   RealtimeUpdate
 } from '../../core/types'
 import { Subscription } from 'rxjs'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 interface FilterState {
   period: PeriodFilter
@@ -26,7 +27,7 @@ interface FilterState {
 
 @Component({
   selector: 'app-admin-analytics',
-  imports: [BaseChartDirective, DecimalPipe, LucideAngularModule, FormsModule, DatePipe],
+  imports: [BaseChartDirective, DecimalPipe, LucideAngularModule, FormsModule, DatePipe, TranslateModule],
   templateUrl: './admin-analytics1.component.html',
   styleUrls: ['./admin-analytics.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -34,6 +35,7 @@ interface FilterState {
 export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
   private analyticsService = inject(FirestoreAnalyticsService)
   private cdr = inject(ChangeDetectorRef)
+  private translate = inject(TranslateService)
 
   // Subscriptions for cleanup
   private subscriptions: Subscription[] = []
@@ -52,28 +54,28 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
 
   // Available filter options
   readonly periodOptions: { value: PeriodFilter; label: string }[] = [
-    { value: 'today', label: 'Today' },
-    { value: 'yesterday', label: 'Yesterday' },
-    { value: 'last-7d', label: 'Last 7 days' },
-    { value: 'last-30d', label: 'Last 30 days' },
-    { value: 'last-90d', label: 'Last 90 days' },
-    { value: 'this-month', label: 'This month' },
-    { value: 'last-month', label: 'Last month' }
+    { value: 'today', label: 'ADMIN_ANALYTICS1.P_TODAY' },
+    { value: 'yesterday', label: 'ADMIN_ANALYTICS1.P_YESTERDAY' },
+    { value: 'last-7d', label: 'ADMIN_ANALYTICS1.P_7D' },
+    { value: 'last-30d', label: 'ADMIN_ANALYTICS1.P_30D' },
+    { value: 'last-90d', label: 'ADMIN_ANALYTICS1.P_90D' },
+    { value: 'this-month', label: 'ADMIN_ANALYTICS1.P_THIS_MONTH' },
+    { value: 'last-month', label: 'ADMIN_ANALYTICS1.P_LAST_MONTH' }
   ]
 
   readonly deviceOptions = [
-    { value: undefined, label: 'All Devices' },
-    { value: 'desktop', label: 'Desktop' },
-    { value: 'mobile', label: 'Mobile' },
-    { value: 'tablet', label: 'Tablet' }
+    { value: undefined, label: 'ADMIN_ANALYTICS1.DEV_ALL' },
+    { value: 'desktop', label: 'ADMIN_ANALYTICS1.DEV_DESKTOP' },
+    { value: 'mobile', label: 'ADMIN_ANALYTICS1.DEV_MOBILE' },
+    { value: 'tablet', label: 'ADMIN_ANALYTICS1.DEV_TABLET' }
   ]
 
   readonly providerOptions = [
-    { value: undefined, label: 'All Providers' },
-    { value: 'google', label: 'Google' },
-    { value: 'github', label: 'GitHub' },
-    { value: 'password', label: 'Email/Password' },
-    { value: 'phone', label: 'Phone' }
+    { value: undefined, label: 'ADMIN_ANALYTICS1.PROV_ALL' },
+    { value: 'google', label: 'ADMIN_ANALYTICS1.PROV_GOOGLE' },
+    { value: 'github', label: 'ADMIN_ANALYTICS1.PROV_GITHUB' },
+    { value: 'password', label: 'ADMIN_ANALYTICS1.PROV_EMAIL' },
+    { value: 'phone', label: 'ADMIN_ANALYTICS1.PROV_PHONE' }
   ]
 
   // Data properties
@@ -90,7 +92,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
     labels: [],
     datasets: [
       {
-        label: 'New Guests',
+        label: this.translate.instant('ADMIN_ANALYTICS1.DS_NEW_GUESTS'),
         data: [],
         borderColor: '#10B981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -98,7 +100,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
         tension: 0.4
       },
       {
-        label: 'New Users',
+        label: this.translate.instant('ADMIN_ANALYTICS1.DS_NEW_USERS'),
         data: [],
         borderColor: '#6366F1',
         backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -106,7 +108,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
         tension: 0.4
       },
       {
-        label: 'Logins',
+        label: this.translate.instant('ADMIN_ANALYTICS1.DS_LOGINS'),
         data: [],
         borderColor: '#F59E0B',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -152,7 +154,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
   public countryChartData: ChartData<'bar'> = {
     labels: [],
     datasets: [{
-      label: 'Visitors by Country',
+      label: this.translate.instant('ADMIN_ANALYTICS1.DS_VISITORS_BY_COUNTRY'),
       data: [],
       backgroundColor: '#3B82F6',
       borderRadius: 8,
@@ -277,7 +279,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
       this.setupRealtimeUpdates()
       
     } catch (err) {
-      this.error = 'Failed to load analytics data'
+      this.error = this.translate.instant('ADMIN_ANALYTICS1.ERR_LOAD_DATA')
       console.error('❌ Analytics initialization error:', err)
     } finally {
       this.loading = false
@@ -320,7 +322,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('❌ Real-time dashboard error:', error)
-        this.error = 'Real-time connection lost'
+        this.error = this.translate.instant('ADMIN_ANALYTICS1.ERR_CONNECTION_LOST')
       }
     })
     
@@ -347,7 +349,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('❌ Analytics data error:', error)
-        this.error = 'Failed to load analytics'
+        this.error = this.translate.instant('ADMIN_ANALYTICS1.ERR_LOAD_ANALYTICS')
       }
     })
     
@@ -418,7 +420,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
     try {
       await this.loadFilteredAnalytics()
     } catch (err) {
-      this.error = 'Failed to apply filters'
+      this.error = this.translate.instant('ADMIN_ANALYTICS1.ERR_APPLY_FILTERS')
       console.error('❌ Filter application error:', err)
     } finally {
       this.loading = false
@@ -460,7 +462,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
       ),
       datasets: [
         {
-          label: 'New Guests',
+          label: this.translate.instant('ADMIN_ANALYTICS1.DS_NEW_GUESTS'),
           data: timeline.map(item => item.newGuests),
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -468,7 +470,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
           tension: 0.4
         },
         {
-          label: 'New Users',
+          label: this.translate.instant('ADMIN_ANALYTICS1.DS_NEW_USERS'),
           data: timeline.map(item => item.newUsers),
           borderColor: '#6366F1',
           backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -476,7 +478,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
           tension: 0.4
         },
         {
-          label: 'Logins',
+          label: this.translate.instant('ADMIN_ANALYTICS1.DS_LOGINS'),
           data: timeline.map(item => item.totalLogins),
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -493,7 +495,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
     this.countryChartData = {
       labels: topCountries.map(item => item.country),
       datasets: [{
-        label: 'Visitors by Country',
+        label: this.translate.instant('ADMIN_ANALYTICS1.DS_VISITORS_BY_COUNTRY'),
         data: topCountries.map(item => item.count),
         backgroundColor: '#3B82F6',
         borderRadius: 8,
@@ -547,7 +549,7 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
       await this.applyFilters()
       console.log('🔄 Data refreshed successfully')
     } catch (err) {
-      this.error = 'Failed to refresh data'
+      this.error = this.translate.instant('ADMIN_ANALYTICS1.ERR_REFRESH')
       console.error('❌ Refresh error:', err)
     } finally {
       this.loading = false
@@ -587,6 +589,19 @@ export class AdminAnalyticsComponent1 implements OnInit, OnDestroy {
     }
     
     return 'Static'
+  }
+
+  getConnectionStatusKey(): string {
+    if (this.isRealtime && this.dashboardSummary) {
+      const lastUpdate = this.dashboardSummary.lastUpdated.toDate()
+      const timeDiff = Date.now() - lastUpdate.getTime()
+
+      if (timeDiff < 30000) return 'ADMIN_ANALYTICS1.STATUS_LIVE'
+      if (timeDiff < 300000) return 'ADMIN_ANALYTICS1.STATUS_RECENT'
+      return 'ADMIN_ANALYTICS1.STATUS_STALE'
+    }
+
+    return 'ADMIN_ANALYTICS1.STATUS_STATIC'
   }
 
   getStatusClass(): string {

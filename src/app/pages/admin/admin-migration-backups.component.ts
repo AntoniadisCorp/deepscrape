@@ -24,6 +24,7 @@ import {
   writeBatch,
 } from '@angular/fire/firestore'
 import { CacheService, FirestoreService } from 'src/app/core/services'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 type StartedAtCursor = {
   kind: 'timestamp' | 'number' | 'string'
@@ -46,7 +47,7 @@ interface BackupRunItem {
 
 @Component({
   selector: 'app-admin-migration-backups',
-  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent, RippleDirective],
+  imports: [CommonModule, DecimalPipe, RouterLink, SlideInModalComponent, RippleDirective, TranslateModule],
   templateUrl: './admin-migration-backups.component.html',
   styleUrl: './admin-migration-backups.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -54,8 +55,9 @@ interface BackupRunItem {
 export class AdminMigrationBackupsComponent implements OnInit {
   private readonly firestoreService = inject(FirestoreService)
   private readonly cacheService = inject(CacheService)
-  private readonly db: Firestore = this.firestoreService.getInstanceDB('easyscrape')
   private readonly cdr = inject(ChangeDetectorRef)
+  private readonly translate = inject(TranslateService)
+  private readonly db: Firestore = this.firestoreService.getInstanceDB('easyscrape')
   private readonly pageSize = 10
   private readonly pageCursorCacheNamespace = 'admin-migration-backups:lastDocByPage'
 
@@ -92,9 +94,9 @@ export class AdminMigrationBackupsComponent implements OnInit {
 
     this.pendingAction = 'delete-backups'
     this.pendingRunId = runId
-    this.confirmModalTitle = 'Delete backup documents'
-    this.confirmModalMessage = `Delete backup documents for run ${runId}? This action cannot be undone.`
-    this.confirmModalActionLabel = 'Delete Backups'
+    this.confirmModalTitle = this.translate.instant('ADMIN_MIGRATION_BACKUPS.CONFIRM_DELETE_BACKUPS_TITLE')
+    this.confirmModalMessage = this.translate.instant('ADMIN_MIGRATION_BACKUPS.CONFIRM_DELETE_BACKUPS_MSG', { runId })
+    this.confirmModalActionLabel = this.translate.instant('ADMIN_MIGRATION_BACKUPS.DELETE_BACKUPS')
     this.confirmModalOpen.setValue(true)
   }
 
@@ -105,18 +107,18 @@ export class AdminMigrationBackupsComponent implements OnInit {
 
     this.pendingAction = 'delete-run'
     this.pendingRunId = runId
-    this.confirmModalTitle = 'Delete migration run'
-    this.confirmModalMessage = `Delete migration run ${runId} and its backups? This action cannot be undone.`
-    this.confirmModalActionLabel = 'Delete Run'
+    this.confirmModalTitle = this.translate.instant('ADMIN_MIGRATION_RUNS.CONFIRM_DELETE_RUN_TITLE')
+    this.confirmModalMessage = this.translate.instant('ADMIN_MIGRATION_BACKUPS.CONFIRM_DELETE_RUN_MSG', { runId })
+    this.confirmModalActionLabel = this.translate.instant('ADMIN_MIGRATION_BACKUPS.DELETE_RUN')
     this.confirmModalOpen.setValue(true)
   }
 
   requestDeleteAllBackupsHistory(): void {
     this.pendingAction = 'delete-all-backups'
     this.pendingRunId = null
-    this.confirmModalTitle = 'Delete all backups history'
-    this.confirmModalMessage = 'Delete all migration backup documents history? This action cannot be undone.'
-    this.confirmModalActionLabel = 'Delete All Backup History'
+    this.confirmModalTitle = this.translate.instant('ADMIN_MIGRATION_BACKUPS.CONFIRM_DELETE_ALL_TITLE')
+    this.confirmModalMessage = this.translate.instant('ADMIN_MIGRATION_BACKUPS.CONFIRM_DELETE_ALL_MSG')
+    this.confirmModalActionLabel = this.translate.instant('ADMIN_MIGRATION_BACKUPS.DELETE_ALL_BACKUP_HISTORY')
     this.confirmModalOpen.setValue(true)
   }
 
@@ -161,7 +163,7 @@ export class AdminMigrationBackupsComponent implements OnInit {
       this.resetPaginationCache()
       await this.loadBackups(this.currentPage, true)
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to delete backups for this run.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_BACKUPS.ERR_DELETE_BACKUPS')
     } finally {
       this.deletingBackupRunIds.delete(runId)
       this.renderNow()
@@ -182,7 +184,7 @@ export class AdminMigrationBackupsComponent implements OnInit {
       this.resetPaginationCache()
       await this.loadBackups(this.currentPage, true)
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to delete migration run.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_BACKUPS.ERR_DELETE_RUN')
     } finally {
       this.deletingRunIds.delete(runId)
       this.renderNow()
@@ -202,7 +204,7 @@ export class AdminMigrationBackupsComponent implements OnInit {
       this.resetPaginationCache()
       await this.loadBackups(this.currentPage, true)
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to clear backup history.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_BACKUPS.ERR_CLEAR_HISTORY')
     } finally {
       this.deletingAll = false
       this.renderNow()
@@ -260,6 +262,23 @@ export class AdminMigrationBackupsComponent implements OnInit {
         return 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300'
       default:
         return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+    }
+  }
+
+  statusLabel(status: string): string {
+    switch (status) {
+      case 'completed':
+        return 'ADMIN_MIGRATION_BACKUPS.STATUS_COMPLETED'
+      case 'running':
+        return 'ADMIN_MIGRATION_BACKUPS.STATUS_RUNNING'
+      case 'failed':
+        return 'ADMIN_MIGRATION_BACKUPS.STATUS_FAILED'
+      case 'stopped':
+        return 'ADMIN_MIGRATION_BACKUPS.STATUS_STOPPED'
+      case 'fallback-completed':
+        return 'ADMIN_MIGRATION_BACKUPS.STATUS_FALLBACK_COMPLETED'
+      default:
+        return 'ADMIN_MIGRATION_BACKUPS.STATUS_UNKNOWN'
     }
   }
 
@@ -327,7 +346,7 @@ export class AdminMigrationBackupsComponent implements OnInit {
       const pageCursor = this.toBackupsPageCursor(pageLastDoc)
       this.cacheService.set<number, BackupsPageCursor | null>(this.pageCursorCacheNamespace, this.currentPage, pageCursor)
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to load migration backups.'
+      this.error = err instanceof Error ? err.message : this.translate.instant('ADMIN_MIGRATION_BACKUPS.ERR_LOAD_BACKUPS')
       this.backups = []
     } finally {
       this.loading = false

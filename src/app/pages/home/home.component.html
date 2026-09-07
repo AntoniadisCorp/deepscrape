@@ -19,18 +19,36 @@
             : 'assets/logo-512x512.png 2x'
         "
         class="h-10 w-10 group-hover:scale-105 transition-transform duration-300" />
-      <h1
+      <span
         class="hidden text-lg xs:block sm:block font-normal dark:font-bold font-['Allerta_Stencil',monospace] leading-[128px] select-none pointer-events-none z-50 bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#7e7e7e] dark:to-[#4A5C8F] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
         DeepScrape
-      </h1>
+      </span>
     </a>
+
+    <!-- Section anchors (fade in once the user scrolls past the hero) -->
+    <nav
+      class="hidden lg:flex items-center gap-1 rounded-full glass-pill px-2 py-1.5 transition-all duration-500 origin-center"
+      [ngClass]="{
+        'opacity-100 translate-y-0 pointer-events-auto': isScrolled,
+        'opacity-0 -translate-y-1 pointer-events-none': !isScrolled
+      }">
+      @for (link of navLinks; track link.id) {
+        <button
+          type="button"
+          (click)="scrollToSection(link.id)"
+          class="text-sm font-medium px-3.5 py-1.5 rounded-full text-gray-600 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-300 hover:bg-white/70 dark:hover:bg-white/5 transition-colors duration-200">
+          {{ link.label | translate }}
+        </button>
+      }
+    </nav>
+
     <div class="flex items-center gap-3">
       <!-- Dashboard button -->
       <a
         [routerLink]="['/dashboard']"
         routerLinkActive="active"
         class="hidden sm:inline-flex text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200">
-        Dashboard
+        {{ 'HOME.DASHBOARD' | translate }}
       </a>
 
       <!-- Contact link -->
@@ -38,7 +56,7 @@
         [routerLink]="['/contact']"
         routerLinkActive="active"
         class="hidden sm:inline-flex text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200">
-        Contact
+        {{ 'HOME.CONTACT' | translate }}
       </a>
 
       <div class="flex items-center justify-end gap-2">
@@ -59,6 +77,7 @@
 <app-animated-bg class="fixed inset-0 z-0 pointer-events-none"></app-animated-bg>
 
 <app-hero></app-hero>
+<app-landing-agent></app-landing-agent>
 <app-features></app-features>
 <app-landing-use-cases></app-landing-use-cases>
 <app-landing-architecture></app-landing-architecture>

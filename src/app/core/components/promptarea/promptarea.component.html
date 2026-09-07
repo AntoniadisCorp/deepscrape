@@ -13,11 +13,11 @@
 
    "
     class="mt-2 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white  dark:bg-gray6 bg-white"
-    placeholder="Type your prompt here..."
+    placeholder="{{ 'PROMPT.PLACEHOLDER' | translate }}"
   ></textarea>
   <div class="flex justify-between h-16 mt-2">
     <p class="text-xs text-gray-400">
-      Characters: {{ userPrompt.value.length }}/4000
+      {{ 'PROMPT.CHARS_LABEL' | translate }} {{ userPrompt.value.length }}/4000
     </p>
     <div class="flex items-center justify-end">
       @if (!submitControl.value) {
@@ -80,7 +80,7 @@
       </div>
       @if (userPrompt!.invalid && (userPrompt!.dirty || userPrompt!.touched)) {
         <div class="mt-2">
-          <p class="text-red-500 font-bold">Errors:</p>
+          <p class="text-red-500 font-bold">{{ 'PROMPT.ERRORS_LABEL' | translate }}</p>
           @if (errors) {
             <ul>
               @for (error of errors; track error) {
@@ -91,12 +91,12 @@
         </div>
       }
       <!-- <div *ngIf="submissionStatus === 'success'" class="mt-2">
-      <p class="text-green-500 font-bold">Prompt submitted successfully!</p>
+      <p class="text-green-500 font-bold">{{ 'PROMPT.SUBMIT_SUCCESS' | translate }}</p>
     </div> -->
     @if (submissionStatus === 'error') {
       <div class="mt-2">
         <p class="text-red-500 font-bold">
-          Failed to submit prompt. Please try again.
+          {{ 'PROMPT.SUBMIT_FAILED' | translate }}
         </p>
       </div>
     }

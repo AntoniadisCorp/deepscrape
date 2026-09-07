@@ -27,7 +27,7 @@ describe('ProfileTabComponent', () => {
     const file = new File(['abc'], 'test.txt', { type: 'text/plain' });
 
     expect(component.validateFile(file)).toBeFalse();
-    expect(component.fileError).toContain('Only image files');
+    expect(component.fileError).toBe('SETTINGS_PROFILE.FILE_ERROR_TYPE');
   });
 
   it('validateFile should reject files larger than 5MB', () => {
@@ -35,7 +35,7 @@ describe('ProfileTabComponent', () => {
     const file = new File([bigContent], 'big.png', { type: 'image/png' });
 
     expect(component.validateFile(file)).toBeFalse();
-    expect(component.fileError).toContain('less than 5MB');
+    expect(component.fileError).toBe('SETTINGS_PROFILE.FILE_ERROR_SIZE');
   });
 
   it('validateFile should accept valid image file', () => {

@@ -2,12 +2,13 @@ import { Component, DestroyRef, inject, Input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
+import { TranslateModule } from '@ngx-translate/core';
 import { LocalStorage } from 'src/app/core/services';
 import { myIcons, themeStorageKey } from 'src/app/shared';
 
 @Component({
     selector: 'app-footer',
-    imports: [LucideAngularModule],
+    imports: [LucideAngularModule, TranslateModule],
     templateUrl: './app-footer.component.html',
     styleUrl: './app-footer.component.scss'
 })
@@ -35,7 +36,6 @@ export class AppFooterComponent {
     }
 
 
-    private isThemeDark(): boolean {
-        return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark;
+    private isThemeDark(): boolean {        return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark;
     }
 }

@@ -5,7 +5,7 @@
         [disabled]="connecting"
         (click)="startStream()"
         class="start-button">
-        {{connecting ? 'Connecting...' : 'Start Remote Browser'}}
+        {{connecting ? ('BROWSER.CONNECTING' | translate) : ('BROWSER.START' | translate)}}
       </button>
     }
 
@@ -61,9 +61,9 @@
           <path d="M0 0h24v24H0z" fill="none"/>
           <path fill="white" d="M8 5v14l11-7z"/>
         </svg>
-        <span>Click to Play</span>
+        <span>{{ 'BROWSER.CLICK_PLAY' | translate }}</span>
       </button>
-      <p class="autoplay-message">Autoplay was blocked by your browser</p>
+      <p class="autoplay-message">{{ 'BROWSER.AUTOPLAY_BLOCKED' | translate }}</p>
     </div>
   }
   <!-- Interactive overlay for capturing mouse/touch events (using textarea like neko) -->
@@ -81,7 +81,7 @@
   <!-- Placeholder message (positioned absolutely) -->
   @if (!connected) {
     <div class="placeholder">
-      <p>Click "Start Remote Browser" to begin</p>
+      <p>{{ 'BROWSER.PLACEHOLDER' | translate }}</p>
     </div>
   }
 
@@ -89,7 +89,7 @@
   @if (connecting) {
     <div class="loading-indicator">
       <div class="spinner"></div>
-      <p>Connecting to remote browser...</p>
+      <p>{{ 'BROWSER.CONNECTING_TO' | translate }}</p>
     </div>
   }
 </div>
@@ -98,7 +98,7 @@
 @if (connected) {
   <div class="status-indicator">
     <span class="status-dot connected"></span>
-    Connected to remote browser
+    {{ 'BROWSER.CONNECTED' | translate }}
   </div>
 }
 

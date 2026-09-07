@@ -9,7 +9,7 @@
         (click)="addAsideBar(false)"
         type="button"
         class="inline-flex items-center rounded-full p-3 text-sm text-gray-500 hover:bg-gray-300/[.2] focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-300 dark:hover:bg-gray-700/[.2] dark:focus:ring-gray-600 lg:hidden">
-        <span class="sr-only">Open sidebar</span>
+        <span class="sr-only">{{ 'SHELL.OPEN_SIDEBAR' | translate }}</span>
         <svg
           class="h-6 w-6"
           aria-hidden="true"
@@ -69,9 +69,9 @@
             (click)="openProfileMenu()"
             class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
             aria-expanded="false">
-            <span class="sr-only">Open user menu</span>
+            <span class="sr-only">{{ 'SHELL.OPEN_USER_MENU' | translate }}</span>
             <img
-              class="rounded-full object-contain"
+              class="rounded-full object-cover"
               priority=""
               loading="eager"
               ng-img="true"
@@ -127,7 +127,7 @@
               role="none">
               <p
                 class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-                Workspace
+                {{ 'SHELL.WORKSPACE' | translate }}
               </p>
               @if (orgLoading) {
                 <div class="space-y-2" aria-hidden="true">
@@ -138,13 +138,13 @@
                 <app-dropdown
                   [control]="workspaceControl"
                   [options]="workspaceDropdownOptions"
-                  [dropDownName]="'Workspace'"
+                  [dropDownName]="'SHELL.WORKSPACE'"
                   [padding]="'py-2.5 pl-3 pr-3'"
                   [enableMenuAnimation]="true"
                   (select)="onWorkspaceSelected($event)"></app-dropdown>
               } @else {
                 <div class="text-xs text-gray-500 dark:text-gray-400">
-                  No workspaces found
+                  {{ 'SHELL.NO_WORKSPACES' | translate }}
                 </div>
               }
             </div>
@@ -154,7 +154,7 @@
                 role="none">
                 <p
                   class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-                  Pending Invitations
+                  {{ 'SHELL.PENDING_INV' | translate }}
                 </p>
                 <div class="space-y-2">
                   @for (invite of invitations; track invite.id) {
@@ -168,7 +168,7 @@
                         class="mt-1 rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                         [disabled]="inviteActionLoading"
                         (click)="acceptInvitation(invite.id)">
-                        Accept
+                        {{ 'SHELL.ACCEPT' | translate }}
                       </button>
                     </div>
                   }
@@ -272,9 +272,9 @@
             (click)="openProfileMenu()"
             class="flex rounded-full border-1 border-blue-200 text-sm focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 max-h-12 max-w-12"
             aria-expanded="false">
-            <span class="sr-only">Open user menu</span>
+            <span class="sr-only">{{ 'SHELL.OPEN_USER_MENU' | translate }}</span>
             <img
-              class="rounded-full object-contain"
+              class="rounded-full object-cover"
               [srcset]="''"
               alt="user photo" />
           </button>

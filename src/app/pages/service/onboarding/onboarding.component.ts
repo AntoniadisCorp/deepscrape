@@ -12,11 +12,12 @@ import { BillingInterval, BillingPlanCatalog, BillingPlanTier } from 'src/app/co
 import { HttpErrorResponse } from '@angular/common/http';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { resolveSafeReturnUrl } from 'src/app/core/functions';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-onboarding',
   standalone: true,
-  imports: [ReactiveFormsModule, MatProgressSpinner, MatIconModule, CommonModule],
+  imports: [ReactiveFormsModule, MatProgressSpinner, MatIconModule, CommonModule, TranslateModule],
   templateUrl: './onboarding.component.html',
   styleUrl: './onboarding.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,6 +41,7 @@ export class OnboardingComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly currentUser = toSignal(this.authService.user$);
   private readonly catalogPlans = toSignal(this.billingService.getPlans$(true), { initialValue: [] as BillingPlanCatalog[] });
@@ -51,9 +53,9 @@ export class OnboardingComponent implements OnInit {
   enterpriseRequestLoading = signal(false);
   enterpriseRequestMessage = signal('');
   readonly stepItems = [
-    { id: 1, title: 'Workspace', subtitle: 'Name your home base', icon: 'business' },
-    { id: 2, title: 'Invites', subtitle: 'Bring your team in', icon: 'group_add' },
-    { id: 3, title: 'Plan', subtitle: 'Pick a starting lane', icon: 'diamond' },
+    { id: 1, title: 'ONBOARDING.STEP1_ITEM_T', subtitle: 'ONBOARDING.STEP1_ITEM_S', icon: 'business' },
+    { id: 2, title: 'ONBOARDING.STEP2_ITEM_T', subtitle: 'ONBOARDING.STEP2_ITEM_S', icon: 'group_add' },
+    { id: 3, title: 'ONBOARDING.STEP3_ITEM_T', subtitle: 'ONBOARDING.STEP3_ITEM_S', icon: 'diamond' },
   ] as const;
 
   workspaceForm!: FormGroup;
@@ -147,7 +149,7 @@ export class OnboardingComponent implements OnInit {
 
   getPreferredPriceLabel(plan: BillingPlanCatalog): string {
     if (plan.id === 'free') {
-      return 'Free';
+      return 'ONBOARDING.FREE';
     }
 
     const monthlyAmount = Number(plan.prices.monthly?.amount || 0);
@@ -197,10 +199,10 @@ export class OnboardingComponent implements OnInit {
   }
 
   getIntervalLabel(interval: BillingInterval): string {
-    if (interval === 'payAsYouGo') return 'Pay-as-you-go';
-    if (interval === 'monthly') return 'Monthly';
-    if (interval === 'quarterly') return 'Quarterly';
-    return 'Annually';
+    if (interval === 'payAsYouGo') return 'ONBOARDING.INTVL_PAYG';
+    if (interval === 'monthly') return 'ONBOARDING.INTVL_MONTHLY';
+    if (interval === 'quarterly') return 'ONBOARDING.INTVL_QUARTERLY';
+    return 'ONBOARDING.INTVL_ANNUALLY';
   }
 
   getIntervalPriceLabel(plan: BillingPlanCatalog, interval: BillingInterval): string {
@@ -212,13 +214,13 @@ export class OnboardingComponent implements OnInit {
     return `EUR ${this.formatCents(amount)}`;
   }
 
-  getPlanIntervals(plan: BillingPlanCatalog): string {
-    const labels: string[] = [];
-    if (plan.prices.payAsYouGo?.amount !== undefined) labels.push('pay-as-you-go');
-    if (plan.prices.monthly?.amount !== undefined) labels.push('monthly');
-    if (plan.prices.quarterly?.amount !== undefined) labels.push('quarterly');
-    if (plan.prices.annually?.amount !== undefined) labels.push('annually');
-    return labels.join(', ');
+  getPlanIntervals(plan: BillingPlanCatalog): string[] {
+    const keys: string[] = [];
+    if (plan.prices.payAsYouGo?.amount !== undefined) keys.push('ONBOARDING.INTVL_PAYG');
+    if (plan.prices.monthly?.amount !== undefined) keys.push('ONBOARDING.INTVL_MONTHLY');
+    if (plan.prices.quarterly?.amount !== undefined) keys.push('ONBOARDING.INTVL_QUARTERLY');
+    if (plan.prices.annually?.amount !== undefined) keys.push('ONBOARDING.INTVL_ANNUALLY');
+    return keys;
   }
 
   isEnterpriseCustomEmailMode(): boolean {
@@ -226,7 +228,7 @@ export class OnboardingComponent implements OnInit {
   }
 
   getCurrentEnterpriseEmailLabel(): string {
-    return this.accountEmail || 'no email available';
+    return this.accountEmail || 'ONBOARDING.NO_EMAIL';
   }
 
   async submitEnterpriseRequest(): Promise<void> {
@@ -252,9 +254,9 @@ export class OnboardingComponent implements OnInit {
         workspaceName: String(this.workspaceForm.value.workspaceName || '').trim(),
         selectedPlan: this.planForm.value.plan || null,
       });
-      this.enterpriseRequestMessage.set('Enterprise request sent to admin emails queue.');
+      this.enterpriseRequestMessage.set(this.translate.instant('ONBOARDING.ENTERPRISE_REQ_SENT'));
     } catch (error: any) {
-      this.enterpriseRequestMessage.set(error?.message || 'Failed to submit enterprise request.');
+      this.enterpriseRequestMessage.set(error?.message || this.translate.instant('ONBOARDING.ENTERPRISE_REQ_FAILED'));
     } finally {
       this.enterpriseRequestLoading.set(false);
     }
@@ -284,9 +286,9 @@ export class OnboardingComponent implements OnInit {
     const planId = this.planForm?.get('plan')?.value as BillingPlanTier | null;
     const interval = this.getSelectedInterval();
     if (planId && planId !== 'free' && planId !== 'enterprise' && interval) {
-      return 'Proceed to checkout';
+      return 'ONBOARDING.CTA_CHECKOUT';
     }
-    return 'Get started';
+    return 'ONBOARDING.CTA_START';
   }
 
   async complete(): Promise<void> {
@@ -373,7 +375,7 @@ export class OnboardingComponent implements OnInit {
       return (error as { message: string }).message
     }
 
-    return 'Something went wrong. Please try again.'
+    return this.translate.instant('ONBOARDING.GENERIC_ERROR')
   }
 
   private getReturnUrl(): string {

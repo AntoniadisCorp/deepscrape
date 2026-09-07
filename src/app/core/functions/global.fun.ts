@@ -432,25 +432,36 @@ export function extractNames(displayName: string): { firstname: string; lastname
    * @param password 
    * @returns password strength 
    */
-export function checkPasswordStrength(password: string) {
+export function checkPasswordStrength(password: string, t?: (key: string) => string) {
 
+    const P = (key: string, en: string) => (t ? t(key) : en)
     const minLength = 8;
-        const hasUpperCase = /[A-Z]/.test(password);
-        const hasLowerCase = /[a-z]/.test(password);
-        const hasNumbers = /\d/.test(password);
-        const hasNonAlphas = /\W/.test(password)
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasNonAlphas = /\W/.test(password)
+    const hasForbiddenCharacters = /[^\w\s@$!%*?&]/.test(password)
 
-        // has characters that not permitted
-        const hasForbiddenCharacters = /[^\w\s@$!%*?&]/.test(password)
+    return (
+        password.length < minLength ? P('PASSWORD_STRENGTH.LENGTH', "Risky. Password needs to be at least 8 characters long") :
+            !hasLowerCase ? P('PASSWORD_STRENGTH.LOWER', "Risky. Password needs at least one lowercase letter") :
+                !hasUpperCase ? P('PASSWORD_STRENGTH.UPPER', "Risky. Password needs at least one uppercase letter") :
+                    !hasNumbers ? P('PASSWORD_STRENGTH.NUMBER', "Risky. Password needs at least one number") :
+                        !hasNonAlphas ? P('PASSWORD_STRENGTH.SPECIAL', "Risky. Password needs at least one special character") :
+                            hasForbiddenCharacters ? P('PASSWORD_STRENGTH.FORBIDDEN', "Risky. Dont use characters that are not permitted..") : P('PASSWORD_STRENGTH.STRONG', "Strong as it gets")
+    )
+}
 
-        return (
-            password.length < minLength ? "Risky. Password needs to be at least 8 characters long" :
-                !hasLowerCase ? "Risky. Password needs at least one lowercase letter" :
-                    !hasUpperCase ? "Risky. Password needs at least one uppercase letter" :
-                        !hasNumbers ? "Risky. Password needs at least one number" :
-                            !hasNonAlphas ? "Risky. Password needs at least one special character" :
-                                hasForbiddenCharacters ? "Risky. Dont use characters that are not permitted.." : "Strong as it gets"
-        )
+// Decoupled validity check (mirrors checkPasswordStrength rules) so callers never
+// have to sniff the human-readable message text.
+export function isStrongPassword(password: string): boolean {
+    const minLength = 8
+    return password.length >= minLength &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /\d/.test(password) &&
+        /\W/.test(password) &&
+        !/[^\w\s@$!%*?&]/.test(password)
 }
 
 type BraveNavigator = Navigator & {

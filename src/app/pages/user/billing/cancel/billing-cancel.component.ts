@@ -1,16 +1,18 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core'
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
 import { NgIf } from '@angular/common'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 @Component({
   selector: 'app-billing-cancel',
-  imports: [RouterLink, NgIf],
+  imports: [RouterLink, NgIf, TranslateModule],
   templateUrl: './billing-cancel.component.html',
   styleUrl: './billing-cancel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BillingCancelComponent {
   shouldShowCancelPage = false
+  private readonly translate = inject(TranslateService)
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -23,7 +25,7 @@ export class BillingCancelComponent {
       void this.router.navigate(['/billing/plans'], {
         queryParams: {
           offer: '1',
-          offerMessage: 'oh are you not satisfied with the offer, ask for new offer',
+          offerMessage: this.translate.instant('BILLING_PLANS.OFFER_MESSAGE'),
         },
       })
     }

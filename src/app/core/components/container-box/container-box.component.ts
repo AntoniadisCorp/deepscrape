@@ -1,6 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, model, Output, signal, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { startSuspendAnimation } from 'src/app/animations';
 import { FlyMachine } from '../../types';
 import { FormatBytesPipe } from '../../pipes';
@@ -18,7 +19,8 @@ export interface ExtendedFlyMachine extends FlyMachine {
     MatIcon,
     DatePipe,
     FormatBytesPipe,
-    RippleDirective
+    RippleDirective,
+    TranslateModule
 ],
   templateUrl: './container-box.component.html',
   styleUrl: './container-box.component.scss',

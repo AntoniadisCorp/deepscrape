@@ -9,6 +9,7 @@ import { of } from 'rxjs/internal/observable/of';
 import { map } from 'rxjs/internal/operators/map';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { DropdownComponent, RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import {
   browserTitleValidator, cacheModeValidator, containsStrings, cssSelector, delayBeforeReturnHtmlValidator, excludeDomains, excludedSelector,
   includesStrings, jsCodeValidator, sessionIdValidator, waitForValidator
@@ -22,7 +23,7 @@ import { listStaggerAnimation } from 'src/app/animations';
 
 @Component({
   selector: 'app-crawl-config',
-  imports: [ReactiveFormsModule, MatIcon, RadioToggleComponent, FormControlPipe, NgClass, StinputComponent, DropdownComponent, AsyncPipe, DatePipe, MatProgressSpinner, JsonPipe],
+  imports: [ReactiveFormsModule, MatIcon, RadioToggleComponent, FormControlPipe, NgClass, StinputComponent, DropdownComponent, AsyncPipe, DatePipe, MatProgressSpinner, JsonPipe, TranslateModule],
   animations: [listStaggerAnimation],
   templateUrl: './crawl-config.component.html',
   styleUrl: './crawl-config.component.scss'
@@ -30,6 +31,7 @@ import { listStaggerAnimation } from 'src/app/animations';
 export class CrawlConfigComponent {
 
   private window = inject(WindowToken)
+  private translate = inject(TranslateService)
 
   @HostListener('window:scroll', ['$event'])
   onScroll(event: any) {
@@ -432,7 +434,7 @@ export class CrawlConfigComponent {
             
           this.configForm.enable();
           // show snackbar success
-          this.showSnackbar('Crawl configuration saved successfully.', SnackBarType.success, '', 5000);
+          this.showSnackbar(this.translate.instant('CRAWL_PACK_CCONFIG.CONFIG_SAVED'), SnackBarType.success, '', 5000);
         }
       });
   }

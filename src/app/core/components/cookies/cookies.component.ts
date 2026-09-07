@@ -1,4 +1,5 @@
 import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { ConsentModalComponent } from '../consent-modal/consent-modal.component';
 
 import { BrowserToken, ExtensionService, LocalStorage } from '../../services';
@@ -10,7 +11,7 @@ import { EXTENSION_ID } from '../../variables';
 
 @Component({
     selector: 'app-cookies',
-    imports: [ConsentModalComponent, ReactiveFormsModule],
+    imports: [ConsentModalComponent, ReactiveFormsModule, TranslateModule],
     templateUrl: './cookies.component.html',
     styleUrl: './cookies.component.scss'
 })

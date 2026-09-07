@@ -303,7 +303,7 @@ function serveapp() {
 export const deepscrape = onRequest(
   {
     minInstances: 1,
-    memory: "256MiB",
+    memory: "512MiB",
     secrets: [functionsEnvJson, serviceAccountKeyParam],
   },
   serveapp()

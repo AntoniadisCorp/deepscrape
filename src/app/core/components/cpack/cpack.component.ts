@@ -9,11 +9,12 @@ import { catchError } from 'rxjs/internal/operators/catchError';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { ProviderPipe } from '../../pipes';
 import { ImageSrcsetDirective } from '../../directives';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 @Component({
   selector: 'app-cpack',
-  imports: [DatePipe, ProviderPipe, AsyncPipe, ImageSrcsetDirective],
+  imports: [DatePipe, ProviderPipe, AsyncPipe, ImageSrcsetDirective, TranslateModule],
   templateUrl: './cpack.component.html',
   styleUrl: './cpack.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

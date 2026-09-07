@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { trigger, state, style, transition, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-operations-tab',
   standalone: true,
-  imports: [],
+  imports: [TranslateModule],
   templateUrl: './operations-tab.component.html',
   styleUrl: './operations-tab.component.scss',
   animations: [

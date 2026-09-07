@@ -17,6 +17,7 @@ import { GinputComponent } from '../ginput/ginput.component';
 import { AiAPIService, CrawlAPIService, LocalStorage, SnackbarService } from '../../services';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { MarkdownModule } from 'ngx-markdown';
 import { ClipboardbuttonComponent } from '../clipboardbutton/clipboardbutton.component';
@@ -49,7 +50,7 @@ interface AIMessage {
 
 @Component({
   selector: 'app-llm-scrape',
-  imports: [MatIcon, MarkdownModule, MatProgressSpinner, GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe, RadioToggleComponent, BrowserCookiesComponent],
+  imports: [MatIcon, MarkdownModule, MatProgressSpinner, GinputComponent, PromptareaComponent, DropdownComponent, FormControlPipe, RadioToggleComponent, BrowserCookiesComponent, TranslateModule],
   templateUrl: './app-llm-scrape.component.html',
   styleUrl: './app-llm-scrape.component.scss'
 })

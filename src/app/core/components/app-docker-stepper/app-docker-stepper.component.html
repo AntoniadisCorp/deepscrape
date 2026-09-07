@@ -19,12 +19,12 @@
         <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
           {{
           step === 1
-          ? 'Select Image'
+          ? ('DOCKER_STEPPER.STEP_SELECT_IMAGE' | translate)
           : step === 2
-          ? 'Settings'
+          ? ('DOCKER_STEPPER.STEP_SETTINGS' | translate)
           : step === 3
-          ? 'Advanced'
-          : 'Review'
+          ? ('DOCKER_STEPPER.STEP_ADVANCED' | translate)
+          : ('DOCKER_STEPPER.STEP_REVIEW' | translate)
           }}
         </span>
       </button>
@@ -50,13 +50,13 @@
         <div class="space-y-4">
           <label
             class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Select Docker Image Option
+            {{ 'DOCKER_STEPPER.SELECT_IMAGE_OPTION' | translate }}
           </label>
           <div class="space-y-6">
             <label class="mb-4 flex items-center h-10 gap-2 cursor-pointer">
               <app-radio-button
                 [control]="formStep1.get('imageOption') | formControl"
-                [title]="'Use a Default System Image'"
+                [title]="'DOCKER_STEPPER.IMG' | translate"
                 [value]="'default'"
               class="grow"></app-radio-button>
             </label>
@@ -66,13 +66,13 @@
                   [options]="defaultImages"
                   [control]="formStep1.get('defaultImage') | formControl"
                   [padding]="'p-2'"
-                dropDownName="Select an image"></app-dropdown>
+                [dropDownName]="'DOCKER_STEPPER.SELECT_IMAGE' | translate"></app-dropdown>
               }
             </div>
             <label class="mb-4 flex items-center h-10 gap-2 cursor-pointer">
               <app-radio-button
                 [control]="formStep1.get('imageOption') | formControl"
-                [title]="'Clone an Existing Machine'"
+                [title]="'DOCKER_STEPPER.CLONE_MACHINE' | translate"
                 [value]="'clone'"
               class="grow"></app-radio-button>
             </label>
@@ -85,7 +85,7 @@
                   [options]="existingMachines"
                   [control]="formStep1.get('cloneMachine') | formControl"
                   [padding]="'p-2'"
-                dropDownName="Select a machine to clone"></app-dropdown>
+                [dropDownName]="'DOCKER_STEPPER.SELECT_CLONE_MACHINE' | translate"></app-dropdown>
               }
             </div>
             @if (formStep1.get('cloneMachine')?.errors?.['cloneMachine']) {
@@ -97,7 +97,7 @@
             <label class="flex items-center h-10 gap-2 cursor-pointer">
               <app-radio-button
                 [control]="formStep1.get('imageOption') | formControl"
-                [title]="'Upload a Dockerfile'"
+                [title]="'DOCKER_STEPPER.UPLOAD_DOCKERFILE' | translate"
                 [value]="'upload'"
               class="grow"></app-radio-button>
             </label>
@@ -116,13 +116,13 @@
               @if (formStep1.get('dockerfile')?.errors?.['invalidDockerfile']) {
                 <div
                   class="text-red-500 text-sm mt-1">
-                  {{ formStep1.get('dockerfile')?.errors?.['invalidDockerfile'] }}
+                  {{ (formStep1.get('dockerfile')?.errors?.['invalidDockerfile']) | translate }}
                 </div>
               }
               <label class="flex items-center h-10 gap-2 cursor-pointer">
                 <app-radio-button
                   [control]="formStep1.get('imageOption') | formControl"
-                  [title]="'Specify Docker Hub Image URL'"
+                  [title]="'DOCKER_STEPPER.IMAGE_URL' | translate"
                   [value]="'url'"
                 class="grow"></app-radio-button>
               </label>
@@ -180,7 +180,7 @@
             <div>
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Machine Name
+                {{ 'DOCKER_STEPPER.MACHINE_NAME' | translate }}
               </label>
               <input
                 class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800"
@@ -193,32 +193,32 @@
                 <div class="grow">
                   <label
                     class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Region
+                    {{ 'DOCKER_STEPPER.REGION' | translate }}
                   </label>
                   <app-dropdown
                     [options]="regions"
                     [control]="formStep2.get('region') | formControl"
                     [padding]="'p-2'"
-                  dropDownName="Select a region"></app-dropdown>
+                  [dropDownName]="'DOCKER_STEPPER.SELECT_REGION' | translate"></app-dropdown>
                 </div>
                 <div class="grow">
                   <label
                     class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    CPU Kind
+                    {{ 'DOCKER_STEPPER.CPU_KIND' | translate }}
                   </label>
                   <app-dropdown
                     [options]="CPUTypes"
                     [control]="formStep2.get('cpukind') | formControl"
                     [padding]="'p-2'"
                     (select)="onCPUTypeChange($event)"
-                  dropDownName="Select CPU Type"></app-dropdown>
+                  [dropDownName]="'DOCKER_STEPPER.SELECT_CPU_TYPE' | translate"></app-dropdown>
                 </div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    CPU Cores
+                    {{ 'DOCKER_STEPPER.CPU_CORES' | translate }}
                   </label>
                   <input
                     class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800"
@@ -230,7 +230,7 @@
                   <div>
                     <label
                       class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Memory (MB)
+                      {{ 'DOCKER_STEPPER.MEMORY' | translate }}
                     </label>
                     <input
                       class="relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800"
@@ -245,26 +245,26 @@
                       <app-checkbox
                         class="mr-2 h-8 font-code inline-flex justify-start w-full"
                         [control]="formStep2.get('autoStart') | formControl"
-                        [title]="'AutoStart'"
+                        [title]="'DOCKER_STEPPER.AUTO_START' | translate"
                       (change)="onCheckBoxChange()"></app-checkbox>
                       <app-checkbox
                         class="mr-2 h-8 font-code flex items-center justify-between w-full"
                         [control]="formStep2.get('default') | formControl"
-                        [title]="'default'"
-                        [description]="'Set as default machine'"
+                        [title]="'DOCKER_STEPPER.DEFAULT' | translate"
+                        [description]="'DOCKER_STEPPER.SET_DEFAULT_MACHINE' | translate"
                       (change)="onCheckBoxChange()"></app-checkbox>
                     </label>
                   </div>
                   <div>
                     <label
                       class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Auto-Stop
+                      {{ 'DOCKER_STEPPER.AUTO_STOP' | translate }}
                     </label>
                     <app-dropdown
                       [options]="autoContainerOptions"
                       [control]="formStep2.get('autoStop') | formControl"
                       [padding]="'p-2'"
-                    dropDownName="Select auto-stop"></app-dropdown>
+                    [dropDownName]="'DOCKER_STEPPER.SELECT_AUTO_STOP' | translate"></app-dropdown>
                   </div>
                   <div formArrayName="environmentVariables" class="space-y-2">
                     @for (envVar of environmentVariables.controls; track envVar; let i = $index) {
@@ -273,11 +273,11 @@
                         class="flex gap-2 items-center">
                         <input
                           formControlName="key"
-                          placeholder="Key"
+                          placeholder="{{ 'DOCKER_STEPPER.ENV_KEY' | translate }}"
                           class="flex-1 mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800" />
                           <input
                             formControlName="value"
-                            placeholder="Value"
+                            placeholder="{{ 'DOCKER_STEPPER.ENV_VALUE' | translate }}"
                             class="flex-1 relative mt-1 block w-full transition rounded-lg border border-blue-200/50 px-4 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 dark:border-none dark:border-blue-200/50 dark:bg-gray6 dark:text-gray-300 dark:shadow-sm focus:dark:shadow-blue-200 dark:focus:ring-blue-800" />
                             <button
                               type="button"
@@ -291,7 +291,7 @@
                           type="button"
                           (click)="addEnvVar()"
                           class="mt-2 text-blue-500 hover:text-blue-700 transition">
-                          Add Environment Variable
+                          {{ 'DOCKER_STEPPER.ADD_ENV_VAR' | translate }}
                         </button>
                       </div>
                     </form>
@@ -306,12 +306,12 @@
                         <div class="flex flex-wrap items-center justify-between">
                           <label
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            fly.toml Configuration (Optional)
+                            {{ 'DOCKER_STEPPER.FLY_TOML' | translate }}
                           </label>
                           <!-- Set a radio button Enabled/Disabled -->
                           @if (formStep3.get('flyToml')?.value) {
                             <app-radiotoggle
-                              title="View/Edit"
+                              [title]="'DOCKER_STEPPER.VIEW_EDIT' | translate"
                               identity="viewEdit"
             [control]="
               formStep3.get('flyTomlViewer') | formControl
@@ -345,7 +345,7 @@
                   <div>
                     <div class="space-y-4">
                       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Configuration Summary
+                        {{ 'DOCKER_STEPPER.CONFIG_SUMMARY' | translate }}
                       </h3>
                       <div
                         class="block prose prose-code:dark:bg-[rgb(34 34 34)] prose-code:bg-pink-100 prose-img:rounded-xl prose-headings:text-[#4368d6] prose-headings:dark:text-[#6587ed] prose-a:text-blue-600 hover:prose-a:text-blue-500 w-full max-w-full rounded-lg bg-gray-100 px-4 py-2 text-lg text-gray-900 dark:bg-gray6 dark:text-gray1">

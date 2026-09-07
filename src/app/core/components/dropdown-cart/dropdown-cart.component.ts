@@ -2,6 +2,7 @@ import { AsyncPipe, DatePipe, JsonPipe, KeyValuePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { Outsideclick } from '../../directives';
 import { MatIcon } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { PopupAnimation } from 'src/app/animations';
 import { CartService, ToggleBtnService } from '../../services';
 import { catchError, map, Observable, of, shareReplay, Subscription, tap } from 'rxjs';
@@ -12,7 +13,7 @@ import { switchPackageIcon } from '../../functions';
 
 @Component({
   selector: 'app-dropdown-cart',
-  imports: [Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe],
+  imports: [Outsideclick, MatIcon, AsyncPipe, KeyValuePipe, ReversePipe, TranslateModule],
   templateUrl: './dropdown-cart.component.html',
   styleUrl: './dropdown-cart.component.scss',
   animations: [PopupAnimation],

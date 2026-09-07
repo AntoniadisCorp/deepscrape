@@ -1,9 +1,11 @@
 import { Component, OnInit, HostListener, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { AsyncPipe, NgClass } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { themeStorageKey, ThemeToggleComponent, AnimatedBgComponent, LangPickerComponent } from 'src/app/shared';
-import { FeaturesComponent, HeroComponent, LandingArchitectureComponent, LandingCodeDemoComponent, LandingPricingComponent, LandingSocialProofComponent, LandingUseCasesComponent, LandingFaqComponent } from 'src/app/layout/landpage';
-import { LocalStorage, ThemeService, WindowToken } from 'src/app/core/services';
+import { FeaturesComponent, HeroComponent, LandingAgentComponent, LandingArchitectureComponent, LandingCodeDemoComponent, LandingPricingComponent, LandingSocialProofComponent, LandingUseCasesComponent, LandingFaqComponent } from 'src/app/layout/landpage';
+import { LocalStorage, ThemeService, WindowToken, ScrollService } from 'src/app/core/services';
 import { AppFooterComponent } from 'src/app/layout/footer';
 import { Observable } from 'rxjs';
 
@@ -13,6 +15,7 @@ import { Observable } from 'rxjs';
     RouterLink,
     ThemeToggleComponent,
     HeroComponent,
+    LandingAgentComponent,
     FeaturesComponent,
     LandingArchitectureComponent,
     LandingCodeDemoComponent,
@@ -24,7 +27,8 @@ import { Observable } from 'rxjs';
     NgClass,
     AsyncPipe,
     AnimatedBgComponent,
-    LangPickerComponent
+    LangPickerComponent,
+    TranslateModule
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
@@ -34,16 +38,33 @@ export class HomeComponent implements OnInit {
   private localStorage = inject(LocalStorage);
   private themePicker = inject(ThemeService);
   private window: Window = inject(WindowToken);
+  private scrollService = inject(ScrollService);
+  private document = inject(DOCUMENT);
   isDarkMode$: Observable<boolean> = this.themePicker.isDarkMode$;
   isScrolled = false;
   footerColor: string = '';
   // Removed 'lang' property as I18nService does not have it.
+
+  readonly navLinks = [
+    { id: 'agent', label: 'HOME.AGENT' },
+    { id: 'features', label: 'HOME.FEATURES' },
+    { id: 'use-cases', label: 'HOME.USE_CASES' },
+    { id: 'architecture', label: 'HOME.ARCHITECTURE' },
+    { id: 'pricing', label: 'HOME.PRICING' },
+    { id: 'faq', label: 'HOME.FAQ' },
+  ];
 
   constructor() {}
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
     this.isScrolled = this.window.scrollY > 100;
+  }
+
+  /** Scrolls to a section anchor on this page (smooth, header-offset aware). */
+  scrollToSection(id: string) {
+    const el = this.document.getElementById(id);
+    if (el) this.scrollService.scrollToElementByOffset(el);
   }
 
   isThemeDark(): boolean {

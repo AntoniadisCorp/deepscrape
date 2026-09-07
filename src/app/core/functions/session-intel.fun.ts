@@ -3,6 +3,13 @@ import { IpNetworkIntel, IpProxyIntel, SessionDisplayInfo } from '../types'
 type SessionIntelShape = Pick<SessionDisplayInfo, 'network' | 'proxy' | 'intelligenceStatus'>
 type SessionRiskLevel = 'pending' | 'low' | 'medium' | 'high'
 
+// Translator lets consumers localize the static UI copy; when absent the function
+// returns the English fallback so it stays usable outside Angular/i18n.
+type IntelTranslator = (key: string, params?: Record<string, unknown>) => string
+
+const T = (t: IntelTranslator | undefined, key: string, en: string, params?: Record<string, unknown>): string =>
+  t ? t(key, params) : en
+
 const fallbackNetworkIntel: IpNetworkIntel = {
   asn: null,
   as: null,
@@ -81,17 +88,17 @@ export function getSessionRiskTone(session: SessionIntelShape): string {
   return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
 }
 
-export function getSessionRiskLabel(session: SessionIntelShape): string {
+export function getSessionRiskLabel(session: SessionIntelShape, t?: IntelTranslator): string {
   const risk = getSessionRiskLevel(session)
-  if (risk === 'pending') return 'Pending enrichment'
-  if (risk === 'high') return 'High risk'
-  if (risk === 'medium') return 'Needs review'
-  return 'Low risk'
+  if (risk === 'pending') return T(t, 'INTEL.RISK_PENDING', 'Pending enrichment')
+  if (risk === 'high') return T(t, 'INTEL.RISK_HIGH', 'High risk')
+  if (risk === 'medium') return T(t, 'INTEL.RISK_MEDIUM', 'Needs review')
+  return T(t, 'INTEL.RISK_LOW', 'Low risk')
 }
 
-export function getSessionRiskReason(session: SessionIntelShape): string {
+export function getSessionRiskReason(session: SessionIntelShape, t?: IntelTranslator): string {
   if (isIntelligencePending(session)) {
-    return 'IP intelligence enrichment is still running. This usually resolves in a few seconds.'
+    return T(t, 'INTEL.REASON_PENDING', 'IP intelligence enrichment is still running. This usually resolves in a few seconds.')
   }
 
   const proxy = session.proxy || fallbackProxyIntel
@@ -100,39 +107,40 @@ export function getSessionRiskReason(session: SessionIntelShape): string {
   if (proxy.isProxy) {
     const proxyType = proxy.proxyType ? ` (${proxy.proxyType})` : ''
     const threat = proxy.threat ? ` - threat: ${proxy.threat}` : ''
-    return `Open proxy traffic detected${proxyType}${threat}`
+    // ponytail: data annotations stay literal; only the base sentence is translated
+    return T(t, 'INTEL.REASON_PROXY', 'Open proxy traffic detected') + `${proxyType}${threat}`
   }
 
   if (proxy.confidence === 'unknown') {
-    return 'Proxy intelligence is incomplete for this IP; verify behavior before trusting this device'
+    return T(t, 'INTEL.REASON_INCOMPLETE', 'Proxy intelligence is incomplete for this IP; verify behavior before trusting this device')
   }
 
   if (usageType && (usageType.toLowerCase().includes('data center') || usageType.toLowerCase().includes('hosting'))) {
-    return `Session came from ${usageType}; this is often automation infrastructure`
+    return T(t, 'INTEL.REASON_DATACENTER', 'Session came from {{usageType}}; this is often automation infrastructure', { usageType })
   }
 
-  return 'No proxy abuse indicators detected from current IP intelligence'
+  return T(t, 'INTEL.REASON_CLEAN', 'No proxy abuse indicators detected from current IP intelligence')
 }
 
-export function getSessionNetworkSummary(session: SessionIntelShape): string {
+export function getSessionNetworkSummary(session: SessionIntelShape, t?: IntelTranslator): string {
   const network = session.network || fallbackNetworkIntel
   const primary = [network.asn, network.as].filter(Boolean).join(' • ')
   const secondary = [network.usageType, network.isp, network.domain].filter(Boolean).join(' • ')
   const value = [primary, secondary].filter(Boolean).join(' • ')
-  return value || 'Network intelligence unavailable'
+  return value || T(t, 'INTEL.NETWORK_UNAVAILABLE', 'Network intelligence unavailable')
 }
 
-export function getSessionProxySummary(session: SessionIntelShape): string {
+export function getSessionProxySummary(session: SessionIntelShape, t?: IntelTranslator): string {
   const proxy = session.proxy || fallbackProxyIntel
   if (!proxy.isProxy) {
     if (proxy.confidence === 'unknown') {
-      return 'Proxy status unknown'
+      return T(t, 'INTEL.PROXY_UNKNOWN', 'Proxy status unknown')
     }
-    return 'No open proxy detected'
+    return T(t, 'INTEL.PROXY_NONE', 'No open proxy detected')
   }
 
   const details = [proxy.proxyType, proxy.provider, proxy.threat].filter(Boolean).join(' • ')
-  return details ? `Proxy detected: ${details}` : 'Proxy detected'
+  return T(t, 'INTEL.PROXY_DETECTED', 'Proxy detected') + (details ? `: ${details}` : '')
 }
 
 function cleanNullableString(value: unknown): string | null {

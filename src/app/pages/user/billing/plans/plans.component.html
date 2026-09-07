@@ -6,7 +6,7 @@
       type="button"
       class="text-sm px-4 py-2 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
       (click)="openUsage()">
-      Usage
+      {{ 'BILLING_PLANS.VIEW_USAGE' | translate }}
     </button>
 
     <button
@@ -17,21 +17,21 @@
       [class.cursor-not-allowed]="isBillingRestricted || loading.portal"
       (click)="openPortal()">
       <mat-spinner *ngIf="loading.portal" [diameter]="16" class="stroke-gray-700 dark:stroke-gray-200"></mat-spinner>
-      Manage billing
+      {{ 'BILLING_PLANS.MANAGE_BILLING' | translate }}
     </button>
   </div>
 
   <div *ngIf="isBillingRestricted" class="mb-5 rounded-2xl border border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-4 py-3 text-red-800 dark:text-red-100 shadow-md">
     <div class="flex items-center gap-2">
       <mat-icon fontSet="material-icons-outlined" class="text-red-600 dark:text-red-300">block</mat-icon>
-      <span class="font-medium">Billing is disabled for manager and editor accounts.</span>
+      <span class="font-medium">{{ 'BILLING_PLANS.BILLING_RESTRICTED_MSG' | translate }}</span>
     </div>
   </div>
 
   <div *ngIf="platformAdminBypassActive" class="mb-5 rounded-2xl border border-sky-500/35 bg-sky-500/10 dark:bg-sky-400/10 px-4 py-3 text-sky-800 dark:text-sky-100 shadow-md">
     <div class="flex items-center gap-2">
       <mat-icon fontSet="material-icons-outlined" class="text-sky-600 dark:text-sky-300">shield</mat-icon>
-      <span class="font-medium">Platform admin bypass is active. Billing status is shown for reference, but paywall checks are bypassed.</span>
+      <span class="font-medium">{{ 'BILLING_PLANS.ADMIN_BYPASS_MSG' | translate }}</span>
     </div>
   </div>
 
@@ -51,11 +51,11 @@
         <div>
           <div class="btn-remove flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-primary/10 dark:bg-violet-500/20 text-primary dark:text-violet-300 text-xs font-semibold uppercase tracking-wide">
             <mat-icon fontSet="material-icons-outlined" class="text-sm">workspace_premium</mat-icon>
-            Limited Trial Offer
+            {{ 'BILLING_PLANS.TRIAL_PROMO_LABEL' | translate }}
           </div>
 
-          <h3 class="inline-flex items-center rounded-xl px-3 py-1.5 text-2xl font-semibold text-gray-800 dark:text-gray-100 bg-gray-300/[0.4] dark:bg-gray-800">Try Pro features for 14 days</h3>
-          <p class="text-gray-600 dark:text-gray-300 mt-2 max-w-3xl">Explore all premium capabilities once, including anti-bot workflows, identity crawling, and high-concurrency extraction.</p>
+          <h3 class="inline-flex items-center rounded-xl px-3 py-1.5 text-2xl font-semibold text-gray-800 dark:text-gray-100 bg-gray-300/[0.4] dark:bg-gray-800">{{ 'BILLING_PLANS.TRIAL_PROMO_TITLE' | translate }}</h3>
+          <p class="text-gray-600 dark:text-gray-300 mt-2 max-w-3xl">{{ 'BILLING_PLANS.TRIAL_PROMO_BODY' | translate }}</p>
 
           <ul class="mt-4 flex flex-wrap gap-2">
             <li
@@ -77,7 +77,7 @@
             (click)="startTrialFromPromo()"
           >
             <mat-spinner *ngIf="loading.trial" [diameter]="16" class="stroke-gray-200"></mat-spinner>
-            Start 14-day trial
+            {{ 'BILLING_PLANS.TRIAL_START_BUTTON' | translate }}
           </button>
 
           <button
@@ -85,7 +85,7 @@
             class="text-sm px-4 py-2 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
             (click)="openTrialDetails()"
           >
-            See 14-day trial details
+            {{ 'BILLING_PLANS.TRIAL_DETAILS_BUTTON' | translate }}
           </button>
         </div>
       </div>
@@ -98,8 +98,8 @@
       <div class="flex items-center gap-3">
         <mat-icon fontSet="material-icons-outlined" class="text-primary dark:text-violet-300">info</mat-icon>
         <div>
-          <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">Trial status</p>
-          <p class="text-sm text-gray-600 dark:text-gray-300">{{ getTrialStatusMessage(billing$ | async) }}</p>
+          <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ 'BILLING_PLANS.TRIAL_STATUS_TITLE' | translate }}</p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">{{ getTrialStatusMessage(billing$ | async).key | translate : getTrialStatusMessage(billing$ | async).params }}</p>
         </div>
       </div>
     </div>
@@ -110,12 +110,12 @@
       <div class="relative bg-gray-100 flex flex-col items-center justify-center border-y-8 border-violet-500 w-full m-2 max-w-md dark:bg-gray6 rounded-2xl shadow-lg p-6 mx-auto">
         <div *ngIf="isCurrentPlan(freePlan, currentPlan$ | async, billing$ | async)" class="btn-remove absolute top-3 right-3 inline-flex items-center gap-1 px-3 py-1 rounded-full border border-green-500/45 bg-green-500/20 text-green-700 dark:text-green-300 text-xs font-semibold uppercase tracking-wide">
           <mat-icon fontSet="material-icons-outlined" class="text-sm">energy_savings_leaf</mat-icon>
-          Current plan
+          {{ 'BILLING_PASSES.CURRENT_PLAN' | translate }}
         </div>
 
         <div class="text-center mb-6">
-          <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Free</h1>
-          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-300/80 mb-2">{{ freePlan.label }} Plan</h2>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">{{ freePlan.label }}</h1>
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-300/80 mb-2">{{ freePlan.label }} {{ 'BILLING_PLAN_DETAILS.PLAN_SUFFIX' | translate }}</h2>
           <p class="text-gray-500 dark:text-gray-300">{{ freePlan.description }}</p>
         </div>
 
@@ -124,7 +124,7 @@
             <span class="text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent from-violet-400 to-deep-purple-400 dark:from-violet-400 dark:to-deep-purple-400">
               {{ freePlan.prices.payAsYouGo.amount / 100 | currency : currencyValue }}
             </span>
-            <span class="text-gray-500 dark:text-gray-300">/usage</span>
+            <span class="text-gray-500 dark:text-gray-300">{{ 'BILLING_PLANS.PRICE_UNIT_USAGE' | translate }}</span>
           </div>
 
           <ul class="space-y-3 text-gray-600 dark:text-gray-300">
@@ -143,7 +143,7 @@
           type="button"
           class="w-full mt-3 text-sm px-4 py-2 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
           (click)="openPlanDetails(freePlan.id)">
-          View {{ freePlan.label }} details
+          {{ 'BILLING_PLANS.VIEW_PLAN_DETAILS' | translate : { plan: freePlan.label } }}
         </button>
       </div>
     </div>
@@ -154,11 +154,11 @@
     <div
       class="inline-grid w-full max-w-xs grid-cols-2 gap-1 rounded-2xl border border-gray-200/60 bg-gray-100/80 p-1.5 shadow-sm dark:border-white/[0.07] dark:bg-gray-800 sm:inline-flex sm:w-auto sm:max-w-none sm:flex-row"
       role="group"
-      aria-label="Billing period">
+      [attr.aria-label]="'BILLING_PLANS.BILLING_PERIOD_LABEL' | translate">
       <button
         *ngFor="let period of planPeriods"
         type="button"
-        title="{{ period.value === currentPrice.value ? 'Current billing period: ' + period.label : period.label }}"
+        [attr.title]="(period.value === currentPrice.value ? 'BILLING_PLANS.CURRENT_PERIOD_TOOLTIP' : period.label) | translate"
         class="relative inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70 sm:px-4"
         [ngClass]="{
           'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white font-semibold': planView.value === period.value && period.value !== currentPrice.value,
@@ -171,7 +171,7 @@
           *ngIf="period.value === 'monthly'"
           fontSet="material-icons-outlined"
           class="shrink-0 -rotate-90 text-emerald-400">energy_savings_leaf</mat-icon>
-        <span class="truncate">{{ period.label }}</span>
+        <span class="truncate">{{ period.label | translate }}</span>
         <span
           *ngIf="period.value === currentPrice.value"
           class="hidden sm:inline-flex ml-0.5 shrink-0 items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wider"
@@ -179,7 +179,7 @@
             'bg-white/25 text-white': planView.value === period.value,
             'bg-violet-100 text-violet-700 dark:bg-violet-500/25 dark:text-violet-200': planView.value !== period.value
           }">
-          Active
+          {{ 'BILLING_PLANS.ACTIVE' | translate }}
         </span>
       </button>
     </div>
@@ -198,13 +198,13 @@
       <span
         *ngIf="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)"
         class="inline-flex items-center rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wider">
-        Current
+        {{ 'BILLING_PLANS.CURRENT' | translate }}
       </span>
       <span
         *ngIf="shouldShowFreeRecommendedBadge(plan, currentPlan$ | async, billing$ | async)"
         class="btn-remove inline-flex items-center gap-1 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
         <mat-icon fontSet="material-icons-outlined" class="!h-3 !w-3">energy_savings_leaf</mat-icon>
-        Yours
+        {{ 'BILLING_PLANS.YOURS' | translate }}
       </span>
     </button>
   </div>
@@ -217,18 +217,18 @@
 
         <div *ngIf="isCurrentPlan(plan, currentPlan$ | async, billing$ | async)" class="btn-remove absolute top-3 right-3 inline-flex items-center gap-1 px-3 py-1 rounded-full border border-green-500/45 bg-green-500/20 text-green-700 dark:text-green-300 text-xs font-semibold uppercase tracking-wide">
           <mat-icon fontSet="material-icons-outlined" class="text-sm">energy_savings_leaf</mat-icon>
-          Current plan
+          {{ 'BILLING_PASSES.CURRENT_PLAN' | translate }}
         </div>
 
         <div
           *ngIf="isCancellationPendingForPlan(plan, billing$ | async, currentPlan$ | async)"
           class="w-full mb-5 rounded-xl border border-amber-500/35 bg-amber-500/10 dark:bg-amber-400/10 p-4 text-amber-900 dark:text-amber-100"
         >
-          <p class="text-xs font-semibold uppercase tracking-wide mb-1">Cancellation scheduled</p>
+          <p class="text-xs font-semibold uppercase tracking-wide mb-1">{{ 'BILLING_PLANS.CANCELLATION_SCHEDULED_TITLE' | translate }}</p>
           <p class="text-sm leading-relaxed">
-            Your subscription is canceled and will end on
-            <strong>{{ getCancellationEndLabel(billing$ | async) }}</strong>
-            (in about {{ getCancellationTimeRemainingText(billing$ | async) }}).
+            {{ 'BILLING_PLANS.CANCELLATION_BODY_PRE' | translate }}
+            <strong>{{ getCancellationEndLabel(billing$ | async) | translate }}</strong>
+            {{ getCancellationTimeRemainingText(billing$ | async).key | translate : getCancellationTimeRemainingText(billing$ | async).params }}
           </p>
 
           <button
@@ -240,16 +240,16 @@
             (click)="undoCancellation()"
           >
             <mat-spinner *ngIf="loading.resumeCancellation" [diameter]="16" class="stroke-gray-700 dark:stroke-gray-200"></mat-spinner>
-            Don't cancel subscription
+            {{ 'BILLING_PLANS.RESUME_SUBSCRIPTION' | translate }}
           </button>
         </div>
 
         <div class="text-center mb-6">
-          <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">{{ planView.label }}</h1>
-          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-300/80 mb-2">{{ plan.label }} Plan</h2>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">{{ planView.label | translate }}</h1>
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-300/80 mb-2">{{ plan.label }} {{ 'BILLING_PLAN_DETAILS.PLAN_SUFFIX' | translate }}</h2>
           <div *ngIf="isBestChoice(plan)" class="inline-flex items-center gap-1 px-3 py-1 mb-3 rounded-full bg-violet-500/20 text-violet-600 dark:text-violet-300 text-sm font-medium">
             <mat-icon fontSet="material-icons-outlined" class="text-base">energy_savings_leaf</mat-icon>
-            Best choice recommended
+            {{ 'BILLING_PLANS.BEST_CHOICE_RECOMMENDED' | translate }}
           </div>
           <p class="text-gray-500 dark:text-gray-300">{{ plan.description }}</p>
         </div>
@@ -259,11 +259,11 @@
             <span class="text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent" [ngClass]="getPriceGradientClass(plan)">
               {{ getPrice(plan) / 100 | currency : currencyValue }}
             </span>
-            <span class="text-gray-500 dark:text-gray-300">{{ getPriceUnit() }}</span>
+            <span class="text-gray-500 dark:text-gray-300">{{ getPriceUnit() | translate }}</span>
           </div>
 
           <p *ngIf="getIncludedCredits(plan) > 0" class="text-center mb-4 text-sm font-medium text-violet-700 dark:text-violet-300">
-            Includes {{ getIncludedCredits(plan) }} credits {{ planView.value === 'payAsYouGo' ? 'per purchase' : getPriceUnit().replace('/', 'per ') }}
+            {{ 'BILLING_PLAN_DETAILS.INCLUDES' | translate }} {{ getIncludedCredits(plan) }} credits {{ (planView.value === 'payAsYouGo' ? 'BILLING_PLAN_DETAILS.PER_PURCHASE' : planView.value === 'monthly' ? 'BILLING_PLANS.PER_MONTH' : planView.value === 'quarterly' ? 'BILLING_PLANS.PER_QUARTER' : 'BILLING_PLANS.PER_YEAR') | translate }}
           </p>
 
           <ul class="space-y-3 text-gray-600 dark:text-gray-300">
@@ -289,33 +289,33 @@
           [ngClass]="isCurrentPlan(plan, currentPlan$ | async, billing$ | async) ? getCurrentPlanButtonClass(plan) : getPlanButtonClass(plan)"
           (click)="selectPlan(plan)">
           <mat-spinner *ngIf="loading.checkout || loading.trial" [diameter]="18" class="stroke-gray-200"></mat-spinner>
-          {{ getPlanActionLabel(plan, currentPlan$ | async, billing$ | async) }}
+          {{ getPlanActionLabel(plan, currentPlan$ | async, billing$ | async) | translate : { plan: plan.label } }}
         </button>
 
         <button
           type="button"
           class="w-full mt-3 text-sm px-4 py-2 rounded-full bg-gray-300 dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 transition-colors"
           (click)="openPlanDetails(plan.id)">
-          View {{ plan.label }} details
+          {{ 'BILLING_PLANS.VIEW_PLAN_DETAILS' | translate : { plan: plan.label } }}
         </button>
       </div>
   </div>
 
   <div class="mt-12" *ngIf="!isBillingRestricted && (creditPacks$ | async) as packs">
-    <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Credit packs</h3>
-    <p class="text-gray-600 dark:text-gray-300 mb-6">Buy one-time credit bundles for burst usage when your account is on the free plan.</p>
+    <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ 'BILLING_PASSES.PACKS_TITLE' | translate }}</h3>
+    <p class="text-gray-600 dark:text-gray-300 mb-6">{{ 'BILLING_PLANS.CREDIT_PACKS_INTRO' | translate }}</p>
 
     <ng-container *ngIf="billing$ | async as billing">
       <div *ngIf="!canPurchaseCredits(billing)" class="mb-6 rounded-2xl border border-amber-500/35 bg-amber-500/10 dark:bg-amber-400/10 p-4 text-amber-900 dark:text-amber-100">
-        <p class="text-sm font-medium">{{ getCreditsUnavailableMessage(billing) }}</p>
+        <p class="text-sm font-medium">{{ getCreditsUnavailableMessage(billing) | translate }}</p>
       </div>
 
       <div *ngIf="hasCreditAccess(billing)" class="mb-6 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 dark:bg-emerald-400/10 p-4 text-emerald-900 dark:text-emerald-100">
-        <p class="text-sm font-medium">Standalone credit access is active. Available purchased credits: {{ getAvailableCredits(billing) }}.</p>
+        <p class="text-sm font-medium">{{ 'BILLING_PLANS.CREDITS_ACCESS_ACTIVE' | translate : { credits: getAvailableCredits(billing) } }}</p>
       </div>
 
       <div *ngIf="billing.plan !== 'free' && getIncludedPlanCredits(billing) > 0" class="mb-6 rounded-2xl border border-sky-500/35 bg-sky-500/10 dark:bg-sky-400/10 p-4 text-sky-900 dark:text-sky-100">
-        <p class="text-sm font-medium">Your subscription tracks included plan credits separately from purchased credits: {{ getIncludedPlanCredits(billing) }} currently in the included bucket.</p>
+        <p class="text-sm font-medium">{{ 'BILLING_PLANS.INCLUDED_CREDITS_TRACKING' | translate : { credits: getIncludedPlanCredits(billing) } }}</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -339,7 +339,7 @@
             [class.cursor-not-allowed]="loading.checkout || !canPurchaseCredits(billing)"
             (click)="buyCredits(pack)">
             <mat-spinner *ngIf="loading.checkout" [diameter]="18" class="stroke-gray-200"></mat-spinner>
-            Buy credits
+            {{ 'BILLING_PLANS.BUY_CREDITS' | translate }}
           </button>
         </div>
       </div>
@@ -347,17 +347,17 @@
       <div *ngIf="customCreditsConfig$ | async as customConfig" class="mt-8 rounded-2xl border border-violet-500/20 bg-gray-100 dark:bg-gray6 p-5 shadow-md">
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h4 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Custom credits</h4>
+            <h4 class="text-xl font-semibold text-gray-800 dark:text-gray-100">{{ 'BILLING_PLANS.CUSTOM_CREDITS_TITLE' | translate }}</h4>
             <p class="text-gray-600 dark:text-gray-300 mt-1">
-              Choose your own credit amount from {{ customConfig.minimumCredits }} to {{ customConfig.maximumCredits }} credits.
+              {{ 'BILLING_PLANS.CUSTOM_CREDITS_RANGE' | translate : { min: customConfig.minimumCredits, max: customConfig.maximumCredits } }}
             </p>
             <p class="text-sm text-violet-700 dark:text-violet-300 mt-2">
-              {{ customConfig.unitAmount / 100 | currency : currencyValue }} per credit
+              {{ customConfig.unitAmount / 100 | currency : currencyValue }} {{ 'BILLING_PLANS.PER_CREDIT' | translate }}
             </p>
           </div>
 
           <div class="text-left md:text-right">
-            <p class="text-sm text-gray-600 dark:text-gray-300">Estimated total</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">{{ 'BILLING_PLANS.ESTIMATED_TOTAL' | translate }}</p>
             <p class="text-2xl font-bold text-violet-600 dark:text-violet-400">
               {{ getCustomCreditsTotal(customConfig) / 100 | currency : currencyValue }}
             </p>
@@ -376,7 +376,7 @@
 
         <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-end">
           <label class="flex-1">
-            <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Custom credit amount</span>
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{{ 'BILLING_PLANS.CUSTOM_CREDITS_AMOUNT_LABEL' | translate }}</span>
             <input
               type="number"
               class="w-full rounded-xl bg-white/80 dark:bg-gray-800/50 px-4 py-3 text-gray-900 shadow-sm dark:text-gray-100"
@@ -395,7 +395,7 @@
             [class.cursor-not-allowed]="loading.checkout || !canPurchaseCredits(billing)"
             (click)="buyCustomCredits(customConfig)">
             <mat-spinner *ngIf="loading.checkout" [diameter]="18" class="stroke-gray-200"></mat-spinner>
-            Buy custom credits
+            {{ 'BILLING_PLANS.BUY_CUSTOM_CREDITS' | translate }}
           </button>
         </div>
       </div>
