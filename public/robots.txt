@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# App-only routes: behind auth, not part of the public site
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /profile
+Disallow: /service/
+Disallow: /playground
+Disallow: /crawlpack
+
+Sitemap: https://deepscrape.dev/sitemap.xml
