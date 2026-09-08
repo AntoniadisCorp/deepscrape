@@ -68,7 +68,10 @@ export class HomeComponent implements OnInit {
   }
 
   isThemeDark(): boolean {
-    return this.localStorage?.getItem(themeStorageKey) === 'true';
+    const stored = this.localStorage?.getItem(themeStorageKey);
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return this.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
   }
 
   ngOnInit() {
