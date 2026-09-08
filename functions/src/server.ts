@@ -265,6 +265,17 @@ function serveapp() {
     index: "index.html",
   }))
 
+  // NEVER answer a missing static asset with index.html. Without this guard a
+  // stale/absent bundle (e.g. an old server index referencing hashes that no
+  // longer exist on hosting) makes the browser request /main-*.js or
+  // /styles-*.css and receive Content-Type: text/html -> the SPA refuses to
+  // execute and the page renders blank (no 404, no error page).
+  server.get(/\.(js|mjs|cjs|css|map|json|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|otf|eot|mp4|webm|webmanifest|txt|xml)(\?.*)?$/i, (req: express.Request, res: Response) => {
+    if (env.IS_EMULATOR) {
+      console.warn(`Static asset not found (404): ${req.originalUrl}`)
+    }
+    return res.status(404).type("text/plain").send("Not Found")
+  })
 
   // All regular routes use the Angular engine **
   server.get("*", upstashFunctionLimiter, (req: express.Request, res: Response) => {
