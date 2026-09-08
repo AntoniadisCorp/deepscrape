@@ -1,3 +1,10 @@
+# [0.8.0-beta.6](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.5...v0.8.0-beta.6) (2026-09-08)
+
+
+### Bug Fixes
+
+* **ssr:** stop prerendering authenticated routes ([63e2087](https://github.com/deepscrape/deepscrape/commit/63e2087b56e2dc47cc66ee8b88e823d7a211b589))
+
 # [0.8.0-beta.3](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.2...v0.8.0-beta.3) (2026-09-08)
 
 
