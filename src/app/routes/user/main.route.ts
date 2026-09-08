@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { provideMarkdown } from 'ngx-markdown';
 import { adminGuard } from 'src/app/core/guards';
 import { UserResolver } from 'src/app/core/services';
 import { paywallGuard } from 'src/app/core/guards';
@@ -19,6 +20,7 @@ export const MainRoutes: Routes = [
         path: 'playground',
         loadComponent: () => import('../../pages').then(m => m.PlaygroundComponent),
         canActivate: [authzGuard],
+        providers: [provideMarkdown()],
         data: {
             title: 'Playground',
             animation: 'playground',
@@ -29,6 +31,7 @@ export const MainRoutes: Routes = [
         path: 'crawlpack',
         loadComponent: () => import('../../pages').then(m => m.CrawlPackComponent),
         loadChildren: () => import('./crawlpack.route').then(m => m.crawlerPackRoutes),
+        providers: [provideMarkdown()],
         canActivate: [paywallGuard, authzGuard],
         data: {
             title: 'Crawl Pack',

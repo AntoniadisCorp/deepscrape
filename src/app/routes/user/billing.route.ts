@@ -1,4 +1,6 @@
 import { Routes } from "@angular/router";
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
+import { provideNgxStripe } from 'ngx-stripe';
 import { paywallGuard } from "src/app/core/guards";
 
 export const billingRoutes: Routes = [
@@ -12,6 +14,7 @@ export const billingRoutes: Routes = [
     {
         path: "paymentintent", // 
         loadComponent: () => import('../../pages').then(m => m.SetupIntentComponent),
+        providers: [provideNgxStripe()],
         data: { animation: 'billing-paymentintent' },
     },
     {
@@ -32,6 +35,7 @@ export const billingRoutes: Routes = [
     {
         path: 'usage',
         loadComponent: () => import('../../pages').then(m => m.UsageComponent),
+        providers: [provideCharts(withDefaultRegisterables())],
         data: { animation: 'billing-usage' },
     },
     {
