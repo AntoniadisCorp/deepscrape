@@ -17,7 +17,6 @@ updates:
           - "minor"
     labels:
       - dependencies
-      - security
 
   # Firebase Functions backend (bun.lockb)
   - package-ecosystem: npm
@@ -36,7 +35,6 @@ updates:
           - "minor"
     labels:
       - dependencies
-      - security
 
   # GitHub Actions
   - package-ecosystem: github-actions
