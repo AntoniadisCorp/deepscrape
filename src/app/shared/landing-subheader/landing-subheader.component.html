@@ -1,0 +1,55 @@
+<header
+  class="relative z-20 w-full border-b border-gray-200/60 dark:border-white/[0.07] bg-white/85 dark:bg-[#060606]/85 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
+    <!-- Brand -->
+    <a
+      routerLink="/"
+      aria-label="deepscrape home"
+      class="flex shrink-0 items-center gap-2.5">
+      <span
+        class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-rose-500 font-mono text-sm font-black text-white shadow-lg shadow-cyan-500/20">
+        DS
+      </span>
+      <span
+        class="font-['Allerta_Stencil',monospace] text-xl sm:text-2xl font-bold leading-none bg-gradient-to-r from-[#282b2c] to-[#4e50bd] dark:from-[#c4c8dc] dark:to-[#8b98f5] bg-clip-text text-transparent drop-shadow-[1px_2px_0_rgba(0,0,0,0.25)] dark:drop-shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
+        DeepScrape
+      </span>
+    </a>
+
+    <!-- Desktop nav (glass pill like the landpage header) -->
+    <nav
+      class="hidden items-center gap-1 rounded-full glass-pill px-2 py-1.5 md:flex"
+      aria-label="Primary">
+      @for (item of items; track item.link) {
+        <a
+          [routerLink]="[item.link]"
+          routerLinkActive="subheader-link-active"
+          [routerLinkActiveOptions]="{ exact: item.link === '/' }"
+          class="rounded-full px-3.5 py-1.5 text-sm font-medium text-gray-600 hover:text-cyan-600 dark:text-gray-300 dark:hover:text-cyan-300 transition-colors duration-200">
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <!-- Theme + language controls (same as the platform header) -->
+    <div class="flex items-center justify-end gap-1.5">
+      <app-theme-toggle [color]="{ dark: '#0b0b0b', light: '#fff' }"></app-theme-toggle>
+      <app-lang-picker></app-lang-picker>
+    </div>
+  </div>
+
+  <!-- Mobile nav (horizontal scroll strip) -->
+  <nav
+    class="flex items-center gap-1 overflow-x-auto px-4 pb-2.5 md:hidden"
+    aria-label="Mobile">
+    @for (item of items; track item.link) {
+      <a
+        [routerLink]="[item.link]"
+        routerLinkActive="subheader-link-active"
+        [routerLinkActiveOptions]="{ exact: item.link === '/' }"
+        class="shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-cyan-600 dark:text-gray-300 dark:hover:text-cyan-300 transition-colors duration-200">
+        {{ item.label }}
+      </a>
+    }
+  </nav>
+</header>
