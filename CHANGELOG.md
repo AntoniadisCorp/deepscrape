@@ -1,3 +1,10 @@
+# [0.8.0-beta.8](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.7...v0.8.0-beta.8) (2026-09-08)
+
+
+### Bug Fixes
+
+* **footer:** light-mode social icon contrast ([616f988](https://github.com/deepscrape/deepscrape/commit/616f988021cd53baa53149f065202412e26ce977)), closes [#ffd7f5](https://github.com/deepscrape/deepscrape/issues/ffd7f5)
+
 # [0.8.0-beta.6](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.5...v0.8.0-beta.6) (2026-09-08)
 
 
