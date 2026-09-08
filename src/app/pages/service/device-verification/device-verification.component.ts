@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common'
+
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { MatIconModule } from '@angular/material/icon'
@@ -14,7 +14,7 @@ import { Auth, PhoneAuthProvider, RecaptchaVerifier, reauthenticateWithCredentia
 @Component({
   selector: 'app-device-verification-route',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatProgressSpinnerModule, TranslateModule],
+  imports: [FormsModule, MatIconModule, MatProgressSpinnerModule, TranslateModule],
   templateUrl: './device-verification.component.html',
   styleUrl: './device-verification.component.scss',
 })

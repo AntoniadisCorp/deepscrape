@@ -1,4 +1,4 @@
-import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 import { TranslateModule } from '@ngx-translate/core'
@@ -16,7 +16,7 @@ type PlanDetailVm = {
 
 @Component({
   selector: 'app-plan-details',
-  imports: [NgIf, NgFor, NgClass, AsyncPipe, CurrencyPipe, RouterLink, TranslateModule],
+  imports: [NgClass, AsyncPipe, CurrencyPipe, RouterLink, TranslateModule],
   templateUrl: './plan-details.component.html',
   styleUrl: './plan-details.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

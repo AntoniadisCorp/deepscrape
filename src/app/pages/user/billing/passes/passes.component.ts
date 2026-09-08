@@ -1,4 +1,4 @@
-import { AsyncPipe, CurrencyPipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
 import { MatIconModule } from '@angular/material/icon'
 import { Router } from '@angular/router'
@@ -8,7 +8,7 @@ import { CreditPackCatalog, CustomCreditsCatalog, UserBilling } from 'src/app/co
 
 @Component({
   selector: 'app-passes',
-  imports: [NgIf, NgFor, AsyncPipe, CurrencyPipe, MatIconModule, TranslateModule],
+  imports: [AsyncPipe, CurrencyPipe, MatIconModule, TranslateModule],
   templateUrl: './passes.component.html',
   styleUrl: './passes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

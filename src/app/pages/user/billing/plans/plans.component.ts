@@ -1,4 +1,4 @@
-import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { AsyncPipe, CurrencyPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -24,7 +24,7 @@ import { WindowToken } from 'src/app/core/services';
 
 @Component({
     selector: 'app-plans',
-  imports: [NgIf, NgFor, RippleDirective, CurrencyPipe, AsyncPipe, NgClass, MatIconModule, MatProgressSpinnerModule, FormsModule, TranslateModule],
+  imports: [RippleDirective, CurrencyPipe, AsyncPipe, NgClass, MatIconModule, MatProgressSpinnerModule, FormsModule, TranslateModule],
     templateUrl: './plans.component.html',
     styleUrl: './plans.component.scss',
     animations: [
