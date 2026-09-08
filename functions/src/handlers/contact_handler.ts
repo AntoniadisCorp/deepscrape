@@ -13,12 +13,13 @@ import {
 /**
  * POST /services/contact
  *
- * Accepts a contact form submission, validates input, verifies reCAPTCHA,
- * stores it in Firestore, sends an email notification via Resend,
- * and returns a success or error response.
+ * Accepts a contact form submission, validates input, verifies the Firebase
+ * App Check token (reCAPTCHA-backed), stores it in Firestore, sends an email
+ * notification via Resend, and returns a success or error response.
  *
- * This route is CSRF-protected (like all non-bypassed POST routes).
- * It intentionally does NOT require authentication so visitors can reach out.
+ * This route is CSRF-bypassed (listed in CSRF_IGNORED_PATH_PREFIXES) and is
+ * protected instead by the Upstash IP rate limiter and App Check. It
+ * intentionally does NOT require authentication so visitors can reach out.
  * @param {Request} req - Express request object with contact form body (name, email, subject, message, recaptchaToken)
  * @param {Response} res - Express response object
  */

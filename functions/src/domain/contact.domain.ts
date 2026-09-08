@@ -84,13 +84,18 @@ export const sanitizeContactInput = (body: Record<string, unknown>): Omit<Contac
  * Per Firebase docs:
  * https://firebase.google.com/docs/app-check/custom-resource-backend
  *
- * In development / emulator mode, silently passes when the token is absent
- * since App Check is not enforced in emulators by default.
+ * In the emulator, silently passes when the token is absent since App Check
+ * is not enforced there. In production a missing token is rejected so the
+ * gate cannot be bypassed by simply omitting the header.
  */
 export const verifyRecaptchaToken = async (token: string | null | undefined): Promise<boolean> => {
   if (!token) {
-    console.warn("[contact] App Check token missing from header — allowing in dev mode")
-    return true
+    if (env.IS_EMULATOR) {
+      console.warn("[contact] App Check token missing from header — allowing in emulator/dev mode")
+      return true
+    }
+    console.warn("[contact] App Check token missing from header — rejecting")
+    return false
   }
 
   try {
