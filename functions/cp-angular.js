@@ -49,7 +49,8 @@ const start = async function () {
         console.log("angular ssr server bundle copied successfully")
     } else {
         console.warn(
-            "dist/deepscrape/server not found; engine-render will stay disabled."
+            "dist/deepscrape/server not found; " +
+            "engine-render will stay disabled."
         )
     }
 
@@ -57,7 +58,9 @@ const start = async function () {
         await fs.copy(browserSrc, browserDest)
         console.log("angular browser assets copied successfully")
     } else {
-        console.warn("dist/deepscrape/browser not found; skipping browser copy.")
+        console.warn(
+            "dist/deepscrape/browser not found; skipping browser copy."
+        )
     }
 
     if (await fs.pathExists(serverHtmlSrc)) {

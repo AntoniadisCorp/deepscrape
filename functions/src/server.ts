@@ -372,9 +372,9 @@ function serveapp() {
       try {
         const engine = await loadNgEngine(serverDistDir)
         if (engine) {
-          const documentFilePath = existsSync(join(serverDistDir, "index.server.html"))
-            ? join(serverDistDir, "index.server.html")
-            : serverIndexPath
+          const documentFilePath = existsSync(join(serverDistDir, "index.server.html")) ?
+            join(serverDistDir, "index.server.html") :
+            serverIndexPath
           const html = await engine.render({
             bootstrap: engine.bootstrap,
             documentFilePath,
