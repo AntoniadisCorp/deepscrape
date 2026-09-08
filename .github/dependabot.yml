@@ -1,0 +1,46 @@
+version: 2
+updates:
+  # Root Angular app (bun.lockb)
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 15
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+      patch-and-minor:
+        update-types:
+          - "patch"
+          - "minor"
+    labels:
+      - dependencies
+      - security
+
+  # Firebase Functions backend (bun.lockb)
+  - package-ecosystem: npm
+    directory: "/functions"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 15
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+      patch-and-minor:
+        update-types:
+          - "patch"
+          - "minor"
+    labels:
+      - dependencies
+      - security
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
