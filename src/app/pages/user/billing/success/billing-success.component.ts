@@ -1,11 +1,12 @@
-import { NgIf } from '@angular/common'
+
 import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
+import { TranslateModule } from '@ngx-translate/core'
 import { BillingService } from 'src/app/core/services'
 
 @Component({
   selector: 'app-billing-success',
-  imports: [RouterLink, NgIf],
+  imports: [RouterLink, TranslateModule],
   templateUrl: './billing-success.component.html',
   styleUrl: './billing-success.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

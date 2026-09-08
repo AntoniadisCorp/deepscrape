@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, CUSTOM_ELEMENTS_
 import { Observable, Subscription, tap, timer } from 'rxjs';
 import { NAVIGATOR } from 'src/app/core/providers';
 import { CheckboxComponent, ClipboardbuttonComponent, DialogComponent, PopupMenuComponent, SlideInModalComponent } from 'src/app/core/components';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MatIcon } from '@angular/material/icon';
 import { ApiKey, ApiKeyLoader, ApiKeyType } from 'src/app/core/types';
 import { ApiKeyService, AuthService, HighRiskActionService, LocalStorage } from 'src/app/core/services';
@@ -16,7 +17,7 @@ import { Router } from '@angular/router'
 
 @Component({
   selector: 'app-api-keys',
-  imports: [DatePipe, AsyncPipe, TooltipDirective, PopupMenuComponent, ClipboardbuttonComponent, MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule, CheckboxComponent, FormControlPipe, DialogComponent],
+  imports: [DatePipe, AsyncPipe, TooltipDirective, PopupMenuComponent, ClipboardbuttonComponent, MatIcon, RippleDirective, Outsideclick, SlideInModalComponent, ReactiveFormsModule, MatProgressBarModule, CheckboxComponent, FormControlPipe, DialogComponent, TranslateModule],
   templateUrl: './api-keys.component.html',
   styleUrl: './api-keys.component.scss',
   encapsulation: ViewEncapsulation.None,
@@ -49,6 +50,7 @@ export class ApiKeysComponent implements OnInit {
   protected revealSecurityLoading = false
   private cdr = inject(ChangeDetectorRef)
   private highRiskActionService = inject(HighRiskActionService)
+  private translate = inject(TranslateService)
 
   constructor(
     private apiKeyService: ApiKeyService,
@@ -156,15 +158,15 @@ export class ApiKeysComponent implements OnInit {
           if (err?.code === 'RECENT_AUTH_REQUIRED') {
             this.revealSecurityMode.set('password')
             this.revealSecurityOpen.setValue(true)
-            this.revealSecurityError.set('Please confirm your password to reveal this API key.')
+            this.revealSecurityError.set(this.translate.instant('SETTINGS_API_KEYS.ERR_CONFIRM_PASSWORD'))
           } else if (err?.code === 'MFA_REQUIRED') {
             this.revealSecurityMode.set('mfa-required')
             this.revealSecurityOpen.setValue(true)
-            this.revealSecurityError.set('Sign in again with MFA and then retry revealing this key.')
+            this.revealSecurityError.set(this.translate.instant('SETTINGS_API_KEYS.ERR_MFA_REQUIRED'))
           } else if (err?.code === 'MFA_ENROLL_REQUIRED') {
             this.revealSecurityMode.set('mfa-enroll-required')
             this.revealSecurityOpen.setValue(true)
-            this.revealSecurityError.set('MFA is required to reveal API keys. Set up MFA in Security settings.')
+            this.revealSecurityError.set(this.translate.instant('SETTINGS_API_KEYS.ERR_MFA_ENROLL_REQUIRED'))
           }
 
           this.apiKeyLoading.visibility[keyId] = false
@@ -302,7 +304,7 @@ export class ApiKeysComponent implements OnInit {
       .catch((error: any) => {
         console.error('Sensitive action reauthentication failed:', error)
         this.revealSecurityLoading = false
-        this.revealSecurityError.set(error?.message || 'Password confirmation failed. Please try again.')
+        this.revealSecurityError.set(error?.message || this.translate.instant('SETTINGS_API_KEYS.ERR_PASSWORD_CONFIRM_FAILED'))
         this.cdr.detectChanges()
       })
   }

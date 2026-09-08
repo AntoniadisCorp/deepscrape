@@ -1,8 +1,8 @@
 <div class="container mx-auto px-4 py-8">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Billing usage</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-300">Usage breakdown and metered activity for your selected billing range.</p>
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">{{ 'BILLING_USAGE.TITLE' | translate }}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-300">{{ 'BILLING_USAGE.SUBTITLE' | translate }}</p>
     </div>
 
     <div class="flex items-center gap-2">
@@ -12,166 +12,166 @@
           [control]="rangeControl"
           [enableMenuAnimation]="true"
           [options]="rangeDropdownOptions"
-          [dropDownName]="'Range'"
-          (select)="onRangeChange($event.code)"></app-dropdown>
+          [dropDownName]="'BILLING_USAGE.RANGE'"
+        (select)="onRangeChange($event.code)"></app-dropdown>
       </div>
     </div>
   </div>
 
-  <ng-container *ngIf="loadingState$ | async as loading">
-  <div [@routeChildAnimation]="loading.usageReport ? 'loading' : selectedRange">
-    <div *ngIf="loading.usageReport" class="w-full" aria-hidden="true">
-      <div class="rounded-2xl bg-white/70 dark:bg-gray-800/45 px-5 py-4 mb-6 shadow-md">
-        <div class="loading-line-mid"></div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <div class="loading-line-short"></div>
-          <div class="mt-3 loading-key h-9"></div>
-        </div>
-        <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <div class="loading-line-short"></div>
-          <div class="mt-3 loading-key h-9"></div>
-        </div>
-        <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <div class="loading-line-short"></div>
-          <div class="mt-3 loading-key h-9"></div>
-        </div>
-      </div>
-
-      <div class="rounded-2xl bg-white dark:bg-gray6 p-5 mb-8 shadow-md">
-        <div class="loading-line-mid"></div>
-        <div class="mt-4 loading-surface h-72 rounded-xl"></div>
-      </div>
-
-      <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-        <div class="loading-line-mid"></div>
-        <div class="mt-4 space-y-3">
-          <div class="grid grid-cols-6 gap-3">
-            <div class="loading-chip"></div>
-            <div class="loading-chip"></div>
-            <div class="loading-chip col-span-2"></div>
-            <div class="loading-chip"></div>
-            <div class="loading-chip"></div>
+  @if (loadingState$ | async; as loading) {
+    <div [@routeChildAnimation]="loading.usageReport ? 'loading' : selectedRange">
+      @if (loading.usageReport) {
+        <div class="w-full" aria-hidden="true">
+          <div class="rounded-2xl bg-white/70 dark:bg-gray-800/45 px-5 py-4 mb-6 shadow-md">
+            <div class="loading-line-mid"></div>
           </div>
-          <div class="loading-key h-10"></div>
-          <div class="loading-key h-10 w-11/12"></div>
-          <div class="loading-key h-10 w-10/12"></div>
-          <div class="loading-key h-10 w-9/12"></div>
-        </div>
-      </div>
-    </div>
-
-    <ng-container *ngIf="!loading.usageReport">
-      <div *ngIf="errorMessage" class="rounded-2xl border border-red-400/60 bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-200 px-5 py-4 mb-6">
-        {{ errorMessage }}
-      </div>
-
-      <ng-container *ngIf="vm$ | async as vm">
-        <ng-container *ngIf="vm.report as report">
-          <div class="rounded-2xl bg-white/80 dark:bg-gray-800/50 px-5 py-4 mb-6 shadow-md">
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-              Usage for <strong>{{ report.range.start | date:'MMM d, y' }}</strong> - <strong>{{ report.range.end | date:'MMM d, y' }}</strong>
-            </p>
-          </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total invoiced</p>
-          <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
-            {{ report.summary.totalInvoiced | currency: asCurrencyCode(report.summary.currency) }}
-          </p>
-        </div>
-
-        <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total paid</p>
-          <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
-            {{ report.summary.totalPaid | currency: asCurrencyCode(report.summary.currency) }}
-          </p>
-        </div>
-
-        <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Metered units</p>
-          <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
-            {{ report.summary.totalMeteredUnits | number:'1.0-2' }}
-          </p>
-        </div>
-      </div>
-
-      <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 mb-8 shadow-md">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Meter usage trend</h3>
-
-        <div *ngIf="vm.chartPoints.length; else noChartData" class="usage-chart-shell">
-          <div class="h-72 w-full">
-            <canvas
-              baseChart
-              [data]="vm.chartData"
-              [options]="vm.chartOptions"
-              [type]="'bar'"
-              class="h-full w-full"
-            ></canvas>
-          </div>
-        </div>
-
-        <ng-template #noChartData>
-          <p class="text-sm text-gray-500 dark:text-gray-400">No metered usage data available for the selected range.</p>
-        </ng-template>
-      </div>
-
-          <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Usage breakdown</h3>
-
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-sm">
-                <thead>
-                  <tr class="text-left border-b border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-                    <th class="px-3 py-2 font-semibold">Date</th>
-                    <th class="px-3 py-2 font-semibold">Source</th>
-                    <th class="px-3 py-2 font-semibold">Description</th>
-                    <th class="px-3 py-2 font-semibold">Quantity</th>
-                    <th class="px-3 py-2 font-semibold">Unit price</th>
-                    <th class="px-3 py-2 font-semibold">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of report.breakdown" class="border-b border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200">
-                    <td class="px-3 py-2 whitespace-nowrap">{{ item.date | date:'MMM d, y' }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">{{ item.source }}</td>
-                    <td class="px-3 py-2 min-w-[220px]">{{ item.description }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                      <span *ngIf="item.quantity !== null; else noQuantity">{{ item.quantity | number:'1.0-2' }}</span>
-                      <ng-template #noQuantity>-</ng-template>
-                    </td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                      <ng-container *ngIf="item.unitAmount !== null && !isUnitRow(item)">
-                        {{ item.unitAmount | currency: asCurrencyCode(item.currency) }}
-                      </ng-container>
-                      <ng-container *ngIf="item.unitAmount !== null && isUnitRow(item)">
-                        {{ item.unitAmount | number:'1.0-2' }} units
-                      </ng-container>
-                      <ng-container *ngIf="item.unitAmount === null">-</ng-container>
-                    </td>
-                    <td class="px-3 py-2 whitespace-nowrap font-medium">
-                      <ng-container *ngIf="!isUnitRow(item)">
-                        {{ item.total | currency: asCurrencyCode(item.currency) }}
-                      </ng-container>
-                      <ng-container *ngIf="isUnitRow(item)">
-                        {{ item.total | number:'1.0-2' }} units
-                      </ng-container>
-                    </td>
-                  </tr>
-
-                  <tr *ngIf="!report.breakdown.length">
-                    <td colspan="6" class="px-3 py-5 text-center text-gray-500 dark:text-gray-400">No billing usage entries found for this range.</td>
-                  </tr>
-                </tbody>
-              </table>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+              <div class="loading-line-short"></div>
+              <div class="mt-3 loading-key h-9"></div>
+            </div>
+            <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+              <div class="loading-line-short"></div>
+              <div class="mt-3 loading-key h-9"></div>
+            </div>
+            <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+              <div class="loading-line-short"></div>
+              <div class="mt-3 loading-key h-9"></div>
             </div>
           </div>
-        </ng-container>
-      </ng-container>
-    </ng-container>
-  </div>
-  </ng-container>
+          <div class="rounded-2xl bg-white dark:bg-gray6 p-5 mb-8 shadow-md">
+            <div class="loading-line-mid"></div>
+            <div class="mt-4 loading-surface h-72 rounded-xl"></div>
+          </div>
+          <div class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+            <div class="loading-line-mid"></div>
+            <div class="mt-4 space-y-3">
+              <div class="grid grid-cols-6 gap-3">
+                <div class="loading-chip"></div>
+                <div class="loading-chip"></div>
+                <div class="loading-chip col-span-2"></div>
+                <div class="loading-chip"></div>
+                <div class="loading-chip"></div>
+              </div>
+              <div class="loading-key h-10"></div>
+              <div class="loading-key h-10 w-11/12"></div>
+              <div class="loading-key h-10 w-10/12"></div>
+              <div class="loading-key h-10 w-9/12"></div>
+            </div>
+          </div>
+        </div>
+      }
+      @if (!loading.usageReport) {
+        @if (errorMessage) {
+          <div class="rounded-2xl border border-red-400/60 bg-red-500/10 dark:bg-red-500/15 text-red-700 dark:text-red-200 px-5 py-4 mb-6">
+            {{ errorMessage | translate }}
+          </div>
+        }
+        @if (vm$ | async; as vm) {
+          @if (vm.report; as report) {
+            <div class="rounded-2xl bg-white/80 dark:bg-gray-800/50 px-5 py-4 mb-6 shadow-md">
+              <p class="text-sm text-gray-600 dark:text-gray-300">
+                {{ 'BILLING_USAGE.USAGE_FOR' | translate }} <strong>{{ report.range.start | date:'MMM d, y' }}</strong> - <strong>{{ report.range.end | date:'MMM d, y' }}</strong>
+              </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.TOTAL_INVOICED' | translate }}</p>
+                <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
+                  {{ report.summary.totalInvoiced | currency: asCurrencyCode(report.summary.currency) }}
+                </p>
+              </div>
+              <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.TOTAL_PAID' | translate }}</p>
+                <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
+                  {{ report.summary.totalPaid | currency: asCurrencyCode(report.summary.currency) }}
+                </p>
+              </div>
+              <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.METERED_UNITS' | translate }}</p>
+                <p class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-1">
+                  {{ report.summary.totalMeteredUnits | number:'1.0-2' }}
+                </p>
+              </div>
+            </div>
+            <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 mb-8 shadow-md">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ 'BILLING_USAGE.METER_TREND' | translate }}</h3>
+              @if (vm.chartPoints.length) {
+                <div class="usage-chart-shell">
+                  <div class="h-72 w-full">
+                    <canvas
+                      baseChart
+                      [data]="vm.chartData"
+                      [options]="vm.chartOptions"
+                      [type]="'bar'"
+                      class="h-full w-full"
+                    ></canvas>
+                  </div>
+                </div>
+              } @else {
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.NO_CHART_DATA' | translate }}</p>
+              }
+            </div>
+            <div [@fadeInUp] class="rounded-2xl bg-white dark:bg-gray6 p-5 shadow-md">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ 'BILLING_USAGE.BREAKDOWN_TITLE' | translate }}</h3>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left border-b border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                      <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.DATE' | translate }}</th>
+                      <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.SOURCE' | translate }}</th>
+                      <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.DESCRIPTION' | translate }}</th>
+                      <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.QUANTITY' | translate }}</th>
+                      <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.UNIT_PRICE' | translate }}</th>
+                      <th class="px-3 py-2 font-semibold">{{ 'BILLING_USAGE.TOTAL' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of report.breakdown; track item) {
+                      <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200">
+                        <td class="px-3 py-2 whitespace-nowrap">{{ item.date | date:'MMM d, y' }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ item.source }}</td>
+                        <td class="px-3 py-2 min-w-[220px]">{{ item.description }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                          @if (item.quantity !== null) {
+                            <span>{{ item.quantity | number:'1.0-2' }}</span>
+                          } @else {
+                            -
+                          }
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                          @if (item.unitAmount !== null && !isUnitRow(item)) {
+                            {{ item.unitAmount | currency: asCurrencyCode(item.currency) }}
+                          }
+                          @if (item.unitAmount !== null && isUnitRow(item)) {
+                            {{ item.unitAmount | number:'1.0-2' }} units
+                          }
+                          @if (item.unitAmount === null) {
+                            -
+                          }
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap font-medium">
+                          @if (!isUnitRow(item)) {
+                            {{ item.total | currency: asCurrencyCode(item.currency) }}
+                          }
+                          @if (isUnitRow(item)) {
+                            {{ item.total | number:'1.0-2' }} units
+                          }
+                        </td>
+                      </tr>
+                    }
+                    @if (!report.breakdown.length) {
+                      <tr>
+                        <td colspan="6" class="px-3 py-5 text-center text-gray-500 dark:text-gray-400">{{ 'BILLING_USAGE.NO_ENTRIES' | translate }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+  }
 </div>

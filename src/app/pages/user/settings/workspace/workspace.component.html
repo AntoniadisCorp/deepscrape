@@ -1,10 +1,10 @@
 <section class="space-y-6">
   <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-      Active Workspace
+      {{ 'SETTINGS_WORKSPACE.ACTIVE_WORKSPACE' | translate }}
     </h2>
     <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-      Select which workspace is used for organization-scoped requests.
+      {{ 'SETTINGS_WORKSPACE.SELECT_WORKSPACE' | translate }}
     </p>
 
     @if (isLoading()) {
@@ -18,14 +18,14 @@
         <app-dropdown
           [control]="workspaceControl"
           [options]="workspaceOptions()"
-          [dropDownName]="'Workspace'"
+          [dropDownName]="'SHELL.WORKSPACE'"
           [padding]="'py-2.5 pl-3 pr-3'"
           [enableMenuAnimation]="true"
           (select)="onWorkspaceSelected($event)"></app-dropdown>
       </div>
     } @else {
       <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-        No workspaces found.
+        {{ 'SHELL.NO_WORKSPACES' | translate }}
       </p>
     }
   </div>
@@ -33,7 +33,7 @@
   <div class="grid gap-6 lg:grid-cols-2">
     <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        Create Workspace
+        {{ 'SETTINGS_WORKSPACE.CREATE_WORKSPACE' | translate }}
       </h3>
       <form
         class="mt-3 space-y-3"
@@ -42,29 +42,29 @@
         <app-stinput
           [control]="createOrgForm.get('name') | formControl"
           [leftIcon]="'apartment'"
-          [label]="'Workspace name'"></app-stinput>
+          [label]="'SETTINGS_WORKSPACE.WORKSPACE_NAME_LABEL' | translate"></app-stinput>
         <button
           type="submit"
           appRipple
           rippleColor="dark"
           class="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
           [disabled]="createOrgForm.invalid || isSubmittingCreate()">
-          {{ isSubmittingCreate() ? 'Creating...' : 'Create Workspace' }}
+          {{ isSubmittingCreate() ? ('SETTINGS_WORKSPACE.CREATING' | translate) : ('SETTINGS_WORKSPACE.CREATE_WORKSPACE' | translate) }}
         </button>
       </form>
     </div>
 
     <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        Invite Member
+        {{ 'SETTINGS_WORKSPACE.INVITE_MEMBER' | translate }}
       </h3>
       <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-        Invite members to the selected workspace with scoped access.
+        {{ 'SETTINGS_WORKSPACE.INVITE_DESC' | translate }}
       </p>
 
       @if (!selectedOrgId()) {
         <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-          Select a workspace to send invites.
+          {{ 'SETTINGS_WORKSPACE.SELECT_FOR_INVITE' | translate }}
         </p>
       } @else {
         <form
@@ -74,7 +74,7 @@
           <label
             for="inviteEmail"
             class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Invite email
+            {{ 'SETTINGS_WORKSPACE.INVITE_EMAIL' | translate }}
           </label>
           <input
             id="inviteEmail"
@@ -87,7 +87,7 @@
             <app-dropdown
               [control]="inviteRoleControl"
               [options]="inviteRoleOptions"
-              [dropDownName]="'Role'"
+              [dropDownName]="'SETTINGS_WORKSPACE.ROLE'"
               [padding]="'py-2.5 pl-3 pr-3'"
               [enableMenuAnimation]="true"
               (select)="onInviteRoleSelected($event)"></app-dropdown>
@@ -104,12 +104,12 @@
             rippleColor="dark"
             class="rounded-full bg-gray-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
             [disabled]="inviteForm.invalid || isSubmittingInvite()">
-            {{ isSubmittingInvite() ? 'Sending...' : 'Send Invitation' }}
+            {{ isSubmittingInvite() ? ('SETTINGS_WORKSPACE.SENDING' | translate) : ('SETTINGS_WORKSPACE.SEND_INVITATION' | translate) }}
           </button>
 
           @if (!canManageCurrentOrg()) {
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              You do not have permission to invite members in this workspace.
+              {{ 'SETTINGS_WORKSPACE.NO_PERMISSION' | translate }}
             </p>
           }
         </form>
@@ -122,20 +122,20 @@
     <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-          Sent Invitations
+          {{ 'SETTINGS_WORKSPACE.SENT_INVITATIONS' | translate }}
         </h3>
         <span
           class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-          Outgoing
+          {{ 'SETTINGS_WORKSPACE.BADGE_OUTGOING' | translate }}
         </span>
       </div>
       <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-        Pending invitations you've sent to team members.
+        {{ 'SETTINGS_WORKSPACE.SENT_DESC' | translate }}
       </p>
 
       @if (!selectedOrgId()) {
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          Select a workspace to view sent invitations.
+          {{ 'SETTINGS_WORKSPACE.SELECT_FOR_SENT' | translate }}
         </p>
       } @else if (isSentInvitationsLoading()) {
         <div class="mt-4 space-y-3" [@listStagger]="'sent-loading'" aria-hidden="true">
@@ -149,7 +149,7 @@
         </div>
       } @else if (!sentInvitations().length) {
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          No pending invitations sent.
+          {{ 'SETTINGS_WORKSPACE.NO_PENDING_SENT' | translate }}
         </p>
       } @else {
         <div class="mt-4 space-y-3" role="list" [@listStagger]="sentInvitations().length">
@@ -166,16 +166,16 @@
                   <div class="mt-1.5 flex flex-wrap gap-2">
                     <span
                       class="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                      Role: {{ invite.role | titlecase }}
+                      {{ 'SETTINGS_WORKSPACE.ROLE' | translate }}: {{ roleLabelKey(invite.role) | translate }}
                     </span>
                     <span
                       class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                      Pending
+                      {{ 'SETTINGS_WORKSPACE.BADGE_PENDING' | translate }}
                     </span>
                   </div>
                   @if (getCreatedAtDate(invite.createdAt); as createdAtDate) {
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      {{ (createdAtDate | date: 'short') || 'Recently' }}
+                      {{ (createdAtDate | date: 'short') || ('SETTINGS_WORKSPACE.RECENTLY' | translate) }}
                     </p>
                   }
                 </div>
@@ -190,15 +190,15 @@
     <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-          Incoming Invitations
+          {{ 'SETTINGS_WORKSPACE.INCOMING_INVITATIONS' | translate }}
         </h3>
         <span
           class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300">
-          Action Required
+          {{ 'SETTINGS_WORKSPACE.BADGE_ACTION_REQUIRED' | translate }}
         </span>
       </div>
       <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-        Invitations awaiting your acceptance to join workspaces.
+        {{ 'SETTINGS_WORKSPACE.INCOMING_DESC' | translate }}
       </p>
 
       @if (isIncomingInvitationsLoading()) {
@@ -213,7 +213,7 @@
         </div>
       } @else if (!incomingInvitations().length) {
         <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          No incoming invitations.
+          {{ 'SETTINGS_WORKSPACE.NO_INCOMING' | translate }}
         </p>
       } @else {
         <div class="mt-4 space-y-3" role="list" [@listStagger]="incomingInvitations().length">
@@ -228,20 +228,20 @@
                     {{ invite.orgName || invite.orgId }}
                   </p>
                   <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-                    Invited as:
+                    {{ 'SETTINGS_WORKSPACE.INVITED_AS' | translate }}
                     <span class="font-medium">
-                      {{ invite.role | titlecase }}
+                      {{ roleLabelKey(invite.role) | translate }}
                     </span>
                   </p>
                   <div class="mt-2 flex flex-wrap gap-2">
                     <span
                       class="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                      From: {{ invite.email }}
+                      {{ 'SETTINGS_WORKSPACE.FROM' | translate }}: {{ invite.email }}
                     </span>
                     @if (getCreatedAtDate(invite.createdAt); as createdAtDate) {
                       <span
                         class="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                        {{ (createdAtDate | date: 'short') || 'Recently' }}
+                        {{ (createdAtDate | date: 'short') || ('SETTINGS_WORKSPACE.RECENTLY' | translate) }}
                       </span>
                     }
                   </div>
@@ -256,8 +256,8 @@
                 (click)="acceptInvitation(invite.id)">
                 {{
                   isAcceptingInvite() === invite.id
-                    ? 'Accepting...'
-                    : 'Accept Invitation'
+                    ? ('SETTINGS_WORKSPACE.ACCEPTING' | translate)
+                    : ('SETTINGS_WORKSPACE.ACCEPT_INVITATION' | translate)
                 }}
               </button>
             </div>
@@ -270,11 +270,11 @@
   <div class="grid gap-6 lg:grid-cols-2">
     <div class="rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        Members
+        {{ 'SETTINGS_WORKSPACE.MEMBERS' | translate }}
       </h3>
       @if (!selectedOrgId()) {
         <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-          Select a workspace to view members.
+          {{ 'SETTINGS_WORKSPACE.SELECT_FOR_MEMBERS' | translate }}
         </p>
       } @else if (isMembersLoading()) {
         <div class="mt-3 space-y-2" [@listStagger]="'members-loading'" aria-hidden="true">
@@ -287,7 +287,7 @@
         </div>
       } @else if (!members().length) {
         <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-          No members found for this workspace.
+          {{ 'SETTINGS_WORKSPACE.NO_MEMBERS' | translate }}
         </p>
       } @else {
         <div class="mt-3 space-y-2" role="list" [@listStagger]="members().length">
@@ -300,7 +300,7 @@
                   {{ member.userId }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Role: {{ member.role }}
+                  {{ 'SETTINGS_WORKSPACE.ROLE' | translate }}: {{ roleLabelKey(member.role) | translate }}
                 </p>
               </div>
               @if (member.role !== 'owner') {
@@ -318,8 +318,8 @@
                   (click)="removeMember(member.userId)">
                   {{
                     isRemovingMember() === member.userId
-                      ? 'Removing...'
-                      : 'Remove'
+                      ? ('SETTINGS_WORKSPACE.REMOVING' | translate)
+                      : ('COMMON.REMOVE' | translate)
                   }}
                 </button>
               }

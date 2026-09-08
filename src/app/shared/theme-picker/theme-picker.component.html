@@ -1,17 +1,24 @@
+<!-- Light | Dark | System triple toggle -->
 <div
-  appRipple
-  ripplColor="light"
-  (click)="toggleTheme()"
-  class="flex flex-col items-center cursor-pointer justify-center border-none text-center bg-transparent hover:bg-[#3939393b] dark:hover:bg-gray-700/30 p-2 rounded-full transition-colors">
-  <button
-    type="button"
-    class="flex items-center justify-center p-0 m-0 border-none bg-transparent"
-    [title]="getToggleLabel()"
-    [attr.aria-label]="getToggleLabel()">
-    <mat-icon
-      [style]="getIconColorClass()"
-      class="!text-[var(--icon-color)] dark:!text-[var(--icon-color-dark)]">
-      {{ isDark ? 'light' : 'dark' }}_mode
-    </mat-icon>
-  </button>
+  role="group"
+  aria-label="Theme"
+  class="inline-flex items-center rounded-full border border-gray-200/70 bg-gray-100/60 p-0.5 dark:border-white/10 dark:bg-white/5">
+  @for (opt of options; track opt.id) {
+    <button
+      type="button"
+      appRipple
+      ripplColor="light"
+      class="flex items-center justify-center rounded-full p-1.5 transition-colors"
+      [class]="
+        mode === opt.id
+          ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+          : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+      "
+      [title]="opt.label"
+      [attr.aria-label]="opt.label"
+      [attr.aria-pressed]="mode === opt.id"
+      (click)="selectTheme(opt.id)">
+      <mat-icon class="!h-[18px] !w-[18px] !text-[18px] leading-none">{{ opt.icon }}</mat-icon>
+    </button>
+  }
 </div>

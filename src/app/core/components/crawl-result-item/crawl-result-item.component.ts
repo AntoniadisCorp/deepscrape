@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, AfterViewInit, ElementRef, ViewChildren, QueryList } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule, JsonPipe, NgClass } from '@angular/common';
 import { CrawlResults } from '../../types';
 import { expandCollapseAnimation } from 'src/app/animations';
@@ -7,10 +7,12 @@ import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule
 import { LucideAngularModule } from 'lucide-angular';
 import { myIcons } from 'src/app/shared';
 import { PdfSrcPipe } from '../../pipes';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-crawl-result-item',
-  imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe],
+  imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandCollapseAnimation],
   templateUrl: './crawl-result-item.component.html',
   styles: [`
@@ -25,7 +27,7 @@ import { PdfSrcPipe } from '../../pipes';
     }
   `]
 })
-export class CrawlResultItemComponent implements AfterViewInit {
+export class CrawlResultItemComponent {
   @Input() crawlResult!: CrawlResults;
   @Input() clipboardButton: any; // Type as any for now, as it's a component reference
   @Output() toggleExpand = new EventEmitter<CrawlResults>();
@@ -34,24 +36,16 @@ export class CrawlResultItemComponent implements AfterViewInit {
   activeSubTab: string = 'overview';
 
   subTabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'metadata', label: 'Metadata' },
-    { key: 'media', label: 'Media' },
-    { key: 'links', label: 'Links' },
-    { key: 'tables', label: 'Tables' },
-    { key: 'raw_markdown', label: 'Raw Markdown' },
-    { key: 'raw_html', label: 'Raw HTML' },
-    { key: 'technical_details', label: 'Technical Details' },
-    { key: 'files', label: 'Files' },
+    { key: 'overview', label: 'CR_RES.TAB_OVERVIEW' },
+    { key: 'metadata', label: 'CR_RES.TAB_METADATA' },
+    { key: 'media', label: 'CR_RES.TAB_MEDIA' },
+    { key: 'links', label: 'CR_RES.TAB_LINKS' },
+    { key: 'tables', label: 'CR_RES.TAB_TABLES' },
+    { key: 'raw_markdown', label: 'CR_RES.TAB_MARKDOWN' },
+    { key: 'raw_html', label: 'CR_RES.TAB_HTML' },
+    { key: 'technical_details', label: 'CR_RES.TAB_TECH' },
+    { key: 'files', label: 'CR_RES.TAB_FILES' },
   ];
-
-  constructor(private el: ElementRef) { }
-
-  ngAfterViewInit(): void {
-    // Implement logic for tab overflow here if needed.
-    // This would involve measuring the width of the tab container and individual tabs.
-    // For now, we'll rely on flex-wrap for basic responsiveness.
-  }
 
   selectSubTab(tabName: string): void {
     this.activeSubTab = tabName;

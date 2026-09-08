@@ -4,56 +4,45 @@
     <meta charset="utf-8" />
     <title>deepscrape</title>
     <base href="/" />
-    <meta property="og:title" content="Deep Scrape">
-    <meta property="og:description" content="Deep Scrape">
-    <meta property="og:image" content="https://example.com/image.jpg">
-    <meta property="og:url" content="https://example.com">
-    <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#1976d2" />
     <link rel="preconnect" href="https://deepscrape.dev" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#1976d2" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#1976d2" />
     <link
       rel="apple-touch-icon"
-      href="/public/icons/icon-180x180.png"
+      href="/icons/icon-180x180.png"
       sizes="180x180"
     />
     <link
       rel="apple-touch-icon"
-      href="/public/icons/icon-152x152.png"
+      href="/icons/icon-152x152.png"
       sizes="152x152"
     />
     <link
       rel="apple-touch-icon"
-      href="/public/icons/icon-144x144.png"
+      href="/icons/icon-144x144.png"
       sizes="144x144"
     />
     <link
       rel="apple-touch-icon"
-      href="/public/icons/icon-120x120.png"
+      href="/icons/icon-120x120.png"
       sizes="120x120"
     />
     <link
       rel="apple-touch-icon"
-      href="/public/icons/icon-114x114.png"
+      href="/icons/icon-114x114.png"
       sizes="114x114"
     />
     <link
       rel="apple-touch-icon"
-      href="/public/icons/icon-72x72.png"
+      href="/icons/icon-72x72.png"
       sizes="72x72"
     />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#1976d2" />
-    <!-- Material Icons Link Fonts -->
+    <!-- Material Icons Link Fonts (base + Outlined are the only families used) -->
     <link
       nonce="{{nonce}}"
-      href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp"
+      href="https://fonts.googleapis.com/css2?family=Material+Icons&family=Material+Icons+Outlined&display=swap"
       rel="stylesheet"
     />
 
@@ -62,37 +51,6 @@
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
-
-    <script
-      nonce="{{nonce}}">
-      function loadScript(src) {
-        return new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = src;
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-      async function loadJsDynamically() {
-        try {
-          let Prism;
-          await loadScript("assets/js/prism.js");
-          // Ensure Prism is available after the script loads
-          if (window.Prism) {
-            Prism?.highlightAll();
-          } else {
-            console.error("Prism object not found after script load.");
-          }
-          // Add more scripts as needed
-          console.log("Scripts loaded dynamically");
-        } catch (error) {
-          console.error("Error loading scripts:", error);
-        }
-      }
-
-      loadJsDynamically();
-    </script>
 
     <link
       nonce="{{nonce}}"

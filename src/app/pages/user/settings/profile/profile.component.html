@@ -5,7 +5,7 @@
       <svg class="w-4 h-4 mr-2 text-yellow-500 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
         <path d="M10 2a1 1 0 01.894.553l2.382 4.764 5.263.765a1 1 0 01.554 1.706l-3.807 3.713.899 5.243a1 1 0 01-1.451 1.054L10 17.347l-4.7 2.472a1 1 0 01-1.451-1.054l.899-5.243-3.807-3.713a1 1 0 01.554-1.706l5.263-.765L9.106 2.553A1 1 0 0110 2z"/>
       </svg>
-      Admin
+      {{ 'SETTINGS_WORKSPACE.ROLE_ADMIN' | translate }}
     </span>
   }
 </div>
@@ -20,13 +20,12 @@
 
   <div class="flex w-full flex-col gap-4">
     <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
-      Profile Picture
+      {{ 'SETTINGS_PROFILE.PICTURE_TITLE' | translate }}
     </h2>
     <div
       class="flex w-full max-w-lg flex-col rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
       <h3 class="mt-1 font-body text-sm text-gray5/50 dark:text-gray-400">
-        Upload a picture to make your profile stand out and let people recognize
-        your tasks easily!
+        {{ 'SETTINGS_PROFILE.PICTURE_SUBTITLE' | translate }}
       </h3>
       @if (isLoadingFile) {
         <mat-progress-bar
@@ -84,8 +83,9 @@
                   <button
                     type="button"
                     (click)="removeImage()"
-                    title="Remove image"
+                    title="{{ 'SETTINGS_PROFILE.REMOVE_IMAGE' | translate }}"
                     class="absolute right-2 top-2 z-10 rounded-full bg-gray-200 p-1 text-gray-700 hover:bg-gray-300">
+                    <span class="sr-only">{{ 'SETTINGS_PROFILE.REMOVE_IMAGE' | translate }}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       class="h-5 w-5"
@@ -105,11 +105,11 @@
                   <div
                     class="flex flex-col items-center justify-center px-6 py-6">
                     <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span class="font-semibold">Click to upload</span>
-                      or drag and drop
+                      <span class="font-semibold">{{ 'SETTINGS_PROFILE.UPLOAD_CLICK' | translate }}</span>
+                      {{ 'SETTINGS_PROFILE.UPLOAD_DRAG_DROP' | translate }}
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                      SVG, PNG, JPG, GIF, or WEBP (MAX. 1920x1080px)
+                      {{ 'SETTINGS_PROFILE.UPLOAD_FORMATS' | translate }}
                     </p>
                   </div>
                 }
@@ -124,7 +124,7 @@
                 </label>
                 @if (fileError) {
                   <div class="text-red-500 text-sm mt-1">
-                    {{ fileError }}
+                    {{ fileError | translate }}
                   </div>
                 }
               </div>
@@ -133,17 +133,17 @@
             <!-- Header -->
             <div class="mt-6 flex flex-row items-center">
               <h2 class="font-body text-lg font-bold text-gray5 dark:text-gray-200">
-                Profile Information
+                {{ 'SETTINGS_PROFILE.INFO_TITLE' | translate }}
               </h2>
               <span class="mx-1 text-xs font-light dark:text-gray-400">•</span>
               <div class="text-xs font-light dark:text-gray-400">
-                Joined
+                {{ 'SETTINGS_PROFILE.JOINED' | translate }}
                 <time
                   [dateTime]="user?.created_At | date : 'yyyy-MM-ddTHH:mm:ssZ'"
                 [innerText]="user?.created_At | date : 'mediumDate'"></time>
                 @if(user?.updated_At) {
                   <span class="mx-1">•</span>
-                  Last login
+                  {{ 'SETTINGS_PROFILE.LAST_LOGIN' | translate }}
                   <time [innerText]="user?.updated_At | date : 'mediumDate'"></time>
                 }
               </div>
@@ -157,20 +157,19 @@
                   class="w-full sm:w-auto flex-1"
                   [control]="profileForm.get('displayName') | formControl"
                   [leftIcon]="'person'"
-                [label]="'Name'"></app-stinput>
+                [label]="'SETTINGS_PROFILE.LABEL_NAME' | translate"></app-stinput>
               </div>
 
               <!-- username Control field -->
               <h3 class="-mb-3 mt-5 font-body text-sm text-gray5/50 dark:text-gray-400">
-                Username can be updated only once per year - Last username update: x
-                months ago
+                {{ 'SETTINGS_PROFILE.USERNAME_HINT' | translate }}
               </h3>
 
               <app-stinput
                 [control]="profileForm.get('username') | formControl"
                 [leftIcon]="'person_outline'"
                 [rightIcon]="'lock'"
-              [label]="'Username'"></app-stinput>
+              [label]="'SETTINGS_PROFILE.LABEL_USERNAME' | translate"></app-stinput>
 
               <!-- Engineer Status Dropdown -->
               <div class="relative mt-4 flex w-full max-w-3xl flex-col space-y-2">
@@ -179,13 +178,13 @@
                   [control]="profileForm.get('engineerStatus') | formControl"
                   [options]="engineerStatuses"
                   (select)="onEngineerStatusChange($event)"
-                [dropDownName]="'Engineer Status'"></app-dropdown>
+                [dropDownName]="'SETTINGS_PROFILE.ENGINEER_STATUS'"></app-dropdown>
               </div>
             </div>
 
             <!-- About Section -->
             <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
-              About
+              {{ 'SETTINGS_PROFILE.ABOUT_TITLE' | translate }}
             </h2>
             <div
               class="mt-2 flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
@@ -203,14 +202,14 @@
                   <label
                     for="bio"
                     class="absolute start-2 top-[0.8rem] z-10 origin-[0] -translate-y-3 scale-75 transform cursor-text text-sm text-gray5 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 dark:peer-hover:text-blue-400 peer-focus:scale-75 peer-focus:text-blue-700 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 dark:group-hover:text-white peer-focus:dark:text-gray-100">
-                    Bio
+                    {{ 'SETTINGS_PROFILE.LABEL_BIO' | translate }}
                   </label>
                 </div>
                 <div class="flex w-full justify-between items-center">
                   @if (profileForm.get('bio')?.invalid &&
                     profileForm.get('bio')?.touched) {
                     <div class="mt-0 px-2 h-[20px] text-sm text-red-400" role="alert">
-                      {{ profileForm.get('bio')?.errors?.['maxlength'] ? 'Bio cannot exceed 100 characters' : '' }}
+                      {{ profileForm.get('bio')?.errors?.['maxlength'] ? ('SETTINGS_PROFILE.BIO_MAXLENGTH_ERROR' | translate) : '' }}
                     </div>
                   } @else {
                     <div class="mt-0 px-2 text-sm text-transparent" role="alert"></div>
@@ -225,24 +224,24 @@
               <app-stinput
                 [control]="profileForm.get('company') | formControl"
                 [leftIcon]="'business'"
-              [label]="'Company'"></app-stinput>
+              [label]="'SETTINGS_PROFILE.LABEL_COMPANY' | translate"></app-stinput>
 
               <!-- Location Field -->
               <app-stinput
                 [control]="profileForm.get('location') | formControl"
                 [leftIcon]="'location_on'"
-              [label]="'Location'"></app-stinput>
+              [label]="'SETTINGS_PROFILE.LABEL_LOCATION' | translate"></app-stinput>
 
               <!-- Job Title Field -->
               <app-stinput
                 [control]="profileForm.get('jobTitle') | formControl"
                 [leftIcon]="'work'"
-              [label]="'Job Title'"></app-stinput>
+              [label]="'SETTINGS_PROFILE.LABEL_JOB_TITLE' | translate"></app-stinput>
             </div>
 
             <!-- Social Links Section -->
             <h2 class="mt-5 font-body text-lg font-bold text-gray5 dark:text-gray-200">
-              Social Links
+              {{ 'SETTINGS_PROFILE.SOCIAL_TITLE' | translate }}
             </h2>
             <div
               class="mt-2 flex w-full max-w-3xl flex-col space-y-2 rounded-2xl bg-gray-50 p-5 shadow-md dark:bg-gray6/80">
@@ -269,7 +268,7 @@
               <app-stinput
                 [control]="profileForm.get('socialLinks.website') | formControl"
                 [leftIcon]="'link'"
-              [label]="'Website'"></app-stinput>
+              [label]="'SETTINGS_PROFILE.LABEL_WEBSITE' | translate"></app-stinput>
               <app-stinput
                 [control]="profileForm.get('socialLinks.stackoverflow') | formControl"
                 svgIcon="stackoverflow"
@@ -302,6 +301,6 @@
             class="mt-5 inline-flex w-20 min-w-fit items-center justify-center rounded-full bg-green-600 px-4 py-2 text-white shadow-sm transition-colors duration-200 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-200/70 dark:bg-green-600 dark:hover:bg-green-500 disabled:cursor-not-allowed disabled:bg-green-300/80 disabled:opacity-50">
             @if(isSaving) {
               <mat-spinner [diameter]="25" class="mx-auto stroke-white"></mat-spinner>
-            } @else { Save }
+            } @else { {{ 'COMMON.SAVE' | translate }} }
             </button>
           </form>

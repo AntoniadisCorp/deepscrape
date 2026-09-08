@@ -1,13 +1,14 @@
-import { AsyncPipe, CurrencyPipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
 import { MatIconModule } from '@angular/material/icon'
 import { Router } from '@angular/router'
+import { TranslateModule } from '@ngx-translate/core'
 import { BillingService } from 'src/app/core/services'
 import { CreditPackCatalog, CustomCreditsCatalog, UserBilling } from 'src/app/core/types'
 
 @Component({
   selector: 'app-passes',
-  imports: [NgIf, NgFor, AsyncPipe, CurrencyPipe, MatIconModule],
+  imports: [AsyncPipe, CurrencyPipe, MatIconModule, TranslateModule],
   templateUrl: './passes.component.html',
   styleUrl: './passes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

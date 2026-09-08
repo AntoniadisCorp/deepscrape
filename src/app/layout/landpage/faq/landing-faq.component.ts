@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
-import { myIcons } from 'src/app/shared';
+import { TranslateModule } from '@ngx-translate/core';
+import { myIcons, RevealDirective } from 'src/app/shared';
 
 interface FaqItem {
   question: string;
@@ -12,7 +13,7 @@ interface FaqItem {
 @Component({
   selector: 'app-landing-faq',
   standalone: true,
-  imports: [LucideAngularModule, NgClass],
+  imports: [LucideAngularModule, NgClass, TranslateModule, RevealDirective],
   templateUrl: './landing-faq.component.html',
   styleUrl: './landing-faq.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,67 +24,58 @@ export class LandingFaqComponent {
   readonly activeCategory = signal<'general' | 'comparison' | 'technical'>('general');
 
   readonly categories = [
-    { id: 'general' as const, label: 'General' },
-    { id: 'comparison' as const, label: 'deepscrape vs Self-Host' },
-    { id: 'technical' as const, label: 'Technical' },
+    { id: 'general' as const, label: 'FAQ.CAT_GENERAL' },
+    { id: 'comparison' as const, label: 'FAQ.CAT_VS_SELFHOST' },
+    { id: 'technical' as const, label: 'FAQ.CAT_TECHNICAL' },
   ];
 
   readonly faqs: FaqItem[] = [
     // General
     {
-      question: 'Do I need to install anything to use deepscrape?',
-      answer:
-        'No. deepscrape is a fully managed cloud service. You can use our REST API from any language (Python, Node.js, Go, curl) without any local dependencies. If you want the CLI experience, you can install our lightweight client SDK, but the core crawling infrastructure runs entirely on our servers.',
+      question: 'FAQ.Q1',
+      answer: 'FAQ.A1',
       category: 'general',
     },
     {
-      question: 'How many pages can I crawl per month?',
-      answer:
-        'Our Free plan includes 5,000 pages/month. Starter is 50,000 pages/month, Professional is 250,000 pages/month, and Enterprise has unlimited pages. A "page" is one successful URL extraction — regardless of page size or complexity.',
+      question: 'FAQ.Q2',
+      answer: 'FAQ.A2',
       category: 'general',
     },
     {
-      question: 'What kind of websites can deepscrape handle?',
-      answer:
-        'Any public website. deepscrape handles static pages, SPAs (React, Vue, Angular), infinite scroll, JavaScript-heavy sites, login-protected content (with session management), and sites with aggressive anti-bot measures. Our browser pool runs real Chromium instances with advanced stealth profiles.',
+      question: 'FAQ.Q3',
+      answer: 'FAQ.A3',
       category: 'general',
     },
     // Comparison
     {
-      question: 'Why use deepscrape instead of self-hosting a scraper?',
-      answer:
-        'Managing your own scraping stack in production requires significant DevOps work: provisioning browser instances, handling memory pressure, managing proxy rotation, dealing with anti-detection, scaling horizontally under load, and monitoring uptime. deepscrape handles all of this automatically. For teams that want to focus on data, not infrastructure, deepscrape delivers 10x faster time-to-value.',
+      question: 'FAQ.Q4',
+      answer: 'FAQ.A4',
       category: 'comparison',
     },
     {
-      question: 'How does pricing compare to self-hosting?',
-      answer:
-        'Self-hosting a scraping platform at scale means paying for cloud VMs (€50-500+/month for multi-browser setups), proxy services (€30-200+/month for rotating residential proxies), and engineering time to maintain the infrastructure. deepscrape starts at €0 and scales to €99/month for 250k pages — including proxies, anti-detection, and infrastructure. Most teams save 60-80% with deepscrape when you factor in engineering costs.',
+      question: 'FAQ.Q5',
+      answer: 'FAQ.A5',
       category: 'comparison',
     },
     {
-      question: 'How does deepscrape compare to ScrapingBee, ScrapingFish, or BrightData?',
-      answer:
-        'deepscrape gives you AI-powered extraction, deep crawling with graph algorithms, anti-detection browser pools, and world-aware geolocation in one API — features that competitors charge premium tiers for. Everything is priced on a simple per-page model with a generous free tier.',
+      question: 'FAQ.Q6',
+      answer: 'FAQ.A6',
       category: 'comparison',
     },
     // Technical
     {
-      question: 'What extraction formats does deepscrape support?',
-      answer:
-        'deepscrape returns structured data in JSON, CSV, and pandas DataFrame formats. We also provide clean Markdown output optimized for LLM ingestion, raw HTML when needed, and structured extraction via CSS selectors, XPath, or LLM-based schema extraction. You can also get screenshots, PDFs, and MHTML snapshots.',
+      question: 'FAQ.Q7',
+      answer: 'FAQ.A7',
       category: 'technical',
     },
     {
-      question: 'Can I crawl pages that require login?',
-      answer:
-        'Yes. deepscrape supports session management with persistent browser profiles. You can provide cookies, session tokens, or authentication headers, and our browser pool will maintain the session across requests. Enterprise plans include dedicated browser profiles with saved authentication states.',
+      question: 'FAQ.Q8',
+      answer: 'FAQ.A8',
       category: 'technical',
     },
     {
-      question: 'Is deepscrape GDPR and SOC2 compliant?',
-      answer:
-        'deepscrape is designed with enterprise compliance in mind. Data is encrypted at rest (Firestore/S3) and in transit (TLS 1.3). We offer data retention policies, automated data purging, and compliance reporting for Enterprise customers. SOC2 Type II certification is in progress for Q3 2026.',
+      question: 'FAQ.Q9',
+      answer: 'FAQ.A9',
       category: 'technical',
     },
   ];

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { SnackbarComponent, SnackBarType } from '../components';
+import { SnackbarComponent, SnackBarType } from '../components/snackbar/snackbar.component';
 
 
 @Injectable({

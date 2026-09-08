@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.subheader-link-active {
+  color: #0891b2;
+  background: rgba(6, 182, 212, 0.1);
+}
+
+:host-context(.dark) .subheader-link-active {
+  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host * {
+    transition: none !important;
+  }
+}

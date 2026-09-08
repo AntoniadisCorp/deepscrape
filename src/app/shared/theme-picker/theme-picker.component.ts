@@ -1,5 +1,5 @@
-import { isPlatformBrowser, NgClass, NgStyle } from '@angular/common';
-import { Component, Inject, PLATFORM_ID, WritableSignal, inject, input, signal, DOCUMENT } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, Inject, OnDestroy, PLATFORM_ID, WritableSignal, inject, input, signal, DOCUMENT } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { RippleDirective } from 'src/app/core/directives';
 import { AppTheme } from 'src/app/core/enum';
@@ -27,32 +27,64 @@ export class ThemeToggleComponent {
 
 
     isDark = false;
-    system = false;
+    mode: 'light' | 'dark' | 'system' = 'system';
+    readonly options: Array<{ id: 'light' | 'dark' | 'system'; icon: string; label: string }> = [
+        { id: 'light', icon: 'light_mode', label: 'Light mode' },
+        { id: 'dark', icon: 'dark_mode', label: 'Dark mode' },
+        { id: 'system', icon: 'desktop_windows', label: 'System theme' },
+    ];
     private storedPreference: AppTheme | undefined = undefined;
-    private currentTheme: WritableSignal<AppTheme | undefined>
+    private currentTheme: WritableSignal<AppTheme | undefined>;
+    private systemQuery: MediaQueryList | null = null;
+    private readonly onSystemChange = (): void => {
+        this.isDark = this.isSystemDark();
+        this.setSystemTheme();
+    }
 
     constructor(@Inject(DOCUMENT) private document: Document,
         @Inject(PLATFORM_ID) private platformId: object) {
         this.initializeThemeFromPreferences();
     }
 
-    getIconColorClass(): string {
-        const color = this.color();
-        if (color) {
-            return `--icon-color: ${color.dark}; --icon-color-dark: ${color.light}`;
-        } else {
-            return '--icon-color: #000000bd; --icon-color-dark: #ffffffbd;';
+    selectTheme(mode: 'light' | 'dark' | 'system'): void {
+        this.mode = mode;
+        if (mode === 'system') {
+            this.attachSystemListener();
+            return;
         }
-    }
-
-    toggleTheme(): void {
-        this.isDark = !this.isDark;
+        this.detachSystemListener();
+        this.isDark = mode === 'dark';
         this.themeService.setDarkMode(this.isDark);
         this.updateRenderedTheme();
     }
 
+    // Called once on app boot to make sure the applied theme matches the saved
+    // preference. For system mode this keeps following the OS (no storage write).
     setDefaultTheme(): void {
-        this.updateRenderedTheme()
+        if (this.mode === 'system') {
+            this.attachSystemListener();
+        } else {
+            this.updateRenderedTheme();
+        }
+    }
+
+    ngOnDestroy(): void {
+        this.detachSystemListener();
+    }
+
+    private attachSystemListener(): void {
+        if (!isPlatformBrowser(this.platformId)) return;
+        this.detachSystemListener();
+        this.systemQuery = this.window.matchMedia('(prefers-color-scheme: dark)');
+        this.systemQuery.addEventListener('change', this.onSystemChange);
+        this.isDark = this.systemQuery.matches;
+        this.themeService.setDarkMode(this.isDark);
+        this.setSystemTheme();
+    }
+
+    private detachSystemListener(): void {
+        this.systemQuery?.removeEventListener('change', this.onSystemChange);
+        this.systemQuery = null;
     }
 
     private initializeThemeFromPreferences(): void {
@@ -64,14 +96,15 @@ export class ThemeToggleComponent {
 
 
         // If we do have a preference in localStorage, use that. Otherwise,
-        // initialize based on the prefers-color-scheme media query.
+        // follow the OS colour scheme (system theme).
         if (this.storedPreference) {
             this.isDark = this.storedPreference === 'true';
+            this.mode = this.isDark ? 'dark' : 'light';
+            this.updateRenderedTheme();
         } else {
-            this.isDark = this.isSystemDark()
+            this.mode = 'system';
+            this.attachSystemListener();
         }
-
-        this.updateRenderedTheme()
 
 
         /*  const initialTheme = this.document.querySelector('#ai-initial-theme');
@@ -87,14 +120,6 @@ export class ThemeToggleComponent {
         this.document.head.appendChild(themeLink); */
 
 
-    }
-
-    getThemeName(): string {
-        return this.isDark ? 'dark' : 'light';
-    }
-
-    getToggleLabel(): string {
-        return `Switch to ${this.system ? 'system' : this.isDark ? 'light' : 'dark'} mode`;
     }
 
     private updateRenderedTheme(): void {

@@ -2,16 +2,20 @@ import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { themeStorageKey } from 'src/app/shared';
 import { LocalStorage } from './storage.service';
+import { WindowToken } from './window.service';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
     private localStorage = inject(LocalStorage);
+    private window = inject(WindowToken);
     private themeSubject: BehaviorSubject<boolean>;
 
     constructor() {
-        // Initialize from localStorage or default to false (light mode)
-        const isDark = this.localStorage?.getItem(themeStorageKey) === 'true';
-        this.themeSubject = new BehaviorSubject<boolean>(isDark);
+        // Explicit 'true'/'false' wins; no stored key means System → follow the OS.
+        const stored = this.localStorage?.getItem(themeStorageKey);
+        const systemDark = stored == null
+            && (this.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false);
+        this.themeSubject = new BehaviorSubject<boolean>(stored === 'true' || systemDark);
     }
 
     get isDarkMode$(): Observable<boolean> {

@@ -1,34 +1,51 @@
-<!-- Toolbar -->
-<!-- <app-header></app-header> -->
+<!-- 404 - Lost in the web (matches landpage research-lab language) -->
+<div class="min-h-screen section-dark flex flex-col overflow-hidden">
+  <!-- Decorative backdrop -->
+  <div class="absolute inset-0 grid-lines pointer-events-none opacity-15 dark:opacity-50"></div>
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-24 -right-24 w-96 h-96 orb-cyan-md rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-24 -left-24 w-96 h-96 orb-rose-md rounded-full blur-3xl"></div>
+  </div>
 
-<div class="mx-auto max-w-screen-3xl bg-gray-100 dark:bg-gray-900">
-  <div class="mt-32 flex flex-col">
-    <div class="mx-6 mb-6 mt-4 flex flex-col justify-center text-center">
-      <h1>
-        <strong
-          class="text-2l font-bold sm:text-4xl text-gray-400 dark:text-gray-100"
-          >hmm!</strong
-        >
-        <p class="sm:mt-4 sm:text-lg text-gray-400 dark:text-gray-100">
-          Our bloodhound can't find the page you're looking for.
-        </p>
+  <!-- Platform chrome (logo + nav + theme/lang), like the rest of deepscrape -->
+  <app-landing-subheader></app-landing-subheader>
+
+  <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-14">
+    <div class="w-full max-w-3xl mx-auto text-center">
+      <!-- Framed art banner: broken-web illustration behind the 404 numeral -->
+      <div class="relative mb-10 overflow-hidden rounded-3xl glass border-white/5 dark:border-white/10 shadow-2xl">
+        <img
+          src="assets/images/landing/404-lost-in-the-web.webp"
+          alt=""
+          aria-hidden="true"
+          class="notfound-art w-full aspect-[16/9] object-cover object-center opacity-90 dark:opacity-100"
+          loading="lazy" />
+        <div class="absolute inset-0 bg-gradient-to-b from-[#060607]/50 via-[#060607]/20 to-[#060607]/60 pointer-events-none"></div>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span
+            class="font-display font-black text-[5rem] sm:text-[7rem] md:text-[9rem] leading-none tracking-tight bg-gradient-to-r from-cyan-500 via-cyan-300 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)]">
+            404
+          </span>
+        </div>
+      </div>
+
+      <h1 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-3">
+        {{ 'NOT_FOUND.HMM' | translate }}
       </h1>
-      <span class="sm:mt-4 sm:text-lg text-gray-500 dark:text-gray-100"
-        >But it can guide you back to the home page!</span
-      >
+      <p class="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed mb-2">
+        {{ 'NOT_FOUND.BLOODHOUND_LOST' | translate }}
+      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-500 mb-8">
+        {{ 'NOT_FOUND.GUIDE_HOME' | translate }}
+      </p>
+
       <a
         [routerLink]="['/']"
-        class="mt-4 block text-base font-bold text-blue-700"
-        >Return to the home page</a
-      >
+        class="inline-flex items-center gap-2 px-7 py-3.5 text-base font-semibold text-white bg-cyan-600 hover:bg-cyan-500 border border-cyan-400/40 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
+        {{ 'NOT_FOUND.RETURN_HOME' | translate }} →
+      </a>
     </div>
+  </main>
 
-    <div class="error-404-img content">
-      <div
-        class="hound bg-[url('https://a.scdn.gr/assets/schwartz/404_hound_large-21f5dfa5b13e0392a3887d016464beca.png')]"
-      ></div>
-    </div>
-  </div>
-  <!-- Links -->
   <app-footer [color]="footerColor"></app-footer>
 </div>

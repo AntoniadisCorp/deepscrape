@@ -1,14 +1,15 @@
-import { AsyncPipe, CurrencyPipe, DatePipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { MatIconModule } from '@angular/material/icon'
+import { TranslateModule } from '@ngx-translate/core'
 import { BehaviorSubject, catchError, from, map, of, shareReplay, switchMap } from 'rxjs'
 import { BillingService } from 'src/app/core/services'
 import { BillingUsageInvoice, BillingUsagePayment, BillingUsageResponse, BillingUsageRangeKey } from 'src/app/core/types'
 
 @Component({
   selector: 'app-transactions',
-  imports: [NgIf, NgFor, AsyncPipe, CurrencyPipe, DatePipe, MatIconModule],
+  imports: [AsyncPipe, CurrencyPipe, DatePipe, MatIconModule, TranslateModule],
   templateUrl: './transactions.component.html',
   styleUrl: './transactions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -19,10 +20,10 @@ export class TransactionsComponent {
 
   readonly rangeKey$ = new BehaviorSubject<BillingUsageRangeKey>('last_30_days')
   readonly ranges: Array<{ key: BillingUsageRangeKey; label: string }> = [
-    { key: 'this_month', label: 'This month' },
-    { key: 'last_month', label: 'Last month' },
-    { key: 'last_30_days', label: 'Last 30 days' },
-    { key: 'last_90_days', label: 'Last 90 days' },
+    { key: 'this_month', label: 'BILLING_TRANSACTIONS.RANGE_THIS_MONTH' },
+    { key: 'last_month', label: 'BILLING_TRANSACTIONS.RANGE_LAST_MONTH' },
+    { key: 'last_30_days', label: 'BILLING_TRANSACTIONS.RANGE_LAST_30_DAYS' },
+    { key: 'last_90_days', label: 'BILLING_TRANSACTIONS.RANGE_LAST_90_DAYS' },
   ]
 
   readonly usageReport$ = this.rangeKey$.pipe(

@@ -1,7 +1,8 @@
-import { CommonModule } from '@angular/common'
+
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { RouterLink } from '@angular/router'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 import { RippleDirective } from 'src/app/core/directives'
 import { BillingService } from 'src/app/core/services'
 
@@ -16,7 +17,7 @@ type ObservabilityResponse = {
 @Component({
   selector: 'app-admin-billing-observability',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RippleDirective],
+  imports: [FormsModule, RouterLink, RippleDirective, TranslateModule],
   templateUrl: './admin-billing-observability.component.html',
   styleUrl: './admin-billing-observability.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +25,7 @@ type ObservabilityResponse = {
 export class AdminBillingObservabilityComponent {
   private readonly billingService = inject(BillingService)
   private readonly cdr = inject(ChangeDetectorRef)
+  private readonly translate = inject(TranslateService)
 
   loading = false
   error: string | null = null
@@ -56,7 +58,7 @@ export class AdminBillingObservabilityComponent {
         pastDueLimit: this.sanitizeLimit(this.pastDueLimit, 1, 200, 30),
       })
     } catch (error) {
-      this.error = error instanceof Error ? error.message : 'Failed to fetch billing observability data.'
+      this.error = error instanceof Error ? error.message : this.translate.instant('ADMIN_BILLING_OBS.ERR_FETCH')
     } finally {
       this.loading = false
       this.cdr.markForCheck()
@@ -75,7 +77,7 @@ export class AdminBillingObservabilityComponent {
       await this.billingService.acknowledgeBillingIncident(incidentId)
       await this.refresh()
     } catch (error) {
-      this.error = error instanceof Error ? error.message : 'Failed to acknowledge incident.'
+      this.error = error instanceof Error ? error.message : this.translate.instant('ADMIN_BILLING_OBS.ERR_ACKNOWLEDGE')
     } finally {
       this.acknowledgingIncidentIds.delete(incidentId)
       this.cdr.markForCheck()
@@ -94,7 +96,7 @@ export class AdminBillingObservabilityComponent {
       await this.billingService.requestStripeEventRetry(eventId)
       await this.refresh()
     } catch (error) {
-      this.error = error instanceof Error ? error.message : 'Failed to request event retry.'
+      this.error = error instanceof Error ? error.message : this.translate.instant('ADMIN_BILLING_OBS.ERR_RETRY')
     } finally {
       this.retryingEventIds.delete(eventId)
       this.cdr.markForCheck()

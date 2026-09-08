@@ -3,13 +3,14 @@ import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListe
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LocalStorage } from '../../services';
 import { Outsideclick } from '../../directives';
 import { themeStorageKey } from 'src/app/shared';
 
 @Component({
   selector: 'app-dropdown',
-  imports: [CommonModule, MatIcon, ReactiveFormsModule, Outsideclick],
+  imports: [CommonModule, MatIcon, ReactiveFormsModule, Outsideclick, TranslateModule],
   templateUrl: './dropdown.component.html',
   styleUrl: './dropdown.component.scss',
   animations: [
@@ -28,6 +29,12 @@ import { themeStorageKey } from 'src/app/shared';
 export class DropdownComponent {
 
   private localStorage = inject(LocalStorage)
+  private translate = inject(TranslateService)
+
+  // display label: raw text passes through, i18n key paths resolve (ponytail: keyboard search matches what the user sees)
+  private display(option?: { name: string; code: string }): string {
+    return option ? (this.translate.instant(option.name) as string) : ''
+  }
 
   @Input() control: FormControl<{ name: string, code: string }>
   @Input() options: { name: string, code: string }[]
@@ -54,7 +61,7 @@ export class DropdownComponent {
           const prevIndex = this.options.findIndex(option => option === prevOption);
           const currentIndex = this.options.findIndex(option => option === this.controlValue);
           this.resetStyleOfCurrenElement(currentIndex)
-          if (currentIndex > 0 && (!this.searchInput || prevOption!.name.toLowerCase().includes(this.searchInput.toLowerCase()))) {
+          if (currentIndex > 0 && (!this.searchInput || this.display(prevOption).toLowerCase().includes(this.searchInput.toLowerCase()))) {
             const previousOptionIndex = currentIndex > 0 ? currentIndex - 1 : undefined;
             if (previousOptionIndex !== undefined) {
               this.control.setValue(this.options[previousOptionIndex]);
@@ -70,7 +77,7 @@ export class DropdownComponent {
           this.resetStyleOfCurrenElement(currentIndex2)
 
 
-          if (currentIndex2 < lastIndex && (!this.searchInput || nextOption!.name.toLowerCase().includes(this.searchInput.toLowerCase()))) {
+          if (currentIndex2 < lastIndex && (!this.searchInput || this.display(nextOption).toLowerCase().includes(this.searchInput.toLowerCase()))) {
             const nextOptionIndex = currentIndex2 < lastIndex ? currentIndex2 + 1 : undefined;
             if (nextOptionIndex !== undefined) {
               this.control.setValue(this.options[nextOptionIndex])
@@ -84,7 +91,7 @@ export class DropdownComponent {
               this.select.emit(this.controlValue);
               this.isOpen = false;
             } else {
-              const closestValue = this.options.find(option => option.name.toLowerCase().includes(this.searchInput.toLowerCase()));
+              const closestValue = this.options.find(option => this.display(option).toLowerCase().includes(this.searchInput.toLowerCase()));
               this.closeDropDown();
               setTimeout(() => {
                 this.control.setValue(closestValue ?? this.options[0]);
@@ -103,7 +110,7 @@ export class DropdownComponent {
           this.closeDropDown();
           break;
         default:
-          const matchingOptions = this.options.filter(option => option.name.toLowerCase().startsWith(event.key.toLowerCase()));
+          const matchingOptions = this.options.filter(option => this.display(option).toLowerCase().startsWith(event.key.toLowerCase()));
           if (matchingOptions.length > 0) {
             const currentIndex = this.options.indexOf(this.controlValue)
             this.resetStyleOfCurrenElement(currentIndex)

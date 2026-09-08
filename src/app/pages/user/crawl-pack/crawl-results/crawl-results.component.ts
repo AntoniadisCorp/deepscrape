@@ -9,6 +9,7 @@ import { of } from 'rxjs/internal/observable/of';
 import { map } from 'rxjs/internal/operators/map';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { browserTitleValidator } from 'src/app/core/directives';
 
 import { getErrorLabel, getOffsetTop } from 'src/app/core/functions';
@@ -19,7 +20,7 @@ import { listStaggerAnimation } from 'src/app/animations';
 
 @Component({
   selector: 'app-crawl-results',
-  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, MatProgressSpinner, StinputComponent, FormControlPipe, RadioToggleComponent],
+  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, MatProgressSpinner, StinputComponent, FormControlPipe, RadioToggleComponent, TranslateModule],
   animations: [listStaggerAnimation],
   templateUrl: './crawl-results.component.html',
   styleUrl: './crawl-results.component.scss'
@@ -27,6 +28,7 @@ import { listStaggerAnimation } from 'src/app/animations';
 export class CrawlResultsComponent {
 
   private window = inject(WindowToken)
+  private translate = inject(TranslateService)
 
   @HostListener('window:scroll', ['$event'])
   onScroll(event: any) {
@@ -263,7 +265,7 @@ export class CrawlResultsComponent {
             
           this.resultsForm.enable();
           // show snackbar success
-          this.showSnackbar('CrawlResult Config saved successfully.', SnackBarType.success, '', 5000)
+          this.showSnackbar(this.translate.instant('CRAWL_PACK_CRESULTS.CONFIG_SAVED'), SnackBarType.success, '', 5000)
         }
       })
   }

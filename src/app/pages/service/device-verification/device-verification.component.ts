@@ -1,9 +1,10 @@
-import { CommonModule } from '@angular/common'
+
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { MatIconModule } from '@angular/material/icon'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { ActivatedRoute, Router } from '@angular/router'
+import { TranslateModule, TranslateService } from '@ngx-translate/core'
 import { firstValueFrom } from 'rxjs'
 import { SnackBarType } from 'src/app/core/components'
 import { resolveSafeReturnUrl } from 'src/app/core/functions'
@@ -13,7 +14,7 @@ import { Auth, PhoneAuthProvider, RecaptchaVerifier, reauthenticateWithCredentia
 @Component({
   selector: 'app-device-verification-route',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [FormsModule, MatIconModule, MatProgressSpinnerModule, TranslateModule],
   templateUrl: './device-verification.component.html',
   styleUrl: './device-verification.component.scss',
 })
@@ -21,6 +22,7 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService)
   private deviceVerification = inject(DeviceVerificationService)
   private snackbarService = inject(SnackbarService)
+  private readonly translate = inject(TranslateService)
   private router = inject(Router)
   private route = inject(ActivatedRoute)
   private fireAuth = inject(Auth)
@@ -45,14 +47,14 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
   private countdownIntervalId: ReturnType<typeof setInterval> | null = null
   private currentUserId = ''
 
-  /** Human-readable label for the current action context. */
+  /** Translation key for the current action context. */
   get actionLabel(): string {
     switch (this.action()) {
-      case 'unlink_provider': return 'unlink a provider'
-      case 'api_key_reveal': return 'reveal an API key'
-      case 'billing_change': return 'make billing changes'
-      case 'login': return 'sign in'
-      default: return 'continue'
+      case 'unlink_provider': return 'DEVICE_VERIFICATION.ACT_UNLINK'
+      case 'api_key_reveal': return 'DEVICE_VERIFICATION.ACT_REVEAL'
+      case 'billing_change': return 'DEVICE_VERIFICATION.ACT_BILLING'
+      case 'login': return 'DEVICE_VERIFICATION.ACT_LOGIN'
+      default: return 'DEVICE_VERIFICATION.ACT_CONTINUE'
     }
   }
 
@@ -110,7 +112,7 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
 
       if (remaining === '00:00') {
         this.verificationSent.set(false)
-        this.infoMessage.set('Verification code expired. Request a new code to continue.')
+        this.infoMessage.set(this.translate.instant('DEVICE_VERIFICATION.CODE_EXPIRED'))
       }
     }, 1000)
 
@@ -136,7 +138,7 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
       const result = await this.deviceVerification.sendVerificationCode(this.currentUserId, method, this.sessionId())
 
       if (!result.success) {
-        this.snackbarService.showSnackbar(result.message || 'Failed to send verification code', SnackBarType.error, '', 5000)
+        this.snackbarService.showSnackbar(result.message || this.translate.instant('DEVICE_VERIFICATION.SEND_FAILED'), SnackBarType.error, '', 5000)
         return
       }
 
@@ -146,11 +148,11 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
       this.verificationSent.set(true)
 
       if (effectiveMethod === 'sms' && result.deliveryStatus === 'pending_client_mfa') {
-        this.infoMessage.set(result.message || 'Initiating phone verification...')
+        this.infoMessage.set(result.message || this.translate.instant('DEVICE_VERIFICATION.PHONE_INITIATING'))
         // Auto-trigger Firebase phone verification
         this.initMfaPhoneChallenge()
       } else if (!this.infoMessage()) {
-        this.infoMessage.set(result.message || 'Verification code sent successfully.')
+        this.infoMessage.set(result.message || this.translate.instant('DEVICE_VERIFICATION.CODE_SENT'))
       }
 
       this.snackbarService.showSnackbar(this.infoMessage(), SnackBarType.info, '', 4500)
@@ -175,11 +177,11 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
       )
 
       if (!success) {
-        this.snackbarService.showSnackbar('Invalid verification code. Check the code and try again.', SnackBarType.error, '', 5000)
+        this.snackbarService.showSnackbar(this.translate.instant('DEVICE_VERIFICATION.INVALID_CODE'), SnackBarType.error, '', 5000)
         return
       }
 
-      this.snackbarService.showSnackbar('Device verified. Sign in completed.', SnackBarType.success, '', 3000)
+      this.snackbarService.showSnackbar(this.translate.instant('DEVICE_VERIFICATION.VERIFIED_SIGNIN'), SnackBarType.success, '', 3000)
       await this.router.navigateByUrl(this.getReturnUrl())
     } finally {
       this.isVerifying.set(false)
@@ -198,7 +200,7 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
       const user = await firstValueFrom(this.authService.user$, { defaultValue: null })
       if (!user?.phoneNumber) {
         this.showMfaInput.set(false)
-        this.infoMessage.set('No phone number on your account. Use email verification instead.')
+        this.infoMessage.set(this.translate.instant('DEVICE_VERIFICATION.NO_PHONE'))
         return
       }
 
@@ -216,11 +218,15 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
 
       this.mfaVerificationId.set(verificationId)
       this.showMfaInput.set(true)
-      this.infoMessage.set(`SMS sent to ${user.phoneNumber.slice(0, -4)}****. Enter the code from your phone.`)
+      this.infoMessage.set(
+        this.translate.instant('DEVICE_VERIFICATION.SMS_SENT_PREFIX') +
+        `${user.phoneNumber.slice(0, -4)}****` +
+        this.translate.instant('DEVICE_VERIFICATION.SMS_SENT_SUFFIX')
+      )
     } catch (error) {
       console.error('Failed to initiate phone MFA challenge:', error)
       this.showMfaInput.set(false)
-      this.infoMessage.set('Could not send SMS. Use email verification instead by switching to email.')
+      this.infoMessage.set(this.translate.instant('DEVICE_VERIFICATION.SMS_FAILED'))
     } finally {
       this.isMfaSending.set(false)
     }
@@ -237,7 +243,7 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
     }
 
     this.isVerifying.set(true)
-    this.infoMessage.set('Verifying phone code...')
+    this.infoMessage.set(this.translate.instant('DEVICE_VERIFICATION.VERIFYING_PHONE'))
 
     try {
       // Complete Firebase phone verification
@@ -259,15 +265,15 @@ export class DeviceVerificationRouteComponent implements OnInit, OnDestroy {
       )
 
       if (success) {
-        this.snackbarService.showSnackbar('Device verified via phone.', SnackBarType.success, '', 3000)
+        this.snackbarService.showSnackbar(this.translate.instant('DEVICE_VERIFICATION.PHONE_VERIFIED'), SnackBarType.success, '', 3000)
         await this.router.navigateByUrl(this.getReturnUrl())
       } else {
-        this.snackbarService.showSnackbar('Phone verification succeeded but device trust failed.', SnackBarType.error, '', 5000)
+        this.snackbarService.showSnackbar(this.translate.instant('DEVICE_VERIFICATION.PHONE_TRUST_FAILED'), SnackBarType.error, '', 5000)
         this.showMfaInput.set(false)
       }
     } catch (error) {
       console.error('Phone MFA verification failed:', error)
-      this.snackbarService.showSnackbar('Invalid phone code. Try again or switch to email.', SnackBarType.error, '', 5000)
+      this.snackbarService.showSnackbar(this.translate.instant('DEVICE_VERIFICATION.INVALID_PHONE_CODE'), SnackBarType.error, '', 5000)
     } finally {
       this.isVerifying.set(false)
     }

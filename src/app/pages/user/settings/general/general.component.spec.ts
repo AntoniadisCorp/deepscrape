@@ -26,13 +26,13 @@ describe('GeneralTabComponent', () => {
   it('should render General Settings heading', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('General Settings');
+    expect(text).toContain('SETTINGS_GENERAL.TITLE');
   });
 
   it('should render save action button', () => {
     const button = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
 
     expect(button).toBeTruthy();
-    expect(button.textContent?.trim()).toBe('Save');
+    expect(button.textContent?.trim()).toBe('COMMON.SAVE');
   });
 });

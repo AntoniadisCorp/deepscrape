@@ -1,18 +1,25 @@
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  inject,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { AppFooterComponent } from '../../footer'
 // import { AppHeaderComponent } from '../../header';
 import { RouterLink } from '@angular/router';
-import { LocalStorage } from 'src/app/core/services';
+import { TranslateModule } from '@ngx-translate/core';
+import { LocalStorage, WindowToken } from 'src/app/core/services';
 import { themeStorageKey } from 'src/app/shared';
+import { LandingSubheaderComponent } from 'src/app/shared/landing-subheader/landing-subheader.component';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'app-not-found',
-    imports: [RouterLink, AppFooterComponent],
+    imports: [RouterLink, AppFooterComponent, TranslateModule, LandingSubheaderComponent],
     templateUrl: './app-not-found.component.html',
     styleUrl: './app-not-found.component.scss'
 })
 export class NotFoundComponent {
-
+    private window = inject(WindowToken);
     private localStorage = inject(LocalStorage)
     footerColor: string = '';
 
@@ -25,7 +32,10 @@ export class NotFoundComponent {
 
 
     isThemeDark(): boolean {
-        return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
+        const stored = this.localStorage?.getItem(themeStorageKey);
+        if (stored === 'true') return true;
+        if (stored === 'false') return false;
+        return this.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
     }
 
 }

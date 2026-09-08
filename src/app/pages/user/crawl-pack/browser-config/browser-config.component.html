@@ -7,7 +7,7 @@
     class="mx-auto w-full pt-6 order-2 px-4 sm:order-1 lg:order-2 xl:order-1">
     <h1
       class="text-3xl text-center font-bold mb-8 text-gray-800 dark:text-gray-200">
-      Browsers
+      {{ 'CRAWL_PACK_BCONFIG.TITLE' | translate }}
     </h1>
 
     <div class="w-full text-center inline-flex items-center justify-center">
@@ -28,44 +28,42 @@
     <h3
       id="controlling-each-browser"
       class="text-xl py-8 font-weight-light text-gray-800 dark:text-gray-200">
-      Controlling Each Browser Profile
+      {{ 'CRAWL_PACK_BCONFIG.CONTROLLING' | translate }}
     </h3>
 
     <!--  Parameters Hilights -->
     <p class="mb-8 font-mono text-gray-800 dark:text-gray-200">
       <span class="text-sky-500 bg-sky-700/10">BrowserConfig</span>
-      focuses on how the browser is launched and behaves. This includes headless
-      mode, proxies, user agents, and other environment tweaks.
+      {{ 'CRAWL_PACK_BCONFIG.INTRO' | translate }}
     </p>
 
     <p class="font-mono text-gray-800 dark:text-gray-200">
-      <span class="text-green-600 font-semibold bg-green-700/10">Tips:</span>
-      - Set
+      <span class="text-green-600 font-semibold bg-green-700/10">{{ 'CRAWL_PACK_BCONFIG.TIPS' | translate }}:</span>
+      {{ 'CRAWL_PACK_BCONFIG.TIP_SET' | translate }}
       <span class="text-sky-500 bg-sky-700/10">headless=False</span>
-      to visually debug how pages load or how interactions proceed.
+      {{ 'CRAWL_PACK_BCONFIG.TIP_DEBUG' | translate }}
     </p>
     <p class="block font-mono text-gray-800 dark:text-gray-200">
-      - If you need authentication storage or repeated sessions, consider
+      {{ 'CRAWL_PACK_BCONFIG.TIP_PERSIST_1' | translate }}
       <span
         class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial] break-all">
         use_persistent_context=True
       </span>
-      and specify
+      {{ 'CRAWL_PACK_BCONFIG.TIP_PERSIST_2' | translate }}
       <span class="text-sky-500 bg-sky-700/10">user_data_dir</span>
       .
     </p>
     <p class="mb-8 font-mono text-gray-800 dark:text-gray-200">
-      - For large pages, you might need a bigger
+      {{ 'CRAWL_PACK_BCONFIG.TIP_VIEWPORT_1' | translate }}
       <span class="text-sky-500 bg-sky-700/10">viewport_width</span>
-      and
+      {{ 'CRAWL_PACK_BCONFIG.TIP_AND' | translate }}
       <span class="text-sky-500 bg-sky-700/10">viewport_height</span>
-      to handle dynamic content.
+      {{ 'CRAWL_PACK_BCONFIG.TIP_VIEWPORT_2' | translate }}
     </p>
     <h3
       class="flex flex-wrap justify-between mb-4 text-xl font-light text-gray-800 dark:text-gray-200">
-      <span>Recent Profiles</span>
+      <span>{{ 'CRAWL_PACK_BCONFIG.RECENT_PROFILES' | translate }}</span>
       <button
-        title="add new profile"
         type="button"
         (click)="addBrowserProfile()"
         [ngClass]="
@@ -74,6 +72,7 @@
             : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
         "
         class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+        <span class="sr-only">{{ 'CRAWL_PACK_BCONFIG.ADD_NEW_PROFILE' | translate }}</span>
         <mat-icon
           [ngClass]="
             !newProfileOpened
@@ -194,15 +193,13 @@
       @if((browserProfiles$ | async)?.length === 0) {
         <div class="text-center py-8">
           <p class="text-gray-600 dark:text-gray-300">
-            No browser profile created yet. Click the 'plus' button to add a new
-            profile configuration.
+            {{ 'CRAWL_PACK_BCONFIG.EMPTY' | translate }}
           </p>
         </div>
         } @if((browserProfiles$ | async) === null) {
         <div class="text-center py-8">
           <p class="text-red-600 dark:text-red-300">
-            An Error Occured. Please try again later. or contact with
-            administrator. find the feedback button in the sidebar
+            {{ 'CRAWL_PACK_BCONFIG.ERROR_LOAD' | translate }}
           </p>
         </div>
       }
@@ -220,14 +217,14 @@
             }"
               class="p-2 rounded-xl mr-2">
               {{
-              !newProfileOpened && !editMode
-              ? 'Opened'
+              (!newProfileOpened && !editMode
+              ? 'CRAWL_PACK_BCONFIG.ST_OPENED'
               : editMode
-              ? 'Editing'
-              : 'New'
+              ? 'CRAWL_PACK_BCONFIG.ST_EDITING'
+              : 'CRAWL_PACK_BCONFIG.ST_NEW') | translate
               }}
             </span>
-            Profile
+            {{ 'CRAWL_PACK_BCONFIG.PROFILE' | translate }}
           </span>
           @if (newProfileOpened) {
             <span class="text-red-400">*</span>
@@ -236,7 +233,6 @@
         @if (!newProfileOpened) {
           <button
             type="button"
-            [title]="editMode ? 'cancel edit' : 'edit profile'"
             (click)="makeEditable()"
         [ngClass]="
           !editMode
@@ -244,6 +240,7 @@
             : 'bg-red-400/[.08] hover:border-gray-600/[0.5] focus:border-gray-900/[0.8] border-gray-600/[.8] dark:hover:border-red-600/[0.5] dark:focus:border-red-900/[0.8] dark:border-red-600/[.8] text-red-500/[.8] dark:text-red-100 dark:hover:text-red-300'
         "
             class="flex items-center h-full leading-6 transform flex-row flex-nowrap gap-1 font-medium py-2 px-2 duration-300 rounded-full transition-colors">
+            <span class="sr-only">{{ (editMode ? 'CRAWL_PACK_BCONFIG.CANCEL_EDIT' : 'CRAWL_PACK_BCONFIG.EDIT_PROFILE') | translate }}</span>
             <mat-icon
           [ngClass]="
             !editMode ? 'text-gray-600 dark:text-gray-300/80' : '-rotate-90'
@@ -274,7 +271,7 @@
                 <app-stinput
                   [control]="configForm.get('title') | formControl"
                   [leftIcon]="'person'"
-                  [label]="'Title'"
+                  [label]="'CRAWL_PACK_BCONFIG.TITLE_LABEL' | translate"
                 [errorLabel]="getErrorLabel('title')"></app-stinput>
               </div>
               <div class="inline-flex items-center justify-center gap-2">
@@ -285,8 +282,8 @@
                 'bg-green-600/[.2] dark:bg-green-600/[0.2]':
                   configForm.invalid || savingNewProfile
               }"
-                  title="save new profile"
                   class="inline-flex text-lg items-center justify-center text-center border border-transparent leading-[0] gap-2 disabled:bg-green-600/[0.5] bg-green-600/80 hover:bg-green-700/70 focus:bg-green-900/[0.8] disabled:hover:bg-green-600/50 text-gray1 dark:text-gray-100 dark:hover:text-gray-300 font-medium p-[.6rem] lg:p-3 duration-300 rounded-full transition-colors">
+                  <span class="sr-only">{{ 'CRAWL_PACK_BCONFIG.SAVE_NEW_PROFILE' | translate }}</span>
                   @if (!savingNewProfile) {
                     <mat-icon class="font-bold">save</mat-icon>
                   } @else {
@@ -301,11 +298,11 @@
           <div>
             <h3
               class="text-xl font-weight-light text-gray-800 dark:text-gray-200">
-              Parameters Highlights
+              {{ 'CRAWL_PACK_BCONFIG.PARAM_HIGHLIGHTS' | translate }}
             </h3>
             <h2
               class="text-sm py-4 font-weight-light text-gray-800 dark:text-gray-200">
-              We group them by category.
+              {{ 'CRAWL_PACK_BCONFIG.GROUPED' | translate }}
             </h2>
           </div>
         </div>
@@ -315,7 +312,7 @@
           id="browser-settings"
           (mouseover)="showLink = true"
           (mouseleave)="showLink = false">
-          <span class="border-b-4 border-gray5">Browser Basic Settings</span>
+          <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_BCONFIG.CAT_BASIC' | translate }}</span>
           @if (showLink) {
             <a
               (click)="scrollTo('browser-settings')"
@@ -332,17 +329,17 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Browser Type
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_BROWSER_TYPE' | translate }}
                 </label>
                 <div
                   class="font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>Which browser engine to use.</span>
+                  <span>{{ 'CRAWL_PACK_BCONFIG.BT_DESC_1' | translate }}</span>
                   <p class="text-sky-500 bg-sky-700/10 inline">"chromium"</p>
-                  <span>is typical for many sites,</span>
+                  <span>{{ 'CRAWL_PACK_BCONFIG.BT_DESC_2' | translate }}</span>
                   <p class="text-sky-500 bg-sky-700/10 inline">"firefox"</p>
-                  <span>or</span>
+                  <span>{{ 'CRAWL_PACK_BCONFIG.BT_DESC_OR' | translate }}</span>
                   <p class="text-sky-500 bg-sky-700/10 inline">"webkit"</p>
-                  <span>for specialized tests.</span>
+                  <span>{{ 'CRAWL_PACK_BCONFIG.BT_DESC_3' | translate }}</span>
                 </div>
               </div>
               <label
@@ -353,7 +350,7 @@
                     [options]="browserTypeOptions"
                     [control]="browserType | formControl"
                     [padding]="'p-2'"
-                    dropDownName="take an action"
+                    dropDownName="CRAWL_PACK_BCONFIG.DD_ACTION_LABEL"
                   (select)="onBrowserTypeSelect($event)"></app-dropdown>
                 </div>
               </label>
@@ -363,14 +360,14 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Headless
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_HEADLESS' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Headless means no visible UI.
+                    {{ 'CRAWL_PACK_BCONFIG.HD_DESC_1' | translate }}
                     <span class="text-sky-500 bg-sky-700/10">False</span>
-                    is handy for debugging.
+                    {{ 'CRAWL_PACK_BCONFIG.HD_DESC_2' | translate }}
                   </span>
                 </div>
               </div>
@@ -379,7 +376,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="headless"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('headless') | formControl
                 "></app-radiotoggle>
@@ -390,11 +387,11 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Light Mode
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_LIGHT_MODE' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <p>Disables some background features for performance gains.</p>
+                  <p>{{ 'CRAWL_PACK_BCONFIG.LM_DESC' | translate }}</p>
                 </div>
               </div>
               <label
@@ -402,7 +399,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="lightMode"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('lightMode') | formControl
                 "></app-radiotoggle>
@@ -413,15 +410,15 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Text Mode
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_TEXT_MODE' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <p>
-                    If
+                    {{ 'CRAWL_PACK_BCONFIG.IF' | translate }}
                     <span class="text-sky-500 bg-sky-700/10">True</span>
                     <span>
-                      , tries to disable images/other heavy content for speed.
+                      {{ 'CRAWL_PACK_BCONFIG.TM_DESC_2' | translate }}
                     </span>
                   </p>
                 </div>
@@ -431,7 +428,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="textMode"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('textMode') | formControl
                 "></app-radiotoggle>
@@ -442,13 +439,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Use Managed Browser
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_USE_MANAGED' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <p>
-                    For advanced “managed” interactions (debugging, CDP usage).
-                    Typically set automatically if persistent context is on.
+                    {{ 'CRAWL_PACK_BCONFIG.MB_DESC' | translate }}
                   </p>
                 </div>
               </div>
@@ -457,7 +453,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="userManagedBrowser"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('userManagedBrowser') | formControl
                 "></app-radiotoggle>
@@ -468,13 +464,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  JavaScript Enabled
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_JS_ENABLED' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <p>
-                    Disable if you want no JS overhead, or if only static content
-                    is needed.
+                    {{ 'CRAWL_PACK_BCONFIG.JS_DESC' | translate }}
                   </p>
                 </div>
               </div>
@@ -483,7 +478,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="javaScriptEnabled"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('javaScriptEnabled') | formControl
                 "></app-radiotoggle>
@@ -494,16 +489,15 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Ignore Ηttps Εrrors
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_IGNORE_HTTPS' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <p>
-                    <span>If</span>
+                    <span>{{ 'CRAWL_PACK_BCONFIG.IF' | translate }}</span>
                     <span class="text-sky-500 bg-sky-700/10">True</span>
                     <span>
-                      , continues despite invalid certificates (common in
-                      dev/staging).
+                      {{ 'CRAWL_PACK_BCONFIG.IH_DESC_2' | translate }}
                     </span>
                   </p>
                 </div>
@@ -513,7 +507,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="ignoreHttpsErrors"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('ignoreHttpsErrors') | formControl
                 "></app-radiotoggle>
@@ -524,11 +518,11 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  ViewPort Height
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_VIEWPORT_HEIGHT' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                  <span>Initial page height (in px).</span>
+                  <span>{{ 'CRAWL_PACK_BCONFIG.VH_DESC' | translate }}</span>
                 </div>
               </div>
               <label
@@ -548,13 +542,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  ViewPort Width
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_VIEWPORT_WIDTH' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Initial page width (in px). Useful for testing responsive
-                    layouts.
+                    {{ 'CRAWL_PACK_BCONFIG.VW_DESC' | translate }}
                   </span>
                 </div>
               </div>
@@ -578,7 +571,7 @@
           id="browser-userdata"
           (mouseover)="showLink = true"
           (mouseleave)="showLink = false">
-          <span class="border-b-4 border-gray5">Browser User Data Settings</span>
+          <span class="border-b-4 border-gray5">{{ 'CRAWL_PACK_BCONFIG.CAT_USERDATA' | translate }}</span>
           @if (showLink) {
             <a
               (click)="scrollTo('browser-userdata')"
@@ -595,19 +588,18 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  Use Persistent Context
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_USE_PERSISTENT' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <p>
-                    <span>If</span>
+                    <span>{{ 'CRAWL_PACK_BCONFIG.IF' | translate }}</span>
                     <span
                       class="text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                       True
                     </span>
                     <span>
-                      , uses a persistent browser context (keep cookies, sessions
-                      across runs). Also sets
+                      {{ 'CRAWL_PACK_BCONFIG.UPC_DESC_2' | translate }}
                     </span>
                     <span
                       class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
@@ -621,7 +613,7 @@
                 <!-- Set a radio button On/Off -->
                 <app-radiotoggle
                   identity="usePersistentContext"
-                  title="Enabled/Disabled"
+                  [title]="'CRAWL_PACK_BCONFIG.TOGGLE_STATE' | translate"
                 [control]="
                   configForm.get('usePersistentContext') | formControl
                 "></app-radiotoggle>
@@ -632,13 +624,12 @@
               <div class="relative flex flex-col gap-4">
                 <label
                   class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                  User Data Dir
+                  {{ 'CRAWL_PACK_BCONFIG.LBL_USER_DATA_DIR' | translate }}
                 </label>
                 <div
                   class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
                   <span>
-                    Directory to store user data (profiles, cookies). Must be set
-                    if you want permanent sessions.
+                    {{ 'CRAWL_PACK_BCONFIG.UDD_DESC' | translate }}
                   </span>
                   <!-- <p class="text-sky-500 bg-sky-700/10 inline">
                   ["ads.com", "trackers.io"]
@@ -663,16 +654,16 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                User Agent
+                {{ 'CRAWL_PACK_BCONFIG.LBL_USER_AGENT' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>Your custom or random user agent.</span>
+                <span>{{ 'CRAWL_PACK_BCONFIG.UA_DESC_1' | translate }}</span>
                 <p
                   class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                   user_agent_mode="random"
                 </p>
-                <span>can shuffle it. For Example:</span>
+                <span>{{ 'CRAWL_PACK_BCONFIG.UA_DESC_2' | translate }}</span>
                 <p
                   class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                   Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
@@ -697,11 +688,11 @@
             <div class="relative flex flex-col gap-4">
               <label
                 class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-                Cookies
+                {{ 'CRAWL_PACK_BCONFIG.LBL_COOKIES' | translate }}
               </label>
               <div
                 class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-                <span>Pre-set cookies, each a dict like</span>
+                <span>{{ 'CRAWL_PACK_BCONFIG.CK_DESC' | translate }}</span>
                 <p
                   class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                   {{ '[{"name": "session", "value": "...", "url": "..."}]' }}
@@ -716,18 +707,18 @@
                   <label
                     for="cookies"
                     class="block text-sm font-medium text-gray-700">
-                    Cookies (JSON)
+                    {{ 'CRAWL_PACK_BCONFIG.COOKIES_JSON_LABEL' | translate }}
                   </label>
                   <textarea
                     id="cookies"
                     [formControl]="configForm.get('cookies') | formControl"
-                    placeholder="Cookie (JSON)"
+                    [placeholder]="'CRAWL_PACK_BCONFIG.COOKIES_JSON_PLACEHOLDER' | translate"
                     class="mt-1 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
                   rows="10"></textarea>
                   @if (configForm.get('cookies')?.invalid) {
                     <div
                       class="text-red-500 text-xs">
-                      Invalid array of cookies JSON
+                      {{ 'CRAWL_PACK_BCONFIG.COOKIES_JSON_ERR' | translate }}
                       {{ configForm.get('cookies')?.errors | json }}
                     </div>
                   }
@@ -747,11 +738,11 @@
           <div class="relative flex flex-col gap-4">
             <label
               class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-              Headers
+              {{ 'CRAWL_PACK_BCONFIG.LBL_HEADERS' | translate }}
             </label>
             <div
               class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
-              <span>Extra HTTP headers for every request, e.g.</span>
+              <span>{{ 'CRAWL_PACK_BCONFIG.HDR_DESC' | translate }}</span>
               <p
                 class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
                 {{ '[{"key": "Accept-Language", "value": "en-US"}]' }}
@@ -766,18 +757,18 @@
                 <label
                   for="headers"
                   class="block text-sm font-medium text-gray-700">
-                  Headers (JSON)
+                  {{ 'CRAWL_PACK_BCONFIG.HEADERS_JSON_LABEL' | translate }}
                 </label>
                 <textarea
                   id="headers"
                   [formControl]="configForm.get('headers') | formControl"
-                  placeholder="Headers (JSON)"
+                  [placeholder]="'CRAWL_PACK_BCONFIG.HEADERS_JSON_PLACEHOLDER' | translate"
                   class="mt-11 scrollbar block w-full h-20 max-h-40 min-h-16 resize-y appearance-none rounded-t-lg border-0 border-b-4 border-gray-300 px-2.5 pb-2.5 pr-8 pt-5 text-sm text-gray-900 transition-[border] duration-500 ease-out focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white focus:border-blue-600 dark:focus:border-blue-500 dark:bg-gray6 bg-white"
                 rows="10"></textarea>
                 @if (configForm.get('headers')?.invalid) {
                   <div
                     class="text-red-500 text-xs">
-                    Invalid headers JSON
+                    {{ 'CRAWL_PACK_BCONFIG.HEADERS_JSON_ERR' | translate }}
                     {{ configForm.get('headers')?.errors | json }}
                   </div>
                 }
@@ -797,13 +788,12 @@
         <div class="relative flex flex-col gap-4">
           <label
             class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-            Proxy
+            {{ 'CRAWL_PACK_BCONFIG.LBL_PROXY' | translate }}
           </label>
           <div
             class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
             <span>
-              Single-proxy URL if you want all traffic to go through it,
-              e.g.
+              {{ 'CRAWL_PACK_BCONFIG.PRX_DESC' | translate }}
             </span>
             <span
               class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
@@ -829,12 +819,12 @@
         <div class="relative flex flex-col gap-4">
           <label
             class="block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-4 before:top-[7px] text-base font-medium text-gray-700 dark:text-gray-200">
-            Extra Arguments
+            {{ 'CRAWL_PACK_BCONFIG.LBL_EXTRA_ARGS' | translate }}
           </label>
           <div
             class="block font-mono max-w-screen-md text-gray-800 dark:text-gray-200">
             <span>
-              Additional flags for the underlying browser process, e.g.
+              {{ 'CRAWL_PACK_BCONFIG.EA_DESC' | translate }}
             </span>
             <span
               class="break-all text-sky-500 bg-sky-700/10 inline-block w-full xs:w-[initial]">
@@ -876,7 +866,7 @@
               : 'dark:text-gray-200 before:hidden'
           "
         class="cursor-pointer text-gray-600/60 hover:text-sky-600 focus:text-sky-700 dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] font-bold p-3 hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-        <span>Controlling Each Browser</span>
+        <span>{{ 'CRAWL_PACK_BCONFIG.NAV_CONTROLLING' | translate }}</span>
       </a>
     </li>
     @if (showSettings) {
@@ -890,7 +880,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
           class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-          <span>Basic Settings</span>
+          <span>{{ 'CRAWL_PACK_BCONFIG.NAV_BASIC' | translate }}</span>
         </a>
       </li>
     }
@@ -905,7 +895,7 @@
               : 'dark:text-gray-100 before:hidden'
           "
           class="p-3 flex cursor-pointer text-gray-600 hover:text-sky-600 focus:text-sky-700 font-serif text-lg font-medium dark:hover:text-[#bae0ff] dark:focus:text-[#bae0ff] hover:before:block before:content['*'] before:size-2 before:absolute before:text-sky-500 before:bg-green-700 before:shadow-xl before:shadow-gray-50 before:border before:border-sky-400 before:rounded-[50%] before:-left-[.9rem] lg:before:-left-[.8rem] before:top-[1.3rem]">
-          <span>User Data Settings</span>
+          <span>{{ 'CRAWL_PACK_BCONFIG.NAV_USERDATA' | translate }}</span>
         </a>
       </li>
     }

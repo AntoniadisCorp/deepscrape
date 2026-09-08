@@ -4,14 +4,16 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideAngularModule } from 'lucide-angular';
-import { RadioToggleComponent } from 'src/app/core/components';
-import { myIcons } from 'src/app/shared';
+import { TranslateModule } from '@ngx-translate/core';
+import { RadioToggleComponent } from 'src/app/core/components/radiotoggle/radiotoggle.component';
+import { myIcons, RevealDirective } from 'src/app/shared';
 
 interface PricingTier {
   tier: string;
   name: string;
   priceMonthly: string;
   priceYearly: string;
+  credits: string;
   description: string;
   features: string[];
   highlighted: boolean;
@@ -22,7 +24,7 @@ interface PricingTier {
 @Component({
   selector: 'app-landing-pricing',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, NgClass, ReactiveFormsModule, RadioToggleComponent],
+  imports: [RouterLink, LucideAngularModule, NgClass, ReactiveFormsModule, RadioToggleComponent, TranslateModule, RevealDirective],
   templateUrl: './landing-pricing.component.html',
   styleUrl: './landing-pricing.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,77 +44,81 @@ export class LandingPricingComponent implements OnInit {
   readonly tiers: PricingTier[] = [
     {
       tier: 'free',
-      name: 'Free',
+      name: 'PRICING.NAME_FREE',
       priceMonthly: '0',
       priceYearly: '0',
-      description: 'For exploring and small projects. No credit card needed.',
+      credits: '100',
+      description: 'PRICING.DESC_FREE',
       features: [
-        '5,000 pages / month',
-        'REST API access',
-        'JSON export',
-        'Community support',
-        'Basic anti-detection',
+        'PRICING.F_FREE_1',
+        'PRICING.F_FREE_2',
+        'PRICING.F_FREE_3',
+        'PRICING.F_FREE_4',
+        'PRICING.F_FREE_5',
       ],
       highlighted: false,
-      cta: 'Get Started',
+      cta: 'PRICING.CTA_FREE',
       ctaLink: '/service/signup',
     },
     {
       tier: 'starter',
-      name: 'Starter',
-      priceMonthly: '29',
-      priceYearly: '24',
-      description: 'For growing teams that need more scale and power.',
+      name: 'PRICING.NAME_STARTER',
+      priceMonthly: '9.99',
+      priceYearly: '8.33',
+      credits: '1,000',
+      description: 'PRICING.DESC_STARTER',
       features: [
-        '50,000 pages / month',
-        'All export formats (CSV, JSON, DataFrame)',
-        'Priority support',
-        'Custom extraction rules',
-        'Browser pool priority',
-        'Advanced anti-detection profiles',
+        'PRICING.F_STARTER_1',
+        'PRICING.F_STARTER_2',
+        'PRICING.F_STARTER_3',
+        'PRICING.F_STARTER_4',
+        'PRICING.F_STARTER_5',
+        'PRICING.F_STARTER_6',
       ],
       highlighted: false,
-      cta: 'Start Free Trial',
+      cta: 'PRICING.CTA_TRIAL',
       ctaLink: '/service/signup',
     },
     {
       tier: 'pro',
-      name: 'Professional',
-      priceMonthly: '99',
-      priceYearly: '84',
-      description: 'For teams needing powerful extraction at scale.',
+      name: 'PRICING.NAME_PRO',
+      priceMonthly: '19.99',
+      priceYearly: '16.67',
+      credits: '5,000',
+      description: 'PRICING.DESC_PRO',
       features: [
-        '250,000 pages / month',
-        'LLM-powered extraction',
-        'World-aware crawling',
-        'Proxy rotation & geolocation',
-        'Semantic search infrastructure',
-        'Performance analytics dashboard',
-        'Slack / Email alerts',
+        'PRICING.F_PRO_1',
+        'PRICING.F_PRO_2',
+        'PRICING.F_PRO_3',
+        'PRICING.F_PRO_4',
+        'PRICING.F_PRO_5',
+        'PRICING.F_PRO_6',
+        'PRICING.F_PRO_7',
       ],
       highlighted: true,
-      cta: 'Start Free Trial',
+      cta: 'PRICING.CTA_TRIAL',
       ctaLink: '/service/signup',
     },
     {
       tier: 'enterprise',
-      name: 'Enterprise',
-      priceMonthly: 'Custom',
-      priceYearly: 'Custom',
-      description: 'For organizations with demanding scraping requirements.',
+      name: 'PRICING.NAME_ENT',
+      priceMonthly: '49.99',
+      priceYearly: '41.67',
+      credits: '20,000',
+      description: 'PRICING.DESC_ENT',
       features: [
-        'Unlimited pages',
-        'Dedicated browser pool',
-        'SLA guarantee',
-        '24/7 dedicated support',
-        'SSO & RBAC',
-        'On-premise deployment option',
-        'Custom integrations',
-        'Compliance reporting',
+        'PRICING.F_ENT_1',
+        'PRICING.F_ENT_2',
+        'PRICING.F_ENT_3',
+        'PRICING.F_ENT_4',
+        'PRICING.F_ENT_5',
+        'PRICING.F_ENT_6',
+        'PRICING.F_ENT_7',
+        'PRICING.F_ENT_8',
       ],
       highlighted: false,
-      cta: 'Contact Sales',
-      ctaLink: '/service/contact',
+      cta: 'PRICING.CTA_SALES',
+      ctaLink: '/contact',
     },
   ];
 }

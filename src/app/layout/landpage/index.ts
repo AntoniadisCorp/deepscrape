@@ -1,5 +1,6 @@
 export * from './features/features.component'
 export * from './hero/hero.component'
+export * from './agent/landing-agent.component'
 export * from './architecture/landing-architecture.component'
 export * from './code-demo/landing-code-demo.component'
 export * from './pricing/landing-pricing.component'

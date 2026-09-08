@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { provideNgxStripe } from 'ngx-stripe';
 import { UserResolver } from 'src/app/core/services';
 import { authzGuard } from 'src/app/core/guards';
 
@@ -23,6 +24,7 @@ export const settingsRoutes: Routes = [
     {
         path: 'payment',
         loadComponent: () => import('../../pages').then(m => m.PaymentTabComponent),
+        providers: [provideNgxStripe()],
         data: { title: 'Payment', animation: 'payment' },
     },
     {

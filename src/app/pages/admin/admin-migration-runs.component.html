@@ -1,9 +1,9 @@
 <section class="admin-migration-runs-theme space-y-6">
   <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
     <div>
-      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">Migration Runs</h2>
+      <h2 class="text-2xl font-bold text-gray5 dark:text-gray-100">{{ 'ADMIN_MIGRATION_RUNS.TITLE' | translate }}</h2>
       <p class="text-sm text-gray5/70 dark:text-gray-300 mt-1">
-        Full history of migration executions with status, options, counters, and estimated cost.
+        {{ 'ADMIN_MIGRATION_RUNS.SUB' | translate }}
       </p>
     </div>
 
@@ -13,7 +13,7 @@
         appRipple
         rippleColor="dark"
         class="btn btn-sm btn-gray btn-ring inline-flex items-center justify-center">
-        Back to Migration Tool
+        {{ 'ADMIN_MIGRATION_RUNS.BACK_MIGRATION_TOOL' | translate }}
       </a>
       <button
         type="button"
@@ -21,7 +21,7 @@
         appRipple
         rippleColor="light"
         class="btn btn-sm btn-gray btn-ring">
-        Refresh
+        {{ 'COMMON.REFRESH' | translate }}
       </button>
       <button
         type="button"
@@ -30,7 +30,7 @@
         appRipple
         rippleColor="light"
         class="btn btn-sm btn-red btn-ring btn-ring-red disabled:opacity-50 disabled:cursor-not-allowed">
-        Delete All History
+        {{ 'ADMIN_MIGRATION_RUNS.DELETE_ALL_HISTORY' | translate }}
       </button>
     </div>
   </header>
@@ -44,37 +44,37 @@
   @if (!loading && totalItems > 0) {
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
       <div class="admin-glass-card rounded-xl border border-gray3/55 dark:border-gray5/60 bg-white/75 dark:bg-gray7/55 p-4">
-        <p class="text-xs text-gray5/80 dark:text-gray3">Page Items</p>
+        <p class="text-xs text-gray5/80 dark:text-gray3">{{ 'ADMIN_MIGRATION_RUNS.STAT_PAGE_ITEMS' | translate }}</p>
         <p class="text-xl font-semibold text-gray6 dark:text-gray-200">{{ runs.length }}</p>
-        <p class="text-xs text-gray6/70 dark:text-gray-300/70">Completed: {{ pageCompletedRuns }} · Running: {{ pageRunningRuns }}</p>
+        <p class="text-xs text-gray6/70 dark:text-gray-300/70">{{ 'ADMIN_MIGRATION_RUNS.COMPLETED_LBL' | translate }}: {{ pageCompletedRuns }} · {{ 'ADMIN_MIGRATION_RUNS.RUNNING_LBL' | translate }}: {{ pageRunningRuns }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-gray3/55 dark:border-gray5/60 bg-white/75 dark:bg-gray7/55 p-4">
         <p class="text-xs text-gray5/80 dark:text-gray3">Processed Guests (Page)</p>
         <p class="text-xl font-semibold text-emerald-800 dark:text-emerald-200">{{ pageProcessedGuests | number }}</p>
-        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">Failed on page: {{ pageFailedRuns }}</p>
+        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">{{ 'ADMIN_MIGRATION_RUNS.FAILED_ON_PAGE' | translate }}: {{ pageFailedRuns }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-gray3/55 dark:border-gray5/60 bg-white/75 dark:bg-gray7/55 p-4">
-        <p class="text-xs text-gray5/80 dark:text-gray3">Estimated Cost (Page)</p>
+        <p class="text-xs text-gray5/80 dark:text-gray3">{{ 'ADMIN_MIGRATION_RUNS.EST_COST_PAGE' | translate }}</p>
         <p class="text-xl font-semibold text-teal-800 dark:text-teal-200">${{ pageEstimatedCost | number : '1.2-4' }}</p>
-        <p class="text-xs text-teal-700/70 dark:text-teal-300/70">Page {{ currentPage }} of {{ totalPages }}</p>
+        <p class="text-xs text-teal-700/70 dark:text-teal-300/70">{{ 'ADMIN_MIGRATION_RUNS.PAGE_LBL' | translate }} {{ currentPage }} {{ 'ADMIN_MIGRATION_RUNS.OF_LBL' | translate }} {{ totalPages }}</p>
       </div>
       <div class="admin-glass-card rounded-xl border border-gray3/55 dark:border-gray5/60 bg-white/75 dark:bg-gray7/55 p-4">
-        <p class="text-xs text-gray5/80 dark:text-gray3">All Pages Total Runs</p>
+        <p class="text-xs text-gray5/80 dark:text-gray3">{{ 'ADMIN_MIGRATION_RUNS.ALL_PAGES_TOTAL' | translate }}</p>
         <p class="text-xl font-semibold text-amber-800 dark:text-amber-200">{{ totalItems | number }}</p>
-        <p class="text-xs text-amber-700/70 dark:text-amber-300/70">{{ totalPages }} total pages</p>
+        <p class="text-xs text-amber-700/70 dark:text-amber-300/70">{{ totalPages }} {{ 'ADMIN_MIGRATION_RUNS.TOTAL_PAGES' | translate }}</p>
       </div>
     </div>
   }
 
   @if (loading) {
     <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
-      Loading migration runs...
+      {{ 'ADMIN_MIGRATION_RUNS.LOADING' | translate }}
     </div>
   }
 
   @if (!loading && runs.length === 0) {
     <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-5 text-sm text-gray5/70 dark:text-gray-300">
-      No migration run history found.
+      {{ 'ADMIN_MIGRATION_RUNS.EMPTY' | translate }}
     </div>
   }
 
@@ -91,7 +91,7 @@
               </p>
             </div>
             <span class="text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-1" [ngClass]="badgeClass(run.status)">
-              {{ formatStatus(run.status) }}
+              {{ formatStatus(run.status) | translate }}
             </span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
@@ -113,12 +113,12 @@
             </div>
           </div>
           <div class="text-xs text-gray5/70 dark:text-gray-300 space-y-1">
-            <p>Started: {{ run.startedAt ? (run.startedAt | date: 'medium') : '-' }}</p>
-            <p>Completed: {{ run.completedAt ? (run.completedAt | date: 'medium') : '-' }}</p>
-            <p>Failed: {{ run.failedAt ? (run.failedAt | date: 'medium') : '-' }}</p>
-            <p>Stopped: {{ run.stoppedAt ? (run.stoppedAt | date: 'medium') : '-' }}</p>
-            <p>Fallback: {{ run.fallbackAt ? (run.fallbackAt | date: 'medium') : '-' }}</p>
-            <p>Estimate reads/writes: {{ run.estimateReads | number }} / {{ run.estimateWrites | number }}</p>
+            <p>{{ 'ADMIN_MIGRATION_RUNS.ROW_STARTED' | translate }}: {{ run.startedAt ? (run.startedAt | date: 'medium') : '-' }}</p>
+            <p>{{ 'ADMIN_MIGRATION_RUNS.ROW_COMPLETED' | translate }}: {{ run.completedAt ? (run.completedAt | date: 'medium') : '-' }}</p>
+            <p>{{ 'ADMIN_MIGRATION_RUNS.ROW_FAILED' | translate }}: {{ run.failedAt ? (run.failedAt | date: 'medium') : '-' }}</p>
+            <p>{{ 'ADMIN_MIGRATION_RUNS.ROW_STOPPED' | translate }}: {{ run.stoppedAt ? (run.stoppedAt | date: 'medium') : '-' }}</p>
+            <p>{{ 'ADMIN_MIGRATION_RUNS.ROW_FALLBACK' | translate }}: {{ run.fallbackAt ? (run.fallbackAt | date: 'medium') : '-' }}</p>
+            <p>{{ 'ADMIN_MIGRATION_RUNS.ROW_EST_RW' | translate }}: {{ run.estimateReads | number }} / {{ run.estimateWrites | number }}</p>
           </div>
           <div class="flex justify-end">
             <button
@@ -127,7 +127,7 @@
               appRipple
               rippleColor="light"
               class="btn btn-sm btn-red btn-ring btn-ring-red">
-              Delete Run
+              {{ 'ADMIN_MIGRATION_RUNS.DELETE_RUN' | translate }}
             </button>
           </div>
         </article>
@@ -139,7 +139,7 @@
     <div class="admin-glass-card rounded-xl border border-gray-300/70 dark:border-gray5 bg-white dark:bg-gray5/50 p-4">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-gray5/70 dark:text-gray-300">
-          Showing {{ runs.length }} of {{ totalItems }} runs · Page {{ currentPage }} / {{ totalPages }}
+          {{ 'ADMIN_MIGRATION_RUNS.SHOWING' | translate }} {{ runs.length }} {{ 'ADMIN_MIGRATION_RUNS.OF_LBL' | translate }} {{ totalItems }} {{ 'ADMIN_MIGRATION_RUNS.RUNS_WORD' | translate }} · {{ 'ADMIN_MIGRATION_RUNS.PAGE_LBL' | translate }} {{ currentPage }} / {{ totalPages }}
         </p>
         @if (totalPages > 1) {
           <div class="admin-pagination flex items-center gap-1.5">
@@ -150,7 +150,7 @@
               appRipple
               rippleColor="dark"
               class="admin-page-nav">
-              Previous
+              {{ 'COMMON.PREVIOUS' | translate }}
             </button>
             <div class="flex items-center justify-center gap-1">
               @if (totalPages > 7) {
@@ -209,7 +209,7 @@
               appRipple
               rippleColor="dark"
               class="admin-page-nav">
-              Next
+              {{ 'COMMON.NEXT' | translate }}
             </button>
           </div>
         }
@@ -236,7 +236,7 @@
         appRipple
         rippleColor="dark"
         class="btn btn-sm btn-gray btn-ring disabled:opacity-50 disabled:cursor-not-allowed">
-        Cancel
+        {{ 'COMMON.CANCEL' | translate }}
       </button>
       <button
         type="button"

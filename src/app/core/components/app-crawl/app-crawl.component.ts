@@ -31,11 +31,12 @@ import { CrawlOperationStatus } from '../../enum';
 import { UserInfo } from '@angular/fire/auth';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
-const DEFAULT_CRAWL_PACK_SELECTION = { name: "select a crawlpack", code: "default" }
+const DEFAULT_CRAWL_PACK_SELECTION = { name: 'CRAWL.SELECT_PACK', code: 'default' }
 @Component({
   selector: 'app-crawl',
-  imports: [MatProgressSpinner, GinputComponent, MatIcon, NgClass, RippleDirective, DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe, RadioToggleComponent, CrawlResultItemComponent, AsyncPipe, MatProgressBarModule],
+  imports: [MatProgressSpinner, GinputComponent, MatIcon, NgClass, RippleDirective, DropdownComponent, FormControlPipe, RouterLink, MarkdownModule, RemoveToolbarDirective, JsonPipe, RadioToggleComponent, CrawlResultItemComponent, AsyncPipe, MatProgressBarModule, TranslateModule],
   animations: [expandCollapseAnimation],
   templateUrl: './app-crawl.component.html',
   styleUrl: './app-crawl.component.scss',
@@ -47,6 +48,7 @@ export class AppCrawlComponent {
 
   private destroyRef = inject(DestroyRef)
   private localStorage = inject(LocalStorage)
+  private translate = inject(TranslateService)
   private user: Users & { currProviderData: UserInfo | null } | null = null
   private destroy$ = new Subject<void>()
 
@@ -67,9 +69,6 @@ export class AppCrawlComponent {
   // Action Buttons
   protected itemVisibility: { [key: string]: WritableSignal<boolean> } = {};
 
-  // FIXME: REMOVE THIS TWO VARS NOT NEEDED 
-  protected isResultsProcessing: boolean
-  protected isGetResults: boolean
   protected isCrawlProcessing: boolean
   protected errorMessage = ''
 
@@ -121,9 +120,7 @@ export class AppCrawlComponent {
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-    this.isResultsProcessing = false
     this.isCrawlProcessing = false
-    this.isGetResults = false
     this.abortButtonPressed = false
     this.progress = null
 
@@ -242,8 +239,6 @@ export class AppCrawlComponent {
         concatMap((task: CrawlTask) => {
           /* Initialize the Results viariables  */
           this.errorMessage = ''
-          this.isGetResults = true
-          this.isResultsProcessing = true
 
           this.latestTaskId.set(task.id) // Emit the current task ID
           console.log('Crawl task started with id:', task.id)
@@ -263,7 +258,7 @@ export class AppCrawlComponent {
         },
         complete: () => {
           // reset the processing status
-          this.isResultsProcessing = this.isCrawlProcessing = false
+          this.isCrawlProcessing = false
 
           this.progress = 100 // Set progress to 100% when complete
 
@@ -279,7 +274,7 @@ export class AppCrawlComponent {
           // print the error
           console.error('Error processing data:', error, error.message);
           // set the error message to show on the screen by snackbar popup
-          this.errorMessage = error.message || 'Error processing data. Please check console for details.';
+          this.errorMessage = error.message || this.translate.instant('CRAWL.ERR_PROCESSING_DATA');
 
           this.latestTaskId.set(null)
           this.cdr.markForCheck() // Mark for check on error
@@ -419,7 +414,7 @@ export class AppCrawlComponent {
       })
     } catch (error) {
       console.error("Failed to parse dump JSON:", error);
-      this.showSnackbar("Error parsing crawl result data.", SnackBarType.error, '', 5000);
+      this.showSnackbar(this.translate.instant('CRAWL.ERR_PARSE_RESULT'), SnackBarType.error, '', 5000);
     } finally {
       this.batchStringBuffer = '';
     }
@@ -486,7 +481,6 @@ export class AppCrawlComponent {
   protected closeResults() {
 
     // Close results, reset results variables and subscribers
-    this.isGetResults = false
     this.taskStatus$ = of(undefined)
     this.abortButtonPressed = false
     this.progress = null

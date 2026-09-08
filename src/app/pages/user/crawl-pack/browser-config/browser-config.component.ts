@@ -6,6 +6,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
 import { map, Observable, of, Subject, Subscription, takeUntil, tap } from 'rxjs';
 import { DropdownComponent, RadioToggleComponent, SnackBarType, StinputComponent } from 'src/app/core/components';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { browserTitleValidator, browserTypeValidator, cookieValidator, extraArgsValidator, headersValidator, proxyValidator, userAgentValidator, viewportDimensionValidator } from 'src/app/core/directives';
 import { BrowserType } from 'src/app/core/enum';
 import { getErrorLabel, getOffsetTop, setBrowserTypeList } from 'src/app/core/functions';
@@ -16,13 +17,14 @@ import { listStaggerAnimation } from 'src/app/animations';
 
 @Component({
   selector: 'app-browser-config',
-  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe, DropdownComponent, MatProgressSpinner],
+  imports: [ReactiveFormsModule, MatIcon, NgClass, AsyncPipe, DatePipe, RadioToggleComponent, FormControlPipe, StinputComponent, JsonPipe, DropdownComponent, MatProgressSpinner, TranslateModule],
   animations: [listStaggerAnimation],
   templateUrl: './browser-config.component.html',
   styleUrl: './browser-config.component.scss'
 })
 export class BrowserConfigComponent {
   private window = inject(WindowToken)
+  private translate = inject(TranslateService)
   private packService: PackService
 
   @HostListener('window:scroll', ['$event'])
@@ -371,8 +373,8 @@ export class BrowserConfigComponent {
            this.configForm.reset()
 
           this.configForm.enable()
-          // show snackbar Error
-          this.showSnackbar('Browser profile saved successfully.', SnackBarType.success, '', 5000)
+          // show snackbar success
+          this.showSnackbar(this.translate.instant('CRAWL_PACK_BCONFIG.PROFILE_SAVED'), SnackBarType.success, '', 5000)
         }
       })
   }

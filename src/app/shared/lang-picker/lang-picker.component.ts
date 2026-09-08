@@ -1,11 +1,17 @@
-import { Component, inject, input } from '@angular/core';
+import {
+  Component,
+  inject,
+  input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { RippleDirective } from 'src/app/core/directives';
-import { I18nService } from 'src/app/core/i18n';
+import { I18nService, SUPPORTED_LANGS } from 'src/app/core/i18n';
 
 import { MatMenuModule, MatMenuTrigger, MatMenuItem } from '@angular/material/menu';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-lang-picker',
   standalone: true,
   templateUrl: './lang-picker.component.html',
@@ -17,11 +23,19 @@ export class LangPickerComponent {
 
   readonly currentLang = this.i18nService.currentLang;
 
-  availableLangs = [
-    { code: 'en', display: 'English' },
-    { code: 'el', display: 'Ελληνικά' },
-    // Add more languages as needed
-  ];
+  // display names are endonyms (each language in its own language)
+  private readonly langLabels: Record<string, string> = {
+    en: 'English',
+    el: 'Ελληνικά',
+    es: 'Español',
+    fr: 'Français',
+    de: 'Deutsch',
+  };
+
+  readonly availableLangs = SUPPORTED_LANGS.map((code) => ({
+    code,
+    display: this.langLabels[code] || code,
+  }));
 
   changeLanguage(langCode: string): void {
     this.i18nService.use(langCode);

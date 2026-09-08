@@ -1,6 +1,7 @@
-import { AsyncPipe, CurrencyPipe, NgClass, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
+import { TranslateModule } from '@ngx-translate/core'
 import { combineLatest, map, Observable } from 'rxjs'
 import { AuthService, BillingService } from 'src/app/core/services'
 import { BillingPlanCatalog, BillingPlanTier, CreditPackCatalog, UserBilling } from 'src/app/core/types'
@@ -15,7 +16,7 @@ type PlanDetailVm = {
 
 @Component({
   selector: 'app-plan-details',
-  imports: [NgIf, NgFor, NgClass, AsyncPipe, CurrencyPipe, RouterLink],
+  imports: [NgClass, AsyncPipe, CurrencyPipe, RouterLink, TranslateModule],
   templateUrl: './plan-details.component.html',
   styleUrl: './plan-details.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,10 +53,10 @@ export class PlanDetailsComponent {
   }
 
   readonly intervals: Array<{ key: 'payAsYouGo' | 'monthly' | 'quarterly' | 'annually'; label: string }> = [
-    { key: 'payAsYouGo', label: 'Pay as you go' },
-    { key: 'monthly', label: 'Monthly' },
-    { key: 'quarterly', label: 'Quarterly' },
-    { key: 'annually', label: 'Annually' },
+    { key: 'payAsYouGo', label: 'BILLING_PLAN_DETAILS.INT_PAY_AS_YOU_GO' },
+    { key: 'monthly', label: 'BILLING_PLAN_DETAILS.INT_MONTHLY' },
+    { key: 'quarterly', label: 'BILLING_PLAN_DETAILS.INT_QUARTERLY' },
+    { key: 'annually', label: 'BILLING_PLAN_DETAILS.INT_ANNUALLY' },
   ]
 
   get isAdmin(): boolean {

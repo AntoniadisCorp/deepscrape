@@ -1,3 +1,32 @@
+# [0.8.0-beta.3](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.2...v0.8.0-beta.3) (2026-09-08)
+
+
+### Bug Fixes
+
+* **functions:** 404 missing static assets instead of serving index.html ([ef9dbee](https://github.com/deepscrape/deepscrape/commit/ef9dbee356eb4afcba28276672a249166de1ad08))
+* **functions:** document geo lookup parameters ([d9d5eab](https://github.com/deepscrape/deepscrape/commit/d9d5eab1ca461438a48a28f02dbee28d25dfbc15))
+* **test:** complete TranslateService mock for the v17 TranslatePipe ([2899618](https://github.com/deepscrape/deepscrape/commit/2899618f8e05d13d2088359365de483834685c5b))
+
+
+### Features
+
+* **analytics:** include ASN and ISP breakdowns in range metrics ([5fe4aeb](https://github.com/deepscrape/deepscrape/commit/5fe4aeb2d92b10e202b6454242451a3c5c124c31))
+* **geo:** coalesce concurrent IP lookups and add country-based deny-lists ([90aa3f8](https://github.com/deepscrape/deepscrape/commit/90aa3f8ab798f44531010e4bc848c4dea456bd65))
+* **i18n:** add es, fr and de locales with header language picker ([3cd89b3](https://github.com/deepscrape/deepscrape/commit/3cd89b3a5076cf633093b832e61c4af0f1dab1a9))
+* **i18n:** localize app templates and runtime strings with [@ngx-translate](https://github.com/ngx-translate) ([b6c4623](https://github.com/deepscrape/deepscrape/commit/b6c462320d7de1d3a93045ca1e7fca873e52b1e8))
+* **i18n:** translate agent, playground, hero and nav copy (el, es, fr, de) ([1439764](https://github.com/deepscrape/deepscrape/commit/143976430e6c805135ed337b26cad21c8a268339))
+* **legal:** align privacy, terms and 404 pages with landpage chrome ([d532683](https://github.com/deepscrape/deepscrape/commit/d532683f6c8d66283538c2a8cab7dd26bac25924))
+* **marketing:** add AI research agent section and live playground rework ([67058d0](https://github.com/deepscrape/deepscrape/commit/67058d0b2af4a9ee54d0b6b0d8c5808bd6c5da98))
+* **marketing:** add privacy/terms pages and scroll-reveal animations ([b663910](https://github.com/deepscrape/deepscrape/commit/b6639105a6c4f7069685e5aa9eb6a99e4957aeef))
+* **marketing:** refresh landing with live demo, managed pricing and art ([8565cd8](https://github.com/deepscrape/deepscrape/commit/8565cd8c78d829f3adced6c09c465e737bb3c9de))
+* **seo:** add per-route titles, robots, sitemap and OG image ([f40a0e0](https://github.com/deepscrape/deepscrape/commit/f40a0e00a6a7aa01ca1784614700050cd1f030e8))
+* **theme:** add Light/Dark/System toggle defaulting to OS scheme ([0697752](https://github.com/deepscrape/deepscrape/commit/069775299affc5362fbc2bacb1add8a136053fc1))
+
+
+### Performance Improvements
+
+* **functions:** raise default runtime memory to 512MiB ([ae53e94](https://github.com/deepscrape/deepscrape/commit/ae53e94842455f6fc2f0e0171211cdac02c365f5))
+
 ## [0.7.2](https://github.com/deepscrape/deepscrape/compare/v0.7.1...v0.7.2) (2026-09-06)
 
 

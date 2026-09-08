@@ -1,7 +1,8 @@
-import { AsyncPipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
 import { Router } from '@angular/router'
 import { MatIconModule } from '@angular/material/icon'
+import { TranslateModule } from '@ngx-translate/core'
 import {
   BehaviorSubject, catchError, combineLatest, from, map, Observable, of, shareReplay, switchMap,
 } from 'rxjs'
@@ -19,7 +20,7 @@ interface SavedPaymentMethod {
 
 @Component({
   selector: 'app-paymentmethods',
-  imports: [NgIf, NgFor, AsyncPipe, MatIconModule],
+  imports: [AsyncPipe, MatIconModule, TranslateModule],
   templateUrl: './paymentmethods.component.html',
   styleUrl: './paymentmethods.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

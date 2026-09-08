@@ -3,7 +3,7 @@ import { CanActivateFn, Router } from '@angular/router'
 import { AuthService, SnackbarService } from '../services'
 import { resolveSafeReturnUrl } from '../functions'
 import { map } from 'rxjs/operators'
-import { SnackBarType } from '../components'
+import { SnackBarType } from '../components/snackbar/snackbar.component';
 
 const VERIFICATION_REQUIRED_MESSAGE = 'Your email or phone number is not verified. Please verify to proceed.'
 

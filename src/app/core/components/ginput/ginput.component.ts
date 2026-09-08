@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { ForbiddenValidatorDirective } from '../../directives';
 
 @Component({
     selector: 'app-ginput',
-    imports: [NgClass, ForbiddenValidatorDirective, ReactiveFormsModule],
+    imports: [NgClass, ForbiddenValidatorDirective, ReactiveFormsModule, TranslateModule],
     providers: [],
     templateUrl: './ginput.component.html',
     styleUrl: './ginput.component.scss'

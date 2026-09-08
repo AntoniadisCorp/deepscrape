@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, ViewChild, AfterViewInit, OnDestroy, DestroyRef, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, inject, ViewChild, AfterViewInit, OnDestroy, DestroyRef, signal } from '@angular/core'
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormControl, FormsModule } from '@angular/forms'
 import { CrawlOperation, CrawlResult, CrawlStatus, CrawlStreamBatch, CrawlTask, Preset, SeederRequest, SeederResult, Users } from '../../types'
 import { LocalStorage, SeedingService, ScreenResizeService, WindowToken, CrawlAPIService, SnackbarService, OperationStatusService, AuthService } from '../../services'
@@ -20,10 +20,12 @@ import { CrawlOperationStatus } from '../../enum'
 import { UserInfo } from '@angular/fire/auth'
 import { Router } from '@angular/router'
 import { MatProgressBarModule } from '@angular/material/progress-bar'
+import { TranslateModule } from '@ngx-translate/core'
 
 // Type definitions for preset configurations
 @Component({
-  selector: 'app-domain-seeder', imports: [ReactiveFormsModule, NgClass, MatSliderModule, CheckboxComponent, FormsModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatIconModule, AsyncPipe, MatProgressBarModule, HiddenDragScrollDirective, RippleDirective, SeederResultsComponent, RippleDirective],
+  selector: 'app-domain-seeder', imports: [ReactiveFormsModule, NgClass, MatSliderModule, CheckboxComponent, FormsModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatIconModule, AsyncPipe, MatProgressBarModule, HiddenDragScrollDirective, RippleDirective, SeederResultsComponent, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandCollapseAnimation, fadeInUp],
   templateUrl: './domain-seeder.component.html',
   styleUrl: './domain-seeder.component.scss',
@@ -63,7 +65,7 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
   streaming = false
   isExpanded = false // Default collapsed state
   activePreset: string = '' // Track active preset
-  formTitle: string = 'Multi-Domain Research' // Default title
+  formTitle: string = 'DOMAIN_SEEDER.TITLE_DEFAULT' // Default title (i18n key path)
 
   taskStatus$: Observable<Pick<CrawlStatus, 'error' | 'status' | 'result'> | undefined | null>
 
@@ -679,7 +681,7 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
   // Reset form to default state
   resetForm(): void {
     this.activePreset = ''
-    this.formTitle = 'Multi-Domain Research'
+    this.formTitle = 'DOMAIN_SEEDER.TITLE_DEFAULT'
 
     // Clear localStorage
     this.localStorage.removeItem('domain-seeder-preset')
@@ -743,8 +745,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
 
     this.presets.push({
       id: 'multi_domain_research',
-      label: 'Multi-Domain Research',
-      description: 'Basic research across multiple domains with BM25 scoring',
+      label: 'DOMAIN_SEEDER.PRESET_MULTI_LABEL',
+      description: 'DOMAIN_SEEDER.PRESET_MULTI_DESC',
       config: {
         source: 'sitemap',
         extract_head: true,
@@ -761,8 +763,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
       ]
     }, {
       id: 'comprehensive_validation',
-      label: 'Comprehensive Validation',
-      description: 'Thorough validation with live checking and metadata extraction',
+      label: 'DOMAIN_SEEDER.PRESET_COMPREHENSIVE_LABEL',
+      description: 'DOMAIN_SEEDER.PRESET_COMPREHENSIVE_DESC',
       config: {
         live_check: true,
         extract_head: true,
@@ -779,8 +781,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
     },
       {
         id: 'pattern_filtering',
-        label: 'Pattern Filtering',
-        description: 'Filter URLs using specific patterns, targeting blog posts from 2024',
+        label: 'DOMAIN_SEEDER.PRESET_PATTERN_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_PATTERN_DESC',
         config: {
           source: 'sitemap',
           pattern: '*/blog/2024/*.html',
@@ -794,8 +796,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
       },
       {
         id: 'performance_tuning',
-        label: 'Performance Tuning',
-        description: 'High-throughput configuration with parallel processing',
+        label: 'DOMAIN_SEEDER.PRESET_PERF_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_PERF_DESC',
         config: {
           source: 'cc',
           concurrency: 50,
@@ -807,8 +809,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
       },
       {
         id: 'large_domain_processing',
-        label: 'Large Domain Processing',
-        description: 'Process very large domains with optimized settings',
+        label: 'DOMAIN_SEEDER.PRESET_LARGE_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_LARGE_DESC',
         config: {
           source: 'cc+sitemap',
           live_check: true,
@@ -820,8 +822,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
       },
       {
         id: 'metadata_extraction',
-        label: 'Metadata Extraction',
-        description: 'Focus on extracting metadata from HTML head elements',
+        label: 'DOMAIN_SEEDER.PRESET_META_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_META_DESC',
         config: {
           live_check: true,
           extract_head: true,
@@ -829,8 +831,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
         }
       }, {
       id: 'relevance_scoring',
-      label: 'Relevance Scoring',
-      description: 'High precision relevance scoring for Python concurrency topics',
+      label: 'DOMAIN_SEEDER.PRESET_RELEVANCE_LABEL',
+      description: 'DOMAIN_SEEDER.PRESET_RELEVANCE_DESC',
       config: {
         source: 'sitemap',
         extract_head: true,
@@ -847,8 +849,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
     },
       {
         id: 'url_based_scoring',
-        label: 'URL-Based Scoring',
-        description: 'Fast URL-only scoring without fetching page content',
+        label: 'DOMAIN_SEEDER.PRESET_URL_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_URL_DESC',
         config: {
           source: 'sitemap',
           extract_head: false,
@@ -864,8 +866,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
       },
       {
         id: 'complex_queries',
-        label: 'Complex Queries',
-        description: 'Multiple topic search with comma-separated complex queries',
+        label: 'DOMAIN_SEEDER.PRESET_COMPLEX_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_COMPLEX_DESC',
         config: {
           source: 'sitemap',
           extract_head: true,
@@ -877,8 +879,8 @@ export class DomainSeederComponent implements AfterViewInit, OnDestroy {
       },
       {
         id: 'url_validation',
-        label: 'URL Validation',
-        description: 'Verify URL accessibility with HEAD requests and extract metadata',
+        label: 'DOMAIN_SEEDER.PRESET_VALIDATION_LABEL',
+        description: 'DOMAIN_SEEDER.PRESET_VALIDATION_DESC',
         config: {
           live_check: true,
           concurrency: 15,

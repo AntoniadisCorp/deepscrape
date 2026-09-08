@@ -1,1 +1,29 @@
 :host { display: block; }
+
+/* Ambient network-flow layer: slow horizontal drift so the data-stream feels alive. */
+.cta-network {
+  animation: cta-network-pan 26s ease-in-out infinite alternate;
+}
+
+@keyframes cta-network-pan {
+  from {
+    transform: translateX(-1.5%) scale(1.04);
+  }
+  to {
+    transform: translateX(1.5%) scale(1.08);
+  }
+}
+
+/* cursor parallax lives on the wrapper (inline transform set by pointermove); the img pans above it */
+.cta-network-parallax {
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-network {
+    animation: none;
+  }
+  .cta-network-parallax {
+    transform: none !important;
+  }
+}

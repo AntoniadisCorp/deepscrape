@@ -1,5 +1,5 @@
 import { JsonPipe } from '@angular/common';
-import { Component, DestroyRef, inject, model } from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, model } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
@@ -20,6 +20,7 @@ import { map } from 'rxjs/internal/operators/map'
 import { filter } from 'rxjs/internal/operators/filter'
 import { tap } from 'rxjs'
 import { MatProgressSpinner } from '@angular/material/progress-spinner'
+import { TranslateModule } from '@ngx-translate/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 
@@ -27,7 +28,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 
 @Component({
   selector: 'app-docker-stepper',
-  imports: [ReactiveFormsModule, JsonPipe, MatIcon, RadioButtonComponent, FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule, MatProgressSpinner],
+  imports: [ReactiveFormsModule, JsonPipe, MatIcon, RadioButtonComponent, FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule, MatProgressSpinner, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app-docker-stepper.component.html',
   styleUrl: './app-docker-stepper.component.scss'
 })
@@ -221,7 +223,7 @@ export class AppDockerStepperComponent {
   dockerfileValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       if (control.value && this.dockerfileFile?.name !== 'Dockerfile') {
-        return { invalidDockerfile: 'File must be named "Dockerfile"' };
+        return { invalidDockerfile: 'DOCKER_STEPPER.ERR_DOCKERFILE_NAME' };
       }
       return null
     };

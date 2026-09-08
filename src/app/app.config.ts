@@ -1,8 +1,8 @@
 import { ApplicationConfig, isDevMode, importProvidersFrom, provideZonelessChangeDetection, inject } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, TitleStrategy } from '@angular/router';
 
 import { routes } from './app.routes';
-import { DomSanitizer, provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
+import { DomSanitizer, provideClientHydration, withEventReplay, withHttpTransferCacheOptions, withIncrementalHydration } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { FirebaseApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -21,16 +21,14 @@ import { provideHttpClient, withFetch, withInterceptors, withInterceptorsFromDi,
 import { IMAGE_LOADER, ImageLoaderConfig } from '@angular/common';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from 'src/environments/environment';
-import { provideMarkdown } from 'ngx-markdown';
-import { provideNgxStripe } from 'ngx-stripe';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NAVIGATOR_PROVIDER } from './core/providers';
 import { LogLevel, setLogLevel } from '@angular/fire';
 import { LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import { myIcons } from './shared'
 import { provideI18n } from './core/i18n'; // Import provideI18n
-import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { csrfRefreshInterceptor, orgContextInterceptor, paymentRequiredInterceptor, sessionRevocationInterceptor } from './core/interceptors';
+import { SeoTitleStrategy } from './core/services/seo-title.strategy';
 import { PLATFORM_ID } from '@angular/core';
 
 setLogLevel(
@@ -43,19 +41,15 @@ const customImageLoader = (config: ImageLoaderConfig) => {
   return baseUri + config.src.replace(/^\//, '');
 }
 
-const hasSsrSerializedState =
-  typeof document !== 'undefined' &&
-  !!document.querySelector('script#ng-state');
-
-const hydrationProviders = hasSsrSerializedState
-  ? [
-      provideClientHydration(
-        withHttpTransferCacheOptions({
-          includePostRequests: true,
-        }),
-      ),
-    ]
-  : [];
+const hydrationProviders = [
+  provideClientHydration(
+    withIncrementalHydration(),
+    withEventReplay(),
+    withHttpTransferCacheOptions({
+      includePostRequests: true,
+    }),
+  ),
+];
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -65,9 +59,6 @@ export const appConfig: ApplicationConfig = {
     { provide: BrowserToken, useFactory: browserProvider },
     { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider(myIcons) }, // Register the LucideIconProvider
     importProvidersFrom(LoadingBarHttpClientModule),
-    provideMarkdown({
-      // loader: HttpClient,
-    }),
     provideHttpClient(
       withInterceptorsFromDi(),
       withInterceptors([csrfRefreshInterceptor, orgContextInterceptor, sessionRevocationInterceptor, paymentRequiredInterceptor]),
@@ -86,6 +77,7 @@ export const appConfig: ApplicationConfig = {
     // provideZoneChangeDetection({ eventCoalescing: true }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
+    { provide: TitleStrategy, useClass: SeoTitleStrategy },
     provideAnalytics(() => getAnalytics()),
     ScreenTrackingService, // track page views automatically
     UserTrackingService, // track unique users automatically
@@ -143,8 +135,6 @@ export const appConfig: ApplicationConfig = {
     }),
  */ provideAnimationsAsync(),
     importProvidersFrom(ReactiveFormsModule),
-    provideNgxStripe(),
-    provideCharts(withDefaultRegisterables()), // Add ng2-charts providers
     {
       provide: PLUTO_ID,
       useValue: '449f8516-791a-49ab-a09d-50f79a0678b6',

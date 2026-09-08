@@ -1,0 +1,144 @@
+:host {
+  display: block;
+}
+
+/* ===== Section canvas (distinct from the generic section-dark alternation) =====
+   NOTE: dark variants must use :host-context(.dark) — plain `.dark .agent-section`
+   gets Angular-scoped to `.dark[_ngcontent]` and never matches <html class="dark">. */
+.agent-section {
+  background: radial-gradient(1200px 600px at 15% -10%, rgba(6, 182, 212, 0.08), transparent 60%),
+    radial-gradient(1000px 500px at 90% 110%, rgba(244, 63, 94, 0.08), transparent 60%),
+    #f7f7f5;
+}
+
+:host-context(.dark) .agent-section {
+  background: radial-gradient(1200px 620px at 12% -12%, rgba(6, 182, 212, 0.12), transparent 60%),
+    radial-gradient(1000px 560px at 92% 112%, rgba(244, 63, 94, 0.10), transparent 60%),
+    #060607;
+}
+
+.agent-canvas {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+}
+:host-context(.dark) .agent-canvas {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+}
+
+/* ===== Scanning light bar over the HUD viewport ===== */
+@keyframes agent-scan-y {
+  0% {
+    transform: translateY(-110%);
+  }
+  100% {
+    transform: translateY(1100%);
+  }
+}
+
+.agent-scan {
+  background: linear-gradient(180deg, transparent 0%, rgba(6, 182, 212, 0.12) 45%, rgba(244, 63, 94, 0.10) 55%, transparent 100%);
+  animation: agent-scan-y 5.5s linear infinite;
+}
+
+/* ===== Console block-caret blink ===== */
+@keyframes ds-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-caret {
+  animation: ds-caret-blink 1s step-end infinite;
+}
+
+/* ===== Console steps: reveal one after another, then stay ===== */
+@keyframes ds-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Children of the transcript: [0] user bubble · [1..3] tool steps · [4] reply.
+   Visible by default (never an empty box); the entrance animation only plays
+   once the console host gets `.is-visible` from appReveal. */
+.agent-console .p-4 > * {
+  opacity: 1;
+}
+
+.agent-console.is-visible .p-4 > * {
+  animation: ds-step-in 0.5s ease-out backwards;
+}
+
+.agent-console.is-visible .p-4 > :nth-child(1) {
+  animation-delay: 0.1s;
+}
+.agent-console.is-visible .p-4 > :nth-child(2) {
+  animation-delay: 0.55s;
+}
+.agent-console.is-visible .p-4 > :nth-child(3) {
+  animation-delay: 1.05s;
+}
+.agent-console.is-visible .p-4 > :nth-child(4) {
+  animation-delay: 1.55s;
+}
+.agent-console.is-visible .p-4 > :nth-child(5) {
+  animation-delay: 2.2s;
+}
+
+/* ===== Stat number: soft rise on reveal ===== */
+.stat-number {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Tool marquee ===== */
+@keyframes ds-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.agent-marquee {
+  animation: ds-marquee 42s linear infinite;
+}
+
+.agent-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Edge fade masks so the marquee melts in/out */
+.agent-marquee-mask {
+  background: linear-gradient(90deg, #f7f7f5 0%, transparent 100%);
+}
+:host-context(.dark) .agent-marquee-mask {
+  background: linear-gradient(90deg, #060607 0%, transparent 100%);
+}
+.agent-marquee-mask-right {
+  background: linear-gradient(270deg, #f7f7f5 0%, transparent 100%);
+}
+:host-context(.dark) .agent-marquee-mask-right {
+  background: linear-gradient(270deg, #060607 0%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-scan,
+  .agent-marquee,
+  .animate-caret {
+    animation: none !important;
+  }
+  .agent-console .p-4 > * {
+    animation: none !important;
+    opacity: 1;
+  }
+}

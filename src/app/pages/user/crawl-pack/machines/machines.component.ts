@@ -12,6 +12,7 @@ import { catchError } from 'rxjs/internal/operators/catchError';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { Subscription } from 'rxjs/internal/Subscription';
 import { AppDockerStepperComponent, ContainerBoxComponent, RadioButtonComponent, SlideInModalComponent, SnackBarType } from 'src/app/core/components';
+import { TranslateModule } from '@ngx-translate/core';
 import { RippleDirective, TooltipDirective } from 'src/app/core/directives';
 import { MACHNINE_STATE } from 'src/app/core/enum';
 import { FormControlPipe } from 'src/app/core/pipes';
@@ -21,7 +22,7 @@ import { themeStorageKey } from 'src/app/shared';
 
 @Component({
     selector: 'app-machines',
-    imports: [ContainerBoxComponent, NgClass, ReactiveFormsModule, MatIcon, SlideInModalComponent, RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe, FormControlPipe],
+    imports: [ContainerBoxComponent, NgClass, ReactiveFormsModule, MatIcon, SlideInModalComponent, RippleDirective, TooltipDirective, AppDockerStepperComponent, MatProgressSpinner, AsyncPipe, FormControlPipe, TranslateModule],
     templateUrl: './machines.component.html',
     styleUrl: './machines.component.scss'
 })
