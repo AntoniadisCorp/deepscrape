@@ -1,3 +1,10 @@
+# [0.8.0-beta.4](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.3...v0.8.0-beta.4) (2026-09-08)
+
+
+### Bug Fixes
+
+* **functions:** never let guest tracking block page SSR delivery ([2c20870](https://github.com/deepscrape/deepscrape/commit/2c208708855ff76b0bdf1d16776384d07f8c9409))
+
 # [0.8.0-beta.3](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.2...v0.8.0-beta.3) (2026-09-08)
 
 
