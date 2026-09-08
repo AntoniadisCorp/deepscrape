@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, ViewChildren, QueryList } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule, JsonPipe, NgClass } from '@angular/common';
 import { CrawlResults } from '../../types';
 import { expandCollapseAnimation } from 'src/app/animations';
@@ -12,6 +12,7 @@ import { TranslateModule } from '@ngx-translate/core';
 @Component({
   selector: 'app-crawl-result-item',
   imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandCollapseAnimation],
   templateUrl: './crawl-result-item.component.html',
   styles: [`

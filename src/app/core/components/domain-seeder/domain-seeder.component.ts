@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, ViewChild, AfterViewInit, OnDestroy, DestroyRef, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, ElementRef, inject, ViewChild, AfterViewInit, OnDestroy, DestroyRef, signal } from '@angular/core'
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormControl, FormsModule } from '@angular/forms'
 import { CrawlOperation, CrawlResult, CrawlStatus, CrawlStreamBatch, CrawlTask, Preset, SeederRequest, SeederResult, Users } from '../../types'
 import { LocalStorage, SeedingService, ScreenResizeService, WindowToken, CrawlAPIService, SnackbarService, OperationStatusService, AuthService } from '../../services'
@@ -24,7 +24,8 @@ import { TranslateModule } from '@ngx-translate/core'
 
 // Type definitions for preset configurations
 @Component({
-  selector: 'app-domain-seeder', imports: [ReactiveFormsModule, NgClass, MatSliderModule, CheckboxComponent, FormsModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatIconModule, AsyncPipe, MatProgressBarModule, HiddenDragScrollDirective, RippleDirective, SeederResultsComponent, RippleDirective, TranslateModule],
+  selector: 'app-domain-seeder', imports: [ReactiveFormsModule, NgClass, MatSliderModule, CheckboxComponent, FormsModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatIconModule, AsyncPipe, MatProgressBarModule, HiddenDragScrollDirective, RippleDirective, SeederResultsComponent, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandCollapseAnimation, fadeInUp],
   templateUrl: './domain-seeder.component.html',
   styleUrl: './domain-seeder.component.scss',

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core'
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core'
 import { SeederResult } from '../../types/seeding.interface'
 import { CommonModule, DecimalPipe, UpperCasePipe, KeyValuePipe } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip'
   imports: [CommonModule, DecimalPipe, UpperCasePipe, KeyValuePipe, MatIconModule, MatTooltipModule, TranslateModule],
   templateUrl: './seeder-results.component.html',
   styleUrl: './seeder-results.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     fadeInUp,
     expandCollapseAnimation
@@ -23,10 +24,6 @@ export class SeederResultsComponent {
 
   toggleExpand(url: string) {
     this.expanded[url] = !this.expanded[url]
-  }
-
-  trackByUrl(index: number, result: SeederResult) {
-    return result.url || index
   }
 
   // Get defined metadata with improved filtering

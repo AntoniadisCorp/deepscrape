@@ -1,5 +1,5 @@
 import { JsonPipe } from '@angular/common';
-import { Component, DestroyRef, inject, model } from '@angular/core'
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, model } from '@angular/core'
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms'
 import { MatIcon } from '@angular/material/icon'
 import { RadioButtonComponent } from '../radio-button/radio-button.component'
@@ -29,6 +29,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 @Component({
   selector: 'app-docker-stepper',
   imports: [ReactiveFormsModule, JsonPipe, MatIcon, RadioButtonComponent, FormControlPipe, DropdownComponent, CheckboxComponent, RadioToggleComponent, MarkdownModule, MatProgressSpinner, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app-docker-stepper.component.html',
   styleUrl: './app-docker-stepper.component.scss'
 })
