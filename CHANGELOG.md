@@ -1,3 +1,10 @@
+# [0.8.0-beta.9](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.8...v0.8.0-beta.9) (2026-09-08)
+
+
+### Bug Fixes
+
+* **functions:** enforce App Check on contact submissions ([97c1784](https://github.com/deepscrape/deepscrape/commit/97c1784c977e6c0f5209b05c9fe81458adc2c82b))
+
 # [0.8.0-beta.6](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.5...v0.8.0-beta.6) (2026-09-08)
 
 
