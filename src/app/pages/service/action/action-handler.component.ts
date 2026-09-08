@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Auth, verifyPasswordResetCode, confirmPasswordReset, applyActionCode } from '@angular/fire/auth';
 import { TranslateService } from '@ngx-translate/core';
@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { timer } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
@@ -27,6 +28,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class ActionHandlerComponent implements OnInit {
   private window: Window = inject(WindowToken);
+  private readonly destroyRef = inject(DestroyRef);
   oobCode: string | null = null;
   continueUrl: string | null = null;
   email: string | null = null;
@@ -158,7 +160,9 @@ export class ActionHandlerComponent implements OnInit {
     console.log('✅ Email verification completed successfully');
 
     const redirectUrl = this.resolveRedirectUrl();
-    timer(2000).subscribe(() => this.router.navigateByUrl(redirectUrl));
+    timer(2000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.router.navigateByUrl(redirectUrl));
   }
 
   /** Resolve the redirect URL after email verification */
