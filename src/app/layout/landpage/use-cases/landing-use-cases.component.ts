@@ -1,4 +1,12 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslateModule } from '@ngx-translate/core';
@@ -24,6 +32,33 @@ interface UseCase {
 })
 export class LandingUseCasesComponent {
   readonly icons = myIcons;
+
+  /** Decorative mp4 in the banner — streamed only when the section nears the viewport. */
+  private readonly useCasesVideo =
+    viewChild.required<ElementRef<HTMLVideoElement>>('useCasesVideo');
+
+  constructor() {
+    // Browser-only: the 4MB mp4 must not be fetched on page load (preload="none"),
+    // so playback is started when the section scrolls near the viewport instead.
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const video = this.useCasesVideo().nativeElement;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              video.play().catch(() => undefined);
+            } else {
+              video.pause();
+            }
+          }
+        },
+        { rootMargin: '300px 0px' },
+      );
+      observer.observe(video);
+      destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
 
   readonly useCaseImages = [
     'assets/images/landing/use-cases-ecommerce.svg',
