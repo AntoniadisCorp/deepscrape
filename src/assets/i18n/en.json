@@ -153,7 +153,17 @@
     "PHONE_CODE_SENT": "Verification code sent successfully",
     "PHONE_LOGIN_SUCCESS": "Successfully signed in with phone number",
     "EMAIL_PASSWORD_REQUIRED": "Email and password are required",
-    "EMAIL_LOGIN_SUCCESS": "Successfully signed in with email"
+    "EMAIL_LOGIN_SUCCESS": "Successfully signed in with email",
+    "MFA_TITLE": "Complete your second factor",
+    "MFA_SMS_INTRO": "Enter the 6-digit SMS code sent to",
+    "MFA_SMS_FINISH": "to finish signing in.",
+    "MFA_TOTP_INTRO": "Enter the current 6-digit code from",
+    "MFA_TOTP_FINISH": "to finish signing in.",
+    "MFA_USE_TOTP": "Use authenticator app",
+    "MFA_USE_SMS": "Use SMS / text message",
+    "MFA_RESEND": "Resend",
+    "LAST_USED": "Last used",
+    "MFA_VERIFY": "Verify code"
   },
   "SIGNUP": {
     "CREATE_ACCOUNT_TITLE": "Create your account",
@@ -245,7 +255,8 @@
     "CANCEL": "BACK / CANCEL",
     "NO_CODE_INITIATED": "No verification process initiated. Please send code first.",
     "PHONE_VERIFIED_SUCCESS": "Phone number verified successfully!",
-    "RECAPTCHA_EXPIRED": "Recaptcha expired, please try again."
+    "RECAPTCHA_EXPIRED": "Recaptcha expired, please try again.",
+    "SPAM_HINT": "If you don't see the message, check spam/promotions and tap resend."
   },
   "EMAIL_VERIFICATION": {
     "SUCCESS": "Your email has been verified successfully!",
@@ -277,9 +288,9 @@
     "FOOTER": "We typically respond within 24 hours during business days."
   },
   "NOT_FOUND": {
-    "HMM": "hmm!",
-    "BLOODHOUND_LOST": "Our bloodhound can't find the page you're looking for.",
-    "GUIDE_HOME": "But it can guide you back to the home page!",
+    "HMM": "This page fell off the web",
+    "BLOODHOUND_LOST": "Our crawlers scoured every node and could not find what you are looking for.",
+    "GUIDE_HOME": "No dead ends. The dispatcher knows the way back.",
     "RETURN_HOME": "Return to the home page"
   },
   "FOOTER": {
@@ -467,6 +478,7 @@
     "CUSTOM": "Custom",
     "PER_MONTH": "/month",
     "BILLED_YEARLY": "Billed yearly",
+    "CREDITS": "{{ credits }} credits / month",
     "FOOTER": "All prices in EUR. Need a custom plan?",
     "CONTACT_SALES": "Contact sales",
     "NAME_FREE": "Free",
@@ -486,7 +498,7 @@
     "F_STARTER_4": "Custom extraction rules",
     "F_STARTER_5": "Browser pool priority",
     "F_STARTER_6": "Advanced anti-detection profiles",
-    "NAME_PRO": "Professional",
+    "NAME_PRO": "Pro",
     "DESC_PRO": "For teams needing powerful extraction at scale.",
     "F_PRO_1": "250,000 pages / month",
     "F_PRO_2": "LLM-powered extraction",
@@ -589,6 +601,16 @@
     "LIVE_LOG_6": "fetching & rendering {{url}}",
     "LIVE_LOG_7": "LLM extraction (Claude · Groq) → schema:{{schema}}",
     "LIVE_LOG_8": "clean markdown + structured JSON returned · zero HTML parsing",
+    "B_LOG_6": "fanned out to 3 isolated tabs · parallel fetch",
+    "B_LOG_7": "LLM extraction per tab (Claude · Groq) → schema:{{schema}}",
+    "W_LOG_1": "video resolved · 1080p + audio stream (yt-dlp)",
+    "W_LOG_2": "downloading media + subtitle track",
+    "W_LOG_3": "scene frames sampled every 5s",
+    "W_LOG_4": "LLM video summary (Claude · Groq) → markdown",
+    "I_LOG_1": "scripted actions · click + type + scroll",
+    "I_LOG_2": "interacting across all pages",
+    "I_LOG_3": "replaying interactions on each target",
+    "I_LOG_4": "LLM extract after each action → schema:{{schema}}",
     "HOOD_TITLE": "Under the hood — one isolated machine per run",
     "HOOD_SUB": "Every playground run is a real orchestration: your own machine, a stealth browser engine, rotating proxies and AI extraction. Watch each stage resolve as the operation streams.",
     "HOOD_ROW_1": "Machine deploy",

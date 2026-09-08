@@ -4,6 +4,17 @@
     <div class="absolute top-1/4 right-1/4 w-96 h-96 orb-cyan-sm rounded-full blur-3xl"></div>
     <div class="absolute bottom-1/4 left-1/4 w-80 h-80 orb-rose-sm rounded-full blur-3xl"></div>
   </div>
+  <!-- Ambient network layer: only on the dark canvas where it blends (near-black asset) -->
+  <div class="hidden dark:block absolute inset-0 pointer-events-none overflow-hidden opacity-60">
+    <img
+      src="assets/images/landing/network-flow.png"
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      class="demo-network w-full h-full object-cover"
+    />
+    <div class="absolute inset-0 bg-gradient-to-b from-[#080808] via-transparent to-[#080808] pointer-events-none"></div>
+  </div>
 
   <div appReveal class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-14">
@@ -54,21 +65,24 @@
           </div>
 
           <!-- Toolbar: pack selector + run -->
-          <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-            <span class="font-mono text-[10px] uppercase tracking-wider text-gray-500 flex items-center gap-1.5 mr-1">
+          <div class="flex items-center gap-2 px-3 py-2.5 border-b border-white/10 bg-white/[0.02]">
+            <span class="shrink-0 font-mono text-[10px] uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
               <lucide-angular [img]="icons['layers']" class="h-3 w-3 fill-none"></lucide-angular>
               {{ 'DEMO.PACK_LABEL' | translate }}
             </span>
-            @for (p of packs; track p.id) {
-              <button type="button" (click)="selectPack(p)"
-                class="font-mono text-xs px-3 py-1.5 rounded-lg border transition-all duration-200"
-                [ngClass]="{
-                  '!border-cyan-500/50 text-cyan-300 bg-cyan-500/10 shadow-[0_0_12px_rgba(34,211,238,0.15)]': pack().id === p.id,
-                  'border-white/10 text-gray-400 hover:text-gray-200 hover:border-white/25': pack().id !== p.id
-                }">{{ p.id }}</button>
-            }
-            <div class="ml-auto flex items-center gap-2">
-              <span class="hidden sm:inline-flex font-mono text-[10px] text-gray-500 items-center gap-1">
+            <!-- scrollable operation tabs: fits every screen, swipe/scroll when tight -->
+            <div class="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              @for (p of packs; track p.id) {
+                <button type="button" (click)="selectPack(p)"
+                  class="shrink-0 whitespace-nowrap font-mono text-xs px-3 py-1.5 rounded-lg border transition-all duration-200"
+                  [ngClass]="{
+                    '!border-cyan-500/50 text-cyan-300 bg-cyan-500/10 shadow-[0_0_12px_rgba(34,211,238,0.15)]': pack().id === p.id,
+                    'border-white/10 text-gray-400 hover:text-gray-200 hover:border-white/25': pack().id !== p.id
+                  }">{{ p.id }}</button>
+              }
+            </div>
+            <div class="ml-auto shrink-0 flex items-center gap-2">
+              <span class="hidden xl:inline-flex font-mono text-[10px] text-gray-500 items-center gap-1">
                 <lucide-angular [img]="icons['server']" class="h-3 w-3 fill-none"></lucide-angular>
                 {{ pack().machine }} · {{ pack().engine }}
               </span>
@@ -87,14 +101,16 @@
 
           <!-- Console body -->
           <div class="p-4 sm:p-5 font-mono text-[13px] leading-relaxed min-h-[17rem] flex flex-col justify-start gap-1.5 bg-[#0b1017]/60">
-            <!-- target line -->
-            <div class="flex items-center gap-2 text-gray-300">
-              <span class="text-cyan-400">$</span>
-              <span class="text-gray-500">target</span>
-              <span class="text-cyan-200 truncate">{{ pack().url }}</span>
-            </div>
+            <!-- target line(s) -->
+            @for (u of targets(); track u; let i = $index) {
+              <div class="flex items-center gap-2 text-gray-300">
+                <span class="text-cyan-400">$</span>
+                <span class="text-gray-500">target{{ targets().length > 1 ? ' ' + (i + 1) : '' }}</span>
+                <span class="text-cyan-200 truncate">{{ u }}</span>
+              </div>
+            }
 
-            @for (s of logSteps; track s.key; let i = $index) {
+            @for (s of steps(); track s.key; let i = $index) {
               <div class="flex items-start gap-2.5 console-line text-gray-300" [class.is-in]="step() > i">
                 <span class="mt-0.5 flex-shrink-0"
                       [ngClass]="{ 'text-cyan-400': s.tone === 'cyan', 'text-rose-400': s.tone === 'rose', 'text-emerald-400': s.tone === 'green' }">

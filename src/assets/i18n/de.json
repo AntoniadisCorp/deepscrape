@@ -153,7 +153,17 @@
     "PHONE_CODE_SENT": "Bestätigungscode erfolgreich gesendet",
     "PHONE_LOGIN_SUCCESS": "Erfolgreich mit Telefonnummer angemeldet",
     "EMAIL_PASSWORD_REQUIRED": "E-Mail und Passwort sind erforderlich",
-    "EMAIL_LOGIN_SUCCESS": "Erfolgreich mit E-Mail angemeldet"
+    "EMAIL_LOGIN_SUCCESS": "Erfolgreich mit E-Mail angemeldet",
+    "MFA_TITLE": "Bestätige deinen zweiten Faktor",
+    "MFA_SMS_INTRO": "Gib den 6-stelligen SMS-Code ein, der an",
+    "MFA_SMS_FINISH": "gesendet wurde, um die Anmeldung abzuschließen.",
+    "MFA_TOTP_INTRO": "Gib den aktuellen 6-stelligen Code von",
+    "MFA_TOTP_FINISH": "ein, um die Anmeldung abzuschließen.",
+    "MFA_USE_TOTP": "Authenticator-App verwenden",
+    "MFA_USE_SMS": "SMS / Textnachricht verwenden",
+    "MFA_RESEND": "Erneut senden",
+    "LAST_USED": "Zuletzt verwendet",
+    "MFA_VERIFY": "Code bestätigen"
   },
   "SIGNUP": {
     "CREATE_ACCOUNT_TITLE": "Erstellen Sie Ihr Konto",
@@ -245,7 +255,8 @@
     "CANCEL": "ZURÜCK / ABBRECHEN",
     "NO_CODE_INITIATED": "Kein Verifizierungsprozess gestartet. Bitte senden Sie zuerst den Code.",
     "PHONE_VERIFIED_SUCCESS": "Telefonnummer erfolgreich verifiziert!",
-    "RECAPTCHA_EXPIRED": "reCAPTCHA abgelaufen, bitte erneut versuchen."
+    "RECAPTCHA_EXPIRED": "reCAPTCHA abgelaufen, bitte erneut versuchen.",
+    "SPAM_HINT": "Falls du die Nachricht nicht siehst, prüfe Spam/Werbung und tippe erneut auf Senden."
   },
   "EMAIL_VERIFICATION": {
     "SUCCESS": "Ihre E-Mail-Adresse wurde erfolgreich verifiziert!",
@@ -277,10 +288,10 @@
     "FOOTER": "Wir antworten in der Regel innerhalb von 24 Stunden an Werktagen."
   },
   "NOT_FOUND": {
-    "HMM": "hmm!",
-    "BLOODHOUND_LOST": "Unser Spürhund findet die gesuchte Seite nicht.",
-    "GUIDE_HOME": "Aber er kann Sie zurück zur Startseite führen!",
-    "RETURN_HOME": "Zurück zur Startseite"
+    "HMM": "Diese Seite ist aus dem Netz gefallen",
+    "BLOODHOUND_LOST": "Unsere Crawler haben jeden Knoten durchsucht und konnten nicht finden, wonach Sie suchen.",
+    "GUIDE_HOME": "Keine Sackgasse. Der Dispatcher kennt den Weg zurueck.",
+    "RETURN_HOME": "Zurueck zur Startseite"
   },
   "FOOTER": {
     "ALL_RIGHTS": "Alle Rechte vorbehalten."
@@ -467,6 +478,7 @@
     "CUSTOM": "Individuell",
     "PER_MONTH": "/Monat",
     "BILLED_YEARLY": "Jährlich abgerechnet",
+    "CREDITS": "{{ credits }} Credits / Monat",
     "FOOTER": "Alle Preise in EUR. Sie benötigen einen individuellen Tarif?",
     "CONTACT_SALES": "Vertrieb kontaktieren",
     "NAME_FREE": "Free",
@@ -486,7 +498,7 @@
     "F_STARTER_4": "Benutzerdefinierte Extraktionsregeln",
     "F_STARTER_5": "Browser-Pool-Priorität",
     "F_STARTER_6": "Erweiterte Anti-Erkennungs-Profile",
-    "NAME_PRO": "Professional",
+    "NAME_PRO": "Pro",
     "DESC_PRO": "Für Teams, die leistungsstarke Extraktion in großem Maßstab benötigen.",
     "F_PRO_1": "250.000 Seiten / Monat",
     "F_PRO_2": "LLM-gestützte Extraktion",
@@ -599,6 +611,16 @@
     "LIVE_LOG_6": "{{url}} wird abgerufen und gerendert",
     "LIVE_LOG_7": "LLM-Extraktion (Claude · Groq) → schema:{{schema}}",
     "LIVE_LOG_8": "Sauberes Markdown + strukturiertes JSON zurückgegeben · kein HTML-Parsing",
+    "B_LOG_6": "auf 3 isolierte Tabs verteilt · paralleler Abruf",
+    "B_LOG_7": "LLM-Extraktion pro Tab (Claude · Groq) → schema:{{schema}}",
+    "W_LOG_1": "Video aufgelöst · 1080p- + Audiostream (yt-dlp)",
+    "W_LOG_2": "Medien + Untertitelspur heruntergeladen",
+    "W_LOG_3": "Szenenbilder alle 5 s erfasst",
+    "W_LOG_4": "LLM-Videozusammenfassung (Claude · Groq) → Markdown",
+    "I_LOG_1": "skriptierte Aktionen · Klick + Eingabe + Scroll",
+    "I_LOG_2": "interagiere auf allen Seiten",
+    "I_LOG_3": "wiederhole Interaktionen auf jedem Ziel",
+    "I_LOG_4": "LLM-Extraktion nach jeder Aktion → schema:{{schema}}",
     "ST_SCHEDULED": "Geplant",
     "ST_INPROG": "In Bearbeitung",
     "ST_READY": "Bereit",

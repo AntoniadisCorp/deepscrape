@@ -72,10 +72,21 @@
     </div>
 
     <!-- Final CTA — glass gradient -->
-    <div class="relative overflow-hidden rounded-2xl p-10 md:p-14 text-center glass glass-cta-bg border-gray-900/60 dark:border-white/10">
+    <div class="relative overflow-hidden rounded-2xl p-10 md:p-14 text-center glass glass-cta-bg border-gray-900/60 dark:border-white/10" (pointermove)="onCtaMove($event)">
       <!-- Dark scrim so white CTA text reads in BOTH modes (glass-cta-bg is too pale on white) -->
       <div class="absolute inset-0 bg-slate-900/80 dark:bg-slate-950/60 pointer-events-none"></div>
-      <div class="absolute inset-0 pointer-events-none">
+      <!-- Ambient network-flow layer: web-rain condensing into a node (dark, safe on the scrim) -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div class="cta-network-parallax absolute inset-0">
+          <img
+            src="assets/images/landing/network-flow.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            class="cta-network w-full h-full object-cover"
+          />
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-slate-950/60 pointer-events-none"></div>
         <div class="absolute top-0 right-0 w-64 h-64 orb-rose-cta rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 left-0 w-48 h-48 orb-cyan-cta rounded-full blur-3xl"></div>
       </div>

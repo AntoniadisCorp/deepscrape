@@ -22,6 +22,10 @@ type Pack = {
   engine: string;
   machine: string;
   schema: string;
+  /** Operation family the preset demonstrates. */
+  mode: 'crawl' | 'batch' | 'watch' | 'interact';
+  /** Multiple targets when mode is batch/interact (webrain batch_markdown / batch_interact / batch_extract). */
+  targets?: string[];
 };
 
 type LogStep = {
@@ -41,7 +45,7 @@ type LogStep = {
 export class LandingCodeDemoComponent {
   readonly icons = myIcons;
 
-  /** Prebuilt extraction packs a guest can switch between. */
+  /** Prebuilt operations a guest can switch between (crawl presets + real webrain ops). */
   readonly packs: Pack[] = [
     {
       id: 'products',
@@ -49,24 +53,52 @@ export class LandingCodeDemoComponent {
       engine: 'chromium',
       machine: 'm-7f2a91',
       schema: 'products',
+      mode: 'crawl',
     },
     {
       id: 'docs',
-      url: 'https://docs.deepscrape.dev',
+      url: 'https://developer.mozilla.org/en-US/docs/Web',
       engine: 'chromium',
       machine: 'm-9c01de',
       schema: 'docs',
+      mode: 'crawl',
     },
     {
-      id: 'reviews',
-      url: 'https://example.com/reviews',
-      engine: 'webkit',
-      machine: 'm-3b88c4',
-      schema: 'reviews',
+      id: 'batch · 3 tabs',
+      url: '3 targets · 1 call',
+      engine: 'obscura',
+      machine: 'm-5a77c2',
+      schema: 'batch',
+      mode: 'batch',
+      targets: [
+        'https://docs.deepscrape.dev/getting-started',
+        'https://docs.deepscrape.dev/api-reference',
+        'https://docs.deepscrape.dev/browser-profiles',
+      ],
+    },
+    {
+      id: 'watch video',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      engine: 'yt-dlp',
+      machine: 'm-0b41e3',
+      schema: 'video',
+      mode: 'watch',
+    },
+    {
+      id: 'batch interact',
+      url: '2 targets · scripted',
+      engine: 'obscura',
+      machine: 'm-6d09a1',
+      schema: 'interact',
+      mode: 'interact',
+      targets: [
+        'https://example.com/search',
+        'https://example.com/cart',
+      ],
     },
   ];
 
-  /** Console lines, in the order they appear. Keep in sync with stepCount. */
+  /** Single-target crawl narrative. Keep in sync with stepCount. */
   readonly logSteps: LogStep[] = [
     { key: 'DEMO.LIVE_LOG_1', icon: 'git-branch', tone: 'cyan' },
     { key: 'DEMO.LIVE_LOG_2', icon: 'rocket', tone: 'cyan' },
@@ -78,12 +110,68 @@ export class LandingCodeDemoComponent {
     { key: 'DEMO.LIVE_LOG_8', icon: 'circle-check-big', tone: 'green' },
   ];
 
+  /** Batch narrative — reuses the shared machine spine, fans out to N tabs. */
+  readonly batchSteps: LogStep[] = [
+    { key: 'DEMO.LIVE_LOG_1', icon: 'git-branch', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_2', icon: 'rocket', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_3', icon: 'server', tone: 'rose' },
+    { key: 'DEMO.LIVE_LOG_4', icon: 'refresh-cw', tone: 'rose' },
+    { key: 'DEMO.LIVE_LOG_5', icon: 'shieldcheck', tone: 'cyan' },
+    { key: 'DEMO.B_LOG_6', icon: 'layers', tone: 'rose' },
+    { key: 'DEMO.B_LOG_7', icon: 'brain', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_8', icon: 'circle-check-big', tone: 'green' },
+  ];
+
+  /** Watch-video narrative — resolve → download → transcript + frames → LLM summary. */
+  readonly watchSteps: LogStep[] = [
+    { key: 'DEMO.LIVE_LOG_1', icon: 'git-branch', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_2', icon: 'rocket', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_3', icon: 'server', tone: 'rose' },
+    { key: 'DEMO.W_LOG_1', icon: 'play', tone: 'rose' },
+    { key: 'DEMO.W_LOG_2', icon: 'refresh-cw', tone: 'rose' },
+    { key: 'DEMO.W_LOG_3', icon: 'monitor', tone: 'cyan' },
+    { key: 'DEMO.W_LOG_4', icon: 'brain', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_8', icon: 'circle-check-big', tone: 'green' },
+  ];
+
+  /** Batch-interact narrative — scripted click/type/scroll across pages, per-page extract. */
+  readonly interactSteps: LogStep[] = [
+    { key: 'DEMO.LIVE_LOG_1', icon: 'git-branch', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_2', icon: 'rocket', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_3', icon: 'server', tone: 'rose' },
+    { key: 'DEMO.I_LOG_1', icon: 'mouse-pointer-click', tone: 'rose' },
+    { key: 'DEMO.I_LOG_2', icon: 'monitor', tone: 'cyan' },
+    { key: 'DEMO.I_LOG_3', icon: 'layers', tone: 'rose' },
+    { key: 'DEMO.I_LOG_4', icon: 'brain', tone: 'cyan' },
+    { key: 'DEMO.LIVE_LOG_8', icon: 'circle-check-big', tone: 'green' },
+  ];
+
   readonly stepCount = this.logSteps.length;
 
   readonly pack = signal<Pack>(this.packs[0]);
   readonly running = signal(false);
   readonly step = signal(0);
   readonly progress = signal(0);
+
+  /** Steps for the active operation. */
+  steps(): LogStep[] {
+    switch (this.pack().mode) {
+      case 'batch':
+        return this.batchSteps;
+      case 'watch':
+        return this.watchSteps;
+      case 'interact':
+        return this.interactSteps;
+      default:
+        return this.logSteps;
+    }
+  }
+
+  /** Target URL(s) for the active operation. */
+  targets(): string[] {
+    const p = this.pack();
+    return p.targets && p.targets.length ? p.targets : [p.url];
+  }
 
   /** Under-the-hood pipeline rows (step thresholds drive their state). */
   readonly hoodRows = [

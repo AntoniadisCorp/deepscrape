@@ -1,0 +1,21 @@
+/* Ambient data-flow video behind the features grid (dark canvas only).
+   Slow, subtle drift keeps it atmospheric without fighting the cards. */
+.features-ambient {
+  animation: features-ambient-pan 36s ease-in-out infinite alternate;
+  transform: scale(1.05);
+}
+
+@keyframes features-ambient-pan {
+  from {
+    transform: scale(1.05) translate3d(-1%, 0, 0);
+  }
+  to {
+    transform: scale(1.1) translate3d(1%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .features-ambient {
+    animation: none;
+  }
+}
