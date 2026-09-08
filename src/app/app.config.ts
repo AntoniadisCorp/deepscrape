@@ -2,7 +2,7 @@ import { ApplicationConfig, isDevMode, importProvidersFrom, provideZonelessChang
 import { provideRouter, TitleStrategy } from '@angular/router';
 
 import { routes } from './app.routes';
-import { DomSanitizer, provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
+import { DomSanitizer, provideClientHydration, withEventReplay, withHttpTransferCacheOptions, withIncrementalHydration } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { FirebaseApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -41,19 +41,15 @@ const customImageLoader = (config: ImageLoaderConfig) => {
   return baseUri + config.src.replace(/^\//, '');
 }
 
-const hasSsrSerializedState =
-  typeof document !== 'undefined' &&
-  !!document.querySelector('script#ng-state');
-
-const hydrationProviders = hasSsrSerializedState
-  ? [
-      provideClientHydration(
-        withHttpTransferCacheOptions({
-          includePostRequests: true,
-        }),
-      ),
-    ]
-  : [];
+const hydrationProviders = [
+  provideClientHydration(
+    withIncrementalHydration(),
+    withEventReplay(),
+    withHttpTransferCacheOptions({
+      includePostRequests: true,
+    }),
+  ),
+];
 
 export const appConfig: ApplicationConfig = {
   providers: [
