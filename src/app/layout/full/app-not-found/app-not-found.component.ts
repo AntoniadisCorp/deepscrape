@@ -1,4 +1,8 @@
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  inject,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { AppFooterComponent } from '../../footer'
 // import { AppHeaderComponent } from '../../header';
 import { RouterLink } from '@angular/router';
@@ -8,6 +12,7 @@ import { themeStorageKey } from 'src/app/shared';
 import { LandingSubheaderComponent } from 'src/app/shared/landing-subheader/landing-subheader.component';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'app-not-found',
     imports: [RouterLink, AppFooterComponent, TranslateModule, LandingSubheaderComponent],
     templateUrl: './app-not-found.component.html',

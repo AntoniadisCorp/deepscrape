@@ -1,4 +1,9 @@
-import { Component, inject, input } from '@angular/core';
+import {
+  Component,
+  inject,
+  input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { RippleDirective } from 'src/app/core/directives';
 import { I18nService, SUPPORTED_LANGS } from 'src/app/core/i18n';
@@ -6,6 +11,7 @@ import { I18nService, SUPPORTED_LANGS } from 'src/app/core/i18n';
 import { MatMenuModule, MatMenuTrigger, MatMenuItem } from '@angular/material/menu';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-lang-picker',
   standalone: true,
   templateUrl: './lang-picker.component.html',

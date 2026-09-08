@@ -1,4 +1,10 @@
-import { Component, DestroyRef, inject, Input } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  Input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
@@ -7,6 +13,7 @@ import { LocalStorage, WindowToken } from 'src/app/core/services';
 import { myIcons, themeStorageKey } from 'src/app/shared';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'app-footer',
     imports: [LucideAngularModule, TranslateModule],
     templateUrl: './app-footer.component.html',
