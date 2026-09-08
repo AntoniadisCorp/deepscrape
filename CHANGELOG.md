@@ -1,3 +1,10 @@
+# [0.8.0-beta.7](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.6...v0.8.0-beta.7) (2026-09-08)
+
+
+### Performance Improvements
+
+* **app:** stop below-fold layout collapse before hydration ([3c6f335](https://github.com/deepscrape/deepscrape/commit/3c6f33584f1089b209373bfd0e0b706c7a1f32cc))
+
 # [0.8.0-beta.6](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.5...v0.8.0-beta.6) (2026-09-08)
 
 
