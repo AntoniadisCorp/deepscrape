@@ -1,3 +1,30 @@
+# [0.8.0-beta.5](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.4...v0.8.0-beta.5) (2026-09-08)
+
+
+### Bug Fixes
+
+* **app:** add missing apple-touch icon sizes from the head links ([826f669](https://github.com/deepscrape/deepscrape/commit/826f6698aa99d21fbab4c5d337e638af48403ad8))
+* **ci:** preserve Bun lockfile permissions ([f54cdb4](https://github.com/deepscrape/deepscrape/commit/f54cdb4a137a63dcbf9c184771728e40a628bb08))
+* **ci:** sync functions Bun lockfile for SSR dependencies ([48af2b9](https://github.com/deepscrape/deepscrape/commit/48af2b9dbfe8367eaf51e6d211decaece3b086bd))
+* **ci:** sync functions lockfile for SSR dependencies ([fe9d224](https://github.com/deepscrape/deepscrape/commit/fe9d2240fe15afad95f5984d892c84acde58aaf6))
+* **functions:** satisfy SSR predeploy lint rules ([2f9b404](https://github.com/deepscrape/deepscrape/commit/2f9b4049bd391ffe49eca60bfdc0c61c9211cb12))
+
+
+### Performance Improvements
+
+* **app:** clean the remaining component subscription leaks ([e5942cc](https://github.com/deepscrape/deepscrape/commit/e5942cc313c2771b524047667821e62ef6b13878))
+* **app:** defer landing hydration below the fold ([cc0f6a7](https://github.com/deepscrape/deepscrape/commit/cc0f6a7618e3414d3ed75b070d5512b4c59b97de))
+* **app:** drop unused global payload and trim head fonts ([4c10922](https://github.com/deepscrape/deepscrape/commit/4c109222d30636d7971d5b4730248d4462186359))
+* **app:** enable hydration with incremental hydration and event replay ([62c127c](https://github.com/deepscrape/deepscrape/commit/62c127c99917784e05626afa9dcd5bd97a4073ec)), closes [#ng-state](https://github.com/deepscrape/deepscrape/issues/ng-state)
+* **app:** on-push + native track for crawl and seed results ([481057e](https://github.com/deepscrape/deepscrape/commit/481057e53c8a23d16eaec77a8d8266220b061b7a))
+* **app:** onpush for verified auth shell and shared chrome ([06c70d1](https://github.com/deepscrape/deepscrape/commit/06c70d1c15476d93c62e44b5f5ddd44fd42f396b))
+* **app:** shrink first-paint bundle & dead-code cleanup → next ([d526441](https://github.com/deepscrape/deepscrape/commit/d526441015d0ca3f7b45d735bd24183d6bb7decf))
+* **assets:** delete dead media and right-size landing images ([b96b9e4](https://github.com/deepscrape/deepscrape/commit/b96b9e4ce3b508255747c03c3b4d4590d39b2c6d))
+* **bundle:** deep-import core components out of the landing shell ([b537724](https://github.com/deepscrape/deepscrape/commit/b537724325876ba89083f90567341876617785b2))
+* **functions:** engine-render dynamic routes in the deepscrape function ([bc3a496](https://github.com/deepscrape/deepscrape/commit/bc3a4969b35a33cfe07c45bdc2f431d8f93a01b6))
+* **landing:** defer heavy use-cases video until scroll into view ([6caee46](https://github.com/deepscrape/deepscrape/commit/6caee4627e9224ebe633e435ef0bb1b11bf813f4))
+* **providers:** scope markdown, charts and stripe providers to lazy routes ([0cf9164](https://github.com/deepscrape/deepscrape/commit/0cf91640e988b33aba3d7405dc76b86acd2be504))
+
 # [0.8.0-beta.3](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.2...v0.8.0-beta.3) (2026-09-08)
 
 
