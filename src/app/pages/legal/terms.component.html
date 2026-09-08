@@ -1,28 +1,25 @@
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-  <header class="border-b border-gray-200/[0.08] bg-white/70 backdrop-blur dark:bg-gray-900">
-    <div class="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
-      <a [routerLink]="['/']" class="text-lg font-semibold text-gray-900 dark:text-white">
-        deepscrape
-      </a>
-      <nav class="flex items-center gap-6 text-sm">
-        <a [routerLink]="['/privacy']" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">Privacy Policy</a>
-        <a [routerLink]="['/terms']" class="text-cyan-600 dark:text-cyan-400">Terms of Service</a>
-        <a [routerLink]="['/contact']" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">Contact</a>
-      </nav>
-    </div>
-  </header>
+<div class="min-h-screen section-dark relative overflow-hidden flex flex-col">
+  <!-- Decorative backdrop (landpage research-lab language) -->
+  <div class="absolute inset-0 grid-lines pointer-events-none opacity-15 dark:opacity-50"></div>
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-24 -right-24 w-96 h-96 orb-cyan-md rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-24 -left-24 w-96 h-96 orb-rose-md rounded-full blur-3xl"></div>
+  </div>
 
-  <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-cyan-600 dark:text-cyan-400">Terms of Service</p>
-    <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Terms of Service</h1>
-    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Last updated: September 7, 2026</p>
+  <app-landing-subheader></app-landing-subheader>
 
-    <p class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-      <strong>About this document:</strong> deepscrape is published under the <em>deepscrape</em> brand.
-      The legal entity, registered address and governing law are shown as clearly marked placeholders and
-      must be completed by the operator before publication. This text is a starting point and should be
-      reviewed by qualified legal counsel.
-    </p>
+  <main class="relative z-10 flex-1 w-full mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14">
+    <div class="glass rounded-2xl p-5 sm:p-10 border border-white/5 dark:border-white/10 shadow-xl">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-cyan-600 dark:text-cyan-400">Terms of Service</p>
+      <h1 class="text-3xl sm:text-4xl font-display font-bold tracking-tight text-gray-900 dark:text-white">Terms of Service</h1>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Last updated: September 7, 2026</p>
+
+      <p class="mt-6 rounded-xl border border-amber-300/60 bg-amber-50/80 p-4 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        <strong>About this document:</strong> deepscrape is published under the <em>deepscrape</em> brand.
+        The legal entity, registered address and governing law are shown as clearly marked placeholders and
+        must be completed by the operator before publication. This text is a starting point and should be
+        reviewed by qualified legal counsel.
+      </p>
 
     <div class="prose prose-gray mt-10 space-y-8 text-[15px] leading-7 text-gray-600 dark:text-gray-300">
       <section>
@@ -147,6 +144,7 @@
           <a [routerLink]="['/contact']" class="text-cyan-600 hover:underline dark:text-cyan-400"> contact page</a>.
         </p>
       </section>
+      </div>
     </div>
   </main>
 
