@@ -1,3 +1,17 @@
+# [0.8.0-beta.2](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.1...v0.8.0-beta.2) (2026-09-08)
+
+
+### Bug Fixes
+
+* **functions:** 404 missing static assets instead of serving index.html ([b629f24](https://github.com/deepscrape/deepscrape/commit/b629f24d1d34c1743e909de2e93e6efb4bac4824))
+
+
+### Features
+
+* **legal:** align privacy, terms and 404 pages with landpage chrome ([bc83dbc](https://github.com/deepscrape/deepscrape/commit/bc83dbca5098e039eb6fbd883ef7512c9b3e0e8f))
+* **marketing:** refresh landing with live demo, managed pricing and art ([f9234ca](https://github.com/deepscrape/deepscrape/commit/f9234ca7472f42aa3ab5391e1f369802916d5a31))
+* **theme:** add Light/Dark/System toggle defaulting to OS scheme ([cb3ef3e](https://github.com/deepscrape/deepscrape/commit/cb3ef3ecf1c2ec295290ba067bedb1b4652f8254))
+
 # [0.8.0-beta.1](https://github.com/deepscrape/deepscrape/compare/v0.7.3-beta.1...v0.8.0-beta.1) (2026-09-07)
 
 
