@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
-import { NgIf } from '@angular/common'
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router'
 import { TranslateModule, TranslateService } from '@ngx-translate/core'
 
 @Component({
   selector: 'app-billing-cancel',
-  imports: [RouterLink, NgIf, TranslateModule],
+  imports: [RouterLink, TranslateModule],
   templateUrl: './billing-cancel.component.html',
   styleUrl: './billing-cancel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

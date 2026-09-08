@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RippleDirective } from 'src/app/core/directives'
 import { AuthService } from 'src/app/core/services/auth.service';
 
 @Component({
   selector: 'app-admin-project-config',
   standalone: true,
-  imports: [CommonModule, RippleDirective],
+  imports: [RippleDirective],
   styleUrl: './admin-project-config.component.scss',
   template: `
     <section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">

@@ -1,6 +1,6 @@
-import { Component, OnInit, ChangeDetectionStrategy, computed, signal, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, OnInit, ChangeDetectionStrategy, computed, signal, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray, AbstractControl } from '@angular/forms';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -17,7 +17,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-onboarding',
   standalone: true,
-  imports: [ReactiveFormsModule, MatProgressSpinner, MatIconModule, CommonModule, TranslateModule],
+  imports: [ReactiveFormsModule, MatProgressSpinner, MatIconModule, TranslateModule],
   templateUrl: './onboarding.component.html',
   styleUrl: './onboarding.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +43,7 @@ export class OnboardingComponent implements OnInit {
   private fb = inject(FormBuilder);
   private readonly translate = inject(TranslateService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly currentUser = toSignal(this.authService.user$);
   private readonly catalogPlans = toSignal(this.billingService.getPlans$(true), { initialValue: [] as BillingPlanCatalog[] });
 
@@ -104,13 +105,15 @@ export class OnboardingComponent implements OnInit {
       contactEmail: [this.accountEmail, [Validators.required, Validators.email]],
     });
 
-    this.enterpriseRequestForm.get('mode')?.valueChanges.subscribe((mode) => {
-      const useCurrent = mode !== 'custom';
-      const nextValue = useCurrent ? this.accountEmail : '';
-      this.enterpriseRequestForm.get('contactEmail')?.setValue(nextValue);
-      this.enterpriseRequestForm.get('contactEmail')?.markAsPristine();
-      this.enterpriseRequestMessage.set('');
-    });
+    this.enterpriseRequestForm.get('mode')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((mode) => {
+        const useCurrent = mode !== 'custom';
+        const nextValue = useCurrent ? this.accountEmail : '';
+        this.enterpriseRequestForm.get('contactEmail')?.setValue(nextValue);
+        this.enterpriseRequestForm.get('contactEmail')?.markAsPristine();
+        this.enterpriseRequestMessage.set('');
+      });
   }
 
   createEmailControl(): AbstractControl {

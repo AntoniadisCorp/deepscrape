@@ -1,4 +1,4 @@
-import { AsyncPipe, CurrencyPipe, DatePipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop'
 import { MatIconModule } from '@angular/material/icon'
@@ -9,7 +9,7 @@ import { BillingUsageInvoice, BillingUsagePayment, BillingUsageResponse, Billing
 
 @Component({
   selector: 'app-transactions',
-  imports: [NgIf, NgFor, AsyncPipe, CurrencyPipe, DatePipe, MatIconModule, TranslateModule],
+  imports: [AsyncPipe, CurrencyPipe, DatePipe, MatIconModule, TranslateModule],
   templateUrl: './transactions.component.html',
   styleUrl: './transactions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

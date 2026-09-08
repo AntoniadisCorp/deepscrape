@@ -69,9 +69,6 @@ export class AppCrawlComponent {
   // Action Buttons
   protected itemVisibility: { [key: string]: WritableSignal<boolean> } = {};
 
-  // FIXME: REMOVE THIS TWO VARS NOT NEEDED 
-  protected isResultsProcessing: boolean
-  protected isGetResults: boolean
   protected isCrawlProcessing: boolean
   protected errorMessage = ''
 
@@ -123,9 +120,7 @@ export class AppCrawlComponent {
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-    this.isResultsProcessing = false
     this.isCrawlProcessing = false
-    this.isGetResults = false
     this.abortButtonPressed = false
     this.progress = null
 
@@ -244,8 +239,6 @@ export class AppCrawlComponent {
         concatMap((task: CrawlTask) => {
           /* Initialize the Results viariables  */
           this.errorMessage = ''
-          this.isGetResults = true
-          this.isResultsProcessing = true
 
           this.latestTaskId.set(task.id) // Emit the current task ID
           console.log('Crawl task started with id:', task.id)
@@ -265,7 +258,7 @@ export class AppCrawlComponent {
         },
         complete: () => {
           // reset the processing status
-          this.isResultsProcessing = this.isCrawlProcessing = false
+          this.isCrawlProcessing = false
 
           this.progress = 100 // Set progress to 100% when complete
 
@@ -488,7 +481,6 @@ export class AppCrawlComponent {
   protected closeResults() {
 
     // Close results, reset results variables and subscribers
-    this.isGetResults = false
     this.taskStatus$ = of(undefined)
     this.abortButtonPressed = false
     this.progress = null

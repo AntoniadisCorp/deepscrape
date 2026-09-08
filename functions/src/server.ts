@@ -9,6 +9,7 @@ import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
 import { join, resolve } from "node:path"
+import { pathToFileURL } from "node:url"
 import { onRequest } from "firebase-functions/https"
 import { upstashEventLimiter, upstashFunctionLimiter, statusCheck, serveSecurity, submitContact } from "./handlers"
 // import * as dotenvx from "@dotenvx/dotenvx"
@@ -62,6 +63,87 @@ function shouldBypassCsrf(req: Request): boolean {
 }
 
 /* eslint-disable semi */
+/* Angular SSR engine-render for dynamic routes ---------------------------
+ * Engine-renders non-prerendered routes so they ship real server markup +
+ * #ng-state and hydrate client-side. Self-gating and rollback-safe:
+ *   - requires the packaged server bundle (functions/lib/server/server.mjs,
+ *     copied from dist/deepscrape/server by cp-angular.js);
+ *   - disable with DEEPSCRAPE_DYNAMIC_SSR=false;
+ *   - any missing bundle or render error falls back to the previous static
+ *     sendFile behavior (CSR from the SSR template).
+ * All Angular imports stay lazy (dynamic import) so the BFF never needs
+ * @angular/ssr resolvable at module load time. */
+interface NgEngine {
+  render(opts: Record<string, unknown>): Promise<string>
+  bootstrap: unknown
+  appBaseHref: unknown
+}
+const dynamicSsrDisabled = process.env.DEEPSCRAPE_DYNAMIC_SSR === "false"
+let ngEnginePromise: Promise<NgEngine | null> | null = null
+
+// tsc with module: commonjs rewrites dynamic import() into require(), which
+// fails for ESM packages and file:// URLs. Force a real native dynamic import.
+/* eslint-disable-next-line no-new-func */
+const nativeImport = new Function("s", "return import(s)") as (
+  s: string
+) => Promise<Record<string, unknown>>
+
+type CommonEngineLike = {
+  render(opts: Record<string, unknown>): Promise<string>
+}
+
+// Hosts the engine is allowed to render for (prod hosting domains + local
+// emulator / functions-framework hosts). CommonEngine rejects any other host
+// (host-header protection); empty = reject everything outside localhost.
+const SSR_ALLOWED_HOSTS = [
+  "deepscrape.dev",
+  "*.deepscrape.dev",
+  "deepscrape.web.app",
+  "*.web.app",
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+]
+
+function loadNgEngine(serverDistDir: string): Promise<NgEngine | null> {
+  if (dynamicSsrDisabled) {
+    return Promise.resolve(null)
+  }
+  if (!ngEnginePromise) {
+    ngEnginePromise = (async () => {
+      const serverBundle = join(serverDistDir, "server.mjs")
+      if (!existsSync(serverBundle)) {
+        console.warn("[dynamic-ssr] server bundle missing; engine-render disabled.")
+        return null
+      }
+      // @angular ships partially-compiled fesm2022 and expects the CLI Linker to
+      // have processed it. In the raw node_modules runtime (no linker) the engine
+      // throws on PlatformLocation unless we preload the JIT compiler fallback.
+      await nativeImport("@angular/compiler")
+      const { CommonEngine } = (await nativeImport("@angular/ssr/node")) as unknown as {
+        CommonEngine: new (o?: { allowedHosts: string[] }) => CommonEngineLike
+      }
+      const { APP_BASE_HREF } = (await nativeImport("@angular/common")) as unknown as {
+        APP_BASE_HREF: unknown
+      }
+      const mod = await nativeImport(pathToFileURL(serverBundle).href)
+      const bootstrap: unknown = mod.default
+      const commonEngine: CommonEngineLike = new CommonEngine({
+        allowedHosts: SSR_ALLOWED_HOSTS,
+      })
+      return {
+        bootstrap,
+        appBaseHref: APP_BASE_HREF,
+        render: (opts) => commonEngine.render(opts),
+      } as NgEngine
+    })().catch((err: unknown) => {
+      console.error("[dynamic-ssr] engine load failed; engine-render disabled.", err)
+      return null
+    })
+  }
+  return ngEnginePromise
+}
+
 function serveapp() {
   // Create an instance of the Express application
   const server: express.Application = express()
@@ -82,6 +164,9 @@ function serveapp() {
   const browserIndexPath = resolve(browserDistFolder, "index.html")
   const hasServerIndex = existsSync(serverIndexPath)
   const hasBrowserIndex = existsSync(browserIndexPath)
+  // Angular SSR runtime packaged into the deploy by cp-angular.js
+  const serverDistDir = resolve(process.cwd(), "lib/server")
+  const packagedBrowserDistFolder = resolve(process.cwd(), "lib/browser")
   // console.log(serverDistFolder, distFolder, `Browser Dist Folder: ${browserDistFolder}`)
   // Check if the serverDistFolder exists, if not, use the browserDistFolder
 
@@ -278,9 +363,32 @@ function serveapp() {
   })
 
   // All regular routes use the Angular engine **
-  server.get("*", upstashFunctionLimiter, (req: express.Request, res: Response) => {
+  server.get("*", upstashFunctionLimiter, async (req: express.Request, res: Response) => {
     const { protocol, originalUrl, baseUrl, headers } = req
     console.log(`Request URL: ${protocol}://${headers.host}${baseUrl}${originalUrl}`)
+
+    // 1) Engine-render dynamic routes (self-gating; falls back below on any failure)
+    if (!dynamicSsrDisabled && existsSync(join(serverDistDir, "server.mjs"))) {
+      try {
+        const engine = await loadNgEngine(serverDistDir)
+        if (engine) {
+          const documentFilePath = existsSync(join(serverDistDir, "index.server.html")) ?
+            join(serverDistDir, "index.server.html") :
+            serverIndexPath
+          const html = await engine.render({
+            bootstrap: engine.bootstrap,
+            documentFilePath,
+            url: `${protocol}://${headers.host}${originalUrl}`,
+            publicPath: packagedBrowserDistFolder,
+            providers: [{ provide: engine.appBaseHref, useValue: "/" }],
+          })
+          console.log(`[dynamic-ssr] rendered ${originalUrl} (${html.length} chars)`)
+          return res.type("text/html").send(html)
+        }
+      } catch (err) {
+        console.error(`[dynamic-ssr] render failed for ${originalUrl}; falling back.`, err)
+      }
+    }
 
     if (hasServerIndex) {
       console.log(`Serving SSR index from: ${serverIndexPath}`)

@@ -33,10 +33,35 @@ const start = async function () {
     const copy = "./lib/public"
     const serverHtmlSrc = "../dist/deepscrape/server/index.server.html"
     const serverHtmlDest = `${copy}/index.server.html`
+    // Angular SSR runtime packaged into the deploy so the BFF can engine-render
+    // dynamic (non-prerendered) routes with real server markup + #ng-state.
+    const serverSrc = "../dist/deepscrape/server"
+    const serverDest = "./lib/server"
+    const browserSrc = "../dist/deepscrape/browser"
+    const browserDest = "./lib/browser"
 
     await fs.emptyDir(destinationDir)
     await fs.remove(copy)
     await fs.copy(src, copy)
+
+    if (await fs.pathExists(serverSrc)) {
+        await fs.copy(serverSrc, serverDest)
+        console.log("angular ssr server bundle copied successfully")
+    } else {
+        console.warn(
+            "dist/deepscrape/server not found; " +
+            "engine-render will stay disabled."
+        )
+    }
+
+    if (await fs.pathExists(browserSrc)) {
+        await fs.copy(browserSrc, browserDest)
+        console.log("angular browser assets copied successfully")
+    } else {
+        console.warn(
+            "dist/deepscrape/browser not found; skipping browser copy."
+        )
+    }
 
     if (await fs.pathExists(serverHtmlSrc)) {
         await fs.copy(serverHtmlSrc, serverHtmlDest)

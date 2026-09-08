@@ -1,4 +1,5 @@
 import { CanDeactivateFn, Routes } from '@angular/router';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 const migrationLeaveGuard: CanDeactivateFn<unknown> = (component) => {
   const migrationComponent = component as { requestNavigationLeave?: () => boolean | Promise<boolean> };
@@ -24,6 +25,7 @@ export const AdminRoutes: Routes = [
   {
     path: 'analytics',
     loadComponent: () => import('../../pages').then(m => m.AdminAnalyticsComponent),
+    providers: [provideCharts(withDefaultRegisterables())],
     data: { title: 'analytics', animation: 'admin_analytics' },
   },
   {

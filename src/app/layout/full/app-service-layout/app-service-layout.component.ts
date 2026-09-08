@@ -1,5 +1,9 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  inject,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ChildrenOutletContexts, RouterLink, RouterOutlet } from '@angular/router';
 import { Observable } from 'rxjs/internal/Observable';
@@ -8,6 +12,7 @@ import { LocalStorage, ThemeService, WindowToken } from 'src/app/core/services';
 import { LangPickerComponent, themeStorageKey, ThemeToggleComponent } from 'src/app/shared';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-service-layout',
   imports: [RouterOutlet, RouterLink, ThemeToggleComponent, AsyncPipe,
     LangPickerComponent

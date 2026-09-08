@@ -1,5 +1,5 @@
 import { ApplicationRef, ComponentRef, Directive, ElementRef, EmbeddedViewRef, HostListener, Injector, Input, ViewContainerRef, inject, OnDestroy, OnInit, DOCUMENT } from '@angular/core'
-import { TooltipComponent } from '../components'
+import { TooltipComponent } from '../components/tooltip/tooltip.component'
 import { TooltipPosition, TooltipTheme } from '../enum'
 import { WindowToken } from '../services'
 import { Subject, Subscription, timer } from 'rxjs'

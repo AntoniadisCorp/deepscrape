@@ -1,5 +1,5 @@
 <div class="w-full grid grid-cols-1 sm:grid-cols-2  gap-6">
-  @for (result of results; track trackByUrl($index, result)) {
+  @for (result of results; track result.url) {
     <!-- Enhanced result card with conditional styling -->    <div
     [@fadeInUp]
     class="rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"

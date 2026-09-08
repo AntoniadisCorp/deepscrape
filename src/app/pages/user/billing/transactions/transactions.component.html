@@ -3,24 +3,25 @@
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
     <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ 'BILLING_TRANSACTIONS.TITLE' | translate }}</h2>
     <div class="flex flex-wrap gap-2">
-      <button
-        *ngFor="let range of ranges"
-        type="button"
-        class="text-xs px-3 py-1.5 rounded-full transition-colors"
-        [class.bg-primary]="(rangeKey$ | async) === range.key"
-        [class.text-white]="(rangeKey$ | async) === range.key"
-        [class.bg-gray-200]="(rangeKey$ | async) !== range.key"
-        [class.dark:bg-gray-700]="(rangeKey$ | async) !== range.key"
-        [class.dark:text-gray-300]="(rangeKey$ | async) !== range.key"
-        (click)="setRange(range.key)"
-      >
-        {{ range.label | translate }}
-      </button>
+      @for (range of ranges; track range) {
+        <button
+          type="button"
+          class="text-xs px-3 py-1.5 rounded-full transition-colors"
+          [class.bg-primary]="(rangeKey$ | async) === range.key"
+          [class.text-white]="(rangeKey$ | async) === range.key"
+          [class.bg-gray-200]="(rangeKey$ | async) !== range.key"
+          [class.dark:bg-gray-700]="(rangeKey$ | async) !== range.key"
+          [class.dark:text-gray-300]="(rangeKey$ | async) !== range.key"
+          (click)="setRange(range.key)"
+          >
+          {{ range.label | translate }}
+        </button>
+      }
     </div>
   </div>
 
   <!-- Summary cards -->
-  <ng-container *ngIf="summary$ | async as summary">
+  @if (summary$ | async; as summary) {
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
       <div class="rounded-2xl bg-gray-50 dark:bg-gray-800/50 p-4 shadow-sm">
         <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ 'BILLING_TRANSACTIONS.TOTAL_INVOICED' | translate }}</p>
@@ -39,93 +40,107 @@
         <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ summary.totalMeteredUnits }}</p>
       </div>
     </div>
-  </ng-container>
+  }
 
   <!-- Invoices -->
   <div class="mb-8">
     <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ 'BILLING_TRANSACTIONS.INVOICES_TITLE' | translate }}</h3>
-    <div *ngIf="(invoices$ | async)?.length === 0" class="rounded-xl bg-gray-50 dark:bg-gray-800/30 p-6 text-center text-gray-500 dark:text-gray-400">
-      <mat-icon fontSet="material-icons-outlined" class="text-4xl mb-2">receipt_long</mat-icon>
-      <p>{{ 'BILLING_TRANSACTIONS.NO_INVOICES' | translate }}</p>
-    </div>
-    <div *ngIf="(invoices$ | async)?.length! > 0" class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.INVOICE' | translate }}</th>
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DATE' | translate }}</th>
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.AMOUNT' | translate }}</th>
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.STATUS' | translate }}</th>
-            <th class="pb-2 font-medium"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let inv of invoices$ | async" class="border-b border-gray-100 dark:border-gray-800">
-            <td class="py-3 text-gray-900 dark:text-gray-100">{{ inv.number || inv.id.slice(0, 12) + '…' }}</td>
-            <td class="py-3 text-gray-600 dark:text-gray-400">{{ inv.createdAt | date:'mediumDate' }}</td>
-            <td class="py-3 font-medium text-gray-900 dark:text-gray-100">{{ (inv.total / 100) | currency:inv.currency }}</td>
-            <td class="py-3">
-              <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                [class.bg-green-100]="inv.status === 'paid'"
-                [class.text-green-700]="inv.status === 'paid'"
-                [class.dark:bg-green-900/30]="inv.status === 'paid'"
-                [class.dark:text-green-300]="inv.status === 'paid'"
-                [class.bg-amber-100]="inv.status === 'open'"
-                [class.text-amber-700]="inv.status === 'open'"
-                [class.dark:bg-amber-900/30]="inv.status === 'open'"
-                [class.dark:text-amber-300]="inv.status === 'open'"
-                [class.bg-red-100]="inv.status === 'void' || inv.status === 'uncollectible'"
-                [class.text-red-700]="inv.status === 'void' || inv.status === 'uncollectible'"
-                [class.dark:bg-red-900/30]="inv.status === 'void' || inv.status === 'uncollectible'"
-                [class.dark:text-red-300]="inv.status === 'void' || inv.status === 'uncollectible'"
-              >
-                <mat-icon fontSet="material-icons-outlined" class="text-sm">{{ getInvoiceStatusIcon(inv.status) }}</mat-icon>
-                {{ inv.status }}
-              </span>
-            </td>
-            <td class="py-3">
-              <a *ngIf="inv.hostedInvoiceUrl" [href]="inv.hostedInvoiceUrl" target="_blank"
-                class="text-primary dark:text-violet-300 hover:underline text-xs">{{ 'BILLING_TRANSACTIONS.VIEW' | translate }}</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    @if ((invoices$ | async)?.length === 0) {
+      <div class="rounded-xl bg-gray-50 dark:bg-gray-800/30 p-6 text-center text-gray-500 dark:text-gray-400">
+        <mat-icon fontSet="material-icons-outlined" class="text-4xl mb-2">receipt_long</mat-icon>
+        <p>{{ 'BILLING_TRANSACTIONS.NO_INVOICES' | translate }}</p>
+      </div>
+    }
+    @if ((invoices$ | async)?.length! > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.INVOICE' | translate }}</th>
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DATE' | translate }}</th>
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.AMOUNT' | translate }}</th>
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.STATUS' | translate }}</th>
+              <th class="pb-2 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (inv of invoices$ | async; track inv) {
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-3 text-gray-900 dark:text-gray-100">{{ inv.number || inv.id.slice(0, 12) + '…' }}</td>
+                <td class="py-3 text-gray-600 dark:text-gray-400">{{ inv.createdAt | date:'mediumDate' }}</td>
+                <td class="py-3 font-medium text-gray-900 dark:text-gray-100">{{ (inv.total / 100) | currency:inv.currency }}</td>
+                <td class="py-3">
+                  <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                    [class.bg-green-100]="inv.status === 'paid'"
+                    [class.text-green-700]="inv.status === 'paid'"
+                    [class.dark:bg-green-900/30]="inv.status === 'paid'"
+                    [class.dark:text-green-300]="inv.status === 'paid'"
+                    [class.bg-amber-100]="inv.status === 'open'"
+                    [class.text-amber-700]="inv.status === 'open'"
+                    [class.dark:bg-amber-900/30]="inv.status === 'open'"
+                    [class.dark:text-amber-300]="inv.status === 'open'"
+                    [class.bg-red-100]="inv.status === 'void' || inv.status === 'uncollectible'"
+                    [class.text-red-700]="inv.status === 'void' || inv.status === 'uncollectible'"
+                    [class.dark:bg-red-900/30]="inv.status === 'void' || inv.status === 'uncollectible'"
+                    [class.dark:text-red-300]="inv.status === 'void' || inv.status === 'uncollectible'"
+                    >
+                    <mat-icon fontSet="material-icons-outlined" class="text-sm">{{ getInvoiceStatusIcon(inv.status) }}</mat-icon>
+                    {{ inv.status }}
+                  </span>
+                </td>
+                <td class="py-3">
+                  @if (inv.hostedInvoiceUrl) {
+                    <a [href]="inv.hostedInvoiceUrl" target="_blank"
+                    class="text-primary dark:text-violet-300 hover:underline text-xs">{{ 'BILLING_TRANSACTIONS.VIEW' | translate }}</a>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   </div>
 
   <!-- Payments -->
   <div>
     <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ 'BILLING_TRANSACTIONS.PAYMENTS_TITLE' | translate }}</h3>
-    <div *ngIf="(payments$ | async)?.length === 0" class="rounded-xl bg-gray-50 dark:bg-gray-800/30 p-6 text-center text-gray-500 dark:text-gray-400">
-      <mat-icon fontSet="material-icons-outlined" class="text-4xl mb-2">payments</mat-icon>
-      <p>{{ 'BILLING_TRANSACTIONS.NO_PAYMENTS' | translate }}</p>
-    </div>
-    <div *ngIf="(payments$ | async)?.length! > 0" class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DESCRIPTION' | translate }}</th>
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DATE' | translate }}</th>
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.AMOUNT' | translate }}</th>
-            <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.STATUS' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let pmt of payments$ | async" class="border-b border-gray-100 dark:border-gray-800">
-            <td class="py-3 text-gray-900 dark:text-gray-100">{{ pmt.description || pmt.id.slice(0, 12) + '…' }}</td>
-            <td class="py-3 text-gray-600 dark:text-gray-400">{{ pmt.createdAt | date:'mediumDate' }}</td>
-            <td class="py-3 font-medium text-gray-900 dark:text-gray-100">{{ (pmt.amount / 100) | currency:pmt.currency }}</td>
-            <td class="py-3">
-              <span [class]="getPaymentStatusClass(pmt.status)" class="inline-flex items-center gap-1 text-xs">
-                <mat-icon fontSet="material-icons-outlined" class="text-sm">
-                  {{ pmt.status === 'succeeded' ? 'check_circle' : pmt.status === 'processing' ? 'pending' : 'error' }}
-                </mat-icon>
-                {{ pmt.status === 'requires_payment_method' ? 'failed' : pmt.status }}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    @if ((payments$ | async)?.length === 0) {
+      <div class="rounded-xl bg-gray-50 dark:bg-gray-800/30 p-6 text-center text-gray-500 dark:text-gray-400">
+        <mat-icon fontSet="material-icons-outlined" class="text-4xl mb-2">payments</mat-icon>
+        <p>{{ 'BILLING_TRANSACTIONS.NO_PAYMENTS' | translate }}</p>
+      </div>
+    }
+    @if ((payments$ | async)?.length! > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DESCRIPTION' | translate }}</th>
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.DATE' | translate }}</th>
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.AMOUNT' | translate }}</th>
+              <th class="pb-2 font-medium">{{ 'BILLING_TRANSACTIONS.STATUS' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pmt of payments$ | async; track pmt) {
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <td class="py-3 text-gray-900 dark:text-gray-100">{{ pmt.description || pmt.id.slice(0, 12) + '…' }}</td>
+                <td class="py-3 text-gray-600 dark:text-gray-400">{{ pmt.createdAt | date:'mediumDate' }}</td>
+                <td class="py-3 font-medium text-gray-900 dark:text-gray-100">{{ (pmt.amount / 100) | currency:pmt.currency }}</td>
+                <td class="py-3">
+                  <span [class]="getPaymentStatusClass(pmt.status)" class="inline-flex items-center gap-1 text-xs">
+                    <mat-icon fontSet="material-icons-outlined" class="text-sm">
+                      {{ pmt.status === 'succeeded' ? 'check_circle' : pmt.status === 'processing' ? 'pending' : 'error' }}
+                    </mat-icon>
+                    {{ pmt.status === 'requires_payment_method' ? 'failed' : pmt.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   </div>
 </div>

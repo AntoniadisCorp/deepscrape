@@ -1,4 +1,4 @@
-import { AsyncPipe, CurrencyPipe, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common'
+import { AsyncPipe, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, ViewChild } from '@angular/core'
 import { FormControl, ReactiveFormsModule } from '@angular/forms'
 import { MatIconModule } from '@angular/material/icon'
@@ -25,7 +25,7 @@ type UsageViewModel = {
 
 @Component({
   selector: 'app-usage',
-  imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, CurrencyPipe, DecimalPipe, DatePipe, MatIconModule, MatProgressSpinnerModule, DropdownComponent, BaseChartDirective, TranslateModule],
+  imports: [AsyncPipe, ReactiveFormsModule, CurrencyPipe, DecimalPipe, DatePipe, MatIconModule, MatProgressSpinnerModule, DropdownComponent, BaseChartDirective, TranslateModule],
   templateUrl: './usage.component.html',
   styleUrl: './usage.component.scss',
   animations: [fadeInUp, smoothfadeAnimation],

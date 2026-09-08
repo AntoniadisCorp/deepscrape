@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, AfterViewInit, ElementRef, ViewChildren, QueryList } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, HostBinding, signal, WritableSignal, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule, JsonPipe, NgClass } from '@angular/common';
 import { CrawlResults } from '../../types';
 import { expandCollapseAnimation } from 'src/app/animations';
@@ -12,6 +12,7 @@ import { TranslateModule } from '@ngx-translate/core';
 @Component({
   selector: 'app-crawl-result-item',
   imports: [CommonModule, NgClass, JsonPipe, MarkdownModule, MatIconModule, LucideAngularModule, PdfSrcPipe, TranslateModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandCollapseAnimation],
   templateUrl: './crawl-result-item.component.html',
   styles: [`
@@ -26,7 +27,7 @@ import { TranslateModule } from '@ngx-translate/core';
     }
   `]
 })
-export class CrawlResultItemComponent implements AfterViewInit {
+export class CrawlResultItemComponent {
   @Input() crawlResult!: CrawlResults;
   @Input() clipboardButton: any; // Type as any for now, as it's a component reference
   @Output() toggleExpand = new EventEmitter<CrawlResults>();
@@ -45,14 +46,6 @@ export class CrawlResultItemComponent implements AfterViewInit {
     { key: 'technical_details', label: 'CR_RES.TAB_TECH' },
     { key: 'files', label: 'CR_RES.TAB_FILES' },
   ];
-
-  constructor(private el: ElementRef) { }
-
-  ngAfterViewInit(): void {
-    // Implement logic for tab overflow here if needed.
-    // This would involve measuring the width of the tab container and individual tabs.
-    // For now, we'll rely on flex-wrap for basic responsiveness.
-  }
 
   selectSubTab(tabName: string): void {
     this.activeSubTab = tabName;

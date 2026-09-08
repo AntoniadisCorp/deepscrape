@@ -5,8 +5,6 @@ import { Timestamp } from '@angular/fire/firestore';
 import { AuthService, FirestoreService } from '../../services';
 import { Observable } from 'rxjs/internal/Observable';
 import { from } from 'rxjs/internal/observable/from';
-import { catchError } from 'rxjs/internal/operators/catchError';
-import { throwError } from 'rxjs/internal/observable/throwError';
 import { ProviderPipe } from '../../pipes';
 import { ImageSrcsetDirective } from '../../directives';
 import { TranslateModule } from '@ngx-translate/core';
@@ -29,12 +27,7 @@ export class CPackComponent {
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
-    this.user$ = from(this.fireService.getUserData(this.pack().uid)).pipe(
-      catchError((err) => {
-        console.log(err)
-        return throwError(() => err)
-      }
-      ))
+    this.user$ = from(this.fireService.getUserData(this.pack().uid))
   }
   get createdAt(): Date | undefined {
     const createdAt = this.pack().created_at;

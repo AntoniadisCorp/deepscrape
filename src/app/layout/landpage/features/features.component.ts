@@ -2,7 +2,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslateModule } from '@ngx-translate/core';
-import { WithGradientBorderComponent } from 'src/app/core/components';
+import { WithGradientBorderComponent } from 'src/app/core/components/with-gradient-border/with-gradient-border.component';
 import { myIcons, RevealDirective } from 'src/app/shared';
 
 @Component({

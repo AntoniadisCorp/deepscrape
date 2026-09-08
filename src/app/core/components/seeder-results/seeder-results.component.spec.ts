@@ -23,15 +23,6 @@ describe('SeederResultsComponent', () => {
     expect(component.expanded['https://example.com']).toBeFalse();
   });
 
-  it('trackByUrl returns the url when present', () => {
-    const result = { url: 'https://example.com' } as any;
-    expect(component.trackByUrl(0, result)).toBe('https://example.com');
-  });
-
-  it('trackByUrl falls back to index when url is absent', () => {
-    expect(component.trackByUrl(3, {} as any)).toBe(3);
-  });
-
   it('getRelevanceColorClass returns green class for score >= 0.8', () => {
     expect(component.getRelevanceColorClass(0.9)).toContain('green');
   });
