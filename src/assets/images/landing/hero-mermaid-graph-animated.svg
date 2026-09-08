@@ -1,148 +1,139 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
   <defs>
-    <linearGradient id="g-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#176ab1"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
+    <linearGradient id="p-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22d3ee"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
     </linearGradient>
-    <linearGradient id="g-rose" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#be123c"/>
-      <stop offset="100%" style="stop-color:#f43f5e"/>
+    <linearGradient id="p-rose" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fb7185"/>
+      <stop offset="100%" style="stop-color:#be123c"/>
     </linearGradient>
-    <linearGradient id="g-flow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#06b6d4"/>
-      <stop offset="50%" style="stop-color:#f43f5e"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
-    </linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <filter id="glow-lg"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="p-orb-cyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:rgba(34,211,238,0.5)"/>
+      <stop offset="100%" style="stop-color:rgba(34,211,238,0)"/>
+    </radialGradient>
+    <radialGradient id="p-orb-rose" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:rgba(251,113,133,0.5)"/>
+      <stop offset="100%" style="stop-color:rgba(251,113,133,0)"/>
+    </radialGradient>
+    <radialGradient id="p-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:rgba(6,182,212,0.6)"/>
+      <stop offset="100%" style="stop-color:rgba(6,182,212,0)"/>
+    </radialGradient>
+    <filter id="glowS" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softBlur"><feGaussianBlur stdDeviation="40"/></filter>
   </defs>
 
   <!-- Background -->
-  <rect x="0" y="0" width="1200" height="500" fill="#060606" rx="16"/>
-  <rect x="0" y="0" width="1200" height="500" fill="rgba(255,255,255,0.02)" rx="16"/>
+  <rect width="1200" height="500" fill="#060607"/>
 
-  <!-- Grid overlay -->
-  <g opacity="0.03">
-    <line x1="0" y1="0" x2="1200" y2="0" stroke="white" stroke-width="0.5"/><line x1="0" y1="100" x2="1200" y2="100" stroke="white" stroke-width="0.5"/>
-    <line x1="0" y1="200" x2="1200" y2="200" stroke="white" stroke-width="0.5"/><line x1="0" y1="300" x2="1200" y2="300" stroke="white" stroke-width="0.5"/>
-    <line x1="0" y1="400" x2="1200" y2="400" stroke="white" stroke-width="0.5"/>
+  <!-- Ambient color fields (research-lab) -->
+  <circle cx="1020" cy="90" r="320" fill="url(#p-orb-cyan)" filter="url(#softBlur)" opacity="0.55">
+    <animate attributeName="opacity" values="0.4;0.6;0.4" dur="9s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="150" cy="430" r="330" fill="url(#p-orb-rose)" filter="url(#softBlur)" opacity="0.5">
+    <animate attributeName="opacity" values="0.38;0.55;0.38" dur="11s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="640" cy="240" r="220" fill="url(#p-orb-rose)" filter="url(#softBlur)" opacity="0.16"/>
+
+  <!-- Faint grid -->
+  <g opacity="0.04">
+    <path d="M0 100H1200M0 200H1200M0 300H1200M0 400H1200M100 0V500M250 0V500M400 0V500M550 0V500M700 0V500M850 0V500M1000 0V500M1150 0V500" stroke="#fff" stroke-width="0.5"/>
   </g>
 
-  <!-- Pipeline horizontal background bar -->
-  <rect x="60" y="190" width="1080" height="120" rx="60" fill="rgba(255,255,255,0.02)"/>
-
-  <!-- Flow arrow base line -->
-  <line x1="240" y1="250" x2="1000" y2="250" stroke="rgba(255,255,255,0.04)" stroke-width="2"/>
-
-  <!-- Animated flow particles -->
+  <!-- "Web rain" data particles drifting down -->
   <g opacity="0.5">
-    <circle cx="300" cy="250" r="3" fill="#06b6d4" filter="url(#glow)">
-      <animate attributeName="cx" values="200;1100;200" dur="6s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0;1;0" dur="6s" repeatCount="indefinite"/>
+    <g><line x1="170" y1="-20" x2="170" y2="40" stroke="rgba(34,211,238,0.5)" stroke-width="1"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="7s" repeatCount="indefinite"/></g>
+    <g><line x1="330" y1="-30" x2="330" y2="30" stroke="rgba(34,211,238,0.35)" stroke-width="0.8"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="9s" repeatCount="indefinite" begin="1.2s"/></g>
+    <g><line x1="520" y1="-20" x2="520" y2="30" stroke="rgba(251,113,133,0.35)" stroke-width="0.8"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="8s" repeatCount="indefinite" begin="0.6s"/></g>
+    <g><line x1="760" y1="-30" x2="760" y2="30" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="10s" repeatCount="indefinite" begin="2s"/></g>
+    <g><line x1="940" y1="-20" x2="940" y2="34" stroke="rgba(251,113,133,0.4)" stroke-width="1"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="6.5s" repeatCount="indefinite" begin="0.9s"/></g>
+    <g><line x1="1090" y1="-30" x2="1090" y2="26" stroke="rgba(34,211,238,0.4)" stroke-width="0.9"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="8.5s" repeatCount="indefinite" begin="1.7s"/></g>
+    <g><circle cx="60" cy="-6" r="1.5" fill="#22d3ee"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="11s" repeatCount="indefinite" begin="0.3s"/></g>
+    <g><circle cx="1180" cy="-6" r="1.5" fill="#fb7185"/><animateTransform attributeName="transform" type="translate" values="0 0;0 520" dur="9.5s" repeatCount="indefinite" begin="1.4s"/></g>
+  </g>
+
+  <!-- Connector arcs between hubs -->
+  <g fill="none">
+    <path d="M170 250 C 320 130, 470 380, 610 250" stroke="url(#p-cyan)" stroke-width="1.2" opacity="0.28"/>
+    <path d="M610 250 C 740 130, 860 360, 1000 250" stroke="url(#p-rose)" stroke-width="1.2" opacity="0.28"/>
+    <path d="M170 250 C 320 400, 480 90, 610 250" stroke="url(#p-rose)" stroke-width="1" opacity="0.16"/>
+    <path d="M610 250 C 760 380, 900 120, 1000 250" stroke="url(#p-cyan)" stroke-width="1" opacity="0.16"/>
+  </g>
+
+  <!-- Energy dash flow along the main arcs -->
+  <path d="M170 250 C 320 130, 470 380, 610 250" fill="none" stroke="rgba(34,211,238,0.5)" stroke-width="1.6">
+    <animate attributeName="stroke-dasharray" values="0 400;240 400" dur="4s" repeatCount="indefinite"/>
+  </path>
+  <path d="M610 250 C 740 130, 860 360, 1000 250" fill="none" stroke="rgba(251,113,133,0.5)" stroke-width="1.6">
+    <animate attributeName="stroke-dasharray" values="0 400;240 400" dur="4s" repeatCount="indefinite" begin="0.5s"/>
+  </path>
+
+  <!-- Traveling packets -->
+  <g>
+    <circle r="3.5" fill="#22d3ee" filter="url(#glowS)"/>
+    <animateMotion dur="4s" repeatCount="indefinite" path="M170 250 C 320 130, 470 380, 610 250"/>
+  </g>
+  <g>
+    <circle r="2.5" fill="#fb7185" filter="url(#glowS)"/>
+    <animateMotion dur="4.6s" repeatCount="indefinite" begin="1.2s" path="M170 250 C 320 130, 470 380, 610 250"/>
+  </g>
+  <g>
+    <circle r="3.5" fill="#fb7185" filter="url(#glowS)"/>
+    <animateMotion dur="4s" repeatCount="indefinite" begin="0.4s" path="M610 250 C 740 130, 860 360, 1000 250"/>
+  </g>
+  <g>
+    <circle r="2.6" fill="#22d3ee" filter="url(#glowS)"/>
+    <animateMotion dur="5s" repeatCount="indefinite" begin="2s" path="M610 250 C 740 130, 860 360, 1000 250"/>
+  </g>
+
+  <!-- Hub: entry node -->
+  <g>
+    <circle cx="170" cy="250" r="26" fill="url(#p-glow)" opacity="0.6"/>
+    <circle cx="170" cy="250" r="11" fill="rgba(6,182,212,0.14)" stroke="#22d3ee" stroke-width="1.4">
+      <animate attributeName="r" values="10;13;10" dur="3s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="400" cy="250" r="2" fill="#f43f5e" filter="url(#glow)">
-      <animate attributeName="cx" values="200;1100;200" dur="5s" repeatCount="indefinite" begin="1s"/>
+    <circle cx="170" cy="250" r="4" fill="#67e8f9" filter="url(#glowS)"/>
+  </g>
+
+  <!-- Hub: compute center -->
+  <g>
+    <circle cx="610" cy="250" r="34" fill="url(#p-glow)" opacity="0.7"/>
+    <circle cx="610" cy="250" r="16" fill="rgba(244,63,94,0.12)" stroke="#fb7185" stroke-width="1.5">
+      <animate attributeName="r" values="15;19;15" dur="3.6s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="500" cy="250" r="2.5" fill="#06b6d4" filter="url(#glow)">
-      <animate attributeName="cx" values="200;1100;200" dur="7s" repeatCount="indefinite" begin="2s"/>
+    <circle cx="610" cy="250" r="5.5" fill="#fda4af" filter="url(#glowS)"/>
+    <circle cx="610" cy="250" r="34" fill="none" stroke="rgba(251,113,133,0.35)" stroke-width="1" stroke-dasharray="4 60">
+      <animateTransform attributeName="transform" type="rotate" from="0 610 250" to="360 610 250" dur="6s" repeatCount="indefinite"/>
     </circle>
   </g>
 
-  <!-- Stage 1: SDK/API -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="4s" fill="freeze"/>
-    <rect x="65" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
-    <rect x="65" y="180" width="170" height="36" rx="14" fill="rgba(6,182,212,0.08)"/>
-    <text x="150" y="203" text-anchor="middle" fill="#06b6d4" font-size="11" font-family="sans-serif" font-weight="600">SDK / API</text>
-    <text x="150" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Python</text>
-    <text x="150" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Node.js</text>
-    <text x="150" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">REST API</text>
-    <text x="150" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">🔑 Auth: Bearer Token</text>
+  <!-- Hub: structured-data node (JSON glyphs, no text) -->
+  <g>
+    <circle cx="1000" cy="250" r="40" fill="url(#p-glow)" opacity="0.7"/>
+    <circle cx="1000" cy="250" r="20" fill="rgba(6,182,212,0.1)" stroke="#22d3ee" stroke-width="1.5">
+      <animate attributeName="r" values="19;23;19" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <g stroke="#67e8f9" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.9">
+      <path d="M984 240 h7 M991 240 v13 M984 253 h7"/>
+      <path d="M1004 244 h13 M1004 250 h9"/>
+    </g>
+    <g stroke="#fda4af" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7">
+      <path d="M1012 262 h11"/>
+    </g>
   </g>
 
-  <!-- Arrow 1 -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="4.5s" fill="freeze"/>
-    <text x="245" y="255" text-anchor="middle" fill="rgba(6,182,212,0.4)" font-size="24" font-family="sans-serif">→</text>
+  <!-- Small satellite nodes -->
+  <g opacity="0.8">
+    <circle cx="380" cy="150" r="4" fill="#67e8f9" filter="url(#glowS)"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.6s" repeatCount="indefinite"/></circle>
+    <circle cx="470" cy="360" r="4" fill="#fda4af" filter="url(#glowS)"><animate attributeName="opacity" values="0.3;1;0.3" dur="3.1s" repeatCount="indefinite" begin="0.8s"/></circle>
+    <circle cx="760" cy="150" r="4" fill="#fda4af" filter="url(#glowS)"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.8s" repeatCount="indefinite" begin="1.4s"/></circle>
+    <circle cx="830" cy="355" r="4" fill="#67e8f9" filter="url(#glowS)"><animate attributeName="opacity" values="0.3;1;0.3" dur="3.4s" repeatCount="indefinite" begin="2s"/></circle>
   </g>
 
-  <!-- Stage 2: Crawl Dispatcher -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="5s" fill="freeze"/>
-    <rect x="270" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(244,63,94,0.25)" stroke-width="1.5">
-      <animate attributeName="stroke" values="rgba(244,63,94,0.25);rgba(6,182,212,0.3);rgba(244,63,94,0.25)" dur="3s" repeatCount="indefinite"/>
-    </rect>
-    <rect x="270" y="180" width="170" height="36" rx="14" fill="rgba(244,63,94,0.08)"/>
-    <text x="355" y="203" text-anchor="middle" fill="#f43f5e" font-size="11" font-family="sans-serif" font-weight="600">Crawl Dispatcher</text>
-    <text x="355" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Load Balancing</text>
-    <text x="355" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Queue Management</text>
-    <text x="355" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Rate Limiting</text>
-    <text x="355" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">⚡ Auto-scale</text>
-  </g>
-
-  <!-- Arrow 2 -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="5.5s" fill="freeze"/>
-    <text x="450" y="255" text-anchor="middle" fill="rgba(244,63,94,0.4)" font-size="24" font-family="sans-serif">→</text>
-  </g>
-
-  <!-- Stage 3: Browser Pool -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="6s" fill="freeze"/>
-    <rect x="475" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(34,197,94,0.25)" stroke-width="1.5"/>
-    <rect x="475" y="180" width="170" height="36" rx="14" fill="rgba(34,197,94,0.08)"/>
-    <text x="560" y="203" text-anchor="middle" fill="#22c55e" font-size="11" font-family="sans-serif" font-weight="600">Browser Pool</text>
-    <text x="560" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Chrome Instances</text>
-    <text x="560" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Profile Rotation</text>
-    <text x="560" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Fingerprint Spoofing</text>
-    <text x="560" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">🌍 40+ Geolocations</text>
-  </g>
-
-  <!-- Arrow 3 -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="6.5s" fill="freeze"/>
-    <text x="655" y="255" text-anchor="middle" fill="rgba(34,197,94,0.4)" font-size="24" font-family="sans-serif">→</text>
-  </g>
-
-  <!-- Stage 4: AI Extraction -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="7s" fill="freeze"/>
-    <rect x="680" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
-    <rect x="680" y="180" width="170" height="36" rx="14" fill="rgba(6,182,212,0.08)"/>
-    <text x="765" y="203" text-anchor="middle" fill="#06b6d4" font-size="11" font-family="sans-serif" font-weight="600">AI Extraction</text>
-    <text x="765" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">LLM Strategies</text>
-    <text x="765" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Schema Parsing</text>
-    <text x="765" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Multi-Provider</text>
-    <text x="765" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">🧠 GPT-4o · Claude</text>
-  </g>
-
-  <!-- Arrow 4 -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="7.5s" fill="freeze"/>
-    <text x="860" y="255" text-anchor="middle" fill="rgba(6,182,212,0.4)" font-size="24" font-family="sans-serif">→</text>
-  </g>
-
-  <!-- Stage 5: Structured Data -->
-  <g opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="8s" fill="freeze"/>
-    <rect x="885" y="180" width="170" height="140" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(6,182,212,0.25)" stroke-width="1.5"/>
-    <rect x="885" y="180" width="170" height="36" rx="14" fill="rgba(6,182,212,0.08)"/>
-    <text x="970" y="203" text-anchor="middle" fill="#06b6d4" font-size="11" font-family="sans-serif" font-weight="600">Structured Data</text>
-    <text x="970" y="235" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">JSON Output</text>
-    <text x="970" y="255" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Markdown</text>
-    <text x="970" y="275" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="sans-serif">Webhook Delivery</text>
-    <text x="970" y="298" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">📦 Export Ready</text>
-  </g>
-
-  <!-- Bottom bar -->
-  <rect x="200" y="420" width="800" height="36" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" opacity="0">
-    <animate attributeName="opacity" values="0;1;1" dur="9s" fill="freeze"/>
-  </rect>
-  <text x="600" y="443" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="11" font-family="sans-serif">Deepscrape Data Flow Pipeline — From Request to Structured Data in Milliseconds</text>
-
-  <!-- Top title badge -->
-  <rect x="470" y="25" width="260" height="30" rx="8" fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.15)" stroke-width="0.5">
-    <animate attributeName="opacity" values="0;1;1" dur="2s" fill="freeze"/>
-  </rect>
-  <text x="600" y="44" text-anchor="middle" fill="#06b6d4" font-size="12" font-family="sans-serif" font-weight="600">⚡ Full Data Flow Pipeline</text>
+  <!-- Bottom fade for seamless blend into section -->
+  <rect x="0" y="440" width="1200" height="60" fill="#060607" opacity="0.6"/>
 </svg>

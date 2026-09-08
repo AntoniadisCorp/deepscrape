@@ -24,15 +24,21 @@
 
     <!-- Featured image banner — glass card style -->
     <div class="relative mb-12 rounded-2xl overflow-hidden group glass border-white/5 dark:border-white/10">
-      <img
-        src="assets/images/landing/hero-mermaid-graph-animated.svg"
-        alt="deepscrape data flow architecture diagram"
-        class="w-full h-48 md:h-64 object-cover transition-transform duration-700 group-hover:scale-105"
-        loading="lazy"
-      />
-      <div class="absolute inset-0 bg-gradient-to-r from-cyan-900/70 via-gray-900/50 to-rose-900/70"></div>
-      <div class="absolute inset-0 flex items-center justify-center">
-        <span class="text-white/90 text-lg md:text-2xl font-display font-bold tracking-wide drop-shadow-lg">
+      <video
+        src="assets/images/landing/use-cases-flow.mp4"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        class="w-full h-56 md:h-80 object-cover transition-transform duration-700 group-hover:scale-105"
+        aria-label="deepscrape distributed web crawling and data extraction animation"
+      ></video>
+      <!-- Soft legibility scrim: keeps the animated art visible, text readable -->
+      <div class="absolute inset-0 bg-gradient-to-r from-[#060607]/80 via-[#060607]/20 to-[#060607]/60"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-[#080808]/60 via-transparent to-transparent"></div>
+      <div class="absolute inset-0 flex items-center justify-center px-4">
+        <span class="text-white/95 text-lg md:text-3xl font-display font-bold tracking-wide drop-shadow-[0_2px_16px_rgba(0,0,0,0.6)] text-center">
           {{ 'USECASES.BANNER' | translate }}
         </span>
       </div>

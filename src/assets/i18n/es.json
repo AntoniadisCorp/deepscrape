@@ -153,7 +153,17 @@
     "PHONE_CODE_SENT": "Código de verificación enviado correctamente",
     "PHONE_LOGIN_SUCCESS": "Sesión iniciada correctamente con el número de teléfono",
     "EMAIL_PASSWORD_REQUIRED": "Se requieren el correo electrónico y la contraseña",
-    "EMAIL_LOGIN_SUCCESS": "Sesión iniciada correctamente con el correo electrónico"
+    "EMAIL_LOGIN_SUCCESS": "Sesión iniciada correctamente con el correo electrónico",
+    "MFA_TITLE": "Completa tu segundo factor",
+    "MFA_SMS_INTRO": "Introduce el código SMS de 6 dígitos enviado a",
+    "MFA_SMS_FINISH": "para completar el inicio de sesión.",
+    "MFA_TOTP_INTRO": "Introduce el código actual de 6 dígitos de",
+    "MFA_TOTP_FINISH": "para completar el inicio de sesión.",
+    "MFA_USE_TOTP": "Usar aplicación de autenticación",
+    "MFA_USE_SMS": "Usar SMS / mensaje de texto",
+    "MFA_RESEND": "Reenviar",
+    "LAST_USED": "Usado por última vez",
+    "MFA_VERIFY": "Verificar código"
   },
   "SIGNUP": {
     "CREATE_ACCOUNT_TITLE": "Crea tu cuenta",
@@ -245,7 +255,8 @@
     "CANCEL": "ATRÁS / CANCELAR",
     "NO_CODE_INITIATED": "No se inició ningún proceso de verificación. Envía primero el código.",
     "PHONE_VERIFIED_SUCCESS": "¡Número de teléfono verificado correctamente!",
-    "RECAPTCHA_EXPIRED": "Recaptcha caducó, inténtalo de nuevo."
+    "RECAPTCHA_EXPIRED": "Recaptcha caducó, inténtalo de nuevo.",
+    "SPAM_HINT": "Si no ves el mensaje, revisa spam/promociones y toca Reenviar."
   },
   "EMAIL_VERIFICATION": {
     "SUCCESS": "¡Tu correo electrónico se ha verificado correctamente!",
@@ -277,9 +288,9 @@
     "FOOTER": "Normalmente respondemos en un plazo de 24 horas en días laborables."
   },
   "NOT_FOUND": {
-    "HMM": "¡hmm!",
-    "BLOODHOUND_LOST": "Nuestro sabueso no puede encontrar la página que buscas.",
-    "GUIDE_HOME": "¡Pero puede guiarte de vuelta a la página de inicio!",
+    "HMM": "Esta página se cayó de la web",
+    "BLOODHOUND_LOST": "Nuestros crawlers revisaron cada nodo y no encontraron lo que buscas.",
+    "GUIDE_HOME": "Sin callejones sin salida. El dispatcher conoce el camino de vuelta.",
     "RETURN_HOME": "Volver a la página de inicio"
   },
   "FOOTER": {
@@ -467,6 +478,7 @@
     "CUSTOM": "Personalizado",
     "PER_MONTH": "/mes",
     "BILLED_YEARLY": "Facturación anual",
+    "CREDITS": "{{ credits }} creditos / mes",
     "FOOTER": "Todos los precios en EUR. ¿Necesitas un plan personalizado?",
     "CONTACT_SALES": "Contactar con ventas",
     "NAME_FREE": "Gratuito",
@@ -486,7 +498,7 @@
     "F_STARTER_4": "Reglas de extracción personalizadas",
     "F_STARTER_5": "Prioridad en el grupo de navegadores",
     "F_STARTER_6": "Perfiles de antidetección avanzados",
-    "NAME_PRO": "Professional",
+    "NAME_PRO": "Pro",
     "DESC_PRO": "Para equipos que necesitan una extracción potente a escala.",
     "F_PRO_1": "250.000 páginas / mes",
     "F_PRO_2": "Extracción impulsada por LLM",
@@ -589,6 +601,16 @@
     "LIVE_LOG_6": "obteniendo y renderizando {{url}}",
     "LIVE_LOG_7": "extracción con LLM (Claude · Groq) → schema:{{schema}}",
     "LIVE_LOG_8": "markdown limpio y JSON estructurado devueltos · cero análisis de HTML",
+    "B_LOG_6": "distribuido en 3 pestañas aisladas · captura en paralelo",
+    "B_LOG_7": "extracción con LLM por pestaña (Claude · Groq) → schema:{{schema}}",
+    "W_LOG_1": "vídeo resuelto · flujo 1080p + audio (yt-dlp)",
+    "W_LOG_2": "descargando medios + pista de subtítulos",
+    "W_LOG_3": "fotogramas muestreados cada 5 s",
+    "W_LOG_4": "resumen del vídeo con LLM (Claude · Groq) → markdown",
+    "I_LOG_1": "acciones programadas · clic + escribir + desplazarse",
+    "I_LOG_2": "interactuando en todas las páginas",
+    "I_LOG_3": "repitiendo interacciones en cada destino",
+    "I_LOG_4": "extracción LLM tras cada acción → schema:{{schema}}",
     "HOOD_TITLE": "Bajo el capó: una máquina aislada por ejecución",
     "HOOD_SUB": "Cada ejecución del playground es una orquestación real: tu propia máquina, un motor de navegador furtivo, proxies rotativos y extracción con IA. Observa cómo se resuelve cada etapa mientras la operación se transmite.",
     "HOOD_ROW_1": "Despliegue de la máquina",

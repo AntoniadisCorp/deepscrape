@@ -2,6 +2,26 @@
   display: block;
 }
 
+/* Ambient network layer behind the demo console (dark canvas only). */
+.demo-network {
+  animation: demo-network-drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes demo-network-drift {
+  from {
+    transform: translateX(-1.2%) scale(1.05);
+  }
+  to {
+    transform: translateX(1.2%) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-network {
+    animation: none;
+  }
+}
+
 /* ===== Console log lines: fade/slide in as each step resolves ===== */
 @keyframes ds-console-in {
   from {

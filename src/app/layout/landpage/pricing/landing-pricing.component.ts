@@ -13,6 +13,7 @@ interface PricingTier {
   name: string;
   priceMonthly: string;
   priceYearly: string;
+  credits: string;
   description: string;
   features: string[];
   highlighted: boolean;
@@ -46,6 +47,7 @@ export class LandingPricingComponent implements OnInit {
       name: 'PRICING.NAME_FREE',
       priceMonthly: '0',
       priceYearly: '0',
+      credits: '100',
       description: 'PRICING.DESC_FREE',
       features: [
         'PRICING.F_FREE_1',
@@ -61,8 +63,9 @@ export class LandingPricingComponent implements OnInit {
     {
       tier: 'starter',
       name: 'PRICING.NAME_STARTER',
-      priceMonthly: '29',
-      priceYearly: '24',
+      priceMonthly: '9.99',
+      priceYearly: '8.33',
+      credits: '1,000',
       description: 'PRICING.DESC_STARTER',
       features: [
         'PRICING.F_STARTER_1',
@@ -79,8 +82,9 @@ export class LandingPricingComponent implements OnInit {
     {
       tier: 'pro',
       name: 'PRICING.NAME_PRO',
-      priceMonthly: '99',
-      priceYearly: '84',
+      priceMonthly: '19.99',
+      priceYearly: '16.67',
+      credits: '5,000',
       description: 'PRICING.DESC_PRO',
       features: [
         'PRICING.F_PRO_1',
@@ -98,8 +102,9 @@ export class LandingPricingComponent implements OnInit {
     {
       tier: 'enterprise',
       name: 'PRICING.NAME_ENT',
-      priceMonthly: 'Custom',
-      priceYearly: 'Custom',
+      priceMonthly: '49.99',
+      priceYearly: '41.67',
+      credits: '20,000',
       description: 'PRICING.DESC_ENT',
       features: [
         'PRICING.F_ENT_1',

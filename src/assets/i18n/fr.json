@@ -153,7 +153,17 @@
     "PHONE_CODE_SENT": "Code de vérification envoyé avec succès",
     "PHONE_LOGIN_SUCCESS": "Connexion réussie avec le numéro de téléphone",
     "EMAIL_PASSWORD_REQUIRED": "L'e-mail et le mot de passe sont requis",
-    "EMAIL_LOGIN_SUCCESS": "Connexion réussie avec l'e-mail"
+    "EMAIL_LOGIN_SUCCESS": "Connexion réussie avec l'e-mail",
+    "MFA_TITLE": "Validez votre deuxième facteur",
+    "MFA_SMS_INTRO": "Saisissez le code SMS à 6 chiffres envoyé au",
+    "MFA_SMS_FINISH": "pour terminer la connexion.",
+    "MFA_TOTP_INTRO": "Saisissez le code à 6 chiffres actuel de",
+    "MFA_TOTP_FINISH": "pour terminer la connexion.",
+    "MFA_USE_TOTP": "Utiliser l'application d'authentification",
+    "MFA_USE_SMS": "Utiliser SMS / message texte",
+    "MFA_RESEND": "Renvoyer",
+    "LAST_USED": "Utilisé en dernier",
+    "MFA_VERIFY": "Vérifier le code"
   },
   "SIGNUP": {
     "CREATE_ACCOUNT_TITLE": "Créez votre compte",
@@ -245,7 +255,8 @@
     "CANCEL": "RETOUR / ANNULER",
     "NO_CODE_INITIATED": "Aucun processus de vérification initié. Veuillez d'abord envoyer le code.",
     "PHONE_VERIFIED_SUCCESS": "Numéro de téléphone vérifié avec succès !",
-    "RECAPTCHA_EXPIRED": "Recaptcha expiré, veuillez réessayer."
+    "RECAPTCHA_EXPIRED": "Recaptcha expiré, veuillez réessayer.",
+    "SPAM_HINT": "Si vous ne voyez pas le message, vérifiez les spam/promotions et appuyez sur Renvoyer."
   },
   "EMAIL_VERIFICATION": {
     "SUCCESS": "Votre e-mail a été vérifié avec succès !",
@@ -277,9 +288,9 @@
     "FOOTER": "Nous répondons généralement sous 24 heures pendant les jours ouvrables."
   },
   "NOT_FOUND": {
-    "HMM": "hmm !",
-    "BLOODHOUND_LOST": "Notre limier n'arrive pas à trouver la page que vous recherchez.",
-    "GUIDE_HOME": "Mais il peut vous guider de retour vers la page d'accueil !",
+    "HMM": "Cette page est tombée du web",
+    "BLOODHOUND_LOST": "Nos crawlers ont parcouru chaque nœud et n'ont pas trouvé ce que vous cherchez.",
+    "GUIDE_HOME": "Pas d'impasse. Le dispatcher connaît le chemin du retour.",
     "RETURN_HOME": "Revenir à la page d'accueil"
   },
   "FOOTER": {
@@ -467,6 +478,7 @@
     "CUSTOM": "Personnalisé",
     "PER_MONTH": "/mois",
     "BILLED_YEARLY": "Facturé annuellement",
+    "CREDITS": "{{ credits }} credits / mois",
     "FOOTER": "Tous les prix sont en EUR. Besoin d'une offre personnalisée ?",
     "CONTACT_SALES": "Contacter les ventes",
     "NAME_FREE": "Gratuit",
@@ -486,7 +498,7 @@
     "F_STARTER_4": "Règles d'extraction personnalisées",
     "F_STARTER_5": "Priorité sur le pool de navigateurs",
     "F_STARTER_6": "Profils d'anti-détection avancés",
-    "NAME_PRO": "Professional",
+    "NAME_PRO": "Pro",
     "DESC_PRO": "Pour les équipes ayant besoin d'une extraction puissante à grande échelle.",
     "F_PRO_1": "250 000 pages / mois",
     "F_PRO_2": "Extraction pilotée par LLM",
@@ -594,6 +606,16 @@
     "LIVE_LOG_6": "récupération et rendu de {{url}}",
     "LIVE_LOG_7": "extraction par LLM (Claude · Groq) → schema:{{schema}}",
     "LIVE_LOG_8": "markdown propre + JSON structuré renvoyés · zéro analyse HTML",
+    "B_LOG_6": "réparti sur 3 onglets isolés · récupération en parallèle",
+    "B_LOG_7": "extraction LLM par onglet (Claude · Groq) → schema:{{schema}}",
+    "W_LOG_1": "vidéo résolue · flux 1080p + audio (yt-dlp)",
+    "W_LOG_2": "téléchargement média + piste de sous-titres",
+    "W_LOG_3": "images-clés échantillonnées toutes les 5 s",
+    "W_LOG_4": "résumé vidéo LLM (Claude · Groq) → markdown",
+    "I_LOG_1": "actions scriptées · clic + saisie + défilement",
+    "I_LOG_2": "interaction sur toutes les pages",
+    "I_LOG_3": "rejeu des interactions sur chaque cible",
+    "I_LOG_4": "extraction LLM après chaque action → schema:{{schema}}",
     "PACK_LABEL": "crawlpack",
     "PROGRESS": "progression de l'opération",
     "RUN": "Lancer",

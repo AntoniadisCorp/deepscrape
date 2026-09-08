@@ -1,4 +1,7 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { RevealDirective } from 'src/app/shared';
@@ -69,4 +72,17 @@ export class LandingSocialProofComponent {
     'AICore',
     'WebPulse',
   ];
+
+  /** Subtle cursor parallax on the CTA network layer (dark canvas, both themes). */
+  /** Subtle cursor parallax on the CTA network layer (dark canvas, both themes). */
+  onCtaMove(event: PointerEvent): void {
+    const el = event.currentTarget as HTMLElement;
+    const layer = el.querySelector('.cta-network-parallax') as HTMLElement | null;
+    if (!layer) return;
+    const rect = el.getBoundingClientRect();
+    if (!rect.width) return;
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    layer.style.transform = `translate3d(${(x * 14).toFixed(1)}px, ${(y * 10).toFixed(1)}px, 0) scale(1.12)`;
+  }
 }
