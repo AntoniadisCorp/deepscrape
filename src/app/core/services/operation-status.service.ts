@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { tap, takeWhile } from 'rxjs/operators';
 import { CrawlStatus } from '../types';
 import { CrawlAPIService } from './crawlapi.service';
-import { SnackBarType } from '../components';
+import { SnackBarType } from '../components/snackbar/snackbar.component';
 import { CrawlOperationStatus } from '../enum';
 import { Observable } from 'rxjs/internal/Observable';
 

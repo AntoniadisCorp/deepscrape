@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslateModule } from '@ngx-translate/core';
-import { RadioToggleComponent } from 'src/app/core/components';
+import { RadioToggleComponent } from 'src/app/core/components/radiotoggle/radiotoggle.component';
 import { myIcons, RevealDirective } from 'src/app/shared';
 
 interface PricingTier {

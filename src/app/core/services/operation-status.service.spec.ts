@@ -1,7 +1,7 @@
 import { OperationStatusService } from './operation-status.service';
 import { CrawlAPIService } from './crawlapi.service';
 import { of } from 'rxjs';
-import { SnackBarType } from '../components';
+import { SnackBarType } from '../components/snackbar/snackbar.component';
 import { CrawlOperationStatus } from '../enum';
 
 describe('OperationStatusService', () => {

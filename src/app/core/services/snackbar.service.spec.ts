@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { SnackbarService } from './snackbar.service';
-import { SnackbarComponent, SnackBarType } from '../components';
+import { SnackbarComponent, SnackBarType } from '../components/snackbar/snackbar.component';
 import { getTestProviders } from 'src/app/testing';
 
 describe('SnackbarService', () => {
