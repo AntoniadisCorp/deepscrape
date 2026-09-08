@@ -33,7 +33,7 @@ interface AgentTool {
 export class LandingAgentComponent {
   readonly icons = myIcons;
 
-  readonly constellationImage = 'assets/images/landing/agent-constellation.png';
+  readonly constellationImage = 'assets/images/landing/agent-constellation.webp';
 
   readonly stats: AgentStat[] = [
     { k: 'AGENT.STAT_1_K', d: 'AGENT.STAT_1_D', accent: 'cyan' },
