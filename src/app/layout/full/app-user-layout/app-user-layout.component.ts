@@ -142,12 +142,15 @@ export class AppUserLayoutComponent implements OnDestroy {
       this.user = this.route.snapshot.data['user']
       this.loadOrganizationContext()
       // this.GetUserProfile();
-      this.isThemeDark = this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark
+      const storedTheme = this.localStorage?.getItem(themeStorageKey);
+      this.isThemeDark = storedTheme === 'true'
+        || (storedTheme !== 'false' && (this.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false));
 
       // Listen for changes in local storage to update theme
       this.sizeSub.add(fromEvent<StorageEvent>(this.window, 'storage').subscribe((event: StorageEvent) => {
         if (event.key === themeStorageKey) {
-          this.isThemeDark = event.newValue === 'true';
+          this.isThemeDark = event.newValue === 'true'
+            || (event.newValue !== 'false' && (this.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false));
         }
       }));
     }

@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslateModule } from '@ngx-translate/core';
-import { LocalStorage } from 'src/app/core/services';
+import { LocalStorage, WindowToken } from 'src/app/core/services';
 import { myIcons, themeStorageKey } from 'src/app/shared';
 
 @Component({
@@ -13,7 +13,7 @@ import { myIcons, themeStorageKey } from 'src/app/shared';
     styleUrl: './app-footer.component.scss'
 })
 export class AppFooterComponent {
-
+    private window = inject(WindowToken);
     @Input() color?: string = ''
     readonly icons = myIcons
     private localStorage = inject(LocalStorage)
@@ -36,6 +36,10 @@ export class AppFooterComponent {
     }
 
 
-    private isThemeDark(): boolean {        return this.localStorage?.getItem(themeStorageKey) === 'true'; // Initialize isThemeDark;
+    private isThemeDark(): boolean {
+        const stored = this.localStorage?.getItem(themeStorageKey);
+        if (stored === 'true') return true;
+        if (stored === 'false') return false;
+        return this.window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
     }
 }
