@@ -11,11 +11,7 @@ import { ToggleBtnService } from '../../services';
 })
 export class CartPackNotifyComponent {
 
-  private showDropDown: boolean = false
   private btnService = inject(ToggleBtnService)
-
-  constructor() {
-  }
 
   protected toggleCartDropdown() {
 
