@@ -612,6 +612,19 @@ export async function lookupGeoByIp(
 // Guest tracking middleware for Express
 // Ensures unique guest analytics using fingerprinting and Redis/Firestore
 export async function guestTracker(req: Request, res: Response, next: NextFunction) {
+  // Guest tracking is best-effort analytics. Never let a tracking failure (e.g.
+  // Firestore/geo hiccup on a fresh anonymous hit) reject this async middleware:
+  // Express 4 does not catch it, the SSR function errors and Firebase answers 503
+  // for page URLs. Guard it so page delivery always continues.
+  try {
+    await guestTrackerInner(req, res, next)
+  } catch (error) {
+    console.warn("guestTracker: best-effort tracking failed; continuing request", error)
+    return next()
+  }
+}
+
+async function guestTrackerInner(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
   if (!env.IS_PRODUCTION) {
     console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
