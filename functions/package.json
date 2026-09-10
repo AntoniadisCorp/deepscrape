@@ -5,6 +5,7 @@
     "lint:fix": "eslint --fix --ext .js,.ts .",
     "test": "tsx --test src/**/*.spec.ts",
     "test:geo-matrix": "tsx --test src/gfunctions/geo-lookup-matrix.spec.ts",
+    "audit:redis": "tsx scripts/redis-hygiene-cli.ts",
     "build:angular": "node cp-angular.js",
     "build": "npm run build:angular && tsc",
     "build:watch": "npm run build:angular && tsc --watch",
