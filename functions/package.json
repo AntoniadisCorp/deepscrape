@@ -20,7 +20,7 @@
     "node": "22.x",
     "npm": "11.11.x"
   },
-  "main": "lib/index.js",
+  "main": "lib/functions/src/index.js",
   "dependencies": {
     "@angular/common": "^20.3.30",
     "@angular/compiler": "^20.3.30",
