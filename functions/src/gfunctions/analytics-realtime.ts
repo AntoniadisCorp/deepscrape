@@ -1224,6 +1224,9 @@ async function readPresenceCountsFromRedis(): Promise<PresenceCounts | null> {
 /**
  * Firestore fallback, used only when Redis is unavailable. Kept because the
  * dashboard must render something even during a cache outage.
+ *
+ * @param {number} now - Current epoch milliseconds, used to derive the cutoffs.
+ * @return {Promise<PresenceCounts>} Presence counts for the three windows.
  */
 async function readPresenceCountsFromFirestore(now: number): Promise<PresenceCounts> {
   const cutoff1m = Timestamp.fromMillis(now - PRESENCE_WINDOWS_MS[0])

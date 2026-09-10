@@ -30,6 +30,11 @@ import { Timestamp } from "firebase-admin/firestore"
  * not (it only models the commands the app actually uses). This wrapper keeps
  * the hot path honest: with no Redis configured the heartbeat degrades to the
  * Firestore path instead of throwing a TypeError.
+ *
+ * @param {string} script - The Lua script source to execute.
+ * @param {string[]} keys - Redis keys the script may access.
+ * @param {(string | number)[]} args - Positional arguments passed to the script.
+ * @return {Promise<TData>} Whatever the script returns.
  */
 const redisEval = async <TData>(
     script: string,

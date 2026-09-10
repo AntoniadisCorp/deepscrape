@@ -42,6 +42,11 @@ const DATABASE_NAME = dbName || "easyscrape"
  * `@upstash/redis` exposes `eval`, but the no-op fallback client models only the
  * commands the app uses. Routing every script through this helper keeps the
  * degraded path explicit instead of surfacing a TypeError mid-request.
+ *
+ * @param {string} script - The Lua script source to execute.
+ * @param {string[]} keys - Redis keys the script may access.
+ * @param {(string | number)[]} args - Positional arguments passed to the script.
+ * @return {Promise<TData>} Whatever the script returns.
  */
 const redisEval = async <TData>(
   script: string,
@@ -90,6 +95,10 @@ const REVOKES_PER_BATCH = 80
  * as a `get` in Node followed by a `setex`. Two reasons: the old shape paid two
  * round-trips on a path that runs on every session mutation, and it re-created
  * an expired key from whatever the caller was holding.
+ *
+ * @param {string} sessionId - Session whose cache entry is patched.
+ * @param {Record<string, unknown>} patch - Fields to merge into the payload.
+ * @return {Promise<void>} Resolves once the merge has been issued.
  */
 async function updateSessionRedisCache(sessionId: string, patch: Record<string, unknown>): Promise<void> {
   try {

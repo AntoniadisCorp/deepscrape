@@ -33,6 +33,8 @@ if (!redisStore && env.PRODUCTION === "true") {
 /**
  * Which store the general limiter is actually using. Surfaced on `/status` so a
  * silent degradation to per-instance memory is observable from outside.
+ *
+ * @return {string} Either "redis" or "memory".
  */
 export const rateLimitStoreName = (): "redis" | "memory" =>
     redisStore ? "redis" : "memory"
