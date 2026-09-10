@@ -92,7 +92,7 @@
     "@angular/pwa": "^20.3.36",
     "@angular/router": "^20.3.30",
     "@angular/service-worker": "^20.3.30",
-    "@angular/ssr": "^20.3.36",
+    "@angular/ssr": "^22.1.7",
     "@dhutaryan/ngx-mat-timepicker": "^20.2.0",
     "@dotenvx/dotenvx": "^1.75.1",
     "@elysiajs/cors": "^1.4.2",
