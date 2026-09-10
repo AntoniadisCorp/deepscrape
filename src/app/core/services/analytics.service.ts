@@ -73,18 +73,19 @@ export class AnalyticsService {
 
     if (!this.analyticsBackendAvailable) {
       events.forEach(ev => {
-        this.fireService.logEvent(ev.method || ev.eventType, ev)
+        this.fireService.logEvent(ev.method || ev.eventType || ev.event, ev.metadata ?? ev.properties)
       });
       return of(null)
     }
 
     // Optionally batch logEvent to Google Analytics (not supported natively, so log individually)
     events.forEach(ev => {
-      this.fireService.logEvent(ev.method || ev.eventType, ev)
+      this.fireService.logEvent(ev.method || ev.eventType || ev.event, ev.metadata ?? ev.properties)
     });
-    // Send batch to backend
-    const headers = new HttpHeaders({ 'Accept': 'application/json' });
-    if (token) headers.append('Authorization', `Bearer ${token}`);
+    // Send batch to backend. HttpHeaders is immutable: append() returns a new
+    // instance, so the old code silently dropped the Authorization header.
+    let headers = new HttpHeaders({ 'Accept': 'application/json' });
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
     return this.http.post('/event/analytics/batch', { events }, { headers }).pipe(
       catchError((error) => this.handleError(error)))
   }

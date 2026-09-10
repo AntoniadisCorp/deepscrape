@@ -1,9 +1,9 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 /* eslint-disable indent */
 /* eslint-disable linebreak-style */
 // eslint-disable-next-line object-curly-spacing
 import { Redis } from "@upstash/redis"
-import {RedisOptions, Redis as IORedis} from "ioredis"
 import chalk from "chalk"
 import {env} from "../config/env"
 
@@ -42,124 +42,113 @@ const upstashRestEnabled =
     isHttpUrl(upstashUrl) &&
     !isEncryptedPlaceholder(upstashUrl) &&
     !isEncryptedPlaceholder(upstashToken)
-const redis = upstashRestEnabled ? new Redis({
-    url: upstashUrl,
-    token: upstashToken,
-}) : {
+// Chainable no-op pipeline so batched calls stay safe when Upstash REST is not
+// configured (dev / emulator / missing credentials). A method missing here is a
+// runtime TypeError rather than a silent no-op, so this must cover every command
+// routed through `pipeline()`.
+const NOOP_PIPELINE_COMMANDS = [
+    "get", "getex", "set", "setex", "del", "incr", "incrby", "expire", "ttl",
+    "zadd", "zremrangebyscore", "zcount", "zcard", "zrange",
+    "lpush", "lrange", "lpop", "ltrim", "llen",
+] as const
+
+const createNoopPipeline = (): Record<string, unknown> => {
+    const pipeline: Record<string, unknown> = {
+        exec: async () => [],
+    }
+    for (const command of NOOP_PIPELINE_COMMANDS) {
+        pipeline[command] = () => pipeline
+    }
+    return pipeline
+}
+
+const createNoopRedis = (): Redis => ({
+    pipeline: createNoopPipeline,
     get: async () => null,
+    getex: async () => null,
     set: async () => "OK",
     setex: async () => "OK",
     del: async () => 0,
+    incr: async () => 0,
+    incrby: async () => 0,
+    expire: async () => 0,
+    ttl: async () => -2,
     zadd: async () => 0,
     zremrangebyscore: async () => 0,
     zcount: async () => 0,
+    zcard: async () => 0,
+    zrange: async () => [],
     lpush: async () => 0,
     lrange: async () => [],
-} as unknown as Redis
+    lpop: async () => null,
+    ltrim: async () => "OK",
+    llen: async () => 0,
+    // Hot-path scripts. Returning the "nothing cached" shape lets callers fall
+    // through to Firestore rather than aborting the request.
+    eval: async () => [null, "ok"],
+    // `undefined` is the documented "store unavailable" signal for
+    // rate-limit-redis: it falls back to its in-memory store instead of throwing.
+    exec: async () => undefined,
+} as unknown as Redis)
 
+const redis: Redis = upstashRestEnabled ? new Redis({
+    url: upstashUrl,
+    token: upstashToken,
+}) : createNoopRedis()
 
-// Configure your Redis client.  IMPORTANT: Use environment variables
-// for sensitive information like host, port, password.
-const tcpHostRaw = env.UPSTASH_REDIS_REST_HOST || env.UPSTASH_REDIS_REST_URL || upstashUrl
-const tcpPortRaw = env.UPSTASH_REDIS_REST_PORT || "6379"
-const tcpUsernameRaw = env.UPSTASH_REDIS_REST_USER || "default"
-const tcpPassword = env.UPSTASH_REDIS_REST_PASSWORD || ""
+/**
+ * Whether the process is talking to a real Redis instance.
+ *
+ * Rate limiting and reporting must branch on this rather than probing the client:
+ * a no-op client answers every command successfully, so the only reliable signal
+ * is whether the client was constructed from real credentials.
+ */
+const isRedisEnabled = upstashRestEnabled
 
-let client: IORedis | null = null
-
-const parseRedisHost = (value: string): string => {
-    try {
-        const parsed = new URL(value)
-        let host = parsed.hostname.trim().toLowerCase()
-
-        // Defensive normalization for malformed values like: *.upstash.io.upstash.io
-        const duplicatedSuffix = ".upstash.io.upstash.io"
-        if (host.endsWith(duplicatedSuffix)) {
-            host = host.replace(/\.upstash\.io\.upstash\.io$/, ".upstash.io")
-        }
-
-        return host
-    } catch {
-        return value.replace(/^https?:\/\//, "").trim().toLowerCase()
-    }
-}
-
-// const isFunctionsEmulator =
-//     process.env["FUNCTIONS_EMULATOR"] === "true" ||
-//     !!env["FIREBASE_EMULATOR_HUB"]
-
-const tcpRedisEnabled = env.UPSTASH_REDIS_TCP_ENABLED ?
-    env.UPSTASH_REDIS_TCP_ENABLED === "true" :
-    env.PRODUCTION === "true"
-
-const tcpPort = parseInt(tcpPortRaw || "6379", 10)
-const tcpConfigLooksValid =
-    !!tcpHostRaw?.length &&
-    Number.isFinite(tcpPort) &&
-    !!tcpPassword?.length &&
-    !isEncryptedPlaceholder(tcpHostRaw) &&
-    !isEncryptedPlaceholder(tcpPassword)
-
-
-if (tcpRedisEnabled &&
-    // !isFunctionsEmulator &&
-    tcpConfigLooksValid) {
-    // Configure your Redis client.  IMPORTANT: Use environment variables
-    // for sensitive information like host, port, password.
-    const host = parseRedisHost(tcpHostRaw)
-    const user = `${tcpUsernameRaw}_ro`
-    const port = tcpPort
-    const REDIS_URL = `rediss://:${encodeURIComponent(tcpPassword)}@${host}:${port}`
-
-    // Define Redis options
-    const redisOptions: RedisOptions = {
-        // host: host || "localhost", // Read from env
-        // port, // Read from env
-        // username: user || "default", // Use read-only user for Redis TCP
-        // password: tcpPassword || "", // Read from env
-        db: 0, // Default database
-        lazyConnect: true, // Use lazy connect to avoid immediate connection
-        maxRetriesPerRequest: 1,
-        retryStrategy: (times: number) => {
-            if (times > 10) {
-                return null
-            }
-            return Math.min(times * 200, 2000)
-        },
-        tls: {},
-    }
-
-    // Set username if provided which should resolve the
-    // authentication issue with older Redis versions.
-
-    client = new IORedis(REDIS_URL, redisOptions)
-
-    // Log the Redis URL for debugging purposes
-    console.log(chalk.hex("#028C9E").bold("Upstash Redis client initialized ") + chalk.yellow.bold(`${host}:${port} (${user})`))
-
-    // client.quit() // Ensure we start with a clean slate
-    client.on("reconnecting", () => {
-        console.log("Redis client reconnecting...")
-    })
-    client.on("error", (err) => {
-        console.error("Redis connection error:", err)
-    })
-    client.once("ready", () => {
-        console.log("Redis client ready")
-    })
-    client.on("connect", () => {
-        console.log("Redis client connected")
-    })
-    client.on("end", () => {
-        console.log("Redis client end")
-    })
-    client.on("quit", () => {
-        console.log("Redis client quit")
-    })
-} else if (/* isFunctionsEmulator || */ !tcpRedisEnabled) {
-    console.log("Redis TCP client disabled (UPSTASH_REDIS_TCP_ENABLED=false); using non-TCP fallback")
+if (upstashRestEnabled) {
+    console.log(chalk.hex("#028C9E").bold("Upstash Redis REST client initialized ") + chalk.yellow.bold(upstashUrl))
 } else {
-    // Intentionally silent: missing TCP credentials is a supported fallback scenario.
+    console.warn(
+        "Upstash Redis REST client DISABLED: REST URL/token missing or still encrypted. " +
+        "Session cache, geo cache and rate limiting will fall back to Firestore / process memory.",
+    )
 }
 
-export {client as redisClient, redis}
+/*
+ * The ioredis TCP client that used to live here is gone.
+ *
+ * It existed solely to feed `rate-limit-redis` through `express-rate-limit`,
+ * which meant a second wire protocol, a second credential path and a second
+ * failure mode alongside the REST client used by every other code path. Its
+ * username was also synthesized as `${username}_ro`, which does not exist on the
+ * configured Upstash instance, so the connection failed AUTH and the limiter
+ * silently degraded to per-instance memory storage.
+ *
+ * Rate limiting now runs on the REST client below (see `handlers/limiter.ts`).
+ */
+
+/**
+ * Upstash's REST client auto-deserializes JSON by default, so a value written with
+ * `JSON.stringify` comes back as an already-parsed object, NOT a string. Every
+ * `typeof v === "string"` guard around a cache read was therefore false, which
+ * silently disabled the session, revocation, device-trust and geo caches.
+ *
+ * Verified against a live instance: `get()` -> typeof "object", and
+ * `pipeline().exec()` -> [object, object, ...] in command order.
+ * Normalizing here means callers never have to care which shape they got.
+ */
+export const parseCachedJson = <T>(value: unknown): T | null => {
+    if (value === null || value === undefined) {
+        return null
+    }
+    if (typeof value === "string") {
+        try {
+            return JSON.parse(value) as T
+        } catch {
+            return null
+        }
+    }
+    return value as T
+}
+
+export {redis, isRedisEnabled}

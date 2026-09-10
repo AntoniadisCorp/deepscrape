@@ -147,7 +147,7 @@ export class LoginComponent  {
   /** Debounce timer for analytics events. */
   private analyticsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   /** Analytics event queue for batching. */
-  private analyticsEventQueue: Array<{ event: string; properties?: Record<string, unknown> }> = [];
+  private analyticsEventQueue: Array<{ eventType: string; metadata?: Record<string, unknown> }> = [];
   private window = inject(WindowToken);
 
   /**
@@ -532,7 +532,7 @@ export class LoginComponent  {
    * @description Debounced analytics event tracker.
    * @param {any} event - Analytics event payload.
    */
-  private debounceTrackEvent(event: { event: string; properties?: Record<string, unknown> }) {
+  private debounceTrackEvent(event: { eventType: string; metadata?: Record<string, unknown> }) {
     this.analyticsEventQueue.push(event);
     if (this.analyticsDebounceTimer) clearTimeout(this.analyticsDebounceTimer);
     this.analyticsDebounceTimer = setTimeout(() => {
@@ -573,7 +573,7 @@ export class LoginComponent  {
         errorMsg: errorMsg || null,
         context: context || null
       };
-      this.debounceTrackEvent({ event: 'login_attempt', properties: payload });
+      this.debounceTrackEvent({ eventType: 'login_attempt', metadata: payload });
     } catch (error) {
       console.warn('Login analytics tracking skipped:', error);
     }

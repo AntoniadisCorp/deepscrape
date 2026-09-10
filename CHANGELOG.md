@@ -1,68 +1,23 @@
-# [0.8.0](https://github.com/deepscrape/deepscrape/compare/v0.7.2...v0.8.0) (2026-09-08)
+# [0.9.0-beta.2](https://github.com/deepscrape/deepscrape/compare/v0.9.0-beta.1...v0.9.0-beta.2) (2026-09-10)
 
 
 ### Bug Fixes
 
-* **analytics:** read flat breakdown keys in range charts ([2d7d4e2](https://github.com/deepscrape/deepscrape/commit/2d7d4e2eacf5875cc3fd38bc3bea98616391b31d))
-* **app:** add missing apple-touch icon sizes from the head links ([826f669](https://github.com/deepscrape/deepscrape/commit/826f6698aa99d21fbab4c5d337e638af48403ad8))
-* **ci:** preserve Bun lockfile permissions ([f54cdb4](https://github.com/deepscrape/deepscrape/commit/f54cdb4a137a63dcbf9c184771728e40a628bb08))
-* **ci:** sync functions Bun lockfile for SSR dependencies ([48af2b9](https://github.com/deepscrape/deepscrape/commit/48af2b9dbfe8367eaf51e6d211decaece3b086bd))
-* **ci:** sync functions lockfile for SSR dependencies ([fe9d224](https://github.com/deepscrape/deepscrape/commit/fe9d2240fe15afad95f5984d892c84acde58aaf6))
-* **functions:** 404 missing static assets instead of serving index.html ([b629f24](https://github.com/deepscrape/deepscrape/commit/b629f24d1d34c1743e909de2e93e6efb4bac4824))
-* **functions:** 404 missing static assets instead of serving index.html ([ef9dbee](https://github.com/deepscrape/deepscrape/commit/ef9dbee356eb4afcba28276672a249166de1ad08))
-* **functions:** document geo lookup parameters ([d9d5eab](https://github.com/deepscrape/deepscrape/commit/d9d5eab1ca461438a48a28f02dbee28d25dfbc15))
-* **functions:** document geo lookup parameters ([86cf9a0](https://github.com/deepscrape/deepscrape/commit/86cf9a03a8a842741c2735d7a5599a36e0e63d92))
-* **functions:** never let guest tracking block page SSR delivery ([2c20870](https://github.com/deepscrape/deepscrape/commit/2c208708855ff76b0bdf1d16776384d07f8c9409))
-* **functions:** satisfy SSR predeploy lint rules ([2f9b404](https://github.com/deepscrape/deepscrape/commit/2f9b4049bd391ffe49eca60bfdc0c61c9211cb12))
-* **geo:** stop no-match re-enrich loop spend ([31a36b6](https://github.com/deepscrape/deepscrape/commit/31a36b692c75f52198d12151db025458ecc44495))
+* **test:** provide analytics mock for operation status ([1291bf5](https://github.com/deepscrape/deepscrape/commit/1291bf514a97f94ac7d8e0c45c958b9f94b1b2a7))
+
+# [0.8.0-beta.9](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.8...v0.8.0-beta.9) (2026-09-08)
+
+
+### Bug Fixes
+
+* **functions:** enforce App Check on contact submissions ([97c1784](https://github.com/deepscrape/deepscrape/commit/97c1784c977e6c0f5209b05c9fe81458adc2c82b))
+
+# [0.8.0-beta.6](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.5...v0.8.0-beta.6) (2026-09-08)
+
+
+### Bug Fixes
+
 * **ssr:** stop prerendering authenticated routes ([63e2087](https://github.com/deepscrape/deepscrape/commit/63e2087b56e2dc47cc66ee8b88e823d7a211b589))
-* **test:** complete TranslateService mock for the v17 TranslatePipe ([2899618](https://github.com/deepscrape/deepscrape/commit/2899618f8e05d13d2088359365de483834685c5b))
-* **test:** complete TranslateService mock for the v17 TranslatePipe ([c68feec](https://github.com/deepscrape/deepscrape/commit/c68feec57370651e53126e106f7a478dea8ae0b1))
-
-
-### Features
-
-* **analytics:** include ASN and ISP breakdowns in range metrics ([5fe4aeb](https://github.com/deepscrape/deepscrape/commit/5fe4aeb2d92b10e202b6454242451a3c5c124c31))
-* **analytics:** include ASN and ISP breakdowns in range metrics ([0ab1721](https://github.com/deepscrape/deepscrape/commit/0ab1721f3846e68f85120d97517de4afa1191408))
-* **geo:** coalesce concurrent IP lookups and add country-based deny-lists ([90aa3f8](https://github.com/deepscrape/deepscrape/commit/90aa3f8ab798f44531010e4bc848c4dea456bd65))
-* **geo:** coalesce concurrent IP lookups and add country-based deny-lists ([e5a47fe](https://github.com/deepscrape/deepscrape/commit/e5a47feb21f2ccc0750e79bea0da7f42605288f2))
-* **i18n:** add es, fr and de locales with header language picker ([3cd89b3](https://github.com/deepscrape/deepscrape/commit/3cd89b3a5076cf633093b832e61c4af0f1dab1a9))
-* **i18n:** add es, fr and de locales with header language picker ([227cc3e](https://github.com/deepscrape/deepscrape/commit/227cc3edda85c7f6d81c8ca9b4fb04838b39f577))
-* **i18n:** localize app templates and runtime strings with [@ngx-translate](https://github.com/ngx-translate) ([b6c4623](https://github.com/deepscrape/deepscrape/commit/b6c462320d7de1d3a93045ca1e7fca873e52b1e8))
-* **i18n:** localize app templates and runtime strings with [@ngx-translate](https://github.com/ngx-translate) ([f625ec9](https://github.com/deepscrape/deepscrape/commit/f625ec96a02c44496bca2c53ec7eec87331ce117))
-* **i18n:** translate agent, playground, hero and nav copy (el, es, fr, de) ([1439764](https://github.com/deepscrape/deepscrape/commit/143976430e6c805135ed337b26cad21c8a268339))
-* **i18n:** translate agent, playground, hero and nav copy (el, es, fr, de) ([cfd005b](https://github.com/deepscrape/deepscrape/commit/cfd005bb3910c2a3edd64a5410383f8f572a66b7))
-* landing redesign, accurate pricing, theme system and 404/legal refresh ([8e7d5a5](https://github.com/deepscrape/deepscrape/commit/8e7d5a5784b5aec1d33791341b4bffd5313baddd))
-* **legal:** align privacy, terms and 404 pages with landpage chrome ([bc83dbc](https://github.com/deepscrape/deepscrape/commit/bc83dbca5098e039eb6fbd883ef7512c9b3e0e8f))
-* **legal:** align privacy, terms and 404 pages with landpage chrome ([d532683](https://github.com/deepscrape/deepscrape/commit/d532683f6c8d66283538c2a8cab7dd26bac25924))
-* **marketing:** add AI research agent section and live playground rework ([67058d0](https://github.com/deepscrape/deepscrape/commit/67058d0b2af4a9ee54d0b6b0d8c5808bd6c5da98))
-* **marketing:** add AI research agent section and live playground rework ([990abf8](https://github.com/deepscrape/deepscrape/commit/990abf83d605ff542eb39dc1027c81b7a1580a49))
-* **marketing:** add privacy/terms pages and scroll-reveal animations ([b663910](https://github.com/deepscrape/deepscrape/commit/b6639105a6c4f7069685e5aa9eb6a99e4957aeef))
-* **marketing:** add privacy/terms pages and scroll-reveal animations ([0b2b1c6](https://github.com/deepscrape/deepscrape/commit/0b2b1c6cd7b9e5b5f29ad10fc0e1c079d3a8928a))
-* **marketing:** refresh landing with live demo, managed pricing and art ([f9234ca](https://github.com/deepscrape/deepscrape/commit/f9234ca7472f42aa3ab5391e1f369802916d5a31))
-* **marketing:** refresh landing with live demo, managed pricing and art ([8565cd8](https://github.com/deepscrape/deepscrape/commit/8565cd8c78d829f3adced6c09c465e737bb3c9de))
-* **seo:** add per-route titles, robots, sitemap and OG image ([f40a0e0](https://github.com/deepscrape/deepscrape/commit/f40a0e00a6a7aa01ca1784614700050cd1f030e8))
-* **seo:** add per-route titles, robots, sitemap and OG image ([94ef7b1](https://github.com/deepscrape/deepscrape/commit/94ef7b17ff2d170ac9bce2c06451a2847019986e))
-* **theme:** add Light/Dark/System toggle defaulting to OS scheme ([cb3ef3e](https://github.com/deepscrape/deepscrape/commit/cb3ef3ecf1c2ec295290ba067bedb1b4652f8254))
-* **theme:** add Light/Dark/System toggle defaulting to OS scheme ([0697752](https://github.com/deepscrape/deepscrape/commit/069775299affc5362fbc2bacb1add8a136053fc1))
-
-
-### Performance Improvements
-
-* **app:** clean the remaining component subscription leaks ([e5942cc](https://github.com/deepscrape/deepscrape/commit/e5942cc313c2771b524047667821e62ef6b13878))
-* **app:** defer landing hydration below the fold ([cc0f6a7](https://github.com/deepscrape/deepscrape/commit/cc0f6a7618e3414d3ed75b070d5512b4c59b97de))
-* **app:** drop unused global payload and trim head fonts ([4c10922](https://github.com/deepscrape/deepscrape/commit/4c109222d30636d7971d5b4730248d4462186359))
-* **app:** enable hydration with incremental hydration and event replay ([62c127c](https://github.com/deepscrape/deepscrape/commit/62c127c99917784e05626afa9dcd5bd97a4073ec)), closes [#ng-state](https://github.com/deepscrape/deepscrape/issues/ng-state)
-* **app:** on-push + native track for crawl and seed results ([481057e](https://github.com/deepscrape/deepscrape/commit/481057e53c8a23d16eaec77a8d8266220b061b7a))
-* **app:** onpush for verified auth shell and shared chrome ([06c70d1](https://github.com/deepscrape/deepscrape/commit/06c70d1c15476d93c62e44b5f5ddd44fd42f396b))
-* **app:** shrink first-paint bundle & dead-code cleanup → next ([d526441](https://github.com/deepscrape/deepscrape/commit/d526441015d0ca3f7b45d735bd24183d6bb7decf))
-* **assets:** delete dead media and right-size landing images ([b96b9e4](https://github.com/deepscrape/deepscrape/commit/b96b9e4ce3b508255747c03c3b4d4590d39b2c6d))
-* **bundle:** deep-import core components out of the landing shell ([b537724](https://github.com/deepscrape/deepscrape/commit/b537724325876ba89083f90567341876617785b2))
-* **functions:** engine-render dynamic routes in the deepscrape function ([bc3a496](https://github.com/deepscrape/deepscrape/commit/bc3a4969b35a33cfe07c45bdc2f431d8f93a01b6))
-* **functions:** raise default runtime memory to 512MiB ([ae53e94](https://github.com/deepscrape/deepscrape/commit/ae53e94842455f6fc2f0e0171211cdac02c365f5))
-* **functions:** raise default runtime memory to 512MiB ([0067f07](https://github.com/deepscrape/deepscrape/commit/0067f077150bc58e928f61b7a03f1a1a6165895a))
-* **landing:** defer heavy use-cases video until scroll into view ([6caee46](https://github.com/deepscrape/deepscrape/commit/6caee4627e9224ebe633e435ef0bb1b11bf813f4))
-* **providers:** scope markdown, charts and stripe providers to lazy routes ([0cf9164](https://github.com/deepscrape/deepscrape/commit/0cf91640e988b33aba3d7405dc76b86acd2be504))
 
 # [0.8.0-beta.3](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.2...v0.8.0-beta.3) (2026-09-08)
 

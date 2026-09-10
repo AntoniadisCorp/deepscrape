@@ -212,21 +212,32 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Analytics collections - Admin full access for migration/ops tooling
+    // Analytics collections - read-only for admins. Writes are server-side only
+    // (realtime triggers + scheduled functions); clients never write metrics.
     match /metrics_daily/{date} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if false;
     }
     
     match /metrics_hourly/{datetime} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if false;
     }
     
     match /metrics_summary/{docId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if false;
     }
     
     match /metrics_range/{rangeId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Raw analytics facts (funnel / cohort / retention source). Server-only writes.
+    match /analytics_events/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
     
   }

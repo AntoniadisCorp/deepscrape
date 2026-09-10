@@ -164,8 +164,7 @@ const getEnv = () => {
     IS_EMULATOR: parseBoolean(process.env["FUNCTIONS_EMULATOR"], false) || !!process.env["FIREBASE_EMULATOR_HUB"],
     DOTENV_PRIVATE_KEY: getConfigValue("DOTENV_PRIVATE_KEY"),
     PORT: parseInt(getConfigValue("PORT", "4000"), 10),
-    UPSTASH_REDIS_TCP_ENABLED: (getConfigValue("UPSTASH_REDIS_TCP_ENABLED", "true")) as "true" | "false",
-    // Upstash Redis configuration (for rate limiting)
+    // Upstash Redis configuration (sessions, presence, analytics, rate limiting)
     UPSTASH_REDIS_REST_URL: normalizeUpstashRestUrl(getConfigValue("UPSTASH_REDIS_REST_URL")),
     UPSTASH_REDIS_REST_HOST: deriveUpstashHost(
       getConfigValue("UPSTASH_REDIS_REST_HOST"),

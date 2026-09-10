@@ -2,13 +2,38 @@ import { Injectable } from '@angular/core';
 import { tap, takeWhile } from 'rxjs/operators';
 import { CrawlStatus } from '../types';
 import { CrawlAPIService } from './crawlapi.service';
+import { AnalyticsService } from './analytics.service';
 import { SnackBarType } from '../components/snackbar/snackbar.component';
 import { CrawlOperationStatus } from '../enum';
 import { Observable } from 'rxjs/internal/Observable';
 
 @Injectable({ providedIn: 'root' })
 export class OperationStatusService {
-  constructor(private crawlService: CrawlAPIService) {}
+  /** Crawl outcomes already reported, so repeated polls cannot inflate activation. */
+  private readonly reportedTerminalIds = new Set<string>();
+
+  constructor(
+    private crawlService: CrawlAPIService,
+    private analytics: AnalyticsService,
+  ) {}
+
+  /**
+   * Activation signal: a crawl reaching a terminal state. Every crawl UI routes
+   * through this service, so it is the one place worth instrumenting.
+   */
+  private trackTerminalStatus(taskId: string, status: CrawlOperationStatus): void {
+    if (status === CrawlOperationStatus.CANCELED || this.reportedTerminalIds.has(taskId)) {
+      return;
+    }
+
+    this.reportedTerminalIds.add(taskId);
+    this.analytics
+      .trackEvent(
+        status === CrawlOperationStatus.COMPLETED ? 'crawl_completed' : 'crawl_failed',
+        { taskId },
+      )
+      .subscribe({ error: () => undefined });
+  }
 
   getTaskStatusWithSnackbar(
     id: string,
@@ -37,6 +62,7 @@ export class OperationStatusService {
           };
           const { message, type } = messages[status as CrawlOperationStatus];
           showSnackbar(message, type);
+          this.trackTerminalStatus(id, status as CrawlOperationStatus);
         }
       }),
       takeWhile((obj) => (obj?.status ?? '') !== '')

@@ -4,19 +4,40 @@
 // src/middleware/rateLimit.ts
 import { Options, rateLimit, RateLimitRequestHandler } from "express-rate-limit"
 import { env } from "../config/env"
-import { RedisStore, type RedisReply } from "rate-limit-redis"
-import { redisClient } from "../app/cacheConfig" // Adjust the import path as necessary
+import { redis, isRedisEnabled } from "../app/cacheConfig"
+import { RATE_LIMIT_PREFIX } from "../../../src/config/redis-keys"
+import { createRedisRateLimitStore } from "../../../src/config/redis-rate-limit-store"
 
-let redisStore = undefined
+/**
+ * Distributed store, built from the same REST client every other code path uses.
+ *
+ * Built eagerly at module load (matching the previous shape) so the failure is
+ * reported exactly once per instance rather than on the first request.
+ */
+const redisStore = createRedisRateLimitStore({
+    prefix: RATE_LIMIT_PREFIX,
+    redis: isRedisEnabled ? redis : null,
+    resetExpiryOnChange: true,
+})
 
-if (redisClient) {
-    // Initialize Redis store for rate limiting
-    redisStore = new RedisStore({
-        // prefix: "rateLimit:", // Optional prefix for keys in Redis // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
-        sendCommand: (command: string, ...args: string[]) => redisClient?.call(command, ...args) as Promise<RedisReply>,
-        resetExpiryOnChange: true, // Reset the rate limit when the IP changes
-    })
+if (!redisStore && env.PRODUCTION === "true") {
+    // Previously this degraded to per-instance memory silently, so each instance
+    // kept its own budget and the effective fleet-wide limit multiplied by the
+    // instance count. Loud, not silent.
+    console.error(
+        "rate-limit-redis: DISABLED. Limiting is per-instance (memory) in production. " +
+        "Check UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN.",
+    )
 }
+
+/**
+ * Which store the general limiter is actually using. Surfaced on `/status` so a
+ * silent degradation to per-instance memory is observable from outside.
+ *
+ * @return {string} Either "redis" or "memory".
+ */
+export const rateLimitStoreName = (): "redis" | "memory" =>
+    redisStore ? "redis" : "memory"
 
 // Use Redis store if available, otherwise default to in-memory
 const apiLimitOptions: Partial<Options> = {

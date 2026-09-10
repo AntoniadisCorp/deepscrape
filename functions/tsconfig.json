@@ -4,6 +4,12 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
+    // The shared redis config lives at the repo root (src/config) and is imported
+    // from src/**, so the program spans two directories. Pinning rootDir to the
+    // repo root makes the layout explicit and stable: functions compile to
+    // lib/functions/src and the shared modules to lib/src, keeping the relative
+    // imports valid in the emitted output.
+    "rootDir": "..",
     "lib": [
       "ES2020",
       "DOM"
@@ -26,6 +32,7 @@
   "compileOnSave": true,
   "include": [
     "src",
+    "scripts",
     "cp-angular.js",
     "api"
   ],

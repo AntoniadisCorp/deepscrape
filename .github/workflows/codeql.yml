@@ -1,0 +1,49 @@
+# Advanced CodeQL setup (replaces the broken GitHub "automatic" default setup).
+# JS/TS is analyzed without a build (build-mode: none) because this is a
+# Bun-managed Angular + Firebase monorepo that the default setup cannot compile.
+#
+# To activate: Settings -> Code security -> Code scanning ->
+#   CodeQL -> switch "Default setup" OFF (it is erroring) -> pick the
+#   advanced config for this workflow. GitHub then runs CodeQL via this file.
+name: "CodeQL"
+
+on:
+  push:
+    branches: ["main", "next"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "0 4 * * 1" # Mondays 04:00 UTC
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["javascript-typescript"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable object-curly-spacing */
 
 import { UserInfo } from "firebase-admin/auth"
@@ -147,6 +148,19 @@ export type Guest = {
         fraudScore: number | null
         confidence: "none" | "open-proxy-detected" | "unknown"
     }
+  // First-touch acquisition context captured at guest creation (utm_* lowercased).
+  acquisition?: {
+    utmSource?: string
+    utmMedium?: string
+    utmCampaign?: string
+    utmTerm?: string
+    utmContent?: string
+    referrer?: string
+    landingPath?: string
+  }
+  // Bot / AI-agent classification from the UA (infrastructure/ua-parser).
+  isBot?: boolean
+  botKind?: "ai-assistant" | "ai-crawler" | "bot" | null
   fingerprint: string // Unique fingerprint for guest tracking
   createdAt: Date
   lastSeen: Date

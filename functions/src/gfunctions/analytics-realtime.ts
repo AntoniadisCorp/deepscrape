@@ -7,11 +7,34 @@ import { onSchedule } from "firebase-functions/v2/scheduler"
 import { FieldValue, Timestamp } from "firebase-admin/firestore"
 
 
-import { Guest, loginHistoryInfo, MetricsDaily, Users } from "../domain"
+import {
+  ANALYTICS_EVENTS,
+  ANALYTICS_EVENTS_RETENTION_DAYS,
+  AnalyticsEvent,
+  buildAnalyticsEvent,
+  Guest,
+  loginHistoryInfo,
+  MetricsDaily,
+  toEventDate,
+  toFunnelCounterKeys,
+  Users,
+} from "../domain"
 import { db, dbName } from "../app/config"
+import { redis } from "../app/cacheConfig"
+import {
+  ONLINE_GUESTS_KEY,
+  ONLINE_USERS_KEY,
+  PRESENCE_WINDOWS_MS,
+} from "../../../src/config/redis-keys"
+import { PRESENCE_WINDOW_COUNTS } from "../../../src/config/redis-scripts"
+import { parseUA } from "../infrastructure/ua-parser"
+import { drainClientAnalyticsEvents } from "./analytics"
 
 // ⭐ CRITICAL: Specify named database for v2 triggers
 const DATABASE_NAME = dbName || "easyscrape"
+
+// Firestore reads a dot in a dotted field path as nesting, so path-like keys are flattened.
+const toFieldKey = (value: string): string => value.replace(/[.$]/g, "_").slice(0, 120)
 
 const mapToTop = (source: Record<string, number> | undefined, key: string, limit = 10) => {
   if (!source) return [] as Array<Record<string, unknown>>
@@ -69,6 +92,21 @@ type RangeSummary = {
   byTimezone?: Record<string, number>
 }
 
+type RetentionCohort = {
+  cohort: string
+  size: number
+  d1: number | null
+  d7: number | null
+  d14: number | null
+  d30: number | null
+}
+
+// Cohort retention offsets (days) rendered in the admin grid.
+const RETENTION_OFFSETS = [1, 7, 14, 30]
+// ponytail: one bounded read per daily run; raise the limit when daily
+// client-event volume approaches it.
+const RETENTION_EVENT_LIMIT = 20000
+
 type MetricsDailyExtended = MetricsDaily & {
   byRegion?: Record<string, number>
   byLocation?: Record<string, number>
@@ -106,6 +144,32 @@ export const onGuestCreated = onDocumentCreated(
         "Unknown"
     const latBand = toLatitudeBand(guest.latitude)
     const lonBand = toLongitudeBand(guest.longitude)
+    const network = (guest as unknown as { network?: { asn?: string | number | null; as?: string | null; isp?: string | null } }).network
+    const channel = guest.acquisition?.utmSource || "direct"
+    const referrer = guest.acquisition?.referrer || "direct"
+    const proxyType = guest.proxy?.isProxy ? (guest.proxy.proxyType || "proxy") : "direct"
+
+    // Raw fact + per-day funnel counters (bots are counted outside the funnel).
+    const guestEvent = buildAnalyticsEvent({
+      name: "guest_created",
+      uid: guest.uid,
+      guestId: event.params.guestId,
+      isBot: guest.isBot,
+      botKind: guest.botKind,
+      props: {
+        browser: guest.browser || "Unknown",
+        device: guest.device || "Unknown",
+        os: guest.os || "Unknown",
+        language: guest.language || "Unknown",
+        country: guest.country || "Unknown",
+        channel,
+        proxyType,
+      },
+    })
+    const funnelCounters: Record<string, FieldValue> = {}
+    for (const key of toFunnelCounterKeys(guestEvent)) {
+      funnelCounters[key] = FieldValue.increment(1)
+    }
 
     try {
     // Single batch transaction for consistency
@@ -131,7 +195,14 @@ export const onGuestCreated = onDocumentCreated(
         [`byTimezone.${guest.timezone}`]: FieldValue.increment(1),
         [`byLanguage.${guest.language || "Unknown"}`]: FieldValue.increment(1),
         [`byIP.${guest.ip?.raw || guest.ip?.ipv4 || "Unknown"}`]: FieldValue.increment(1),
+        [`byASN.${network?.asn || "Unknown"}`]: FieldValue.increment(1),
+        [`byISP.${network?.as || network?.isp || "Unknown"}`]: FieldValue.increment(1),
+        [`byChannel.${channel}`]: FieldValue.increment(1),
+        [`byReferrer.${referrer}`]: FieldValue.increment(1),
+        [`byProxyType.${proxyType}`]: FieldValue.increment(1),
+        [`byLandingPath.${toFieldKey(guest.acquisition?.landingPath || "direct")}`]: FieldValue.increment(1),
         [`guestsByHour.${hour}`]: FieldValue.increment(1),
+        ...funnelCounters,
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
@@ -145,6 +216,11 @@ export const onGuestCreated = onDocumentCreated(
         newGuests: FieldValue.increment(1),
         activeGuests: FieldValue.increment(1),
         [`byOS.${guest.os || "Unknown"}`]: FieldValue.increment(1),
+        [`byASN.${network?.asn || "Unknown"}`]: FieldValue.increment(1),
+        [`byISP.${network?.as || network?.isp || "Unknown"}`]: FieldValue.increment(1),
+        [`byChannel.${channel}`]: FieldValue.increment(1),
+        [`byProxyType.${proxyType}`]: FieldValue.increment(1),
+        ...funnelCounters,
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
@@ -159,9 +235,17 @@ export const onGuestCreated = onDocumentCreated(
         [`byOS.${guest.os || "Unknown"}`]: FieldValue.increment(1),
         [`byTimezone.${guest.timezone || "Unknown"}`]: FieldValue.increment(1),
         [`byLanguage.${guest.language || "Unknown"}`]: FieldValue.increment(1),
+        [`byASN.${network?.asn || "Unknown"}`]: FieldValue.increment(1),
+        [`byISP.${network?.as || network?.isp || "Unknown"}`]: FieldValue.increment(1),
+        [`byChannel.${channel}`]: FieldValue.increment(1),
+        [`byReferrer.${referrer}`]: FieldValue.increment(1),
+        [`byProxyType.${proxyType}`]: FieldValue.increment(1),
         lastUpdated: Timestamp.now(),
         computedAt: Timestamp.now(),
       }, { merge: true })
+
+      // 4. Append the raw fact (funnel / cohort / retention queries)
+      batch.set(db.collection(ANALYTICS_EVENTS).doc(), guestEvent)
 
       await batch.commit()
       console.log(`✅ Guest ${event.params.guestId} metrics updated successfully`)
@@ -223,6 +307,17 @@ export const onUserRegistered = onDocumentCreated(
         dailyUpdate.guestConversions = FieldValue.increment(1)
       }
 
+      const userEvent = buildAnalyticsEvent({
+        name: "user_registered",
+        uid: userId,
+        guestId: guestId || null,
+        isConversion,
+        props: {wasGuest: isConversion},
+      })
+      for (const key of toFunnelCounterKeys(userEvent)) {
+        dailyUpdate[key] = FieldValue.increment(1)
+      }
+
       batch.set(dailyRef, dailyUpdate, { merge: true })
 
       // 2. Update dashboard summary
@@ -256,6 +351,9 @@ export const onUserRegistered = onDocumentCreated(
         updatedAt: Timestamp.now(),
       })
 
+      // 4. Append the raw fact (funnel / cohort / retention queries)
+      batch.set(db.collection(ANALYTICS_EVENTS).doc(), userEvent)
+
       await batch.commit()
       console.log(`✅ User ${userId} registration metrics updated (conversion: ${isConversion})`)
     } catch (error) {
@@ -285,10 +383,20 @@ export const onLoginEvent = onDocumentCreated(
       // 1. Update daily metrics
       const dailyRef = db.doc(`metrics_daily/${today}`)
       const providerKey = loginInfo.providerId || "unknown"
+      const loginEvent = buildAnalyticsEvent({
+        name: "login_succeeded",
+        uid: event.params.userId,
+        props: {provider: providerKey, connection: loginInfo.connection || ""},
+      })
+      const funnelCounters: Record<string, FieldValue> = {}
+      for (const key of toFunnelCounterKeys(loginEvent)) {
+        funnelCounters[key] = FieldValue.increment(1)
+      }
       batch.set(dailyRef, {
         totalLogins: FieldValue.increment(1),
         [`loginsByHour.${hour}`]: FieldValue.increment(1),
         [`byProvider.${providerKey}`]: FieldValue.increment(1),
+        ...funnelCounters,
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
@@ -297,6 +405,7 @@ export const onLoginEvent = onDocumentCreated(
       const hourlyRef = db.doc(`metrics_hourly/${hourKey}`)
       batch.set(hourlyRef, {
         totalLogins: FieldValue.increment(1),
+        ...funnelCounters,
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
@@ -316,6 +425,9 @@ export const onLoginEvent = onDocumentCreated(
         updatedAt: Timestamp.now(),
       }, { merge: true })
 
+      // 5. Append the raw fact (funnel / cohort / retention queries)
+      batch.set(db.collection(ANALYTICS_EVENTS).doc(), loginEvent)
+
       await batch.commit()
       console.log(`✅ Login metrics updated for user ${event.params.userId}`)
     } catch (error) {
@@ -333,6 +445,9 @@ export const onLoginEvent = onDocumentCreated(
  */
 export const backfillDashboardSummary = onSchedule("*/30 * * * *", async () => {
   try {
+    // Drain the client-event list first so facts + per-day counters stay current.
+    await drainClientAnalyticsEvents()
+
     const now = new Date()
     const last30Start = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)
       .toISOString().split("T")[0]
@@ -500,10 +615,13 @@ async function computeRangeMetric(rangeId: string, days: number) {
     0, 0, 0, 0,
   )))
 
-  // Generate array of dates
+  // Generate array of UTC day keys — must match the metrics_daily/{date} keys exactly.
+  // ponytail: iterate in UTC; local setDate() drifts a day across DST/month ends.
   const dates: string[] = []
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    dates.push(d.toISOString().split("T")[0])
+  const rangeStartMs = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+  const rangeEndMs = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
+  for (let ms = rangeStartMs; ms <= rangeEndMs; ms += 24 * 60 * 60 * 1000) {
+    dates.push(new Date(ms).toISOString().split("T")[0])
   }
 
   // Fetch all daily metrics for the range
@@ -551,6 +669,21 @@ async function computeRangeMetric(rangeId: string, days: number) {
   const byTimezone: { [key: string]: number } = {}
   const byASN: { [key: string]: number } = {}
   const byISP: { [key: string]: number } = {}
+  const byChannel: { [key: string]: number } = {}
+  const byReferrer: { [key: string]: number } = {}
+  const byProxyType: { [key: string]: number } = {}
+  const byBotKind: { [key: string]: number } = {}
+  const funnel: { [key: string]: number } = {guest_created: 0, user_registered: 0, login_succeeded: 0}
+  const clientEvents: { [key: string]: number } = {}
+  const byPage: { [key: string]: number } = {}
+  const byLandingPath: { [key: string]: number } = {}
+  const revenueByCurrency: { [key: string]: number } = {}
+  const paymentsByCurrency: { [key: string]: number } = {}
+  const paidByPlan: { [key: string]: number } = {}
+  const paidByChannel: { [key: string]: number } = {}
+  let bots = 0
+  let scannedBots = 0
+  const scannedBotKinds: { [key: string]: number } = {}
   const dailyBreakdown: Array<{
     date: string
     newGuests: number
@@ -589,6 +722,16 @@ async function computeRangeMetric(rangeId: string, days: number) {
 
   guestsCreatedSnap.docs.forEach((doc) => {
     const guest = doc.data() as Guest
+
+    // ponytail: guests created before bot tagging carry no flag — re-parse their stored
+    // UA so historical bot share stays accurate without a migration (docs are read anyway).
+    const guestAgent = guest.isBot === undefined ? parseUA(guest.userAgent || "") : null
+    if (guest.isBot ?? guestAgent?.isBot) {
+      scannedBots += 1
+      const kind = guest.botKind || guestAgent?.botKind || "bot"
+      scannedBotKinds[kind] = (scannedBotKinds[kind] || 0) + 1
+    }
+
     const tsValue = guest.createdAt as unknown as { toDate?: () => Date }
     const dateKey = tsValue?.toDate ?
       tsValue.toDate().toISOString().split("T")[0] :
@@ -624,6 +767,15 @@ async function computeRangeMetric(rangeId: string, days: number) {
     const isp = (guestNetwork?.as || guestNetwork?.isp || asn || "").trim() || "Unknown"
     byASN[asnKey] = (byASN[asnKey] || 0) + 1
     byISP[isp] = (byISP[isp] || 0) + 1
+
+    const acquisition = (guest as unknown as { acquisition?: { utmSource?: string; referrer?: string } }).acquisition
+    const proxy = (guest as unknown as { proxy?: { isProxy?: boolean; proxyType?: string | null } }).proxy
+    const channelKey = acquisition?.utmSource || "direct"
+    const referrerKey = acquisition?.referrer || "direct"
+    const proxyKey = proxy?.isProxy ? (proxy.proxyType || "proxy") : "direct"
+    byChannel[channelKey] = (byChannel[channelKey] || 0) + 1
+    byReferrer[referrerKey] = (byReferrer[referrerKey] || 0) + 1
+    byProxyType[proxyKey] = (byProxyType[proxyKey] || 0) + 1
   })
 
   dailySnapshots.forEach((snapshot, index) => {
@@ -694,6 +846,38 @@ async function computeRangeMetric(rangeId: string, days: number) {
         byProvider[provider] = (byProvider[provider] || 0) + count
       })
 
+      // Bot traffic + funnel come straight off the daily rollup — no extra reads.
+      const dataRecord = data as unknown as Record<string, unknown>
+      bots += Number(dataRecord.bots || 0)
+      Object.entries(collectBreakdown(dataRecord, "byBotKind")).forEach(([kind, count]) => {
+        byBotKind[kind] = (byBotKind[kind] || 0) + count
+      })
+      Object.entries(collectBreakdown(dataRecord, "funnel")).forEach(([step, count]) => {
+        funnel[step] = (funnel[step] || 0) + count
+      })
+      Object.entries(collectBreakdown(dataRecord, "clientEvents")).forEach(([name, count]) => {
+        clientEvents[name] = (clientEvents[name] || 0) + count
+      })
+      Object.entries(collectBreakdown(dataRecord, "byPage")).forEach(([page, count]) => {
+        byPage[page] = (byPage[page] || 0) + count
+      })
+      Object.entries(collectBreakdown(dataRecord, "byLandingPath")).forEach(([path, count]) => {
+        byLandingPath[path] = (byLandingPath[path] || 0) + count
+      })
+      // Payment counters are written by the Stripe webhook; sums stay per currency.
+      Object.entries(collectBreakdown(dataRecord, "revenueByCurrency")).forEach(([currency, amount]) => {
+        revenueByCurrency[currency] = (revenueByCurrency[currency] || 0) + amount
+      })
+      Object.entries(collectBreakdown(dataRecord, "paymentsByCurrency")).forEach(([currency, count]) => {
+        paymentsByCurrency[currency] = (paymentsByCurrency[currency] || 0) + count
+      })
+      Object.entries(collectBreakdown(dataRecord, "paidByPlan")).forEach(([planName, count]) => {
+        paidByPlan[planName] = (paidByPlan[planName] || 0) + count
+      })
+      Object.entries(collectBreakdown(dataRecord, "paidByChannel")).forEach(([channel, count]) => {
+        paidByChannel[channel] = (paidByChannel[channel] || 0) + count
+      })
+
       Object.entries(dataExt.byLanguage || {}).forEach(([lang, count]) => {
         byLanguage[lang] = (byLanguage[lang] || 0) + (count as number)
       })
@@ -729,6 +913,15 @@ async function computeRangeMetric(rangeId: string, days: number) {
       guestConversions += sourceConversions
     }
   })
+
+  // Daily bot counters only exist once the facts layer is deployed; the guest scan
+  // covers older days (and re-tags guests created before bot tagging shipped).
+  if (bots < scannedBots) {
+    bots = scannedBots
+    Object.entries(scannedBotKinds).forEach(([kind, count]) => {
+      byBotKind[kind] = count
+    })
+  }
 
   // Fallback: rebuild logins from raw login history if daily totals are missing
   if (totalLogins === 0) {
@@ -774,6 +967,9 @@ async function computeRangeMetric(rangeId: string, days: number) {
     current.totalLogins > peak.totalLogins ? current : peak
   )
 
+  // Cohort retention only for the 30-day range — one bounded read, not three.
+  const retention = days === 30 ? await computeRetention() : null
+
   // Store the computed range metrics
   await db.doc(`metrics_range/${rangeId}`).set({
     rangeId: rangeId,
@@ -801,6 +997,20 @@ async function computeRangeMetric(rangeId: string, days: number) {
     byTimezone: byTimezone,
     byASN: byASN,
     byISP: byISP,
+    byChannel: byChannel,
+    byReferrer: byReferrer,
+    byProxyType: byProxyType,
+    byBotKind: byBotKind,
+    bots: bots,
+    funnel: funnel,
+    clientEvents: clientEvents,
+    byPage: byPage,
+    byLandingPath: byLandingPath,
+    revenueByCurrency: revenueByCurrency,
+    paymentsByCurrency: paymentsByCurrency,
+    paidByPlan: paidByPlan,
+    paidByChannel: paidByChannel,
+    ...(retention ? {retention: retention} : {}),
     dailyBreakdown: dailyBreakdown,
     trends: {
       avgDailyGuests: avgDailyGuests,
@@ -814,6 +1024,76 @@ async function computeRangeMetric(rangeId: string, days: number) {
   })
 
   console.log(`✅ Range metric ${rangeId} computed successfully`)
+}
+
+/**
+ * Cohort retention from the raw facts.
+ *
+ * Identity = `uid || guestId`, cohort = the first day that identity was seen.
+ * Bots are excluded — crawlers do not come back. A cell is `null` (not 0) while
+ * its window has not elapsed yet, so the grid never fakes a retention drop.
+ */
+async function computeRetention(): Promise<RetentionCohort[]> {
+  const end = new Date()
+  const todayKey = toEventDate(end)
+  const todayMs = Date.parse(`${todayKey}T00:00:00.000Z`)
+
+  // ponytail: read 60 days so the oldest reported cohort can still show D30.
+  const startKey = toEventDate(new Date(todayMs - 59 * 24 * 60 * 60 * 1000))
+  const eventsSnap = await db.collection(ANALYTICS_EVENTS)
+    .where("date", ">=", startKey)
+    .where("date", "<=", todayKey)
+    .limit(RETENTION_EVENT_LIMIT)
+    .get()
+
+  const daysByIdentity = new Map<string, Set<string>>()
+  eventsSnap.docs.forEach((doc) => {
+    const event = doc.data() as AnalyticsEvent
+    if (event.isBot) return
+    const identity = event.uid || event.guestId
+    if (!identity) return
+    const days = daysByIdentity.get(identity) || new Set<string>()
+    days.add(event.date)
+    daysByIdentity.set(identity, days)
+  })
+
+  const cohorts = new Map<string, { size: number, active: Map<number, number> }>()
+  daysByIdentity.forEach((days) => {
+    const sorted = [...days].sort()
+    const cohort = sorted[0]
+    const baseMs = Date.parse(`${cohort}T00:00:00.000Z`)
+    const row = cohorts.get(cohort) || {size: 0, active: new Map<number, number>()}
+    row.size += 1
+
+    for (const day of sorted) {
+      const offset = Math.round((Date.parse(`${day}T00:00:00.000Z`) - baseMs) / (24 * 60 * 60 * 1000))
+      if (RETENTION_OFFSETS.includes(offset)) {
+        row.active.set(offset, (row.active.get(offset) || 0) + 1)
+      }
+    }
+
+    cohorts.set(cohort, row)
+  })
+
+  // Only cohorts inside the last 30 days are reported (the range we serve).
+  const windowStartKey = toEventDate(new Date(todayMs - 29 * 24 * 60 * 60 * 1000))
+  const cell = (row: { active: Map<number, number> }, cohortMs: number, offset: number): number | null =>
+    cohortMs + offset * 24 * 60 * 60 * 1000 > todayMs ? null : row.active.get(offset) || 0
+
+  return [...cohorts.entries()]
+    .filter(([cohort]) => cohort >= windowStartKey && cohort <= todayKey)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([cohort, row]) => {
+      const cohortMs = Date.parse(`${cohort}T00:00:00.000Z`)
+      return {
+        cohort,
+        size: row.size,
+        d1: cell(row, cohortMs, 1),
+        d7: cell(row, cohortMs, 7),
+        d14: cell(row, cohortMs, 14),
+        d30: cell(row, cohortMs, 30),
+      }
+    })
 }
 
 /**
@@ -850,6 +1130,36 @@ export const cleanupOldAnalytics = onSchedule("0 2 * * *", async () => {
       await batch.commit()
       console.log(`🧹 Cleaned up ${expiredRangeQuery.size} expired range metrics`)
     }
+
+    // Clean up old daily metrics (keep 365 days; range recompute only needs <=90d)
+    const dailyCutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    const oldDailyQuery = await db.collection("metrics_daily")
+      .where("date", "<", dailyCutoff)
+      .limit(200)
+      .get()
+
+    if (!oldDailyQuery.empty) {
+      const batch = db.batch()
+      oldDailyQuery.docs.forEach((doc) => batch.delete(doc.ref))
+      await batch.commit()
+      console.log(`🧹 Cleaned up ${oldDailyQuery.size} old daily metrics`)
+    }
+
+    // Clean up raw facts (daily rollups already carry the aggregates)
+    const eventsCutoff = new Date(
+      Date.now() - ANALYTICS_EVENTS_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    ).toISOString().split("T")[0]
+    const oldEventsQuery = await db.collection(ANALYTICS_EVENTS)
+      .where("date", "<", eventsCutoff)
+      .limit(400)
+      .get()
+
+    if (!oldEventsQuery.empty) {
+      const batch = db.batch()
+      oldEventsQuery.docs.forEach((doc) => batch.delete(doc.ref))
+      await batch.commit()
+      console.log(`🧹 Cleaned up ${oldEventsQuery.size} old analytics events`)
+    }
   } catch (error) {
     console.error("❌ Error during cleanup:", error)
   }
@@ -859,13 +1169,100 @@ export const cleanupOldAnalytics = onSchedule("0 2 * * *", async () => {
 // REAL-TIME PRESENCE — Active users in 1 min / 5 min / 30 min windows
 // ============================================================================
 
+type PresenceCounts = {
+  users1m: number
+  users5m: number
+  users30m: number
+  guests1m: number
+  guests5m: number
+  guests30m: number
+}
+
+/**
+ * Redis presence is authoritative.
+ *
+ * The heartbeat (`/event/heartbeat`) and `validateSessionCookie` score every live
+ * caller into `online:users` / `online:guests` with its last-seen epoch. One
+ * ZCOUNT per window per population answers this in a single round-trip, versus
+ * six Firestore count queries per minute — and unlike the Firestore `presence`
+ * documents, a member that stops heartbeating drops out of its window
+ * immediately instead of lingering.
+ *
+ * Returns null when Redis is unavailable, so the caller can fall back.
+ */
+async function readPresenceCountsFromRedis(): Promise<PresenceCounts | null> {
+  try {
+    const now = Date.now()
+    const [users1m, guests1m, users5m, guests5m, users30m, guests30m] =
+      await (redis as unknown as {
+        eval: (script: string, keys: string[], args: number[]) => Promise<number[]>
+      }).eval(
+        PRESENCE_WINDOW_COUNTS,
+        [ONLINE_USERS_KEY, ONLINE_GUESTS_KEY],
+        [
+          now - PRESENCE_WINDOWS_MS[0],
+          now - PRESENCE_WINDOWS_MS[1],
+          now - PRESENCE_WINDOWS_MS[2],
+          now,
+        ],
+      )
+
+    return {
+      users1m: Number(users1m) || 0,
+      users5m: Number(users5m) || 0,
+      users30m: Number(users30m) || 0,
+      guests1m: Number(guests1m) || 0,
+      guests5m: Number(guests5m) || 0,
+      guests30m: Number(guests30m) || 0,
+    }
+  } catch (error) {
+    console.warn("Presence: Redis read failed, falling back to Firestore:", error)
+    return null
+  }
+}
+
+/**
+ * Firestore fallback, used only when Redis is unavailable. Kept because the
+ * dashboard must render something even during a cache outage.
+ *
+ * @param {number} now - Current epoch milliseconds, used to derive the cutoffs.
+ * @return {Promise<PresenceCounts>} Presence counts for the three windows.
+ */
+async function readPresenceCountsFromFirestore(now: number): Promise<PresenceCounts> {
+  const cutoff1m = Timestamp.fromMillis(now - PRESENCE_WINDOWS_MS[0])
+  const cutoff5m = Timestamp.fromMillis(now - PRESENCE_WINDOWS_MS[1])
+  const cutoff30m = Timestamp.fromMillis(now - PRESENCE_WINDOWS_MS[2])
+
+  const [snap1m, snap5m, snap30m, gSnap1m, gSnap5m, gSnap30m] = await Promise.all([
+    db.collection("presence").where("lastSeen", ">=", cutoff1m).count().get(),
+    db.collection("presence").where("lastSeen", ">=", cutoff5m).count().get(),
+    db.collection("presence").where("lastSeen", ">=", cutoff30m).count().get(),
+    db.collection("guests").where("lastSeen", ">=", cutoff1m).count().get(),
+    db.collection("guests").where("lastSeen", ">=", cutoff5m).count().get(),
+    db.collection("guests").where("lastSeen", ">=", cutoff30m).count().get(),
+  ])
+
+  return {
+    users1m: snap1m.data().count,
+    users5m: snap5m.data().count,
+    users30m: snap30m.data().count,
+    guests1m: gSnap1m.data().count,
+    guests5m: gSnap5m.data().count,
+    guests30m: gSnap30m.data().count,
+  }
+}
+
 /**
  * ⏱️ Runs every minute.
- * Counts authenticated users whose `presence/{userId}.lastSeen` falls within
- * the last 1 / 5 / 30 minutes and writes the totals to metrics_summary/dashboard.
+ * Counts authenticated users and guests active in the last 1 / 5 / 30 minutes
+ * and writes the totals to `metrics_summary/dashboard`.
  *
- * Client-side heartbeat: call `validateSessionCookie` every 60 s to keep the
- * presence document fresh. Guests call `recordGuestPresence` instead.
+ * This scheduled job is the ONLY writer of that document. The heartbeat used to
+ * also write it behind a per-instance throttle, so a user with N warm function
+ * instances produced up to N competing writes per minute for the same fields.
+ *
+ * Client-side heartbeat: call `validateSessionCookie` every 60 s to keep
+ * presence fresh. Guests call `recordGuestPresence` instead.
  */
 export const computeActiveUsersNow = onSchedule(
   {
@@ -876,31 +1273,15 @@ export const computeActiveUsersNow = onSchedule(
   async () => {
     try {
       const now = Date.now()
-      const cutoff1m = Timestamp.fromMillis(now - 60 * 1000)
-      const cutoff5m = Timestamp.fromMillis(now - 5 * 60 * 1000)
-      const cutoff30m = Timestamp.fromMillis(now - 30 * 60 * 1000)
+      const counts = (await readPresenceCountsFromRedis()) ?? (await readPresenceCountsFromFirestore(now))
 
-      // Count authenticated users active in each window (presence collection)
-      const [snap1m, snap5m, snap30m] = await Promise.all([
-        db.collection("presence").where("lastSeen", ">=", cutoff1m).count().get(),
-        db.collection("presence").where("lastSeen", ">=", cutoff5m).count().get(),
-        db.collection("presence").where("lastSeen", ">=", cutoff30m).count().get(),
-      ])
+      const activeUsersPerMinute = counts.users1m
+      const activeUsersLast5m = counts.users5m
+      const activeUsersLast30m = counts.users30m
 
-      const activeUsersPerMinute = snap1m.data().count
-      const activeUsersLast5m = snap5m.data().count
-      const activeUsersLast30m = snap30m.data().count
-
-      // Count guests active in each window (guests collection uses lastSeen too)
-      const [gSnap1m, gSnap5m, gSnap30m] = await Promise.all([
-        db.collection("guests").where("lastSeen", ">=", cutoff1m).count().get(),
-        db.collection("guests").where("lastSeen", ">=", cutoff5m).count().get(),
-        db.collection("guests").where("lastSeen", ">=", cutoff30m).count().get(),
-      ])
-
-      const activeGuestsPerMinute = gSnap1m.data().count
-      const activeGuestsLast5m = gSnap5m.data().count
-      const activeGuestsLast30m = gSnap30m.data().count
+      const activeGuestsPerMinute = counts.guests1m
+      const activeGuestsLast5m = counts.guests5m
+      const activeGuestsLast30m = counts.guests30m
 
       await db.doc("metrics_summary/dashboard").set({
         // Authenticated users

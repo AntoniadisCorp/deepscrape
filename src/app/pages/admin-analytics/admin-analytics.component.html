@@ -65,6 +65,20 @@
         </div>
       </header>
 
+      <!-- Section nav: content / payments / platform -->
+      <nav class="aa-tabs mb-6" [attr.aria-label]="'ADMIN_ANALYTICS.SECTION_NAV' | translate">
+        @for (tab of sectionTabs; track tab.id) {
+          <button
+            type="button"
+            class="aa-tab"
+            [class.aa-tab-active]="activeSection() === tab.id"
+            [attr.aria-pressed]="activeSection() === tab.id"
+            (click)="setSection(tab.id)">
+            {{ tab.label | translate }}
+          </button>
+        }
+      </nav>
+
       <!-- Info Banner: Pre-computed data not available -->
       @if (showRangeMissingBanner) {
         <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-lg text-amber-700 dark:text-amber-300 mb-6">
@@ -103,6 +117,7 @@
         <div class="space-y-8">
           <!-- KPI OVERVIEW SECTION -->
           <section class="space-y-6">
+            @if (activeSection() === 'content') {
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
                 {{ 'ADMIN_ANALYTICS.OVERVIEW_TITLE' | translate }}
@@ -123,13 +138,13 @@
                 <div class="flex-1 min-w-0">
                   <h4
                     class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Total Visitors
+                    {{ 'ADMIN_ANALYTICS.KPI_VISITORS' | translate }}
                   </h4>
                   <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
                     {{ guestCount + userCount | number }}
                   </p>
                   <span class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ selectedPeriodLabel | translate }} unique visitors
+                    {{ selectedPeriodLabel | translate }} · {{ 'ADMIN_ANALYTICS.KPI_VISITORS_HINT' | translate }}
                   </span>
                 </div>
               </div>        <!-- Active Users -->
@@ -142,7 +157,7 @@
                 <div class="flex-1 min-w-0">
                   <h4
                     class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Active Users
+                    {{ 'ADMIN_ANALYTICS.KPI_ACTIVE_USERS' | translate }}
                   </h4>
                   <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
                     {{ activeUsersNow | number }}
@@ -161,7 +176,7 @@
                 <div class="flex-1 min-w-0">
                   <h4
                     class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Guest Visitors
+                    {{ 'ADMIN_ANALYTICS.KPI_GUESTS' | translate }}
                   </h4>
                   <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
                     {{ guestCount | number }}
@@ -180,7 +195,7 @@
                 <div class="flex-1 min-w-0">
                   <h4
                     class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Total Logins
+                    {{ 'ADMIN_ANALYTICS.KPI_LOGINS' | translate }}
                   </h4>
                   <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">
                     {{ totalLogins | number }}
@@ -191,9 +206,11 @@
                 </div>
               </div>
             </div>
+            }
           </section>
           <!-- CONVERSION FUNNEL & ENGAGEMENT SECTION -->
           <section class="space-y-6">
+            @if (activeSection() === 'content') {
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
                 {{ 'ADMIN_ANALYTICS.CONV_ENG_TITLE' | translate }}
@@ -216,8 +233,8 @@
                   <div class="flex items-center gap-3">
                     <div
                       class="h-8 bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 rounded flex-1 flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm">
-                      <span>Visitors</span>
-                      <span>{{ guestCount + userCount | number }}</span>
+                      <span>{{ 'ADMIN_ANALYTICS.FUNNEL_STEP_VISITORS' | translate }}</span>
+                      <span>{{ funnelSteps[0].count | number }}</span>
                     </div>
                     <span
                       class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
@@ -227,33 +244,108 @@
                   <div class="flex items-center gap-3">
                     <div
                       class="h-8 bg-gradient-to-r from-emerald-600 to-emerald-700 dark:from-emerald-500 dark:to-emerald-600 rounded flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm"
-                [style.width.%]="
-                  (registeredGuestsCount / (guestCount || 1)) * 100
-                ">
-                      <span>Signed Up</span>
-                      <span>{{ registeredGuestsCount | number }}</span>
+                [style.width.%]="funnelSteps[1].pct">
+                      <span>{{ 'ADMIN_ANALYTICS.FUNNEL_STEP_SIGNUPS' | translate }}</span>
+                      <span>{{ funnelSteps[1].count | number }}</span>
                     </div>
                     <span
-                      class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
-                      {{ guestConversionRate | number : '1.1-1' }}%
+                      class="text-sm text-slate-500 dark:text-slate-400 w-14 font-medium">
+                      {{ funnelSteps[1].pct | number : '1.1-1' }}%
                     </span>
                   </div>
                   <div class="flex items-center gap-3">
                     <div
                       class="h-8 bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-500 dark:to-indigo-600 rounded flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm"
-                [style.width.%]="
-                  (userCount / (guestCount + userCount || 1)) * 100
-                ">
-                      <span>Active Users</span>
-                      <span>{{ activeUsersNow | number }}</span>
+                [style.width.%]="funnelSteps[2].pct">
+                      <span>{{ 'ADMIN_ANALYTICS.FUNNEL_STEP_LOGINS' | translate }}</span>
+                      <span>{{ funnelSteps[2].count | number }}</span>
                     </div>
                     <span
-                      class="text-sm text-slate-500 dark:text-slate-400 w-12 font-medium">
-                      {{ conversionRate | number : '1.0-0' }}%
+                      class="text-sm text-slate-500 dark:text-slate-400 w-14 font-medium">
+                      {{ funnelSteps[2].pct | number : '1.1-1' }}%
                     </span>
                   </div>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="h-8 bg-gradient-to-r from-cyan-600 to-cyan-700 dark:from-cyan-500 dark:to-cyan-600 rounded flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm"
+                [style.width.%]="funnelSteps[3].pct">
+                      <span>{{ 'ADMIN_ANALYTICS.FUNNEL_STEP_ACTIVATED' | translate }}</span>
+                      <span>{{ funnelSteps[3].count | number }}</span>
+                    </div>
+                    <span
+                      class="text-sm text-slate-500 dark:text-slate-400 w-14 font-medium">
+                      {{ funnelSteps[3].pct | number : '1.1-1' }}%
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="h-8 bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-400 dark:to-amber-500 rounded flex items-center justify-between px-3 text-white text-sm font-medium shadow-sm"
+                [style.width.%]="funnelSteps[4].pct">
+                      <span>{{ 'ADMIN_ANALYTICS.FUNNEL_STEP_PAID' | translate }}</span>
+                      <span>{{ funnelSteps[4].count | number }}</span>
+                    </div>
+                    <span
+                      class="text-sm text-slate-500 dark:text-slate-400 w-14 font-medium">
+                      {{ funnelSteps[4].pct | number : '1.1-1' }}%
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 pt-1">
+                    {{ 'ADMIN_ANALYTICS.FUNNEL_BOT_SHARE' | translate }}:
+                    <span class="font-medium text-slate-700 dark:text-slate-200">{{ botTrafficCount | number }}</span>
+                    ({{ botSharePct | number : '1.1-1' }}%)
+                  </p>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                    {{ 'ADMIN_ANALYTICS.FUNNEL_HELPER' | translate }}
+                  </p>
                 </div>
               </div>
+
+              <!-- Cohort Retention (30-day range only) -->
+              @if (retentionRows.length > 0) {
+                <div
+                  class="col-span-full bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                      {{ 'ADMIN_ANALYTICS.RETENTION_TITLE' | translate }}
+                    </h3>
+                    <lucide-angular [img]="icons['repeat']" class="w-5 h-5 text-slate-500 dark:text-slate-400" aria-label="Cohort Retention"></lucide-angular>
+                  </div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                    {{ 'ADMIN_ANALYTICS.RETENTION_HELPER' | translate }}
+                  </p>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead>
+                        <tr class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          <th class="text-left font-medium py-2">{{ 'ADMIN_ANALYTICS.RETENTION_COHORT' | translate }}</th>
+                          <th class="text-right font-medium py-2">{{ 'ADMIN_ANALYTICS.RETENTION_SIZE' | translate }}</th>
+                          <th class="text-right font-medium py-2">D1</th>
+                          <th class="text-right font-medium py-2">D7</th>
+                          <th class="text-right font-medium py-2">D14</th>
+                          <th class="text-right font-medium py-2">D30</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of retentionRows; track row.cohort) {
+                          <tr class="border-t border-slate-200/60 dark:border-slate-700/60">
+                            <td class="py-2 text-slate-700 dark:text-slate-200">{{ row.cohort }}</td>
+                            <td class="py-2 text-right text-slate-500 dark:text-slate-400">{{ row.size | number }}</td>
+                            @for (cell of row.cells; track $index) {
+                              <td class="py-2 text-right text-slate-700 dark:text-slate-200">
+                                @if (cell === null) {
+                                  <span class="text-slate-400 dark:text-slate-500">—</span>
+                                } @else {
+                                  {{ cell | number : '1.1-1' }}%
+                                }
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
               <!-- Engagement Metrics -->
               <div
                 class="bg-white dark:bg-gray7/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-6 shadow-sm">
@@ -387,9 +479,11 @@
                 </div>
               </div>
             </div>
+            }
           </section>
 
           <section class="space-y-6">
+            @if (activeSection() === 'platform') {
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
                 {{ 'ADMIN_ANALYTICS.RISK_TITLE' | translate }}
@@ -490,10 +584,12 @@
                 </div>
               }
             </div>
+            }
           </section>
 
           <!-- CHARTS SECTION -->
           <section class="space-y-8">
+            @if (activeSection() === 'content') {
             <!-- Login Analytics -->
             <div class="space-y-6">
               <div class="mb-6">
@@ -811,9 +907,11 @@
                 </div>
               </div>
             </div>
+            }
           </section>
           <!-- Recent Activity Table -->
           <section class="space-y-6">
+            @if (activeSection() === 'platform') {
             <div class="mb-6">
               <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2 flex items-center justify-between">
                 {{ 'ADMIN_ANALYTICS.RECENT_TITLE' | translate }}
@@ -883,6 +981,78 @@
                 </table>
               </div>
             </div>
+            }
+          </section>
+
+          <!-- PAYMENTS PANE -->
+          <section class="space-y-6">
+            @if (activeSection() === 'payments') {
+            <div class="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+                  {{ 'ADMIN_ANALYTICS.PAYMENTS_TITLE' | translate }}
+                </h2>
+                <p class="text-sm text-slate-600 dark:text-slate-300">
+                  {{ 'ADMIN_ANALYTICS.PAYMENTS_SUB' | translate }}
+                </p>
+              </div>
+              <div
+                class="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 dark:from-rose-500 dark:to-rose-600 shadow-lg shadow-rose-500/20 flex items-center justify-center flex-shrink-0">
+                <lucide-angular [img]="icons['piggy-bank']" class="w-6 h-6 text-white fill-none" aria-label="Payments"></lucide-angular>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              @for (row of revenueRows; track row.currency) {
+                <div
+                  class="aa-card aa-card-rose bg-white dark:bg-gray7/80 border border-slate-200/60 dark:border-gray6/60 rounded-xl p-6 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                    {{ 'ADMIN_ANALYTICS.REVENUE_TITLE' | translate }} · {{ row.currency }}
+                  </p>
+                  <p class="text-3xl font-bold text-slate-900 dark:text-slate-50">
+                    {{ row.amount | number : '1.2-2' }}
+                  </p>
+                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                    <span>{{ row.payments }} {{ 'ADMIN_ANALYTICS.REVENUE_PAYMENTS' | translate }}</span>
+                    <span class="w-px h-3 bg-slate-300 dark:bg-gray5"></span>
+                    <span>{{ 'ADMIN_ANALYTICS.REVENUE_ARPU' | translate }} {{ row.arpu | number : '1.2-2' }}</span>
+                  </div>
+                </div>
+              }
+              @if (revenueRows.length === 0) {
+                <div
+                  class="sm:col-span-2 xl:col-span-3 rounded-xl border border-dashed border-slate-300 dark:border-gray5 p-6 text-sm text-slate-500 dark:text-slate-400">
+                  {{ 'ADMIN_ANALYTICS.PAYMENTS_EMPTY' | translate }}
+                </div>
+              }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (panel of paymentPanels; track panel.title) {
+                <div class="aa-card rounded-lg border border-slate-200/60 dark:border-slate-700/60 p-3 bg-slate-50/40 dark:bg-gray7/70">
+                  <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full" [style.background]="panel.accent"></span>
+                    {{ panel.title | translate }}
+                  </h4>
+                  <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                    @if (panel.rows.length === 0) {
+                      <p class="text-xs text-slate-400 dark:text-slate-500">{{ 'ADMIN_ANALYTICS.NO_PANEL_DATA' | translate }}</p>
+                    }
+                    @for (row of panel.rows; track row.label) {
+                      <div class="flex items-center gap-2 text-xs">
+                        <span class="w-1/2 truncate text-slate-700 dark:text-slate-300" [title]="row.label">{{ row.label }}</span>
+                        <span class="w-9 text-right tabular-nums text-slate-500 dark:text-slate-400">{{ row.count }}</span>
+                        <span class="w-11 text-right tabular-nums text-slate-400 dark:text-slate-500">{{ row.pct }}%</span>
+                        <div class="flex-1 h-1.5 rounded-full bg-slate-200/70 dark:bg-slate-700/60 overflow-hidden">
+                          <div class="h-full rounded-full" [style.width.%]="row.pct" [style.background]="panel.accent"></div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            }
           </section>
         </div>
       }

@@ -169,3 +169,51 @@
 .admin-analytics-theme .btn-ring-orange {
   @apply focus-visible:ring-amber-300 dark:focus-visible:ring-amber-500;
 }
+
+/* Section tabs (content / payments / platform) */
+.admin-analytics-theme .aa-tabs {
+  @apply inline-flex flex-wrap items-center gap-1 rounded-full border border-gray-300/70 bg-gray-100/80 p-1;
+}
+
+.admin-analytics-theme .aa-tab {
+  @apply rounded-full px-4 py-2 text-xs font-semibold tracking-[0.03em] text-gray5;
+  @apply transition-all duration-200 ease-out;
+  @apply hover:text-cyan-700;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 focus-visible:ring-offset-2;
+}
+
+.admin-analytics-theme .aa-tab-active {
+  @apply bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-500/30;
+}
+
+/* Cards: cyan accent line by default, rose for money. */
+.admin-analytics-theme .aa-card {
+  @apply relative overflow-hidden transition-all duration-200 ease-out;
+  @apply hover:-translate-y-0.5 hover:shadow-lg;
+  @apply motion-reduce:hover:translate-y-0;
+}
+
+.admin-analytics-theme .aa-card::before {
+  content: '';
+  @apply absolute inset-x-0 top-0 h-[3px];
+  background: linear-gradient(90deg, #0891b2, #38bdf8);
+}
+
+.admin-analytics-theme .aa-card-rose::before {
+  background: linear-gradient(90deg, #e11d48, #fb7185);
+}
+
+:host-context(.dark) .admin-analytics-theme .aa-tabs {
+  border-color: rgb(69 78 86 / 60%);
+  background: rgb(18 24 27 / 60%);
+}
+
+:host-context(.dark) .admin-analytics-theme .aa-tab {
+  @apply text-gray-300;
+}
+
+:host-context(.dark) .admin-analytics-theme .aa-tab-active {
+  @apply text-cyan-300 ring-cyan-400/30;
+  background: rgb(42 46 53 / 80%);
+  box-shadow: 0 6px 18px -8px rgb(8 145 178 / 55%);
+}
