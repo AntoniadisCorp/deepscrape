@@ -121,7 +121,6 @@
     "firebase": "^11.10.0",
     "http-proxy-middleware": "^3.0.7",
     "idb": "^8.0.3",
-    "ioredis": "^5.11.1",
     "libphonenumber-js": "^1.13.12",
     "lucide-angular": "^0.577.0",
     "marked": "^15.0.12",
