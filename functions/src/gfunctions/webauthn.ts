@@ -11,6 +11,8 @@ import {
 } from "@simplewebauthn/server"
 import { db, auth as adminAuth } from "../app/config"
 import { env, functionsEnvJson } from "../config/env"
+import { validateCallableData } from "../infrastructure/validate"
+import { z } from "zod"
 
 // WebAuthn configuration
 const RP_NAME = env.RP_NAME || "DeepScrape"
@@ -94,7 +96,7 @@ export const generateWebAuthnRegistrationOptions = onCall(
     } catch (error) {
       console.error("❌ Error generating WebAuthn registration options:", error)
       throw new Error(
-        `Failed to generate registration options: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to generate registration options"
       )
     }
   }
@@ -115,11 +117,22 @@ export const verifyWebAuthnRegistration = onCall(
     }
 
     const userId = auth.uid
-    const { credential } = request.data as { credential: any }
-
-    if (!credential) {
-      throw new Error("Missing required field: credential")
-    }
+    const { credential } = validateCallableData(
+      z.object({
+        credential: z.object({
+          id: z.string().min(1).max(1024),
+          type: z.string().max(64).optional(),
+          rawId: z.string().max(4096).optional(),
+          response: z.object({
+            clientDataJSON: z.string().min(1).max(16384),
+            attestationObject: z.string().min(1).max(16384).optional(),
+            transports: z.array(z.string().max(64)).optional(),
+            clientExtensionResults: z.record(z.unknown()).default({}),
+          }).passthrough(),
+        }).passthrough(),
+      }),
+      request.data
+    )
 
     try {
       // Retrieve the stored challenge
@@ -145,7 +158,7 @@ export const verifyWebAuthnRegistration = onCall(
       await challengeDoc.ref.delete()
 
       const verification = await verifyRegistrationResponse({
-        response: credential,
+        response: credential as any,
         expectedChallenge,
         expectedOrigin: RP_ORIGIN,
         expectedRPID: RP_ID,
@@ -186,7 +199,7 @@ export const verifyWebAuthnRegistration = onCall(
     } catch (error) {
       console.error("❌ Error verifying WebAuthn registration:", error)
       throw new Error(
-        `Failed to verify registration: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to verify registration"
       )
     }
   }
@@ -238,7 +251,7 @@ export const generateWebAuthnAuthenticationOptions = onCall(
     } catch (error) {
       console.error("❌ Error generating WebAuthn authentication options:", error)
       throw new Error(
-        `Failed to generate authentication options: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to generate authentication options"
       )
     }
   }
@@ -259,11 +272,23 @@ export const verifyWebAuthnAuthentication = onCall(
     }
 
     const userId = auth.uid
-    const { credential } = request.data as { credential: any }
-
-    if (!credential) {
-      throw new Error("Missing required field: credential")
-    }
+    const { credential } = validateCallableData(
+      z.object({
+        credential: z.object({
+          id: z.string().min(1).max(1024),
+          type: z.string().max(64).optional(),
+          rawId: z.string().max(4096).optional(),
+          response: z.object({
+            clientDataJSON: z.string().min(1).max(16384),
+            authenticatorData: z.string().min(1).max(8192).optional(),
+            signature: z.string().min(1).max(8192).optional(),
+            userHandle: z.string().max(512).optional(),
+            clientExtensionResults: z.record(z.unknown()).default({}),
+          }).passthrough(),
+        }).passthrough(),
+      }),
+      request.data
+    )
 
     try {
       // Retrieve the stored challenge
@@ -305,7 +330,7 @@ export const verifyWebAuthnAuthentication = onCall(
       const storedCred = credDoc.data() as any
 
       const verification = await verifyAuthenticationResponse({
-        response: credential,
+        response: credential as any,
         expectedChallenge,
         expectedOrigin: RP_ORIGIN,
         expectedRPID: RP_ID,
@@ -337,7 +362,7 @@ export const verifyWebAuthnAuthentication = onCall(
     } catch (error) {
       console.error("❌ Error verifying WebAuthn authentication:", error)
       throw new Error(
-        `Failed to verify authentication: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to verify authentication"
       )
     }
   }
@@ -364,7 +389,7 @@ export const getWebAuthnCredentials = onCall(
     } catch (error) {
       console.error("❌ Error getting WebAuthn credentials:", error)
       throw new Error(
-        `Failed to get credentials: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to get credentials"
       )
     }
   }
@@ -385,7 +410,10 @@ export const removeWebAuthnCredential = onCall(
       throw new Error("Unauthorized")
     }
 
-    const { credentialDocId } = request.data as { credentialDocId: string }
+    const { credentialDocId } = validateCallableData(
+      z.object({ credentialDocId: z.string().min(1).max(256) }),
+      request.data
+    )
     if (!credentialDocId) {
       throw new Error("Missing required field: credentialDocId")
     }
@@ -404,7 +432,7 @@ export const removeWebAuthnCredential = onCall(
     } catch (error) {
       console.error("❌ Error removing WebAuthn credential:", error)
       throw new Error(
-        `Failed to remove credential: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to remove credential"
       )
     }
   }

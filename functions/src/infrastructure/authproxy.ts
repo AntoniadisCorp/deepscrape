@@ -6,6 +6,7 @@
 
 import { NextFunction, Request, Response, Router } from "express"
 import { auth } from "../app/config"
+import { upstashAuthLimiter } from "../handlers/upstash-limiter"
 import {
     checkUserEmailForDifferentProvider,
     updateEmailVerificationStatus,
@@ -93,20 +94,20 @@ class AuthAPIProxy {
 
     private httpRoutesPosts(): void {
         // Resolve a username or phone number to the account email
-        this.router.post("/resolve-identifier", resolveIdentifier)
+        this.router.post("/resolve-identifier", upstashAuthLimiter, resolveIdentifier)
 
         // Check if phone number exists (moved from GET to POST for security)
-        this.router.post("/provider/phone/check", checkPhoneNumberExists)
+        this.router.post("/provider/phone/check", upstashAuthLimiter, checkPhoneNumberExists)
 
         // Verify and link provider
         // This is used to link a new provider to an existing user account
-        this.router.post("/verify-login", verifyLogin)
+        this.router.post("/verify-login", upstashAuthLimiter, verifyLogin)
 
         // Email verification
         this.router.post("/email/verification", this.isJwtAuth, this.requireSelfOrAdmin, updateEmailVerificationStatus)
 
         // Phone verification endpoints
-        this.router.post("/phone/verify", verifyPhoneNumber)
+        this.router.post("/phone/verify", upstashAuthLimiter, verifyPhoneNumber)
         this.router.post("/phone/link", this.isJwtAuth, linkPhoneToAccount)
         this.router.post("/phone/update-verification", this.isJwtAuth, this.requireSelfOrAdmin, updatePhoneVerificationStatus)
     }
