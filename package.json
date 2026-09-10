@@ -104,7 +104,7 @@
     "@ngx-loading-bar/http-client": "^7.0.1",
     "@ngx-loading-bar/router": "^7.0.1",
     "@ngx-translate/core": "^17.0.0",
-    "@ngx-translate/http-loader": "^17.0.0",
+    "@ngx-translate/http-loader": "^18.0.0",
     "@stripe/stripe-js": "^8.11.0",
     "@types/cookie-parser": "^1.4.10",
     "@upstash/ratelimit": "^1.2.1",
