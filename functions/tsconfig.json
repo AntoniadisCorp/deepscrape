@@ -32,6 +32,7 @@
   "compileOnSave": true,
   "include": [
     "src",
+    "scripts",
     "cp-angular.js",
     "api"
   ],
