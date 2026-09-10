@@ -70,7 +70,7 @@ jobs:
 
       - name: Create Pull Request for Release Assets
         if: steps.update_version.outputs.new_tag != ''
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ steps.app-token.outputs.token }}
           branch: "chore/release-assets-${{ github.ref_name }}"
