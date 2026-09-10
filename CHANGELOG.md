@@ -1,3 +1,31 @@
+# [0.9.0](https://github.com/deepscrape/deepscrape/compare/v0.8.0...v0.9.0) (2026-09-10)
+
+
+### Bug Fixes
+
+* **deps:** patch the fast-xml-parser and form-data advisories ([cacc849](https://github.com/deepscrape/deepscrape/commit/cacc849ee4bab872fad9f32533bf711bfb936aa5))
+* **footer:** light-mode social icon contrast ([616f988](https://github.com/deepscrape/deepscrape/commit/616f988021cd53baa53149f065202412e26ce977)), closes [#ffd7f5](https://github.com/deepscrape/deepscrape/issues/ffd7f5)
+* **functions:** enforce App Check on contact submissions ([97c1784](https://github.com/deepscrape/deepscrape/commit/97c1784c977e6c0f5209b05c9fe81458adc2c82b))
+* **functions:** satisfy the valid-jsdoc gate in predeploy lint ([6078af5](https://github.com/deepscrape/deepscrape/commit/6078af5514a30a66b16d7393a55e360d92c9de3b))
+* **functions:** ship the shared redis config inside the deploy artifact ([7bdd36b](https://github.com/deepscrape/deepscrape/commit/7bdd36b92b9b836acfe42707dfc1d8db1c0f9ecd))
+* **sessions:** typed errors, App Check enforcement and batched revocation ([fc41efd](https://github.com/deepscrape/deepscrape/commit/fc41efd320e98223f36252dbf134c3afc1588292))
+* **test:** provide analytics mock for operation status ([1291bf5](https://github.com/deepscrape/deepscrape/commit/1291bf514a97f94ac7d8e0c45c958b9f94b1b2a7))
+
+
+### Features
+
+* **admin-analytics:** rebuild console on the new metrics pipeline ([b55f47e](https://github.com/deepscrape/deepscrape/commit/b55f47e0da6e52465a80d64eaf9758132939faa1))
+* **analytics:** add typed event domain and retire legacy aggregation ([b88b4e5](https://github.com/deepscrape/deepscrape/commit/b88b4e5f8a612a5063524accc8d3ba09f5671293))
+* **analytics:** record paid conversions as idempotent facts ([1c839d8](https://github.com/deepscrape/deepscrape/commit/1c839d8503ade2f53ea425c9fd14b02e75cba7ac))
+* **auth:** rate-limit credential endpoints and harden WebAuthn ([bf31361](https://github.com/deepscrape/deepscrape/commit/bf31361f2f722ffc6ad1b5664260198fae048e53))
+* **functions:** add the redis key hygiene audit ([6b910b4](https://github.com/deepscrape/deepscrape/commit/6b910b4e843abd1fee9f849db21908fb479519a2))
+* **functions:** classify bot and AI-agent traffic from the user agent ([7a54f59](https://github.com/deepscrape/deepscrape/commit/7a54f599b578292b568443abf3a20a47a3df3c27))
+
+
+### Performance Improvements
+
+* **app:** stop below-fold layout collapse before hydration ([3c6f335](https://github.com/deepscrape/deepscrape/commit/3c6f33584f1089b209373bfd0e0b706c7a1f32cc))
+
 # [0.9.0-beta.2](https://github.com/deepscrape/deepscrape/compare/v0.9.0-beta.1...v0.9.0-beta.2) (2026-09-10)
 
 
