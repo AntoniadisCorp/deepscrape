@@ -1,17 +1,56 @@
 /* eslint-disable max-len */
 /* eslint-disable object-curly-spacing */
 /* eslint-disable require-jsdoc */
+import { randomInt, randomUUID } from "node:crypto"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
-import { onCall } from "firebase-functions/v2/https"
+import { HttpsError, onCall } from "firebase-functions/v2/https"
 import { Timestamp } from "firebase-admin/firestore"
 import { Resend } from "resend"
 import { db, dbName, auth as adminAuth } from "../app/config"
 import { env, functionsEnvJson } from "../config/env"
-import { redis } from "../app/cacheConfig"
+import { parseCachedJson, redis } from "../app/cacheConfig"
+import {
+  FIXED_WINDOW_INCREMENT,
+  MERGE_SESSION_CACHE,
+  READ_SESSION_WITH_TTL_REFRESH,
+} from "../../../src/config/redis-scripts"
+import {
+  REVOCATION_TTL_SECONDS,
+  SESSION_ACCESS_CACHE_TTL_SECONDS,
+  SESSION_CACHE_TTL_SECONDS,
+  SIGNED_OUT_TTL_SECONDS,
+  TRUSTED_DEVICE_TTL_SECONDS,
+  VERIFICATION_RATE_LIMIT_MAX,
+  VERIFICATION_RATE_LIMIT_WINDOW_SECONDS,
+  VERIFICATION_TTL_SECONDS,
+  revokedKey,
+  sessionAccessKey,
+  sessionKey,
+  signedOutKey,
+  trustedDeviceKey,
+  verificationKey,
+  verificationRateLimitKey,
+} from "../../../src/config/redis-keys"
 import { GeoLookupRequestContext, lookupGeoByIp, normalizeGeoLookupRoles, normalizePublicIp } from "./analytics"
+import { validateCallableData } from "../infrastructure/validate"
+import { z } from "zod"
 
 const DATABASE_NAME = dbName || "easyscrape"
+
+/**
+ * `@upstash/redis` exposes `eval`, but the no-op fallback client models only the
+ * commands the app uses. Routing every script through this helper keeps the
+ * degraded path explicit instead of surfacing a TypeError mid-request.
+ */
+const redisEval = async <TData>(
+  script: string,
+  keys: string[],
+  args: (string | number)[],
+): Promise<TData> =>
+  (redis as unknown as {
+    eval: (script: string, keys: string[], args: (string | number)[]) => Promise<TData>
+  }).eval(script, keys, args)
 
 type ResolvedSessionGeo = {
   ip: string
@@ -40,24 +79,27 @@ type ResolvedSessionGeo = {
 type SessionGeoEnrichmentStatus = "pending" | "resolved" | "no-match" | "skipped"
 type GuestGeoEnrichmentStatus = "pending" | "resolved" | "no-match" | "skipped"
 
-const SESSION_CACHE_TTL_SECONDS = 30 * 60
+// Firestore caps a batch at 500 writes and each revoke writes 5 documents
+// (4 session records + its audit entry), so 80 revokes per commit.
+const REVOKES_PER_BATCH = 80
 
+/**
+ * Merge a patch into the cached session payload.
+ *
+ * The merge itself now happens inside Redis (`MERGE_SESSION_CACHE`) rather than
+ * as a `get` in Node followed by a `setex`. Two reasons: the old shape paid two
+ * round-trips on a path that runs on every session mutation, and it re-created
+ * an expired key from whatever the caller was holding.
+ */
 async function updateSessionRedisCache(sessionId: string, patch: Record<string, unknown>): Promise<void> {
   try {
-    const cacheKey = `session:${sessionId}`
-    const cached = await redis.get(cacheKey)
-    if (typeof cached !== "string" || !cached) {
-      return
-    }
-
-    const parsed = JSON.parse(cached) as Record<string, unknown>
-    const merged = {
-      ...parsed,
-      ...patch,
-    }
-
-    await redis.setex(cacheKey, SESSION_CACHE_TTL_SECONDS, JSON.stringify(merged))
+    await redisEval<string | null>(
+      MERGE_SESSION_CACHE,
+      [sessionKey(sessionId)],
+      [JSON.stringify(patch), SESSION_CACHE_TTL_SECONDS],
+    )
   } catch (error) {
+    if (error instanceof HttpsError) throw error
     console.warn(`Failed to update Redis session cache for ${sessionId}:`, error)
   }
 }
@@ -428,33 +470,37 @@ async function resolveGeoLookupUserRoles(userId: string, token?: Record<string, 
     }
   }
 
-  try {
-    const authUser = await adminAuth.getUser(userId)
-    const claims = (authUser.customClaims || {}) as Record<string, unknown>
-    collectRoleValues(claims.role, claims.roles)
-  } catch (error) {
-    console.warn(`Failed to read auth claims for geo lookup roles for ${userId}:`, error)
+  // One wave instead of a 3-deep waterfall. Each source keeps its own error isolation.
+  const collectSafely = async (label: string, load: () => Promise<void>): Promise<void> => {
+    try {
+      await load()
+    } catch (error) {
+      if (error instanceof HttpsError) throw error
+      console.warn(`${label} for ${userId}:`, error)
+    }
   }
 
-  try {
-    const userDoc = await db.collection("users").doc(userId).get()
-    if (userDoc.exists) {
-      const userData = userDoc.data() as Record<string, unknown>
-      collectRoleValues(userData.role, userData.roles)
-    }
-  } catch (error) {
-    console.warn(`Failed to read user document roles for geo lookup for ${userId}:`, error)
-  }
-
-  try {
-    const memberships = await db.collection("memberships").where("userId", "==", userId).limit(100).get()
-    for (const membershipDoc of memberships.docs) {
-      const membership = membershipDoc.data() as { role?: unknown }
-      collectRoleValues(membership.role)
-    }
-  } catch (error) {
-    console.warn(`Failed to read membership roles for geo lookup for ${userId}:`, error)
-  }
+  await Promise.all([
+    collectSafely("Failed to read auth claims for geo lookup roles", async () => {
+      const authUser = await adminAuth.getUser(userId)
+      const claims = (authUser.customClaims || {}) as Record<string, unknown>
+      collectRoleValues(claims.role, claims.roles)
+    }),
+    collectSafely("Failed to read user document roles for geo lookup", async () => {
+      const userDoc = await db.collection("users").doc(userId).get()
+      if (userDoc.exists) {
+        const userData = userDoc.data() as Record<string, unknown>
+        collectRoleValues(userData.role, userData.roles)
+      }
+    }),
+    collectSafely("Failed to read membership roles for geo lookup", async () => {
+      const memberships = await db.collection("memberships").where("userId", "==", userId).limit(100).get()
+      for (const membershipDoc of memberships.docs) {
+        const membership = membershipDoc.data() as { role?: unknown }
+        collectRoleValues(membership.role)
+      }
+    }),
+  ])
 
   const resolvedRoles = normalizeGeoLookupRoles(...roleValues)
   return resolvedRoles.length > 0 ? resolvedRoles : ["guest"]
@@ -585,31 +631,37 @@ async function enrichSessionGeoIntelligence(args: {
 export const createLoginSession = onCall(
   {
     cors: true,
+    // ponytail: not enforced — client App Check init is fail-open, and this is the login path.
+    // Enforce once app.config.ts fails loud instead of returning null.
     region: "us-central1",
     memory: "256MiB",
     secrets: [functionsEnvJson],
   },
   async (request) => {
-    const { userId, deviceId, metrics } = request.data as {
-            userId: string
-            deviceId: string
-            metrics: {
-                ip: string
-                userAgent: string
-                browser: string
-                os: string
-                location: string
-                providerId: string
-            }
-        }
+    const data = validateCallableData(
+      z.object({
+        userId: z.string().min(1).max(128),
+        deviceId: z.string().min(1).max(256),
+        metrics: z.object({
+          ip: z.string().max(64).default(""),
+          userAgent: z.string().max(512).optional().default(""),
+          browser: z.string().max(128).optional().default(""),
+          os: z.string().max(128).optional().default(""),
+          location: z.string().max(256).optional().default("Unknown"),
+          providerId: z.string().max(64).optional().default(""),
+        }),
+      }),
+      request.data
+    )
+    const { userId, deviceId, metrics } = data
 
     const auth = request.auth
-    if (!auth || auth.uid !== userId) {
-      throw new Error("Unauthorized: Only authenticated users can create their own sessions")
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
-    if (!userId || !deviceId || !metrics) {
-      throw new Error("Missing required sessionoptions: userId, deviceId, metrics")
+    if (auth.uid !== userId) {
+      throw new HttpsError("permission-denied", "Cannot act on another user's data")
     }
 
     try {
@@ -618,7 +670,7 @@ export const createLoginSession = onCall(
       const resolvedLocation = metrics.location && metrics.location !== "Unknown" ? metrics.location : resolvedGeo.location
       const resolvedIp = resolvedGeo.ip || metrics.ip || "0.0.0.0"
       const deviceFingerprint = `${metrics.userAgent || ""}|${resolvedIp}`
-      const sessionId = `${userId}-${deviceId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const sessionId = `${userId}-${deviceId}-${Date.now()}-${randomUUID()}`
 
       // Create session record
       const sessionData = {
@@ -667,9 +719,7 @@ export const createLoginSession = onCall(
       await batch.commit()
 
       // Cache in Redis (fast path for heartbeat validation)
-      const sessionCacheKey = `session:${sessionId}`
-      const sessionTtl = 30 * 60 // 30 minutes
-      await redis.setex(sessionCacheKey, sessionTtl, JSON.stringify({
+      await redis.setex(sessionKey(sessionId), SESSION_CACHE_TTL_SECONDS, JSON.stringify({
         ...sessionData,
         createdAt: sessionData.createdAt.toDate().toISOString(),
         lastActivityAt: sessionData.lastActivityAt.toDate().toISOString(),
@@ -693,8 +743,9 @@ export const createLoginSession = onCall(
         },
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error creating login session:", error)
-      throw new Error(`Failed to create session: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to create session")
     }
   },
 )
@@ -705,20 +756,20 @@ export const createLoginSession = onCall(
 export const revokeMyLoginSession = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
-    const { loginId, reason } = request.data as { loginId: string, reason?: string }
+    const { loginId, reason } = validateCallableData(z.object({ loginId: z.string().min(1).max(128), reason: z.string().max(256).optional() }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized: You must be authenticated to revoke sessions")
+      throw new HttpsError("unauthenticated", "Unauthorized: You must be authenticated to revoke sessions")
     }
 
     if (!loginId) {
-      throw new Error("Missing required field: loginId")
+      throw new HttpsError("invalid-argument", "Missing required field: loginId")
     }
 
     try {
@@ -741,8 +792,9 @@ export const revokeMyLoginSession = onCall(
         revokedAt: result.revokedAt.toDate().toISOString(),
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error revoking session:", error)
-      throw new Error(`Failed to revoke session: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to revoke session")
     }
   })
 
@@ -754,39 +806,46 @@ async function performSessionRevoke(
   actorCanManageSessions = false,
   actorRole: "admin" | "manager" | "owner" | "superadmin" | "elevated" | "user" = "user",
   allowCrossUserRevoke = true,
+  // Bulk callers pass the batch/pipeline to share (one commit + one Redis round-trip
+  // for many sessions) plus the query-snapshot data, which removes the per-session read.
+  collector?: {
+    batch: ReturnType<typeof db.batch>
+    pipeline: ReturnType<typeof redis.pipeline>
+    sessionData?: Record<string, unknown>
+  },
 ) {
   const revokedAt = Timestamp.now()
 
-  const sessionDoc = await db.collection("loginSessions").doc(loginId).get()
-  if (!sessionDoc.exists) {
-    throw new Error("Session not found")
+  const sessionData = collector?.sessionData ??
+    (await db.collection("loginSessions").doc(loginId).get()).data()
+  if (!sessionData) {
+    throw new HttpsError("not-found", "Session not found")
   }
 
-  const sessionData = sessionDoc.data()
   const targetUserId = String(sessionData?.userId || "").trim()
   if (!targetUserId) {
-    throw new Error("Invalid session record: missing userId")
+    throw new HttpsError("internal", "Session record is invalid")
   }
 
   const isAdmin = actorRole === "admin"
   const isPrivileged = actorCanManageSessions
 
   if (requireAdmin && !isPrivileged) {
-    throw new Error("Unauthorized: Elevated role required")
+    throw new HttpsError("permission-denied", "Unauthorized: Elevated role required")
   }
 
   const isCrossUserRequest = targetUserId !== actorUid
   if (isCrossUserRequest && !allowCrossUserRevoke) {
-    throw new Error("Unauthorized: You can only revoke your own sessions")
+    throw new HttpsError("permission-denied", "Unauthorized: You can only revoke your own sessions")
   }
 
   if (!isPrivileged && isCrossUserRequest) {
-    throw new Error("Unauthorized: You can only revoke your own sessions")
+    throw new HttpsError("permission-denied", "Unauthorized: You can only revoke your own sessions")
   }
 
   const revokeReason = reason || (isPrivileged ? "privileged_initiated_revoke" : "user_initiated_revoke")
 
-  const batch = db.batch()
+  const batch = collector?.batch ?? db.batch()
   const sessionRef = db.collection("loginSessions").doc(loginId)
   batch.update(sessionRef, {
     revokedAt,
@@ -831,30 +890,32 @@ async function performSessionRevoke(
     createdAt: revokedAt,
   })
 
-  await batch.commit()
+  // The audit record joins the same batch: one round-trip instead of a separate
+  // `.add()` per session, and the revoke + its audit now land atomically.
+  batch.set(db.collection("audit_logs").doc(), {
+    action: isPrivileged ? "privileged_revoke_session" : "user_revoke_session",
+    admin_uid: actorUid,
+    target_loginId: loginId,
+    target_userId: targetUserId,
+    reason: revokeReason,
+    timestamp: Timestamp.now(),
+    isAdmin,
+    actorRole,
+  })
 
-  const revocationCacheKey = `revoked:${loginId}`
-  const revocationTtl = 30 * 24 * 60 * 60
-  await redis.setex(revocationCacheKey, revocationTtl, JSON.stringify({
+  // revoked: flag + session cache drop. A caller-supplied collector owns the pipeline
+  // (many sessions → one round-trip); otherwise this revocation gets its own.
+  const revokePipeline = collector?.pipeline ?? redis.pipeline()
+  revokePipeline.setex(revokedKey(loginId), REVOCATION_TTL_SECONDS, JSON.stringify({
     revokedAt: revokedAt.toDate().toISOString(),
     userId: targetUserId,
   }))
+  revokePipeline.del(sessionKey(loginId))
 
-  await redis.del(`session:${loginId}`)
-
-  try {
-    await db.collection("audit_logs").add({
-      action: isPrivileged ? "privileged_revoke_session" : "user_revoke_session",
-      admin_uid: actorUid,
-      target_loginId: loginId,
-      target_userId: targetUserId,
-      reason: revokeReason,
-      timestamp: Timestamp.now(),
-      isAdmin,
-      actorRole,
-    })
-  } catch (auditErr) {
-    console.warn("Failed to write audit log:", auditErr)
+  // Commit Firestore before flushing the cache flags, same order as before.
+  if (!collector) {
+    await batch.commit()
+    await revokePipeline.exec()
   }
 
   return {
@@ -925,6 +986,17 @@ const resolveActorSessionAccess = async (
   canManageSessions: boolean
   role: "admin" | "manager" | "owner" | "superadmin" | "elevated" | "user"
 }> => {
+  // This ran 3 sequential reads on every privileged call, uncached.
+  // ponytail: 60s of role staleness. Lower the TTL if a demotion must bite faster.
+  const accessCacheKey = sessionAccessKey(auth.uid)
+  const cachedAccess = await redis.get<{
+    canManageSessions: boolean
+    role: "admin" | "manager" | "owner" | "superadmin" | "elevated" | "user"
+  }>(accessCacheKey)
+  if (cachedAccess && typeof cachedAccess === "object") {
+    return cachedAccess
+  }
+
   const collectedRoles: string[] = []
 
   if (auth.token) {
@@ -946,25 +1018,32 @@ const resolveActorSessionAccess = async (
     }
   }
 
-  const userDoc = await db.collection("users").doc(auth.uid).get()
+  // Three independent reads — one wave instead of a 3-deep waterfall. Each source keeps
+  // its own error isolation, so one failure doesn't sink the others.
+  const [userDoc, memberships, authUser] = await Promise.all([
+    db.collection("users").doc(auth.uid).get(),
+    db.collection("memberships").where("userId", "==", auth.uid).limit(100).get()
+      .catch((error) => {
+        if (error instanceof HttpsError) throw error
+        console.warn(`Failed to read memberships while resolving session access for ${auth.uid}:`, error)
+        return null
+      }),
+    adminAuth.getUser(auth.uid)
+      .catch(() => null),
+  ])
+
   if (userDoc.exists) {
     const userData = userDoc.data() as Record<string, unknown>
     collectRoleValues(userData.role, collectedRoles)
     collectRoleValues(userData.roles, collectedRoles)
   }
 
-  try {
-    const memberships = await db.collection("memberships").where("userId", "==", auth.uid).limit(100).get()
-    for (const membershipDoc of memberships.docs) {
-      const membership = membershipDoc.data() as { role?: unknown }
-      collectRoleValues(membership.role, collectedRoles)
-    }
-  } catch (error) {
-    console.warn(`Failed to read memberships while resolving session access for ${auth.uid}:`, error)
+  for (const membershipDoc of memberships?.docs || []) {
+    const membership = membershipDoc.data() as { role?: unknown }
+    collectRoleValues(membership.role, collectedRoles)
   }
 
-  try {
-    const authUser = await adminAuth.getUser(auth.uid)
+  if (authUser) {
     const claims = (authUser.customClaims || {}) as Record<string, unknown>
     collectRoleValues(claims.role, collectedRoles)
     collectRoleValues(claims.roles, collectedRoles)
@@ -972,34 +1051,34 @@ const resolveActorSessionAccess = async (
     if (isBootstrapAdminEmail(authUser.email)) {
       collectedRoles.push("admin")
     }
-  } catch {
-    // no-op, role resolution continues with available sources
   }
 
   const resolvedRole = resolveHighestSessionRole(collectedRoles)
-  return {
+  const access = {
     canManageSessions: resolvedRole !== "user",
     role: resolvedRole,
   }
+  await redis.setex(accessCacheKey, SESSION_ACCESS_CACHE_TTL_SECONDS, JSON.stringify(access))
+  return access
 }
 
 export const revokeUserLoginSessionByAdmin = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
-    const { loginId, reason } = request.data as { loginId: string; reason?: string }
+    const { loginId, reason } = validateCallableData(z.object({ loginId: z.string().min(1).max(128), reason: z.string().max(256).optional() }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized: You must be authenticated")
+      throw new HttpsError("unauthenticated", "Unauthorized: You must be authenticated")
     }
 
     if (!loginId) {
-      throw new Error("Missing required field: loginId")
+      throw new HttpsError("invalid-argument", "Missing required field: loginId")
     }
 
     try {
@@ -1022,8 +1101,9 @@ export const revokeUserLoginSessionByAdmin = onCall(
         revokedAt: result.revokedAt.toDate().toISOString(),
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error in admin session revoke:", error)
-      throw new Error(`Failed to revoke user session: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to revoke user session")
     }
   },
 )
@@ -1031,7 +1111,7 @@ export const revokeUserLoginSessionByAdmin = onCall(
 export const revokeAllUserSessionsByAdmin = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     secrets: [functionsEnvJson],
     region: "us-central1",
   },
@@ -1039,26 +1119,26 @@ export const revokeAllUserSessionsByAdmin = onCall(
     const {
       targetUserId,
       reason,
-      limit = 100,
-    } = request.data as {
-      targetUserId: string
-      reason?: string
-      limit?: number
-    }
+      limit,
+    } = validateCallableData(z.object({
+      targetUserId: z.string().min(1).max(128),
+      reason: z.string().max(256).optional(),
+      limit: z.number().int().min(1).max(200).default(100),
+    }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized: You must be authenticated")
+      throw new HttpsError("unauthenticated", "Unauthorized: You must be authenticated")
     }
 
     const normalizedTargetUserId = String(targetUserId || "").trim()
     if (!normalizedTargetUserId) {
-      throw new Error("Missing required field: targetUserId")
+      throw new HttpsError("invalid-argument", "Missing required field: targetUserId")
     }
 
     const actorAccess = await resolveActorSessionAccess(auth)
     if (!actorAccess.canManageSessions) {
-      throw new Error("Unauthorized: Elevated role required")
+      throw new HttpsError("permission-denied", "Unauthorized: Elevated role required")
     }
 
     const queryLimit = Math.max(1, Math.min(200, Number(limit) || 100))
@@ -1073,17 +1153,30 @@ export const revokeAllUserSessionsByAdmin = onCall(
 
       const revokedSessionIds: string[] = []
 
-      for (const sessionDoc of snapshot.docs) {
-        const sessionId = sessionDoc.id
-        await performSessionRevoke(
-          auth.uid,
-          sessionId,
-          reason || "admin_bulk_revoke",
-          true,
-          actorAccess.canManageSessions,
-          actorAccess.role,
-        )
-        revokedSessionIds.push(sessionId)
+      // One batch + one Redis pipeline per chunk instead of per session. A 200-session
+      // revoke was ~1400 sequential round-trips; this makes it 3 commits + 3 pipelines.
+      for (let i = 0; i < snapshot.docs.length; i += REVOKES_PER_BATCH) {
+        const chunk = snapshot.docs.slice(i, i + REVOKES_PER_BATCH)
+        const batch = db.batch()
+        const pipeline = redis.pipeline()
+
+        for (const sessionDoc of chunk) {
+          await performSessionRevoke(
+            auth.uid,
+            sessionDoc.id,
+            reason || "admin_bulk_revoke",
+            true,
+            actorAccess.canManageSessions,
+            actorAccess.role,
+            true,
+            { batch, pipeline, sessionData: sessionDoc.data() },
+          )
+          revokedSessionIds.push(sessionDoc.id)
+        }
+
+        // Firestore first, then the cache flags — same order as the single-revoke path.
+        await batch.commit()
+        await pipeline.exec()
       }
 
       return {
@@ -1093,8 +1186,9 @@ export const revokeAllUserSessionsByAdmin = onCall(
         sessionIds: revokedSessionIds,
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error in admin bulk session revoke:", error)
-      throw new Error(`Failed to revoke user sessions: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to revoke user sessions")
     }
   },
 )
@@ -1106,12 +1200,12 @@ async function performSessionSignOut(userId: string, loginId: string, signOutRea
   const sessionDoc = await sessionRef.get()
 
   if (!sessionDoc.exists) {
-    throw new Error("Session not found")
+    throw new HttpsError("not-found", "Session not found")
   }
 
   const sessionData = sessionDoc.data()
   if (sessionData?.userId !== userId) {
-    throw new Error("Unauthorized: Can only sign out own sessions")
+    throw new HttpsError("permission-denied", "Unauthorized: Can only sign out own sessions")
   }
 
   const batch = db.batch()
@@ -1157,13 +1251,15 @@ async function performSessionSignOut(userId: string, loginId: string, signOutRea
 
   await batch.commit()
 
-  await redis.del(`session:${loginId}`)
-
-  const signedOutCacheKey = `signed-out:${loginId}`
-  await redis.setex(signedOutCacheKey, 86400, JSON.stringify({
+  // One pipeline for the cache invalidation, instead of a `del` round-trip
+  // followed by a `setex` round-trip on the logout path.
+  const signOutPipeline = redis.pipeline()
+  signOutPipeline.del(sessionKey(loginId))
+  signOutPipeline.setex(signedOutKey(loginId), SIGNED_OUT_TTL_SECONDS, JSON.stringify({
     signedOutAt: signedOutAt.toDate().toISOString(),
     userId,
   }))
+  await signOutPipeline.exec()
 
   return {
     loginId,
@@ -1178,18 +1274,19 @@ async function performSessionSignOut(userId: string, loginId: string, signOutRea
 export const signOutLoginSession = onCall(
   {
     cors: true,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
-    const { loginId } = request.data as { loginId: string }
+    const { loginId } = validateCallableData(z.object({ loginId: z.string().min(1).max(128) }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized: You must be authenticated to sign out")
+      throw new HttpsError("unauthenticated", "Unauthorized: You must be authenticated to sign out")
     }
 
     if (!loginId) {
-      throw new Error("Missing required field: loginId")
+      throw new HttpsError("invalid-argument", "Missing required field: loginId")
     }
 
     try {
@@ -1204,8 +1301,9 @@ export const signOutLoginSession = onCall(
         signedOutAt: result.signedOutAt.toDate().toISOString(),
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error signing out session:", error)
-      throw new Error(`Failed to sign out session: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to sign out session")
     }
   },
 )
@@ -1219,15 +1317,15 @@ export const getMyLoginSessionStatus = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { loginId } = request.data as { loginId: string }
+    const { loginId } = validateCallableData(z.object({ loginId: z.string().min(1).max(128) }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     if (!loginId) {
-      throw new Error("Missing required field: loginId")
+      throw new HttpsError("invalid-argument", "Missing required field: loginId")
     }
 
     try {
@@ -1235,8 +1333,8 @@ export const getMyLoginSessionStatus = onCall(
 
       // Check Redis cache first (fast path)
       const cachedRevoked = await redis.get(`revoked:${loginId}`)
-      if (cachedRevoked && typeof cachedRevoked === "string") {
-        const revocationData = JSON.parse(cachedRevoked)
+      const revocationData = parseCachedJson<{ revokedAt?: string }>(cachedRevoked)
+      if (revocationData) {
         return {
           loginId,
           active: false,
@@ -1261,7 +1359,7 @@ export const getMyLoginSessionStatus = onCall(
 
       // Verify ownership
       if (sessionData?.userId !== userId) {
-        throw new Error("Unauthorized: Invalid session for user")
+        throw new HttpsError("permission-denied", "Unauthorized: Invalid session for user")
       }
 
       return {
@@ -1271,8 +1369,9 @@ export const getMyLoginSessionStatus = onCall(
         revokedAt: sessionData?.revokedAt ? sessionData.revokedAt.toDate().toISOString() : null,
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error getting session status:", error)
-      throw new Error(`Failed to get session status: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to get session status")
     }
   },
 )
@@ -1289,15 +1388,15 @@ export const recordLogoutMetrics = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { loginId } = request.data as { loginId: string }
+    const { loginId } = validateCallableData(z.object({ loginId: z.string().min(1).max(128) }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized: You must be authenticated")
+      throw new HttpsError("unauthenticated", "Unauthorized: You must be authenticated")
     }
 
     if (!loginId) {
-      throw new Error("Missing required field: loginId")
+      throw new HttpsError("invalid-argument", "Missing required field: loginId")
     }
 
     try {
@@ -1312,8 +1411,9 @@ export const recordLogoutMetrics = onCall(
         signedOutAt: result.signedOutAt.toDate().toISOString(),
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error recording logout metrics:", error)
-      throw new Error(`Failed to record logout metrics: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to record logout metrics")
     }
   },
 )
@@ -1327,11 +1427,11 @@ export const getMyLoginSessions = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { limit = 50 } = request.data as { limit?: number }
+    const { limit } = validateCallableData(z.object({ limit: z.number().int().min(1).max(200).default(50) }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     try {
@@ -1362,8 +1462,9 @@ export const getMyLoginSessions = onCall(
         total: sessions.length,
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error getting login sessions:", error)
-      throw new Error(`Failed to get sessions: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to get sessions")
     }
   },
 )
@@ -1371,7 +1472,7 @@ export const getMyLoginSessions = onCall(
 export const getUserLoginSessionsByAdmin = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     secrets: [functionsEnvJson],
     region: "us-central1",
   },
@@ -1380,25 +1481,25 @@ export const getUserLoginSessionsByAdmin = onCall(
       targetUserId,
       limit = 50,
       activeOnly = false,
-    } = request.data as {
-      targetUserId: string
-      limit?: number
-      activeOnly?: boolean
-    }
+    } = validateCallableData(z.object({
+      targetUserId: z.string().min(1).max(128),
+      limit: z.number().int().min(1).max(200).default(50),
+      activeOnly: z.boolean().default(false),
+    }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     const actorAccess = await resolveActorSessionAccess(auth)
     if (!actorAccess.canManageSessions) {
-      throw new Error("Unauthorized: Elevated role required")
+      throw new HttpsError("permission-denied", "Unauthorized: Elevated role required")
     }
 
     const normalizedTargetUserId = String(targetUserId || "").trim()
     if (!normalizedTargetUserId) {
-      throw new Error("Missing required field: targetUserId")
+      throw new HttpsError("invalid-argument", "Missing required field: targetUserId")
     }
 
     try {
@@ -1432,8 +1533,9 @@ export const getUserLoginSessionsByAdmin = onCall(
         total: sessions.length,
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error getting target user sessions:", error)
-      throw new Error(`Failed to get target user sessions: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to get target user sessions")
     }
   },
 )
@@ -1448,11 +1550,11 @@ export const validateSessionCookie = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { sessionId } = request.data as { sessionId: string }
+    const { sessionId } = validateCallableData(z.object({ sessionId: z.string().min(1).max(256) }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     if (!sessionId) {
@@ -1462,27 +1564,32 @@ export const validateSessionCookie = onCall(
     try {
       const userId = auth.uid
 
-      // Check revocation cache first (fastest)
-      const cachedRevoked = await redis.get(`revoked:${sessionId}`)
+      // Read + revocation check + TTL refresh in ONE round-trip. This used to be a
+      // pipeline read followed by a separate `setex`, i.e. two round-trips on the
+      // hottest authenticated path in the app. The `/heartbeat` route shares the
+      // same script.
+      const [cachedRevoked, cachedSession] = await redisEval<[unknown, string | null]>(
+        READ_SESSION_WITH_TTL_REFRESH,
+        [sessionKey(sessionId), revokedKey(sessionId)],
+        [SESSION_CACHE_TTL_SECONDS],
+      )
+
       if (cachedRevoked) {
         return { valid: false, reason: "revoked" }
       }
-
-      // Check session cache
-      const cachedSession = await redis.get(`session:${sessionId}`)
-      if (cachedSession && typeof cachedSession === "string") {
+      // Upstash auto-deserializes, so this is already an object, not a string.
+      const cachedSessionData = parseCachedJson<Record<string, unknown>>(cachedSession)
+      if (cachedSessionData) {
         try {
-          const sessionData = JSON.parse(cachedSession)
-          if (sessionData.userId === userId && sessionData.active) {
-            const cachedIntelligenceStatus = String(sessionData.intelligenceStatus || "").trim().toLowerCase()
+          if (cachedSessionData.userId === userId && cachedSessionData.active) {
+            const cachedIntelligenceStatus = String(cachedSessionData.intelligenceStatus || "").trim().toLowerCase()
             const shouldRefreshFromFirestore = cachedIntelligenceStatus === "pending"
 
             if (shouldRefreshFromFirestore) {
               // Pending intelligence in cache can become stale if geo enrichment completed after session creation.
               // Fall through to Firestore to refresh cache with authoritative values.
             } else {
-            // Update activity and TTL in cache
-              await redis.setex(`session:${sessionId}`, 30 * 60, cachedSession)
+              // TTL was already refreshed by the script above.
               return { valid: true, cachedHit: true }
             }
           }
@@ -1540,10 +1647,11 @@ export const validateSessionCookie = onCall(
         ...sessionData,
         lastActivityAt: now.toDate().toISOString(),
       }
-      await redis.setex(`session:${sessionId}`, 30 * 60, JSON.stringify(refreshedData))
+      await redis.setex(sessionKey(sessionId), SESSION_CACHE_TTL_SECONDS, JSON.stringify(refreshedData))
 
       return { valid: true }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error validating session:", error)
       return { valid: false, reason: "server_error" }
     }
@@ -1562,7 +1670,7 @@ export const recordGuestPresence = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { guestId } = request.data as { guestId: string }
+    const { guestId } = validateCallableData(z.object({ guestId: z.string().min(1).max(128) }), request.data)
 
     if (!guestId || typeof guestId !== "string" || guestId.length > 128) {
       throw new Error("Missing or invalid guestId")
@@ -1581,6 +1689,7 @@ export const recordGuestPresence = onCall(
 
       return { updated: true }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error recording guest presence:", error)
       throw new Error("Failed to record presence")
     }
@@ -1630,6 +1739,7 @@ export const cleanupExpiredSessions = onSchedule(
         console.log("ℹ️ No expired sessions to clean up")
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error cleaning up sessions:", error)
     }
   },
@@ -1665,6 +1775,7 @@ export const onLoginHistoryCreated = onDocumentWritten(
 
       console.log(`ℹ️ Updated session activity for ${loginId}`)
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error updating session activity:", error)
       // Don't throw - let the trigger succeed even if update fails
     }
@@ -1719,6 +1830,7 @@ export const enrichLoginSessionGeo = onDocumentWritten(
       })
       console.log(`✅ Session intelligence enriched for ${sessionId}`)
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error(`❌ Error enriching session intelligence for ${sessionId}:`, error)
     }
   },
@@ -1821,6 +1933,7 @@ export const enrichGuestGeo = onDocumentWritten(
 
       console.log(`✅ Guest intelligence enriched for ${guestId}`)
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error(`❌ Error enriching guest intelligence for ${guestId}:`, error)
     }
   },
@@ -1833,37 +1946,50 @@ export const enrichGuestGeo = onDocumentWritten(
        */
 export const sendDeviceVerificationCode = onCall(
   {
+    enforceAppCheck: true,
     secrets: [functionsEnvJson],
     region: "us-central1",
   },
   async (request) => {
-    const { userId, method, sessionId } = request.data as { userId: string; method: "email" | "sms" | "auto"; sessionId?: string }
+    const { userId, method, sessionId } = validateCallableData(
+      z.object({
+        userId: z.string().min(1).max(128),
+        method: z.enum(["email", "sms", "auto"]),
+        sessionId: z.string().max(256).optional(),
+      }),
+      request.data
+    )
     const auth = request.auth
 
-    if (!auth || auth.uid !== userId) {
-      throw new Error("Unauthorized: Can only request code for own account")
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    if (auth.uid !== userId) {
+      throw new HttpsError("permission-denied", "Unauthorized: Can only request code for own account")
     }
 
     if (!userId || !method) {
-      throw new Error("Missing required fields: userId, method")
+      throw new HttpsError("invalid-argument", "Missing required fields: userId, method")
     }
 
     if (!["email", "sms", "auto"].includes(method)) {
       throw new Error("Invalid method: must be 'email', 'sms' or 'auto'")
     }
 
-    // Rate limit: max 3 verification code requests per 10 minutes per user
-    const rateLimitKey = `rate_verification:${userId}`
-    const currentCount = await redis.get(rateLimitKey)
-    if (currentCount && Number(currentCount) >= 3) {
+    // Rate limit: max 3 verification code requests per 10 minutes per user.
+    // Atomic increment: the previous `get` + `setex` pair let two concurrent
+    // requests both read the same count and both be admitted.
+    const [requestCount] = await redisEval<[number, number]>(
+      FIXED_WINDOW_INCREMENT,
+      [verificationRateLimitKey(userId)],
+      [VERIFICATION_RATE_LIMIT_WINDOW_SECONDS],
+    )
+    if (requestCount > VERIFICATION_RATE_LIMIT_MAX) {
       throw new Error(
         "Too many verification code requests. Please wait before requesting a new code."
       )
     }
-
-    // Increment or set the counter with 10-minute expiry
-    const newCount = currentCount ? Number(currentCount) + 1 : 1
-    await redis.setex(rateLimitKey, 600, newCount.toString())
 
     try {
       const userRecord = await adminAuth.getUser(userId)
@@ -1894,7 +2020,7 @@ export const sendDeviceVerificationCode = onCall(
       }
 
       // Generate 6-digit verification code
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
+      const verificationCode = randomInt(100000, 1000000).toString()
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
       const expiresAtTs = Timestamp.fromDate(expiresAt)
 
@@ -1915,7 +2041,6 @@ export const sendDeviceVerificationCode = onCall(
       await verificationRef.set(verificationData)
 
       // Store in Redis for fast lookup (expires in 10 minutes)
-      const verificationCacheKey = `verification:${userId}:${effectiveMethod}`
       const redisData: Record<string, string> = {
         code: verificationCode,
         expiresAt: expiresAt.toISOString(),
@@ -1924,7 +2049,11 @@ export const sendDeviceVerificationCode = onCall(
       if (sessionId) {
         redisData.sessionId = sessionId
       }
-      await redis.setex(verificationCacheKey, 600, JSON.stringify(redisData))
+      await redis.setex(
+        verificationKey(userId, effectiveMethod),
+        VERIFICATION_TTL_SECONDS,
+        JSON.stringify(redisData),
+      )
 
       let deliveryStatus: "sent" | "pending_client_mfa"
       let deliveryMessage = ""
@@ -1961,9 +2090,10 @@ export const sendDeviceVerificationCode = onCall(
         sessionId: sessionId || null,
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error sending verification code:", error)
       throw new Error(
-        `Failed to send verification code: ${error instanceof Error ? error.message : "Unknown error"}`
+        "Failed to send verification code"
       )
     }
   },
@@ -1979,7 +2109,7 @@ export const getMfaSecurityPreferences = onCall(
   async (request) => {
     const auth = request.auth
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     const userId = auth.uid
@@ -2004,14 +2134,14 @@ export const getMfaSecurityPreferences = onCall(
 export const updateMfaSecurityPreferences = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
     secrets: [functionsEnvJson],
   },
   async (request) => {
     const auth = request.auth
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     const userId = auth.uid
@@ -2087,7 +2217,7 @@ export const notifyMfaRiskEvent = onCall(
   async (request) => {
     const auth = request.auth
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     const eventType = String((request.data as { eventType?: string })?.eventType || "").trim().toLowerCase()
@@ -2169,26 +2299,33 @@ export const notifyMfaRiskEvent = onCall(
 export const verifyAndTrustDevice = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
-    const { userId, code, deviceId, deviceName, sessionId, mfaVerified } = request.data as {
-                        userId: string
-                        code: string
-                        deviceId: string
-                        deviceName: string
-                        sessionId?: string
-                        mfaVerified?: boolean
-                    }
+    const { userId, code, deviceId, deviceName, sessionId, mfaVerified } = validateCallableData(
+      z.object({
+        userId: z.string().min(1).max(128),
+        code: z.string().min(1).max(32),
+        deviceId: z.string().min(1).max(256),
+        deviceName: z.string().max(128).default(""),
+        sessionId: z.string().max(256).optional(),
+        mfaVerified: z.boolean().optional(),
+      }),
+      request.data
+    )
     const auth = request.auth
 
-    if (!auth || auth.uid !== userId) {
-      throw new Error("Unauthorized: Can only verify for own account")
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    if (auth.uid !== userId) {
+      throw new HttpsError("permission-denied", "Unauthorized: Can only verify for own account")
     }
 
     if (!userId || !code || !deviceId) {
-      throw new Error("Missing required fields: userId, code, deviceId")
+      throw new HttpsError("invalid-argument", "Missing required fields: userId, code, deviceId")
     }
 
     try {
@@ -2264,16 +2401,17 @@ export const verifyAndTrustDevice = onCall(
       })
 
       // Cache in Redis
-      const trustedDeviceKey = `trusted:${userId}:${deviceId}`
-      await redis.setex(trustedDeviceKey, 90 * 24 * 60 * 60, JSON.stringify({
+      await redis.setex(trustedDeviceKey(userId, deviceId), TRUSTED_DEVICE_TTL_SECONDS, JSON.stringify({
         deviceId,
         trustedAt: new Date().toISOString(),
         trustedUntil: trustedUntil.toISOString(),
       }))
 
-      // Invalidate verification cache
-      await redis.del(`verification:${userId}:email`)
-      await redis.del(`verification:${userId}:sms`)
+      // Invalidate verification cache — one round-trip for both method keys.
+      const invalidatePipeline = redis.pipeline()
+      invalidatePipeline.del(verificationKey(userId, "email"))
+      invalidatePipeline.del(verificationKey(userId, "sms"))
+      await invalidatePipeline.exec()
 
       console.log(`✅ Device ${deviceId} trusted for user ${userId}`)
 
@@ -2283,8 +2421,9 @@ export const verifyAndTrustDevice = onCall(
         trustedUntil: trustedUntil.toISOString(),
       }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error verifying device:", error)
-      throw new Error(`Failed to verify device: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to verify device")
     }
   },
 )
@@ -2299,25 +2438,27 @@ export const isDeviceTrusted = onCall(
     region: "us-central1",
   },
   async (request) => {
-    const { userId, deviceId } = request.data as { userId: string; deviceId: string }
+    const { userId, deviceId } = validateCallableData(z.object({ userId: z.string().min(1).max(128), deviceId: z.string().min(1).max(256) }), request.data)
     const auth = request.auth
 
-    if (!auth || auth.uid !== userId) {
-      throw new Error("Unauthorized")
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated")
+    }
+
+    if (auth.uid !== userId) {
+      throw new HttpsError("permission-denied", "Cannot act on another user's data")
     }
 
     if (!userId || !deviceId) {
-      throw new Error("Missing required fields: userId, deviceId")
+      throw new HttpsError("invalid-argument", "Missing required fields: userId, deviceId")
     }
 
     try {
       // Check Redis cache first
-      const cachedTrust = await redis.get(`trusted:${userId}:${deviceId}`)
-      if (cachedTrust && typeof cachedTrust === "string") {
-        const trustData = JSON.parse(cachedTrust)
-        if (new Date() < new Date(trustData.trustedUntil)) {
-          return { trusted: true, cachedHit: true }
-        }
+      const cachedTrust = await redis.get(trustedDeviceKey(userId, deviceId))
+      const trustData = parseCachedJson<{ trustedUntil?: string }>(cachedTrust)
+      if (trustData && new Date() < new Date(trustData.trustedUntil || 0)) {
+        return { trusted: true, cachedHit: true }
       }
 
       // Query Firestore
@@ -2343,8 +2484,8 @@ export const isDeviceTrusted = onCall(
       await trustedDeviceDoc.ref.update({ lastUsedAt: Timestamp.now() })
 
       // Refresh Redis cache
-      const trustedUntil = deviceData?.trustedUntil || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
-      await redis.setex(`trusted:${userId}:${deviceId}`, 90 * 24 * 60 * 60, JSON.stringify({
+      const trustedUntil = deviceData?.trustedUntil || new Date(Date.now() + TRUSTED_DEVICE_TTL_SECONDS * 1000)
+      await redis.setex(trustedDeviceKey(userId, deviceId), TRUSTED_DEVICE_TTL_SECONDS, JSON.stringify({
         deviceId,
         trustedAt: new Date().toISOString(),
         trustedUntil: trustedUntil.toDate?.()?.toISOString?.() || trustedUntil,
@@ -2352,6 +2493,7 @@ export const isDeviceTrusted = onCall(
 
       return { trusted: true }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error checking device trust:", error)
       return { trusted: false, error: "server_error" }
     }
@@ -2371,7 +2513,7 @@ export const getTrustedDevices = onCall(
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     try {
@@ -2395,8 +2537,9 @@ export const getTrustedDevices = onCall(
 
       return { success: true, devices }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error getting trusted devices:", error)
-      throw new Error(`Failed to get devices: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to get devices")
     }
   },
 )
@@ -2407,19 +2550,19 @@ export const getTrustedDevices = onCall(
 export const removeTrustedDevice = onCall(
   {
     cors: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
     region: "us-central1",
   },
   async (request) => {
-    const { deviceId } = request.data as { deviceId: string }
+    const { deviceId } = validateCallableData(z.object({ deviceId: z.string().min(1).max(256) }), request.data)
     const auth = request.auth
 
     if (!auth) {
-      throw new Error("Unauthorized")
+      throw new HttpsError("unauthenticated", "User must be authenticated")
     }
 
     if (!deviceId) {
-      throw new Error("Missing required field: deviceId")
+      throw new HttpsError("invalid-argument", "Missing required field: deviceId")
     }
 
     try {
@@ -2433,14 +2576,15 @@ export const removeTrustedDevice = onCall(
         .delete()
 
       // Invalidate cache
-      await redis.del(`trusted:${userId}:${deviceId}`)
+      await redis.del(trustedDeviceKey(userId, deviceId))
 
       console.log(`✅ Trusted device ${deviceId} removed for user ${userId}`)
 
       return { success: true }
     } catch (error) {
+      if (error instanceof HttpsError) throw error
       console.error("❌ Error removing trusted device:", error)
-      throw new Error(`Failed to remove device: ${error instanceof Error ? error.message : "Unknown error"}`)
+      throw new Error("Failed to remove device")
     }
   },
 )

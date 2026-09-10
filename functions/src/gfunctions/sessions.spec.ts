@@ -1,11 +1,29 @@
+/* eslint-disable max-len */
 import {describe, it} from "node:test"
 import assert from "node:assert/strict"
+import {readFileSync} from "node:fs"
+import {join} from "node:path"
 import {
   evaluateMfaDisabledNotification,
   getDefaultPrimaryMethod,
   getDefaultSecondaryMethod,
   readMfaPreferences,
 } from "./sessions"
+
+describe("sessions trust boundary", () => {
+  it("never forwards internal detail in HttpsError messages", () => {
+    const src = readFileSync(join(__dirname, "sessions.ts"), "utf8")
+    const messages = [...src.matchAll(/new HttpsError\("[^"]*",\s*"([^"]*)"/g)].map((m) => m[1])
+    const forbidden = ["/", "Firestore", "collection", "document", "missing ", "undefined"]
+
+    assert.ok(messages.length > 0, "expected typed HttpsError codes at the trust boundary")
+    for (const message of messages) {
+      for (const leaked of forbidden) {
+        assert.ok(!message.includes(leaked), `HttpsError message leaks internal detail: "${message}"`)
+      }
+    }
+  })
+})
 
 describe("sessions mfa preferences", () => {
   it("normalizes invalid preferences to available defaults", () => {
