@@ -124,7 +124,7 @@
     "libphonenumber-js": "^1.13.12",
     "lucide-angular": "^0.577.0",
     "marked": "^15.0.12",
-    "ng2-charts": "^8.0.0",
+    "ng2-charts": "^10.0.0",
     "ngx-cookie-service": "^20.1.1",
     "ngx-markdown": "^20.1.0",
     "ngx-stripe": "^20.8.0",
