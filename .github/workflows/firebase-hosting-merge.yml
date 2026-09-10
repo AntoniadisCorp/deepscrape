@@ -17,7 +17,7 @@ jobs:
       angular: ${{ steps.changes.outputs.angular }}
       hosting: ${{ steps.changes.outputs.hosting }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -41,7 +41,7 @@ jobs:
       FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       IP2LOCATION_GCS_PATH: ${{ vars.IP2LOCATION_GCS_PATH }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           
