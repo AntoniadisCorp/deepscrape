@@ -1,13 +1,29 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable object-curly-spacing */
 /* eslint-disable require-jsdoc */
 /* eslint-disable max-len */
 /* eslint-disable linebreak-style */
 import { Request, Response, NextFunction } from "express"
 import { getClientIp } from "request-ip"
-import useragent from "useragent"
-import { Guest } from "../domain"
-import { redis } from "../app/cacheConfig"
+import { parseUA } from "../infrastructure/ua-parser"
+import { ANALYTICS_EVENTS, buildAnalyticsEvent, Guest } from "../domain"
+import { parseCachedJson, redis } from "../app/cacheConfig"
+import {
+  ANALYTICS_EVENTS_KEY,
+  CLIENT_EVENT_LIST_MAX,
+  CLIENT_EVENT_MAX,
+  CLIENT_EVENT_PROP_MAX,
+  GEO_CACHE_FAILURE_TTL_SECONDS,
+  GEO_CACHE_TTL_SECONDS,
+  GUEST_FINGERPRINT_TTL_SECONDS,
+  GUEST_LAST_SEEN_WRITE_INTERVAL_MS,
+  PRESENCE_TTL_SECONDS,
+  geoCacheKey,
+  guestFingerprintKey,
+  presenceGuestKey,
+} from "../../../src/config/redis-keys"
 import { db } from "../app/config"
+import { FieldValue } from "firebase-admin/firestore"
 import net from "node:net"
 import crypto from "crypto"
 import { env } from "../config/env"
@@ -36,8 +52,9 @@ export type ResolvedProxyData = {
 const geoApiBaseUrl = (env.IP_GEO_API_URL || "https://ip.deepscrape.dev/api/geo/lookup").trim().replace(/\/+$/, "")
 // When IPREGISTRY_API_KEY is set, lookups go to ipregistry instead of the custom geo API.
 const ipregistryApiKey = env.IPREGISTRY_API_KEY.trim()
-const geoCacheTtlSeconds = 60 * 60 * 6
-const GEO_CACHE_PREFIX = "ipintel:v2:"
+const geoCacheTtlSeconds = GEO_CACHE_TTL_SECONDS
+// A failed lookup is cached too, but for far less time: see redis-keys.ts.
+const geoFailureCacheTtlSeconds = GEO_CACHE_FAILURE_TTL_SECONDS
 
 // ponytail: coalesce concurrent cold-miss lookups for the same IP (rate limiter +
 // guest/session enrichment on one first-seen visitor) into a single provider call.
@@ -525,17 +542,16 @@ async function fetchGeoLookup(
 
 function buildGeoCacheKey(ip: string): string {
   const digest = crypto.createHash("sha256").update(ip).digest("hex")
-  return `${GEO_CACHE_PREFIX}${digest}`
+  return geoCacheKey(digest)
 }
 
 async function readCachedGeoLookup(ip: string): Promise<CachedGeoLookup> {
   try {
     const cached = await redis.get(buildGeoCacheKey(ip))
-    if (typeof cached !== "string" || !cached) {
+    const parsed = parseCachedJson<{ miss?: boolean; data?: ResolvedGeoData | null }>(cached)
+    if (!parsed) {
       return { hit: false, data: null }
     }
-
-    const parsed = JSON.parse(cached) as { miss?: boolean; data?: ResolvedGeoData | null }
     if (parsed?.miss) {
       return { hit: true, data: null }
     }
@@ -550,7 +566,10 @@ async function readCachedGeoLookup(ip: string): Promise<CachedGeoLookup> {
 async function writeCachedGeoLookup(ip: string, data: ResolvedGeoData | null): Promise<void> {
   try {
     const payload = data ? { data } : { miss: true }
-    await redis.setex(buildGeoCacheKey(ip), geoCacheTtlSeconds, JSON.stringify(payload))
+    // Negative entries get the shorter TTL so a provider outage is retried sooner
+    // than a legitimate no-match result.
+    const ttlSeconds = data ? geoCacheTtlSeconds : geoFailureCacheTtlSeconds
+    await redis.setex(buildGeoCacheKey(ip), ttlSeconds, JSON.stringify(payload))
   } catch (error) {
     console.warn("Failed to write IP intelligence cache:", error)
   }
@@ -609,22 +628,70 @@ export async function lookupGeoByIp(
 
 // Geo lookup uses the remote ip.deepscrape.dev API.
 /* eslint-disable @typescript-eslint/ban-types */
-// Guest tracking middleware for Express
-// Ensures unique guest analytics using fingerprinting and Redis/Firestore
-export async function guestTracker(req: Request, res: Response, next: NextFunction) {
-  // Guest tracking is best-effort analytics. Never let a tracking failure (e.g.
-  // Firestore/geo hiccup on a fresh anonymous hit) reject this async middleware:
-  // Express 4 does not catch it, the SSR function errors and Firebase answers 503
-  // for page URLs. Guard it so page delivery always continues.
-  try {
-    await guestTrackerInner(req, res, next)
-  } catch (error) {
-    console.warn("guestTracker: best-effort tracking failed; continuing request", error)
-    return next()
+// ponytail: first-touch acquisition captured once at guest creation; no UTM infra needed.
+function buildGuestAcquisition(req: Request): Guest["acquisition"] {
+  const query = req.query as Record<string, unknown>
+  const toText = (value: unknown): string | undefined => {
+    const raw = Array.isArray(value) ? value[0] : value
+    const text = String(raw ?? "").trim().toLowerCase()
+    return text ? text.slice(0, 120) : undefined
   }
+
+  const toHost = (value: unknown): string | undefined => {
+    const text = toText(value)
+    if (!text) {
+      return undefined
+    }
+    try {
+      return new URL(text).hostname || undefined
+    } catch {
+      return text.slice(0, 120)
+    }
+  }
+
+  const acquisition = {
+    utmSource: toText(query["utm_source"]),
+    utmMedium: toText(query["utm_medium"]),
+    utmCampaign: toText(query["utm_campaign"]),
+    utmTerm: toText(query["utm_term"]),
+    utmContent: toText(query["utm_content"]),
+    referrer: toHost(req.headers.referer || req.headers.referrer),
+    landingPath: String(req.path || "").slice(0, 200) || undefined,
+  }
+
+  return Object.values(acquisition).some(Boolean) ? acquisition : undefined
 }
 
-async function guestTrackerInner(req: Request, res: Response, next: NextFunction) {
+// Guest tracking middleware for Express
+// Ensures unique guest analytics using fingerprinting and Redis/Firestore
+
+/** Shape of the cached guest liveness record written by `guestTracker`. */
+type GuestLastSeenCache = {
+  lastSeen?: string
+  signedAt?: number
+}
+
+/**
+ * Whether the cached guest record is recent enough to skip both the Redis
+ * refresh and the Firestore read. A record written before `signedAt` existed
+ * fails this check, so the first request after deploy writes one and every
+ * request after that is a pure cache hit.
+ */
+const isGuestCacheFresh = (cached: GuestLastSeenCache | null): boolean => {
+  if (!cached) {
+    return false
+  }
+  if (typeof cached.signedAt === "number") {
+    return Date.now() - cached.signedAt < GUEST_LAST_SEEN_WRITE_INTERVAL_MS
+  }
+  if (typeof cached.lastSeen === "string") {
+    const seenMs = new Date(cached.lastSeen).getTime()
+    return Number.isFinite(seenMs) && Date.now() - seenMs < GUEST_LAST_SEEN_WRITE_INTERVAL_MS
+  }
+  return false
+}
+
+export async function guestTracker(req: Request, res: Response, next: NextFunction) {
   let guestId = req.cookies["gid"]
   if (!env.IS_PRODUCTION) {
     console.log("guestTracker: Incoming request - Guest ID from cookie:", guestId, "Headers:", req.headers) // Debug log
@@ -639,34 +706,50 @@ async function guestTrackerInner(req: Request, res: Response, next: NextFunction
   // Get IP and fingerprint
   const { raw } = await getClientIps(req)
   const ip = raw as string
-  const agent = useragent.parse(req.headers["user-agent"] || "")
+  const agent = parseUA(req.headers["user-agent"] || "")
   const fingerstring = `${ip}|${agent.family}|${agent.os.family}|${agent.device.family}`
   // Create SHA-256 hash of the fingerprint for privacy
   const fingerprint = crypto.createHash("sha256").update(fingerstring).digest("hex")
-  // Always check Redis for fingerprint mapping
+  // One pipeline for both cache probes. This middleware runs on every anonymous
+  // request, and the previous shape paid two sequential round-trips plus an
+  // unconditional Firestore read for a value that had not changed.
   let existingGuestId: string | null = null
+  let cachedGuestSeen: GuestLastSeenCache | null = null
   try {
-    existingGuestId = await redis.get(`guestfp:${fingerprint}`)
+    const guestProbe = redis.pipeline()
+    guestProbe.get(guestFingerprintKey(fingerprint))
+    // Only probe the guest key when there is one: an empty key is a REST error, and
+    // the whole pipeline failing would discard the fingerprint hit too.
+    if (guestId) guestProbe.get(presenceGuestKey(guestId))
+    const [fingerprintHit, guestHit] = (await guestProbe.exec()) as [unknown, unknown]
+    existingGuestId = typeof fingerprintHit === "string" ? fingerprintHit : null
+    cachedGuestSeen = parseCachedJson<GuestLastSeenCache>(guestHit)
   } catch (error) {
-    console.warn("guestTracker: Redis unavailable while checking fingerprint mapping", error)
+    console.warn("guestTracker: Redis unavailable while checking the guest cache", error)
   }
   if (!guestId && existingGuestId) {
     guestId = existingGuestId
     res.cookie("gid", guestId, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
-    // Update lastSeen in Redis
-    try {
-      await redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ lastSeen: new Date() }))
-    } catch (error) {
-      console.warn("guestTracker: Redis unavailable while updating guest lastSeen", error)
-    }
-    // Update lastSeen in Firestore (throttled)
-    const docRef = db.collection("guests").doc(guestId)
-    const doc = await docRef.get()
-    const docData = doc.exists ? doc.data() as Guest : undefined
-    const lastSeen = docData && docData.lastSeen ? new Date(docData.lastSeen) : undefined
-    const now = new Date()
-    if (!lastSeen || (now.getTime() - lastSeen.getTime() > 300000)) {
-      await docRef.set({ lastSeen: now }, { merge: true })
+    // The cache entry is the throttle for both the Redis refresh and the Firestore
+    // read: if it is fresh, nothing about this request needs writing at all.
+    if (!isGuestCacheFresh(cachedGuestSeen)) {
+      const now = new Date()
+      try {
+        await redis.setex(presenceGuestKey(guestId), PRESENCE_TTL_SECONDS, JSON.stringify({
+          lastSeen: now,
+          signedAt: now.getTime(),
+        }))
+      } catch (error) {
+        console.warn("guestTracker: Redis unavailable while updating guest lastSeen", error)
+      }
+      // Update lastSeen in Firestore (throttled)
+      const docRef = db.collection("guests").doc(guestId)
+      const doc = await docRef.get()
+      const docData = doc.exists ? doc.data() as Guest : undefined
+      const lastSeen = docData && docData.lastSeen ? new Date(docData.lastSeen) : undefined
+      if (!lastSeen || (now.getTime() - lastSeen.getTime() > GUEST_LAST_SEEN_WRITE_INTERVAL_MS)) {
+        await docRef.set({ lastSeen: now }, { merge: true })
+      }
     }
     return next()
   }
@@ -679,7 +762,7 @@ async function guestTrackerInner(req: Request, res: Response, next: NextFunction
 
     const { ipv4, ipv6, raw } = await getClientIps(req) // Prefer IPv6 if available
     const ip = raw as string // Fallback to IPv4 if IPv6 is not available
-    const agent = useragent.parse(req.headers["user-agent"] || "")
+    const agent = parseUA(req.headers["user-agent"] || "")
     const guestData: Guest = {
       id: guestId,
       uid: "", // Will be set when linked to a user
@@ -688,6 +771,9 @@ async function guestTrackerInner(req: Request, res: Response, next: NextFunction
       browser: agent.family,
       os: agent.os.family,
       device: agent.device.family,
+      // Bot / AI-agent classification drives the bot-free analytics funnel.
+      isBot: agent.isBot,
+      botKind: agent.botKind,
       language: req.headers["accept-language"]?.split(",")[0] || "en",
       timezone: "UTC",
       country: "Unknown",
@@ -696,6 +782,7 @@ async function guestTrackerInner(req: Request, res: Response, next: NextFunction
       latitude: 0,
       longitude: 0,
       location: "Unknown",
+      acquisition: buildGuestAcquisition(req),
       createdAt: new Date(),
       lastSeen: new Date(),
       fingerprint,
@@ -708,8 +795,14 @@ async function guestTrackerInner(req: Request, res: Response, next: NextFunction
     req.clientIp = ip
     try {
       await Promise.allSettled([
-        redis.setex(`guest:${guestId}`, 3600, JSON.stringify({ ...guestData, ...guestIntelligenceSeed })),
-        redis.set(`guestfp:${fingerprint}`, guestId),
+        redis.setex(
+          presenceGuestKey(guestId),
+          PRESENCE_TTL_SECONDS,
+          JSON.stringify({ ...guestData, ...guestIntelligenceSeed }),
+        ),
+        // This mapping used to be written with no expiry, so every new IP/UA pair
+        // minted a key that never went away. Bounded to match the guest cookie.
+        redis.setex(guestFingerprintKey(fingerprint), GUEST_FINGERPRINT_TTL_SECONDS, guestId),
         db.collection("guests").doc(guestId).set({ ...guestData, ...guestIntelligenceSeed }, { merge: true }),
       ])
     } catch (error) {
@@ -731,8 +824,8 @@ export async function guestFingerprintHandler(req: Request, res: Response) {
     res.cookie("guest_fp", fingerprintHash, { httpOnly: false, secure: isProduction, sameSite: "lax", maxAge: 31536000000 })
     res.status(200).json({ success: true, fingerprint: fingerprintHash })
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error)
-    res.status(500).json({ success: false, error: errorMsg })
+    console.error("guestFingerprintHandler failed:", error)
+    res.status(500).json({ success: false, error: "Internal error" })
   }
 }
 
@@ -742,23 +835,75 @@ export type AnalyticsEvent = {
   userId?: string,
   guestId?: string,
   eventType: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, string | number | boolean | null>,
+  /** Tagged at ingress from the request UA, so the drain can filter bots. */
+  isBot?: boolean,
+  botKind?: string | null,
+}
+
+// Bounded client-event ingress: the drain processes CLIENT_EVENT_MAX per run and
+// the list is hard-capped, so a stalled drain can never grow Redis forever.
+// The caps live in src/config/redis-keys.ts and are re-exported here for callers
+// that already import them from this module.
+export { CLIENT_EVENT_LIST_MAX, CLIENT_EVENT_MAX }
+
+// ponytail: trust boundary — client metadata is reduced to short scalars before it
+// reaches Redis or Firestore, so a hostile payload cannot bloat either store.
+const sanitizeMetadata = (metadata: unknown): Record<string, string | number | boolean | null> => {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {}
+  return Object.fromEntries(
+    Object.entries(metadata as Record<string, unknown>)
+      .filter(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value))
+      .slice(0, CLIENT_EVENT_PROP_MAX)
+      .map(([key, value]) => [
+        String(key).slice(0, 60),
+        typeof value === "string" ? value.slice(0, 200) : value as string | number | boolean | null,
+      ]),
+  )
+}
+
+export const toClientEvent = (body: unknown, ua: ReturnType<typeof parseUA>): AnalyticsEvent => {
+  const raw = (body || {}) as { eventType?: unknown, event?: unknown, userId?: unknown, guestId?: unknown, metadata?: unknown, properties?: unknown }
+  return {
+    timestamp: Date.now(),
+    // ponytail: clients have shipped both shapes (`eventType`/`metadata` and
+    // `event`/`properties`). Accept either here so a mismatch cannot silently land
+    // as `unknown` with empty props — this is the boundary all clients route through.
+    eventType: String(raw.eventType ?? raw.event ?? "unknown").replace(/[^\w-]/g, "_").slice(0, 60),
+    userId: typeof raw.userId === "string" ? raw.userId.slice(0, 128) : undefined,
+    guestId: typeof raw.guestId === "string" ? raw.guestId.slice(0, 128) : undefined,
+    isBot: ua.isBot,
+    botKind: ua.botKind,
+    metadata: sanitizeMetadata(raw.metadata ?? raw.properties),
+  }
+}
+
+/**
+ * Append client events and enforce the hard ingress cap in the same pipeline.
+ *
+ * The cap used to be applied only by the 30-minute drain. Between drains the list
+ * grew with traffic, so a stalled or slow drain could push Redis memory into
+ * eviction. One LPUSH + LTRIM per request keeps the list bounded at all times.
+ *
+ * LPUSH prepends, so `0..MAX-1` retains the newest MAX entries.
+ */
+const appendClientEvents = async (events: string[]): Promise<number> => {
+  const pipeline = redis.pipeline()
+  pipeline.lpush(ANALYTICS_EVENTS_KEY, ...events)
+  pipeline.ltrim(ANALYTICS_EVENTS_KEY, 0, CLIENT_EVENT_LIST_MAX - 1)
+  const [, length] = (await pipeline.exec()) as [number, string]
+  return Number(length)
 }
 
 // API endpoint to receive analytics events from frontend
 export async function analyticsEventHandler(req: Request, res: Response) {
   try {
-    const event: AnalyticsEvent = {
-      timestamp: Date.now(),
-      ...req.body,
-    }
-    // Store event in Redis list for batching
-    await redis.lpush("analytics:events", JSON.stringify(event))
+    const event = toClientEvent(req.body, parseUA(req.headers["user-agent"] || ""))
+    await appendClientEvents([JSON.stringify(event)])
     res.status(200).json({ success: true })
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error)
     console.warn("analyticsEventHandler: Redis unavailable, dropping event", error)
-    res.status(202).json({ success: false, accepted: false, error: errorMsg })
+    res.status(202).json({ success: false, accepted: false })
   }
 }
 
@@ -768,11 +913,14 @@ export async function batchAnalyticsEventHandler(req: Request, res: Response) {
     if (!Array.isArray(events) || events.length === 0) {
       return res.status(400).json({ error: "No events provided" })
     }
-    const analyticsEvents = events.map((event) => JSON.stringify({
-      timestamp: Date.now(),
-      ...event,
-    }))
-    await redis.lpush("analytics:events", ...analyticsEvents)
+    // Bound the batch as well as the list: one request could otherwise carry an
+    // unbounded array and force a single oversized Redis command.
+    if (events.length > CLIENT_EVENT_LIST_MAX) {
+      return res.status(413).json({ error: "Batch too large" })
+    }
+    const ua = parseUA(req.headers["user-agent"] || "")
+    const analyticsEvents = events.map((event) => JSON.stringify(toClientEvent(event, ua)))
+    await appendClientEvents(analyticsEvents)
     return res.status(200).json({ success: true, processed: analyticsEvents.length })
   } catch (err) {
     console.error("Batch analytics error:", err)
@@ -780,25 +928,75 @@ export async function batchAnalyticsEventHandler(req: Request, res: Response) {
   }
 }
 
-// Batch sync function (to be called by background job/Cloud Function)
-export async function batchSyncAnalyticsEvents() {
+// ponytail: collapse identifier-ish segments so a per-day page counter cannot
+// explode on /session/{id} style routes (Firestore docs have a 1MB field budget).
+const ID_SEGMENT = /^(\d+|[0-9a-f]{8,}|[0-9a-f-]{16,})$/i
+const normalizePagePath = (value: unknown): string | null => {
+  if (typeof value !== "string" || !value) return null
+  const path = value.split("?")[0]
+    .split("/")
+    .map((segment) => (segment.length > 24 || ID_SEGMENT.test(segment) ? ":id" : segment))
+    .join("/")
+    .slice(0, 120)
+  return path || "/"
+}
+
+/**
+ * Drain the client-event list into the `analytics_events` fact table.
+ * Runs from the existing 30-minute scheduled function — no extra cloud function.
+ *
+ * ponytail: atomic `LPOP key count` instead of read-then-trim — a concurrent push
+ * would shift the list and re-drain (duplicate) the same events.
+ */
+export async function drainClientAnalyticsEvents(): Promise<number> {
   try {
-    // Get all events from Redis
-    const events = await redis.lrange("analytics:events", 0, -1)
-    if (!events.length) return
-    // Prepare batch write to Firestore
+    const pending = await redis.lpop<string[]>(ANALYTICS_EVENTS_KEY, CLIENT_EVENT_MAX)
+    if (!pending || !pending.length) return 0
+
     const batch = db.batch()
-    events.forEach((eventStr: string) => {
-      const event = JSON.parse(eventStr)
-      const ref = db.collection("analyticsEvents").doc()
-      batch.set(ref, event)
-    })
+    const counters: Record<string, Record<string, number>> = {}
+
+    for (const entry of pending) {
+      const parsed = (typeof entry === "string" ? JSON.parse(entry) : entry) as AnalyticsEvent
+      const event = buildAnalyticsEvent({
+        name: parsed.eventType || "unknown",
+        ts: new Date(Number(parsed.timestamp) || Date.now()),
+        uid: parsed.userId,
+        guestId: parsed.guestId,
+        isBot: parsed.isBot,
+        botKind: parsed.botKind,
+        props: sanitizeMetadata(parsed.metadata),
+      })
+      batch.set(db.collection(ANALYTICS_EVENTS).doc(), event)
+
+      const day = counters[event.date] || (counters[event.date] = {})
+      // ponytail: bots are kept as facts but excluded from every counter — the same
+      // rule as the funnel, so pageviews and client-event counts stay human.
+      if (event.isBot) continue
+
+      day[`clientEvents.${event.name}`] = (day[`clientEvents.${event.name}`] || 0) + 1
+
+      const page = normalizePagePath(event.props.page ?? event.props.path)
+      if (page) {
+        const pageKey = page.replace(/\./g, "_")
+        day[`byPage.${pageKey}`] = (day[`byPage.${pageKey}`] || 0) + 1
+      }
+    }
+
+    for (const [date, keys] of Object.entries(counters)) {
+      batch.set(db.doc(`metrics_daily/${date}`), Object.fromEntries(
+        Object.entries(keys).map(([key, count]) => [key, FieldValue.increment(count)]),
+      ), { merge: true })
+    }
+
     await batch.commit()
-    // Clear Redis list after sync
-    await redis.del("analytics:events")
-    console.log(`Synced ${events.length} analytics events to Firestore.`)
+    // Safety cap: keep the newest CLIENT_EVENT_LIST_MAX entries if the drain falls behind.
+    await redis.ltrim(ANALYTICS_EVENTS_KEY, 0, CLIENT_EVENT_LIST_MAX - 1)
+    console.log(`✅ Drained ${pending.length} client analytics events`)
+    return pending.length
   } catch (error) {
-    console.error("Error syncing analytics events:", error)
+    console.warn("drainClientAnalyticsEvents failed:", error)
+    return 0
   }
 }
 
