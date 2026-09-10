@@ -1,8 +1,9 @@
 // src/middleware/rateLimit.ts
-import { redisClient } from '../../api/config'
+import { redisClient, isRedisEnabled } from '../../api/config'
 import { Options, rateLimit, RateLimitRequestHandler } from 'express-rate-limit'
-import { RedisStore } from 'rate-limit-redis'
 import { env } from "../../src/config/env"
+import { API_RATE_LIMIT_PREFIX, RATE_LIMIT_PREFIX } from "../../src/config/redis-keys"
+import { createRedisRateLimitStore } from "../../src/config/redis-rate-limit-store"
 
 type RequestWithAuthAndRateLimit = {
   user?: { uid?: string }
@@ -11,22 +12,26 @@ type RequestWithAuthAndRateLimit = {
   }
 }
 
-let redis_store = undefined
-let redis_store_api = undefined
+/**
+ * Both limiters share one Upstash REST client but keep separate key prefixes,
+ * because a single store instance may not be shared by two limiter instances.
+ */
+const redis_store = createRedisRateLimitStore({
+    prefix: RATE_LIMIT_PREFIX,
+    redis: isRedisEnabled ? redisClient : null,
+    resetExpiryOnChange: true,
+})
+const redis_store_api = createRedisRateLimitStore({
+    prefix: API_RATE_LIMIT_PREFIX,
+    redis: isRedisEnabled ? redisClient : null,
+    resetExpiryOnChange: true,
+})
 
-if (redisClient) {
-    redis_store = new RedisStore({
-        prefix: 'rateLimit:', // Optional prefix for keys in Redis
-        // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
-        sendCommand: (...args: string[]) => redisClient.call(...args),
-        resetExpiryOnChange: true, // Reset the rate limit when the IP changes
-    })
-    redis_store_api = new RedisStore({
-        prefix: 'apiRateLimit:', // Optional prefix for keys in Redis
-        // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
-        sendCommand: (...args: string[]) => redisClient.call(...args),
-        resetExpiryOnChange: true, // Reset the rate limit when the IP changes
-    })
+if (env.PRODUCTION === "true" && (!redis_store || !redis_store_api)) {
+    console.error(
+        "rate-limit-redis: DISABLED for the API. Limiting is per-instance (memory) in production. " +
+        "Check UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN.",
+    )
 }
 
 /**

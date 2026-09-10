@@ -1,5 +1,4 @@
-// import { CopyCommand, Redis, } from "@upstash/redis"
-import { RedisOptions, Redis } from 'ioredis'
+import { Redis } from '@upstash/redis'
 import chalk from 'chalk'
 import { config } from '@dotenvx/dotenvx'
 import { env } from '../src/config/env'
@@ -7,79 +6,76 @@ import { env } from '../src/config/env'
 // Load environment variables from .env file
 config({ quiet: true })
 
-// Initialize Upstash Redis client
-// export const redisClient = new Redis({
-//     url: process.env["UPSTASH_REDIS_REST_URL"] || "",
-//     token: process.env["UPSTASH_REDIS_REST_TOKEN"] || "",
-// })
-const tcpHostRaw = env.UPSTASH_REDIS_REST_URL || env.UPSTASH_REDIS_REST_URL
-const tcpPortRaw = env.UPSTASH_REDIS_REST_PORT || env.UPSTASH_REDIS_REST_PORT
-const tcpUsername = env.UPSTASH_REDIS_REST_USER || env.UPSTASH_REDIS_REST_USER // Default username for Redis
-const tcpPassword = env.UPSTASH_REDIS_REST_PASSWORD || env.UPSTASH_REDIS_REST_PASSWORD
+/**
+ * Upstash REST client for the Express API.
+ *
+ * This used to be an ioredis TCP client, which meant the API and the Cloud
+ * Functions talked to the same Redis through two different wire protocols with
+ * two different credential paths and two different sets of failure modes. The
+ * only consumer was the rate-limit store, so the API now uses the REST client
+ * like everything else.
+ */
 
+const sanitizeUpstashRestUrl = (value: string): string => {
+  if (!value) {
+    return ''
+  }
 
-let client: Redis | null = null
+  let normalized = value.trim().replace(/\/+$/, '')
+  normalized = normalized.replace(/\.upstash\.io\.upstash\.io(\/|$)/, '.upstash.io$1')
 
-const parseRedisHost = (value: string): string => {
-    try {
-        const parsed = new URL(value)
-        let host = parsed.hostname.trim().toLowerCase()
-
-        const duplicatedSuffix = '.upstash.io.upstash.io'
-        if (host.endsWith(duplicatedSuffix)) {
-            host = host.replace(/\.upstash\.io\.upstash\.io$/, '.upstash.io')
-        }
-
-        return host
-    } catch {
-        const host = value.replace(/^https?:\/\//, '').trim().toLowerCase()
-
-        if (host.endsWith('.upstash.io.upstash.io')) {
-            return host.replace(/\.upstash\.io\.upstash\.io$/, '.upstash.io')
-        }
-
-        return host
-    }
+  return /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`
 }
 
+const isEncryptedPlaceholder = (value: string): boolean =>
+  /^encrypted:/i.test((value || '').trim())
 
-if (tcpHostRaw?.length && tcpPortRaw?.length && tcpPassword?.length) {
-    const host = parseRedisHost(tcpHostRaw)
-    const port = parseInt(tcpPortRaw || '30766', 10)
-    const redisOptions: RedisOptions = {
-        host: host || 'localhost', // Read from env
-        port, // Read from env
-        username: tcpUsername || 'default', // Default username for Redis
-        password: tcpPassword || '', // Read from env
-        db: 0, // Default database
-        lazyConnect: true, // Use lazy connect to avoid immediate connection
-        tls: {},
-    }
+const isHttpUrl = (value: string): boolean => {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
 
-    client = new Redis(redisOptions)
-    console.log(chalk.hex('#028C9E').bold('Upstash Redis client initialized ') + chalk.yellow.bold(`${host}:${port}`))
-    // client.quit() // Ensure we start with a clean slate
-    client.on('reconnecting', () => {
-        console.log('Redis client reconnecting...')
-    })
-    client.on('error', (err) => {
-        console.error('Redis connection error:', err);
-    })
-    client.once('ready', () => {
-        console.log('Redis client ready');
-    })
-    client.on('connect', () => {
-        console.log('Redis client connected')
-    })
-    client.on('end', () => {
-        console.log('Redis client end')
-    })
-    client.on('quit', () => {
-        console.log('Redis client quit')
-    })
+const upstashUrl = sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL)
+const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_REDIS_REST_PASSWORD
+
+const upstashRestEnabled =
+  !!upstashUrl &&
+  !!upstashToken &&
+  isHttpUrl(upstashUrl) &&
+  !isEncryptedPlaceholder(upstashUrl) &&
+  !isEncryptedPlaceholder(upstashToken)
+
+const createNoopRedis = (): Redis => ({
+  pipeline: () => ({
+    exec: async () => [],
+  }),
+  get: async () => null,
+  set: async () => 'OK',
+  setex: async () => 'OK',
+  del: async () => 0,
+  incr: async () => 0,
+  expire: async () => 0,
+  ttl: async () => -2,
+  // `undefined` is the "store unavailable" signal rate-limit-redis expects; it
+  // then falls back to its in-memory store rather than throwing on every request.
+  exec: async () => undefined,
+} as unknown as Redis)
+
+const client: Redis = upstashRestEnabled
+  ? new Redis({ url: upstashUrl, token: upstashToken })
+  : createNoopRedis()
+
+if (upstashRestEnabled) {
+  console.log(chalk.hex('#028C9E').bold('Upstash Redis REST client initialized ') + chalk.yellow.bold(upstashUrl))
 } else {
-    console.error('Redis client not connected: Missing environment variables')
+  console.error(
+    'Redis client not connected: missing or encrypted UPSTASH_REDIS_REST_URL/TOKEN. ' +
+    'Rate limiting will use per-instance memory.',
+  )
 }
 
-
-export { client as redisClient }
+export { client as redisClient, upstashRestEnabled as isRedisEnabled }

@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable require-jsdoc */
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -12,8 +13,8 @@
 
 import {Request, Response, NextFunction} from "express"
 import {Ratelimit} from "@upstash/ratelimit"
-import {Redis} from "@upstash/redis"
 import {env} from "../config/env"
+import {redis as sharedRedis, isRedisEnabled} from "../app/cacheConfig"
 import {lookupGeoByIp} from "../gfunctions/analytics"
 
 const sanitizeUpstashRestUrl = (value: string): string => {
@@ -47,43 +48,71 @@ const isHttpUrl = (value: string): boolean => {
   }
 }
 
-// const isFunctionsEmulator =
-//   process.env["FUNCTIONS_EMULATOR"] === "true" ||
-//   !!process.env["FIREBASE_EMULATOR_HUB"]
-
 const upstashUrl = sanitizeUpstashRestUrl(env.UPSTASH_REDIS_REST_URL)
 const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_REDIS_REST_PASSWORD
 const shouldEnableUpstashRateLimit =
+  isRedisEnabled &&
   !!upstashUrl &&
   !!upstashToken &&
   isHttpUrl(upstashUrl) &&
   !isEncryptedPlaceholder(upstashUrl) &&
   !isEncryptedPlaceholder(upstashToken)
   /* ( !isFunctionsEmulator ||  ) */
-if (!shouldEnableUpstashRateLimit) {
-  // Intentionally silent: missing Upstash credentials disables distributed limiting.
+if (!shouldEnableUpstashRateLimit && env.PRODUCTION === "true") {
+  console.error(
+    "upstash-limiter: DISABLED. No shared Redis client, so rate limiting and IP/country " +
+    "deny-lists are inactive on this path.",
+  )
 }
 
-// Initialize Upstash Redis and Ratelimit
-const redis = shouldEnableUpstashRateLimit ? new Redis({
-  url: upstashUrl,
-  token: upstashToken,
-}) as any : null
+// Reuse the one process-wide REST client instead of constructing a second one
+// with its own credential parsing.
+const redis = shouldEnableUpstashRateLimit ? (sharedRedis as unknown as Record<string, unknown>) : null
 
 /**
- * Firebase Functions rate limiter
- * Development: 1 min window, 50 requests
- * Production: 15 min window, 100 requests
+ * Firebase Functions rate limiter, scaled by billing tier.
+ * Development: 1 min window, 50 requests. Production: 15 min window, 100.
+ * Paid tiers multiply the base cap; roles come from the Firebase `role` claim.
  */
-const functionRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
+const TIER_MULTIPLIERS: Record<string, number> = {
+  free: 1,
+  pro: 3,
+  enterprise: 8,
+  admin: 20,
+}
+const baseFunctionMax = env.PRODUCTION === "true" ? 100 : 50
+
+const functionRatelimits: Record<string, Ratelimit | null> = Object.fromEntries(
+  Object.entries(TIER_MULTIPLIERS).map(([tier, multiplier]) => [
+    tier,
+    shouldEnableUpstashRateLimit ? new Ratelimit({
+      redis: redis as any,
+      limiter: Ratelimit.slidingWindow(
+        Math.max(1, Math.floor(baseFunctionMax * multiplier)),
+        env.PRODUCTION === "true" ? "15 m" : "1 m"
+      ),
+      analytics: env.PRODUCTION === "true",
+      enableProtection: env.PRODUCTION === "true",
+      prefix: `functionsRateLimit:${tier}`,
+    }) : null,
+  ])
+)
+const functionRatelimit = functionRatelimits.free
+
+/**
+ * Strict limiter for authentication / account-verification endpoints.
+ * Tighter than the general limiter to blunt credential stuffing, brute force,
+ * and phone/email enumeration. Same cap for every tier on purpose.
+ */
+const authRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
   redis: redis as any,
   limiter: Ratelimit.slidingWindow(
-    env.PRODUCTION === "true" ? 100 : 50, // max requests
-    env.PRODUCTION === "true" ? "15 m" : "1 m" // window
+    env.PRODUCTION === "true" ? 10 : 50,
+    env.PRODUCTION === "true" ? "15 m" : "1 m"
   ),
-  analytics: env.PRODUCTION === "true", // Enable analytics in production
-  enableProtection: env.PRODUCTION === "true", // Enable auto IP deny list in production
-  prefix: "functionsRateLimit", // Redis key prefix
+  analytics: env.PRODUCTION === "true",
+  enableProtection: env.PRODUCTION === "true",
+  prefix: "authRateLimit",
 }) : null
 
 /**
@@ -108,10 +137,6 @@ const eventRatelimit = shouldEnableUpstashRateLimit ? new Ratelimit({
  * (ipregistry when IPREGISTRY_API_KEY is set). Cached 6h, so only first-seen
  * IPs ever hit the provider. Lookups are skipped on the event limiter
  * (enableProtection=false) where country only feeds analytics, never a block.
- * @param {Request} req Incoming request with optional edge country headers.
- * @param {string} ip Client IP address used for the geo fallback.
- * @param {boolean} allowDenyListBlock Whether geo lookup may affect blocking.
- * @return {Promise<string>} Resolved country code or "unknown".
  */
 async function resolveCountryCode(
   req: Request,
@@ -133,14 +158,44 @@ async function resolveCountryCode(
   }
 }
 
+/**
+ * Normalize the `role` custom claim to a known tier key, defaulting to "free".
+ * @param {unknown} role The authenticated user's role claim.
+ * @return {string} One of TIER_MULTIPLIERS' keys.
+ */
+const resolveTier = (role: unknown): string => {
+  const normalized = typeof role === "string" ? role.trim().toLowerCase() : ""
+  if (!normalized) {
+    return "free"
+  }
+  // Longest / most specific first: an "enterprise_admin" is an admin.
+  if (normalized.includes("admin")) {
+    return "admin"
+  }
+  if (normalized.includes("enterprise")) {
+    return "enterprise"
+  }
+  if (normalized.includes("pro")) {
+    return "pro"
+  }
+  return "free"
+}
+
 async function applyRateLimit(
   req: Request,
   res: Response,
   next: NextFunction,
   ratelimit: Ratelimit | null,
-  allowDenyListBlock = true
+  allowDenyListBlock = true,
+  tiered = false
 ): Promise<Response | void> {
-  if (!shouldEnableUpstashRateLimit || !ratelimit) {
+  // Paid tiers get a bigger budget; the limiter instance carries the cap.
+  let effectiveRatelimit = ratelimit
+  if (tiered) {
+    effectiveRatelimit = functionRatelimits[resolveTier(req.user?.role)]
+  }
+
+  if (!shouldEnableUpstashRateLimit || !effectiveRatelimit) {
     return next()
   }
 
@@ -161,7 +216,7 @@ async function applyRateLimit(
     const country = await resolveCountryCode(req, ip, allowDenyListBlock)
 
     // Apply rate limit with protection
-    const {success, limit, remaining, reset, pending, reason} = await ratelimit.limit(
+    const {success, limit, remaining, reset, pending, reason} = await effectiveRatelimit.limit(
       identifier,
       {
         ip, // For auto IP deny list
@@ -292,7 +347,7 @@ export async function upstashFunctionLimiter(
   res: Response,
   next: NextFunction
 ): Promise<Response | void> {
-  return applyRateLimit(req, res, next, functionRatelimit, true)
+  return applyRateLimit(req, res, next, functionRatelimit, true, true)
 }
 
 export async function upstashEventLimiter(
@@ -301,6 +356,22 @@ export async function upstashEventLimiter(
   next: NextFunction
 ): Promise<Response | void> {
   return applyRateLimit(req, res, next, eventRatelimit, false)
+}
+
+/**
+ * Strict limiter for auth endpoints: login, phone/email verification, and the
+ * enumeration-sensitive lookups. One cap regardless of tier.
+ * @param {Request} req Express request.
+ * @param {Response} res Express response.
+ * @param {NextFunction} next Express next middleware.
+ * @return {Promise<Response | void>} Resolves after the limit check.
+ */
+export async function upstashAuthLimiter(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> {
+  return applyRateLimit(req, res, next, authRatelimit, true)
 }
 
 export {functionRatelimit}

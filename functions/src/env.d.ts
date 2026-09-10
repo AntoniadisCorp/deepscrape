@@ -9,7 +9,6 @@ declare namespace NodeJS {
     // Environment Configuration
     PRODUCTION: "true" | "false"
     PORT: string
-    UPSTASH_REDIS_TCP_ENABLED: "true" | "false"
 
     // Upstash Redis Configuration
     UPSTASH_REDIS_REST_URL: string
