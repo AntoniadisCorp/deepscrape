@@ -1,3 +1,22 @@
+# [0.8.0-beta.10](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.9...v0.8.0-beta.10) (2026-09-10)
+
+
+### Bug Fixes
+
+* **functions:** satisfy the valid-jsdoc gate in predeploy lint ([6078af5](https://github.com/deepscrape/deepscrape/commit/6078af5514a30a66b16d7393a55e360d92c9de3b))
+* **functions:** ship the shared redis config inside the deploy artifact ([7bdd36b](https://github.com/deepscrape/deepscrape/commit/7bdd36b92b9b836acfe42707dfc1d8db1c0f9ecd))
+* **sessions:** typed errors, App Check enforcement and batched revocation ([fc41efd](https://github.com/deepscrape/deepscrape/commit/fc41efd320e98223f36252dbf134c3afc1588292))
+
+
+### Features
+
+* **admin-analytics:** rebuild console on the new metrics pipeline ([b55f47e](https://github.com/deepscrape/deepscrape/commit/b55f47e0da6e52465a80d64eaf9758132939faa1))
+* **analytics:** add typed event domain and retire legacy aggregation ([b88b4e5](https://github.com/deepscrape/deepscrape/commit/b88b4e5f8a612a5063524accc8d3ba09f5671293))
+* **analytics:** record paid conversions as idempotent facts ([1c839d8](https://github.com/deepscrape/deepscrape/commit/1c839d8503ade2f53ea425c9fd14b02e75cba7ac))
+* **auth:** rate-limit credential endpoints and harden WebAuthn ([bf31361](https://github.com/deepscrape/deepscrape/commit/bf31361f2f722ffc6ad1b5664260198fae048e53))
+* **functions:** add the redis key hygiene audit ([6b910b4](https://github.com/deepscrape/deepscrape/commit/6b910b4e843abd1fee9f849db21908fb479519a2))
+* **functions:** classify bot and AI-agent traffic from the user agent ([7a54f59](https://github.com/deepscrape/deepscrape/commit/7a54f599b578292b568443abf3a20a47a3df3c27))
+
 # [0.8.0-beta.9](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.8...v0.8.0-beta.9) (2026-09-08)
 
 
