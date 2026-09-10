@@ -1,3 +1,10 @@
+# [0.9.0-beta.3](https://github.com/deepscrape/deepscrape/compare/v0.9.0-beta.2...v0.9.0-beta.3) (2026-09-10)
+
+
+### Bug Fixes
+
+* **deps:** patch the fast-xml-parser and form-data advisories ([cacc849](https://github.com/deepscrape/deepscrape/commit/cacc849ee4bab872fad9f32533bf711bfb936aa5))
+
 # [0.9.0-beta.2](https://github.com/deepscrape/deepscrape/compare/v0.9.0-beta.1...v0.9.0-beta.2) (2026-09-10)
 
 
