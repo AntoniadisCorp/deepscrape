@@ -125,19 +125,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '22.x'
 
-      # The functions sub-project uses npm (package-lock.json, no bun.lockb).
+      # The functions sub-project is Bun-managed (functions/bun.lockb). Installing
+      # with npm ci required a package-lock.json that drifts from bun.lockb, which
+      # failed the job outright whenever package.json changed without npm.
       - name: Install functions dependencies
         working-directory: ./functions
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Run Firebase Functions tests (with reporter)
         working-directory: ./functions
-        run: npm test -- --test-reporter=spec
+        run: bun run test -- --test-reporter=spec
         env:
           # Provide placeholder values so env parsing doesn't throw at import time.
           # Tests mock Firebase / Stripe calls so no real secrets are needed.

@@ -20,12 +20,17 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - uses: actions/setup-node@v5
         with:
           node-version: "22.x"
 
+      # The root project is Bun-managed (bun.lockb is the source of truth).
       - name: Install dependencies
-        run: npm clean-install
+        run: bun install --frozen-lockfile
 
       - name: Set up Git user
         run: |
