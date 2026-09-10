@@ -18,7 +18,7 @@ import { FieldValue } from "firebase-admin/firestore"
 import { onDocumentCreated } from "firebase-functions/v2/firestore"
 import { HttpsError, onCall as onCallv2, onRequest } from "firebase-functions/v2/https"
 import { onSchedule } from "firebase-functions/v2/scheduler"
-import { Users, canPurchaseStandaloneCredits, getPurchasedCreditsAvailable } from "../domain"
+import { Users, Guest, ANALYTICS_EVENTS, buildAnalyticsEvent, canPurchaseStandaloneCredits, getPurchasedCreditsAvailable, toPaidCounterKeys } from "../domain"
 import Stripe from "stripe"
 import { env } from "../config/env"
 
@@ -864,6 +864,79 @@ const resolveUidByStripeCustomer = async (
   }
 
   return userSnap.docs[0].id
+}
+
+// Record a paid conversion as an `analytics_events` fact plus its per-day counters.
+//
+// Idempotency: the fact doc id is derived from the payment id and written with
+// `create()`, so a replayed webhook aborts the whole batch — counters included —
+// instead of double-counting revenue. Same idea as the credits ledger.
+//
+// ponytail: the only non-analytics writer of `metrics_daily`, and it only ever adds
+// revenue keys nothing else touches.
+const recordPaidFact = async (
+  uid: string,
+  payment: {
+    id: string
+    amountMinor: number
+    currency: string
+    source: "subscription" | "payg" | "credits"
+    plan?: string | null
+    interval?: string | null
+    reason?: string | null
+  },
+): Promise<void> => {
+  const amountMinor = Math.round(Number(payment.amountMinor || 0))
+  if (amountMinor <= 0) {
+    return
+  }
+
+  const userSnap = await db.doc(`users/${uid}`).get()
+  const user = userSnap.data() as (Users & { analytics?: { acquisition?: Guest["acquisition"] } }) | undefined
+  let acquisition = user?.analytics?.acquisition
+
+  // Signup merges the guest onto the user doc; fall back to the guest link for
+  // accounts created before that merge shipped.
+  if (!acquisition?.utmSource && !acquisition?.referrer && user?.loginMetricsId) {
+    const guestSnap = await db.doc(`guests/${user.loginMetricsId}`).get()
+    acquisition = (guestSnap.data() as Guest | undefined)?.acquisition
+  }
+
+  const fact = buildAnalyticsEvent({
+    name: "paid",
+    uid,
+    isConversion: true,
+    props: {
+      amountMinor,
+      currency: (payment.currency || "eur").toUpperCase(),
+      plan: payment.plan || null,
+      interval: payment.interval || null,
+      source: payment.source,
+      reason: payment.reason || null,
+      channel: acquisition?.utmSource || acquisition?.referrer || "direct",
+      utmMedium: acquisition?.utmMedium || null,
+      utmCampaign: acquisition?.utmCampaign || null,
+      landingPath: acquisition?.landingPath || null,
+    },
+  })
+
+  const batch = db.batch()
+  batch.create(db.collection(ANALYTICS_EVENTS).doc(`paid_${payment.id}`), fact)
+  batch.set(
+    db.doc(`metrics_daily/${fact.date}`),
+    Object.fromEntries(toPaidCounterKeys(fact.props).map(([key, delta]) => [key, FieldValue.increment(delta)])),
+    { merge: true },
+  )
+
+  try {
+    await batch.commit()
+  } catch (error) {
+    // 6 = ALREADY_EXISTS: this payment was already recorded, counters untouched.
+    if ((error as { code?: number }).code === 6) {
+      return
+    }
+    throw error
+  }
 }
 
 /* TODO: create a Stripe customer account for the user use most usable data */
@@ -2384,6 +2457,20 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         })
       }
     }
+
+    // Payment analytics: only one-time checkouts land here. Subscription mode is
+    // recorded from `invoice.paid` instead, so the same payment is never counted twice.
+    if (session.mode === "payment") {
+      await recordPaidFact(uid, {
+        id: session.id,
+        amountMinor: Number(session.amount_total || 0),
+        currency: session.currency || "eur",
+        source: checkoutType === "credits" || checkoutType === "custom_credits" ? "credits" : "payg",
+        plan: selectedPlanId,
+        interval: selectedInterval,
+        reason: checkoutType || "one_time",
+      })
+    }
     break
   }
   case "invoice.payment_failed": {
@@ -2547,6 +2634,18 @@ const processStripeEvent = async (stripe: Stripe, event: Stripe.Event): Promise<
         receiptUrl,
         billingReason: invoice.billing_reason,
       },
+    })
+
+    // Payment analytics: subscriptions are counted here (this fires for the first
+    // payment too), never from the checkout session, so no euro is counted twice.
+    await recordPaidFact(uid, {
+      id: invoice.id,
+      amountMinor: invoice.amount_paid,
+      currency: invoice.currency,
+      source: "subscription",
+      plan: plan ?? billing?.plan ?? null,
+      interval: planInterval ?? null,
+      reason: invoice.billing_reason ?? null,
     })
     break
   }
