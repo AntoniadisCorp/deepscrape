@@ -6,7 +6,7 @@ import { AsyncPipe, JsonPipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 import { takeUntil } from 'rxjs/internal/operators/takeUntil';
 import { tap } from 'rxjs/internal/operators/tap';
-import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, OperationStatusService, SnackbarService, WebSocketService, AnalyticsService } from '../../services';
+import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, OperationStatusService, SnackbarService, AnalyticsService } from '../../services';
 import { Subject } from 'rxjs/internal/Subject';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { delay } from 'rxjs/internal/operators/delay';
