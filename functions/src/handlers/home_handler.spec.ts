@@ -57,7 +57,7 @@ describe("redis round-trip budget", () => {
     // session TTL) on top of the read pipeline and the presence pipeline.
     const region = betweenMarkers(
       handler,
-      "One round-trip for read + TTL refresh + revocation check",
+      "ONE round-trip for read + TTL refresh + revocation check",
       "// Fallback: Check loginSessions collection (slower path).",
     )
 
