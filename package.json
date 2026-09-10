@@ -82,7 +82,7 @@
     "@angular/cdk": "^20.2.14",
     "@angular/common": "^20.3.30",
     "@angular/compiler": "^20.3.30",
-    "@angular/core": "^20.3.30",
+    "@angular/core": "^22.1.5",
     "@angular/fire": "^20.0.1",
     "@angular/forms": "^20.3.30",
     "@angular/material": "^20.2.14",
