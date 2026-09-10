@@ -6,7 +6,7 @@ import { AsyncPipe, JsonPipe, NgClass } from '@angular/common';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 import { takeUntil } from 'rxjs/internal/operators/takeUntil';
 import { tap } from 'rxjs/internal/operators/tap';
-import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, OperationStatusService, SnackbarService, WebSocketService } from '../../services';
+import { AuthService, CrawlAPIService, FirestoreService, LocalStorage, OperationStatusService, SnackbarService, WebSocketService, AnalyticsService } from '../../services';
 import { Subject } from 'rxjs/internal/Subject';
 import { concatMap } from 'rxjs/internal/operators/concatMap';
 import { delay } from 'rxjs/internal/operators/delay';
@@ -49,6 +49,7 @@ export class AppCrawlComponent {
   private destroyRef = inject(DestroyRef)
   private localStorage = inject(LocalStorage)
   private translate = inject(TranslateService)
+  private analytics = inject(AnalyticsService)
   private user: Users & { currProviderData: UserInfo | null } | null = null
   private destroy$ = new Subject<void>()
 
@@ -233,7 +234,12 @@ export class AppCrawlComponent {
     this.crawlSubscription = this.crawlService.multiCrawlEnqueue(urls, operationData, this.crawlpack as CrawlPack)
       .pipe(
         takeUntil(this.destroy$),
-        tap((task: CrawlTask) => this.updateUIStatus(task.id)), // ensure that ui prints the task status
+        // ponytail: one crawl_started emit at the single enqueue choke point.
+        tap((task: CrawlTask) => {
+          this.updateUIStatus(task.id)
+          this.analytics.trackEvent('crawl_started', { taskId: task.id, urlCount: urls.length })
+            .subscribe({ error: () => undefined })
+        }),
         // tap((task: CrawlTask) => console.log('a new crawl task' + ' added' + ' to the qeueu: ', task)),
         delay(3000), // Delay to ensure the request is sent
         concatMap((task: CrawlTask) => {

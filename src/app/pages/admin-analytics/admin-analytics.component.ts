@@ -1,10 +1,10 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DecimalPipe, NgClass } from '@angular/common';
 import { FormControl, FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { FirestoreService, FirestoreAnalyticsService } from '../../core/services';
-import { AnalyticsRangeService } from '../../core/services/analytics-range.service';
+import { AnalyticsRangeService, RetentionCohort } from '../../core/services/analytics-range.service';
 import {
     mapSessionRecordToDisplaySession,
     resolveSessionIdFromRecord,
@@ -76,6 +76,9 @@ interface Dashboard {
     byIP?: Record<string, number>;
     byASN?: Record<string, number>;
     byISP?: Record<string, number>;
+    byChannel?: Record<string, number>;
+    byReferrer?: Record<string, number>;
+    byProxyType?: Record<string, number>;
 }
 
 interface RangeMetrics {
@@ -109,12 +112,47 @@ interface RangeMetrics {
     byIP?: Record<string, number>;
     byASN?: Record<string, number>;
     byISP?: Record<string, number>;
+    byChannel?: Record<string, number>;
+    byReferrer?: Record<string, number>;
+    byProxyType?: Record<string, number>;
+    byBotKind?: Record<string, number>;
+    bots?: number;
+    funnel?: Record<string, number>;
+    clientEvents?: Record<string, number>;
+    byPage?: Record<string, number>;
+    byLandingPath?: Record<string, number>;
+    revenueByCurrency?: Record<string, number>;
+    paymentsByCurrency?: Record<string, number>;
+    paidByPlan?: Record<string, number>;
+    paidByChannel?: Record<string, number>;
+    retention?: RetentionCohort[];
 }
 
 interface RankRow {
     label: string;
     count: number;
     pct: number;
+}
+
+interface FunnelStep {
+    label: string;
+    count: number;
+    pct: number;
+}
+
+interface RetentionRow {
+    cohort: string;
+    size: number;
+    /** Retention rate per column (D1/D7/D14/D30); null = window not elapsed. */
+    cells: Array<number | null>;
+}
+
+interface RevenueRow {
+    currency: string;
+    /** Major units (amountMinor / 100). */
+    amount: number;
+    payments: number;
+    arpu: number;
 }
 
 interface DimensionPanel {
@@ -124,6 +162,9 @@ interface DimensionPanel {
 }
 
 type AnalyticsPeriod = 'last-30m' | 'last-1h' | 'last-24h' | 'last-7d' | 'last-30d' | 'last-90d' | 'custom';
+
+/** Content = traffic/engagement, payments = money, platform = accounts and sessions. */
+type AnalyticsSection = 'content' | 'payments' | 'platform';
 
 @Component({
     selector: 'app-admin-analytics',
@@ -156,6 +197,25 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     Math = Math;
     readonly icons = myIcons;
     trafficPanels: DimensionPanel[] = [];
+    paymentPanels: DimensionPanel[] = [];
+    readonly sectionTabs: Array<{ id: AnalyticsSection; label: string }> = [
+        { id: 'content', label: 'ADMIN_ANALYTICS.SECTION_CONTENT' },
+        { id: 'payments', label: 'ADMIN_ANALYTICS.SECTION_PAYMENTS' },
+        { id: 'platform', label: 'ADMIN_ANALYTICS.SECTION_PLATFORM' },
+    ];
+    activeSection = signal<AnalyticsSection>('content');
+    // Always five steps so the template can index them before data lands.
+    funnelSteps: FunnelStep[] = [
+        { label: 'ADMIN_ANALYTICS.FUNNEL_STEP_VISITORS', count: 0, pct: 100 },
+        { label: 'ADMIN_ANALYTICS.FUNNEL_STEP_SIGNUPS', count: 0, pct: 0 },
+        { label: 'ADMIN_ANALYTICS.FUNNEL_STEP_LOGINS', count: 0, pct: 0 },
+        { label: 'ADMIN_ANALYTICS.FUNNEL_STEP_ACTIVATED', count: 0, pct: 0 },
+        { label: 'ADMIN_ANALYTICS.FUNNEL_STEP_PAID', count: 0, pct: 0 },
+    ];
+    retentionRows: RetentionRow[] = [];
+    revenueRows: RevenueRow[] = [];
+    botTrafficCount = 0;
+    botSharePct = 0;
     displayPeriodDays = 7;
     adminSessionTargetUserId = '';
     adminSessionsLoading = false;
@@ -552,7 +612,96 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
                 has(rangeMetrics?.byDevice) ? rangeMetrics.byDevice : (has(dashboard.topDevices) ? dashboard.topDevices : dashboard.byDevice), 'Unknown Device'),
             this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_BROWSER', '#F59E0B',
                 has(rangeMetrics?.byBrowser) ? rangeMetrics.byBrowser : (has(dashboard.topBrowsers) ? dashboard.topBrowsers : dashboard.byBrowser), 'Unknown Browser'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_CHANNEL', '#22C55E',
+                has(rangeMetrics?.byChannel) ? rangeMetrics.byChannel : dashboard.byChannel, 'direct'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_REFERRER', '#3B82F6',
+                has(rangeMetrics?.byReferrer) ? rangeMetrics.byReferrer : dashboard.byReferrer, 'direct'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_PROXY', '#EF4444',
+                has(rangeMetrics?.byProxyType) ? rangeMetrics.byProxyType : dashboard.byProxyType, 'direct'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_BOT', '#A855F7',
+                has(rangeMetrics?.byBotKind) ? rangeMetrics.byBotKind : null, 'bot'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_PAGE', '#0EA5E9',
+                has(rangeMetrics?.byPage) ? rangeMetrics.byPage : null, '/'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_ENTRY', '#D946EF',
+                has(rangeMetrics?.byLandingPath) ? rangeMetrics.byLandingPath : null, 'direct'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_CLIENT_EVENT', '#CA8A04',
+                has(rangeMetrics?.clientEvents) ? rangeMetrics.clientEvents : null, 'unknown'),
         ];
+
+        // Rose accents for money, per the repo theme guidance for new UI.
+        this.paymentPanels = [
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_PAID_CHANNEL', '#E11D48',
+                has(rangeMetrics?.paidByChannel) ? rangeMetrics.paidByChannel : null, 'direct'),
+            this.buildDimensionPanel('ADMIN_ANALYTICS.PANEL_PAID_PLAN', '#BE123C',
+                has(rangeMetrics?.paidByPlan) ? rangeMetrics.paidByPlan : null, 'unknown'),
+        ];
+    }
+
+    setSection(section: AnalyticsSection): void {
+        this.activeSection.set(section);
+        this.renderNow();
+    }
+
+    /**
+     * Bot-free funnel straight off `metrics_daily.funnel.*` (written by the realtime
+     * triggers). Falls back to the coarser dashboard counters when a range doc has
+     * not been recomputed since the facts layer shipped, so the card never goes blank.
+     */
+    private refreshFunnel(rangeMetrics: RangeMetrics): void {
+        const funnel = rangeMetrics?.funnel || {};
+        const visitors = Number(funnel['guest_created'] || rangeMetrics?.newGuests || 0);
+        const signups = Number(funnel['user_registered'] || rangeMetrics?.newUsers || 0);
+        const logins = Number(funnel['login_succeeded'] || rangeMetrics?.totalLogins || 0);
+        // Client-stream steps count events, not unique people — the server facts above do.
+        const activated = Number(rangeMetrics?.clientEvents?.['crawl_completed'] || 0);
+        const paid = Object.values(rangeMetrics?.paymentsByCurrency || {})
+            .reduce((sum, count) => sum + Number(count || 0), 0);
+        const bots = Number(rangeMetrics?.bots || 0);
+        const base = visitors || 1;
+        const rate = (value: number): number => Math.round((value / base) * 1000) / 10;
+
+        this.funnelSteps[0].count = visitors;
+        this.funnelSteps[1].count = signups;
+        this.funnelSteps[1].pct = rate(signups);
+        this.funnelSteps[2].count = logins;
+        this.funnelSteps[2].pct = rate(logins);
+        this.funnelSteps[3].count = activated;
+        this.funnelSteps[3].pct = rate(activated);
+        this.funnelSteps[4].count = paid;
+        this.funnelSteps[4].pct = rate(paid);
+
+        this.botTrafficCount = bots;
+        // Bots never enter `funnel.guest_created`, so the two sets are disjoint.
+        this.botSharePct = visitors + bots > 0
+            ? Math.round((bots / (visitors + bots)) * 1000) / 10
+            : 0;
+    }
+
+    /** Amounts arrive in minor units, per currency — summing currencies would be wrong. */
+    private refreshRevenue(rangeMetrics: RangeMetrics): void {
+        const payments = rangeMetrics?.paymentsByCurrency || {};
+        this.revenueRows = Object.entries(rangeMetrics?.revenueByCurrency || {})
+            .map(([currency, amountMinor]) => {
+                const amount = Number(amountMinor || 0) / 100;
+                const count = Number(payments[currency] || 0);
+                return { currency, amount, payments: count, arpu: count > 0 ? amount / count : 0 };
+            })
+            .sort((a, b) => b.amount - a.amount);
+    }
+
+    private refreshRetention(rangeMetrics: RangeMetrics): void {
+        this.retentionRows = (rangeMetrics?.retention || []).map((row: RetentionCohort) => {
+            const size = Number(row.size || 0);
+            return {
+                cohort: row.cohort,
+                size,
+                cells: [row.d1, row.d7, row.d14, row.d30].map((value) =>
+                    value === null || value === undefined || size === 0
+                        ? null
+                        : Math.round((Number(value) / size) * 1000) / 10,
+                ),
+            };
+        });
     }
 
     get selectedPeriodLabel(): string {
@@ -1108,6 +1257,9 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         }));
 
         this.refreshTrafficPanels(dashboard, rangeMetrics);
+        this.refreshFunnel(rangeMetrics);
+        this.refreshRevenue(rangeMetrics);
+        this.refreshRetention(rangeMetrics);
         this.renderNow();
     }
 

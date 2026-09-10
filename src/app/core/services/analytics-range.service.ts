@@ -37,6 +37,38 @@ export interface AnalyticsDailyBreakdown {
   byRegion?: Record<string, number>
   byLanguage?: Record<string, number>
   byIP?: Record<string, number>
+  byASN?: Record<string, number>
+  byISP?: Record<string, number>
+  byChannel?: Record<string, number>
+  byReferrer?: Record<string, number>
+  byProxyType?: Record<string, number>
+  /** Bot traffic for the day (excluded from `funnel`). */
+  bots?: number
+  /** Bot-free funnel counters: `funnel.<event name>`. */
+  funnel?: Record<string, number>
+  byBotKind?: Record<string, number>
+  /** Drained client-side event counts, keyed by event name. */
+  clientEvents?: Record<string, number>
+  /** Human page views per normalized route path. */
+  byPage?: Record<string, number>
+  /** Entry page (first-touch landing path) per guest. */
+  byLandingPath?: Record<string, number>
+  /** Paid amounts in minor units per currency (never summed together). */
+  revenueByCurrency?: Record<string, number>
+  /** Payment count per currency. */
+  paymentsByCurrency?: Record<string, number>
+  paidByPlan?: Record<string, number>
+  paidByChannel?: Record<string, number>
+}
+
+export interface RetentionCohort {
+  cohort: string
+  size: number
+  /** null = that window has not elapsed yet (rendered as “—”, never as 0%). */
+  d1?: number | null
+  d7?: number | null
+  d14?: number | null
+  d30?: number | null
 }
 
 export interface AnalyticsRangeResult {
@@ -57,6 +89,30 @@ export interface AnalyticsRangeResult {
   byRegion?: Record<string, number>
   byLanguage?: Record<string, number>
   byIP?: Record<string, number>
+  byASN?: Record<string, number>
+  byISP?: Record<string, number>
+  byChannel?: Record<string, number>
+  byReferrer?: Record<string, number>
+  byProxyType?: Record<string, number>
+  /** Bot traffic in the window (excluded from `funnel`). */
+  bots?: number
+  /** Bot-free funnel counters: `funnel.<event name>`. */
+  funnel?: Record<string, number>
+  byBotKind?: Record<string, number>
+  /** Drained client-side event counts, keyed by event name. */
+  clientEvents?: Record<string, number>
+  /** Human page views per normalized route path. */
+  byPage?: Record<string, number>
+  /** Entry page (first-touch landing path) per guest. */
+  byLandingPath?: Record<string, number>
+  /** Paid amounts in minor units per currency (never summed together). */
+  revenueByCurrency?: Record<string, number>
+  /** Payment count per currency. */
+  paymentsByCurrency?: Record<string, number>
+  paidByPlan?: Record<string, number>
+  paidByChannel?: Record<string, number>
+  /** Cohort retention grid — only on the precomputed 30-day range. */
+  retention?: RetentionCohort[]
   dailyBreakdown: AnalyticsDailyBreakdown[]
 }
 
@@ -159,18 +215,31 @@ export class AnalyticsRangeService {
     const byRegion: Record<string, number> = {}
     const byLanguage: Record<string, number> = {}
     const byIP: Record<string, number> = {}
+    const byASN: Record<string, number> = {}
+    const byISP: Record<string, number> = {}
+    const byChannel: Record<string, number> = {}
+    const byReferrer: Record<string, number> = {}
+    const byProxyType: Record<string, number> = {}
 
     let totalGuests = 0
     let totalUsers = 0
     let totalLogins = 0
     let guestConversions = 0
+    const botTotals = { bots: 0, funnel: {} as Record<string, number>, byBotKind: {} as Record<string, number> }
+    const clientEvents: Record<string, number> = {}
+    const byPage: Record<string, number> = {}
+    const byLandingPath: Record<string, number> = {}
+    const revenueByCurrency: Record<string, number> = {}
+    const paymentsByCurrency: Record<string, number> = {}
+    const paidByPlan: Record<string, number> = {}
+    const paidByChannel: Record<string, number> = {}
 
     for (const rawRow of sortedRows) {
       const row = this.normalizeDailyBreakdownRow(rawRow)
       totalGuests += Number(row.newGuests || 0)
       totalUsers += Number(row.newUsers || 0)
       totalLogins += Number(row.totalLogins || 0)
-      guestConversions += Number(row.guestConversions || 0)
+      guestConversions += this.toGuestConversions(row.guestConversions)
 
       this.mergeDimensionCounts(byOS, row.byOS, 'Unknown OS')
       this.mergeDimensionCounts(byCountry, row.byCountry, 'Unknown Country')
@@ -181,6 +250,19 @@ export class AnalyticsRangeService {
       this.mergeDimensionCounts(byRegion, row.byRegion, 'Unknown Region')
       this.mergeDimensionCounts(byLanguage, row.byLanguage, 'Unknown Language')
       this.mergeDimensionCounts(byIP, row.byIP, 'Unknown IP')
+      this.mergeDimensionCounts(byASN, row.byASN, 'Unknown ASN')
+      this.mergeDimensionCounts(byISP, row.byISP, 'Unknown ISP')
+      this.mergeDimensionCounts(byChannel, row.byChannel, 'direct')
+      this.mergeDimensionCounts(byReferrer, row.byReferrer, 'direct')
+      this.mergeDimensionCounts(byProxyType, row.byProxyType, 'direct')
+      this.mergeBotCounts(botTotals, row)
+      this.mergeDimensionCounts(clientEvents, row.clientEvents, 'unknown')
+      this.mergeDimensionCounts(byPage, row.byPage, '/')
+      this.mergeDimensionCounts(byLandingPath, row.byLandingPath, 'direct')
+      this.mergeDimensionCounts(revenueByCurrency, row.revenueByCurrency, 'unknown')
+      this.mergeDimensionCounts(paymentsByCurrency, row.paymentsByCurrency, 'unknown')
+      this.mergeDimensionCounts(paidByPlan, row.paidByPlan, 'unknown')
+      this.mergeDimensionCounts(paidByChannel, row.paidByChannel, 'direct')
     }
 
     return {
@@ -201,12 +283,27 @@ export class AnalyticsRangeService {
       byRegion,
       byLanguage,
       byIP,
+      byASN,
+      byISP,
+      byChannel,
+      byReferrer,
+      byProxyType,
+      bots: botTotals.bots,
+      funnel: botTotals.funnel,
+      byBotKind: botTotals.byBotKind,
+      clientEvents,
+      byPage,
+      byLandingPath,
+      revenueByCurrency,
+      paymentsByCurrency,
+      paidByPlan,
+      paidByChannel,
       dailyBreakdown: sortedRows.map((row: AnalyticsDailyBreakdown) => ({
         date: String(row.date || ''),
         newGuests: Number(row.newGuests || 0),
         newUsers: Number(row.newUsers || 0),
         totalLogins: Number(row.totalLogins || 0),
-        guestConversions: Number(row.guestConversions || 0),
+        guestConversions: this.toGuestConversions(row.guestConversions),
         conversionRate: Number(row.conversionRate || 0),
       })),
     }
@@ -224,7 +321,7 @@ export class AnalyticsRangeService {
     const totalGuests = rows.reduce((sum: number, row: AnalyticsDailyBreakdown) => sum + Number(row.newGuests || 0), 0)
     const totalUsers = rows.reduce((sum: number, row: AnalyticsDailyBreakdown) => sum + Number(row.newUsers || 0), 0)
     const totalLogins = rows.reduce((sum: number, row: AnalyticsDailyBreakdown) => sum + Number(row.totalLogins || 0), 0)
-    const guestConversions = rows.reduce((sum: number, row: AnalyticsDailyBreakdown) => sum + Number(row.guestConversions || 0), 0)
+    const guestConversions = rows.reduce((sum: number, row: AnalyticsDailyBreakdown) => sum + this.toGuestConversions(row.guestConversions), 0)
 
     const byOS: Record<string, number> = {}
     const byCountry: Record<string, number> = {}
@@ -235,6 +332,19 @@ export class AnalyticsRangeService {
     const byRegion: Record<string, number> = {}
     const byLanguage: Record<string, number> = {}
     const byIP: Record<string, number> = {}
+    const byASN: Record<string, number> = {}
+    const byISP: Record<string, number> = {}
+    const byChannel: Record<string, number> = {}
+    const byReferrer: Record<string, number> = {}
+    const byProxyType: Record<string, number> = {}
+    const botTotals = { bots: 0, funnel: {} as Record<string, number>, byBotKind: {} as Record<string, number> }
+    const clientEvents: Record<string, number> = {}
+    const byPage: Record<string, number> = {}
+    const byLandingPath: Record<string, number> = {}
+    const revenueByCurrency: Record<string, number> = {}
+    const paymentsByCurrency: Record<string, number> = {}
+    const paidByPlan: Record<string, number> = {}
+    const paidByChannel: Record<string, number> = {}
 
     for (const rawRow of rows) {
       const row = this.normalizeDailyBreakdownRow(rawRow)
@@ -247,6 +357,19 @@ export class AnalyticsRangeService {
       this.mergeDimensionCounts(byRegion, row.byRegion, 'Unknown Region')
       this.mergeDimensionCounts(byLanguage, row.byLanguage, 'Unknown Language')
       this.mergeDimensionCounts(byIP, row.byIP, 'Unknown IP')
+      this.mergeDimensionCounts(byASN, row.byASN, 'Unknown ASN')
+      this.mergeDimensionCounts(byISP, row.byISP, 'Unknown ISP')
+      this.mergeDimensionCounts(byChannel, row.byChannel, 'direct')
+      this.mergeDimensionCounts(byReferrer, row.byReferrer, 'direct')
+      this.mergeDimensionCounts(byProxyType, row.byProxyType, 'direct')
+      this.mergeBotCounts(botTotals, row)
+      this.mergeDimensionCounts(clientEvents, row.clientEvents, 'unknown')
+      this.mergeDimensionCounts(byPage, row.byPage, '/')
+      this.mergeDimensionCounts(byLandingPath, row.byLandingPath, 'direct')
+      this.mergeDimensionCounts(revenueByCurrency, row.revenueByCurrency, 'unknown')
+      this.mergeDimensionCounts(paymentsByCurrency, row.paymentsByCurrency, 'unknown')
+      this.mergeDimensionCounts(paidByPlan, row.paidByPlan, 'unknown')
+      this.mergeDimensionCounts(paidByChannel, row.paidByChannel, 'direct')
     }
 
     return {
@@ -267,10 +390,25 @@ export class AnalyticsRangeService {
       byRegion,
       byLanguage,
       byIP,
+      byASN,
+      byISP,
+      byChannel,
+      byReferrer,
+      byProxyType,
+      bots: botTotals.bots,
+      funnel: botTotals.funnel,
+      byBotKind: botTotals.byBotKind,
+      clientEvents,
+      byPage,
+      byLandingPath,
+      revenueByCurrency,
+      paymentsByCurrency,
+      paidByPlan,
+      paidByChannel,
       dailyBreakdown: rows.map((row: AnalyticsDailyBreakdown) => {
         const hour = Number(row.hour ?? 0)
         const newGuests = Number(row.newGuests || 0)
-        const rowGuestConversions = Number(row.guestConversions || 0)
+        const rowGuestConversions = this.toGuestConversions(row.guestConversions)
 
         return {
           date: `${String(row.date || '')}T${String(hour).padStart(2, '0')}:00:00.000Z`,
@@ -300,7 +438,7 @@ export class AnalyticsRangeService {
       totalGuests: Number(raw.totalGuests || raw.newGuests || 0),
       totalUsers: Number(raw.totalUsers || raw.newUsers || 0),
       totalLogins: Number(raw.totalLogins || raw.logins || 0),
-      guestConversions: Number(raw.guestConversions || raw.registeredGuests || raw.conversions || 0),
+      guestConversions: this.toGuestConversions(raw.guestConversions, raw.registeredGuests, raw.conversions),
       conversionRate: Number(raw.conversionRate || 0),
       byOS: this.asNumberMap(raw.byOS),
       byCountry: this.asNumberMap(raw.byCountry),
@@ -311,6 +449,31 @@ export class AnalyticsRangeService {
       byRegion: this.asNumberMap(raw.byRegion),
       byLanguage: this.asNumberMap(raw.byLanguage),
       byIP: this.asNumberMap(raw.byIP),
+      byASN: this.asNumberMap(raw.byASN),
+      byISP: this.asNumberMap(raw.byISP),
+      byChannel: this.asNumberMap(raw.byChannel),
+      byReferrer: this.asNumberMap(raw.byReferrer),
+      byProxyType: this.asNumberMap(raw.byProxyType),
+      bots: Number(raw.bots || 0),
+      funnel: this.asNumberMap(raw.funnel),
+      byBotKind: this.asNumberMap(raw.byBotKind),
+      clientEvents: this.asNumberMap(raw.clientEvents),
+      byPage: this.asNumberMap(raw.byPage),
+      byLandingPath: this.asNumberMap(raw.byLandingPath),
+      revenueByCurrency: this.asNumberMap(raw.revenueByCurrency),
+      paymentsByCurrency: this.asNumberMap(raw.paymentsByCurrency),
+      paidByPlan: this.asNumberMap(raw.paidByPlan),
+      paidByChannel: this.asNumberMap(raw.paidByChannel),
+      retention: Array.isArray(raw.retention)
+        ? raw.retention.map((row: RetentionCohort) => ({
+            cohort: String(row.cohort || ''),
+            size: Number(row.size || 0),
+            d1: this.toNullableNumber(row.d1),
+            d7: this.toNullableNumber(row.d7),
+            d14: this.toNullableNumber(row.d14),
+            d30: this.toNullableNumber(row.d30),
+          }))
+        : undefined,
       dailyBreakdown: Array.isArray(raw.dailyBreakdown)
         ? raw.dailyBreakdown.map((row: AnalyticsDailyBreakdown) => ({
             date: String(row.date || ''),
@@ -334,6 +497,31 @@ export class AnalyticsRangeService {
     }
   }
 
+  /**
+   * Bot traffic + funnel counters are written by the realtime triggers only, so
+   * rows from before the facts layer simply contribute zero.
+   */
+  private mergeBotCounts(
+    target: { bots: number, funnel: Record<string, number>, byBotKind: Record<string, number> },
+    row: AnalyticsDailyBreakdown,
+  ): void {
+    target.bots += Number(row.bots || 0)
+    this.mergeDimensionCounts(target.funnel, row.funnel, 'Unknown')
+    this.mergeDimensionCounts(target.byBotKind, row.byBotKind, 'bot')
+  }
+
+  /**
+   * `null`/`undefined` must stay null — Number(null) is 0, which would render an
+   * un-elapsed retention window as a real 0% drop.
+   */
+  private toNullableNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
   private mergeDimensionCounts(
     target: Record<string, number>,
     source: Record<string, number> | undefined,
@@ -343,6 +531,23 @@ export class AnalyticsRangeService {
       const normalizedKey = this.normalizeDimensionKey(key, fallback)
       target[normalizedKey] = (target[normalizedKey] || 0) + Number(value || 0)
     }
+  }
+
+  // ponytail: realtime writes guestConversions as a number; the old batch aggregator wrote
+  // { registered, unregistered }. Coerce both so a stray legacy doc can't NaN the whole chart.
+  private toGuestConversions(...values: unknown[]): number {
+    for (const value of values) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const registered = Number((value as { registered?: unknown }).registered ?? 0)
+        if (Number.isFinite(registered)) {
+          return registered
+        }
+      }
+    }
+    return 0
   }
 
   private asNumberMap(source: unknown): Record<string, number> {
@@ -407,6 +612,15 @@ export class AnalyticsRangeService {
       byRegion: this.extractDimension(obj, 'byRegion'),
       byLanguage: this.extractDimension(obj, 'byLanguage'),
       byIP: this.extractDimension(obj, 'byIP'),
+      byBotKind: this.extractDimension(obj, 'byBotKind'),
+      funnel: this.extractDimension(obj, 'funnel'),
+      clientEvents: this.extractDimension(obj, 'clientEvents'),
+      byPage: this.extractDimension(obj, 'byPage'),
+      byLandingPath: this.extractDimension(obj, 'byLandingPath'),
+      revenueByCurrency: this.extractDimension(obj, 'revenueByCurrency'),
+      paymentsByCurrency: this.extractDimension(obj, 'paymentsByCurrency'),
+      paidByPlan: this.extractDimension(obj, 'paidByPlan'),
+      paidByChannel: this.extractDimension(obj, 'paidByChannel'),
     }
   }
 
