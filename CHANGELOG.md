@@ -1,3 +1,10 @@
+# [0.9.0-beta.2](https://github.com/deepscrape/deepscrape/compare/v0.9.0-beta.1...v0.9.0-beta.2) (2026-09-10)
+
+
+### Bug Fixes
+
+* **test:** provide analytics mock for operation status ([1291bf5](https://github.com/deepscrape/deepscrape/commit/1291bf514a97f94ac7d8e0c45c958b9f94b1b2a7))
+
 # [0.8.0-beta.9](https://github.com/deepscrape/deepscrape/compare/v0.8.0-beta.8...v0.8.0-beta.9) (2026-09-08)
 
 
